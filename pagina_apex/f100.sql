@@ -33,7 +33,7 @@ prompt APPLICATION 100 - Synpex
 -- Application Export:
 --   Application:     100
 --   Name:            Synpex
---   Date and Time:   13:22 Miércoles Noviembre 4, 2026
+--   Date and Time:   13:49 Miércoles Noviembre 4, 2026
 --   Exported By:     ADMIN
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -8907,6 +8907,8 @@ wwv_flow_imp_page.create_page(
 ,p_warn_on_unsaved_changes=>null
 ,p_autocomplete_on_off=>'OFF'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
+'input[type="password"]::-ms-reveal { display: none; }',
 ':root {',
 '  --synpex-ink: #17364a;',
 '  --synpex-blue: #0c5f8a;',
@@ -9519,6 +9521,8 @@ wwv_flow_imp_page.create_page(
 ,p_step_title=>'Registro de Usuario'
 ,p_autocomplete_on_off=>'OFF'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
+'input[type="password"]::-ms-reveal { display: none; }',
 '/* Oculta los elementos flotantes fuera de la tarjeta */',
 '.t-Login-header, ',
 '.t-Login-logo {',
@@ -10051,6 +10055,8 @@ wwv_flow_imp_page.create_page(
 ,p_autocomplete_on_off=>'OFF'
 ,p_javascript_code_onload=>'parent.$(''.ui-dialog-titlebar-close'').hide();'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
+'input[type="password"]::-ms-reveal { display: none; }',
 unistr('/* Ocultar bot\00F3n ''X'' de cierre completamente */'),
 '.ui-dialog-titlebar-close,',
 'button.ui-dialog-titlebar-close,',
@@ -17179,6 +17185,9 @@ wwv_flow_imp_page.create_page(
 ,p_warn_on_unsaved_changes=>'N'
 ,p_first_item=>'AUTO_FIRST_ITEM'
 ,p_autocomplete_on_off=>'OFF'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
+'input[type="password"]::-ms-reveal { display: none; }'))
 ,p_step_template=>2102634289808461002
 ,p_page_template_options=>'#DEFAULT#'
 ,p_page_is_public_y_n=>'Y'
