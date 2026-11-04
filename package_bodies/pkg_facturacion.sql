@@ -296,6 +296,12 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_id_empresa     NUMBER := NVL(p_id_empresa, 1);
         v_existe         NUMBER := 0;
     BEGIN
+    -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
+    if apex_application.g_user is not null
+       and not fn_usuario_empresa_valida(apex_application.g_user, p_id_empresa) then
+        raise_application_error(-20003, 'No tiene acceso a la empresa indicada.');
+    end if;
+
         v_tipo_cambio    := fn_clean_num(TO_CHAR(p_tipo_cambio));
         v_subtotal       := fn_clean_num(TO_CHAR(p_subtotal));
         v_monto_impuesto := fn_clean_num(TO_CHAR(p_monto_impuesto));

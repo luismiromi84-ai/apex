@@ -16478,6 +16478,7 @@ wwv_flow_imp_page.create_page(
  p_id=>13
 ,p_name=>'Panel General'
 ,p_alias=>'PANEL-GENERAL'
+,p_step_title=>unistr('Synpex \00B7 Sistema de gesti\00F3n')
 ,p_autocomplete_on_off=>'OFF'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* --- Fondo del panel --- */',
@@ -16508,19 +16509,7 @@ unistr('/* --- Elevaci\00F3n al pasar el cursor --- */'),
 ,p_protection_level=>'C'
 ,p_page_component_map=>'23'
 );
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(23608277382366006)
-,p_plug_name=>'Encabezado'
-,p_static_id=>'encabezado-panel'
-,p_title=>unistr('Resumen general de facturaci\00F3n, presupuestos y cartera')
-,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
-,p_component_template_options=>'#DEFAULT#'
-,p_plug_template=>4073835273271169698
-,p_plug_display_sequence=>10
-,p_plug_item_display_point=>'ABOVE'
-,p_location=>null
-,p_plug_source=>unistr('<span style="display:block;font-size:1.15rem;font-weight:700;color:#0f172a;">Synpex \00B7 Sistema de gesti\00F3n</span><span style="color:#64748b;font-size:.9rem">Facturaci\00F3n, cartera, presupuestos y tasas del d\00EDa</span>')
-);
+
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(23600000000000001)
 ,p_plug_name=>'Filtros'

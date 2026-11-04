@@ -17,6 +17,12 @@ create or replace PACKAGE BODY pkg_presupuestos AS
         p_usuario           IN     VARCHAR2
     ) IS
     BEGIN
+    -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
+    if apex_application.g_user is not null
+       and not fn_usuario_empresa_valida(apex_application.g_user, p_id_empresa) then
+        raise_application_error(-20003, 'No tiene acceso a la empresa indicada.');
+    end if;
+
         IF p_id_presupuesto IS NOT NULL THEN
             -- Actualización (Incluye MODIFICADO_POR)
             UPDATE presupuestos
