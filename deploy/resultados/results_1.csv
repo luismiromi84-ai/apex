@@ -1,0 +1,35 @@
+Number,Elapsed,Statement,Feedback,Rows
+1,0.16,"select table_name,
+       column_id,
+       column_name,
+   ",35 rows selected.,35
+2,0.92,"select table_name,
+       column_name,
+       data_type,
+   ",7 rows selected.,7
+3,0.02,"select 'PRESUPUESTOS'      as tabla, count(*) as filas from ",10 rows selected.,10
+4,0.01,"select count(*) as total_lineas,
+       count(porcentage_imp",Statement processed.,1
+5,0.00,"select count(*) as total_lineas,
+       count(porcentage_imp",Statement processed.,1
+6,2.50,"select table_name,
+       constraint_type,
+       count(*) a",91 rows selected.,91
+7,5.04,"select c.table_name          as tabla_origen,
+       cc.colu",8 rows selected.,8
+8,2.53,"select c.table_name, c.column_name, c.nullable
+  from user_t",20 rows selected.,20
+9,0.01,"select 'PRESUPUESTOS sin cliente' as control, count(*) as hu",7 rows selected.,7
+10,0.00,"select id_empresa, folio, count(*) as repeticiones
+  from pr",Statement processed.,0
+11,0.00,"select id_empresa, folio_factura, tipo_documento, count(*) a",Statement processed.,0
+12,0.01,"select upper(username) as username_normalizado, count(*) as ",Statement processed.,0
+13,0.00,"select upper(email) as email_normalizado, count(*) as repeti",Statement processed.,0
+14,0.01,"select estado, count(*) as usuarios
+  from usuario
+ group by",3 rows selected.,3
+15,0.01,"select 'USUARIO con id_empresa inexistente' as control, coun",4 rows selected.,4
+16,0.00,"select 'PRESUPUESTOS' as tabla, estado, count(*) as filas
+  ",7 rows selected.,7
+17,0.09,"select s.sequence_name, s.last_number
+  from user_sequences ",Statement processed.,0

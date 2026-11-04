@@ -1,0 +1,10 @@
+Number,Elapsed,Statement,Feedback,Rows
+1,0.92,"select table_name as tabla, 
+       column_name as columna, ",7 rows selected.,7
+2,0.13,"select 'FACTURAS_DET lineas' as metrica, 
+       to_char(cou",20 rows selected.,20
+3,1.76,"select 'EXISTE' as tipo, 
+       c.table_name || '.' || cc.c",28 rows selected.,28
+4,0.01,"select 'PRESUPUESTOS sin cliente' as control, count(*) as fi",7 rows selected.,7
+5,0.00,"select 'PRESUPUESTOS' as tabla, estado, count(*) as filas 
+ ",7 rows selected.,7

@@ -1,0 +1,3 @@
+Number,Elapsed,Statement,Feedback,Rows
+1,0.05,"select 'A-PORCENTAJE' as seccion, 
+       t.table_name || '.","Error at line 7/31: ORA-00932: expression is of data type LONG, which is incompatible with expected data type CHAR",

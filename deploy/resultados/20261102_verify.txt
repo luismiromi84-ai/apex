@@ -1,0 +1,146 @@
+Synpex - verificacion del esquema
+=================================
+
+Fecha de ejecucion : 2026-11-02
+Script             : deploy/verify_plain.sql
+Cliente            : APEX SQL Workshop > SQL Commands
+Instancia          : Oracle Autonomous Database / APEX Service
+                     DB_NAME = GFD7E2575D251AE_SYPEXSYSTEM
+Workspace          : SYPEX_WS
+Esquema actual     : ADMIN_SYPEX
+
+NOTA: en SQL Commands el usuario de sesion es ORDS_PLSQL_GATEWAY.
+      Eso es normal: USER_OBJECTS sigue el esquema actual (ADMIN_SYPEX),
+      no el usuario con el que se abre la sesion.
+
+
+--- 0. Esquema conectado -----------------------------------------------
+USUARIO_CONECTADO   BASE_DATOS
+ORDS_PLSQL_GATEWAY  GFD7E2575D251AE_SYPEXSYSTEM
+
+
+--- 1. RESUMEN ---------------------------------------------------------
+BLOQUE   TABLAS_ENCONTRADAS  TABLAS_ESPERADAS  BODIES_INSTALADOS
+RESUMEN  15                  15                7
+
+BODIES_FALTANTES  OBJETOS_INVALIDOS  TRIGGERS  ESTADO_GLOBAL
+0                 1                  4         REVISAR
+
+
+--- 2. Tablas esperadas que NO existen ---------------------------------
+no data found
+
+
+--- 3. Packages sin body / bodies invalidos ----------------------------
+TRIGGER  TRG_ACTUALIZA_TOTALES_FACTURA  INVALID
+1 rows returned
+
+
+--- 4. Objetos invalidos -----------------------------------------------
+OBJECT_TYPE  OBJECT_NAME                     STATUS   LAST_DDL_TIME
+TRIGGER      TRG_ACTUALIZA_TOTALES_FACTURA   INVALID  10/25/2026
+
+
+--- 5. Triggers y su estado --------------------------------------------
+TRIGGER_NAME                      TRIGGER_TYPE      STATUS
+TRG_ACTUALIZA_TOTALES_FACTURA     COMPOUND          ENABLED
+TRG_ACTUALIZA_TOTALES_PRESUPUESTO COMPOUND          ENABLED
+TRG_CONDICION_PAGO_BI             BEFORE EACH ROW   ENABLED
+TRG_FORMA_PAGO_BI                 BEFORE EACH ROW   ENABLED
+4 rows returned
+
+
+--- 6. Conteo de objetos por tipo --------------------------------------
+OBJECT_TYPE   CANTIDAD
+FUNCTION      4
+INDEX         31
+PACKAGE       7
+PACKAGE BODY  7
+PROCEDURE     2
+SEQUENCE      36
+TABLE         15
+TRIGGER       4
+
+
+--- 7. Funciones y procedimientos --------------------------------------
+OBJECT_TYPE  OBJECT_NAME                    STATUS
+FUNCTION     FN_AUTENTICAR_USUARIO          VALID
+FUNCTION     FN_CLEAN_NUM                   VALID
+FUNCTION     FN_TASA_CAMBIO                 VALID
+FUNCTION     SYPEX_HASH_PASSWORD            VALID
+PROCEDURE    PRC_ACTUALIZAR_TASAS_DIARIAS   VALID
+PROCEDURE    PRC_POST_LOGIN                 VALID
+
+
+--- 8. Secuencias ------------------------------------------------------
+SEQUENCE_NAME    LAST_NUMBER
+ISEQ$$_148987    41
+ISEQ$$_149299    21
+ISEQ$$_149302    21
+ISEQ$$_149309    21
+ISEQ$$_149313    121
+ISEQ$$_149318    1
+ISEQ$$_149322    1
+ISEQ$$_149325    21
+ISEQ$$_149328    1
+ISEQ$$_149334    1
+(mas de 10 filas; se muestran las primeras 10)
+
+
+=======================================================================
+RESOLUCION DEL HALLAZGO: TRG_ACTUALIZA_TOTALES_FACTURA
+=======================================================================
+
+Diagnostico ejecutado el mismo dia:
+
+1) select ... from user_errors where name = 'TRG_ACTUALIZA_TOTALES_FACTURA'
+   Resultado: no data found
+   -> No habia error de compilacion.
+
+2) alter trigger TRG_ACTUALIZA_TOTALES_FACTURA compile;
+   Resultado: Trigger altered. 0.02 seconds
+   -> Compilo sin errores.
+
+3) select object_name, object_type, status, last_ddl_time
+     from user_objects
+    where object_name = 'TRG_ACTUALIZA_TOTALES_FACTURA';
+   Resultado: TRIGGER  VALID  11/2/2026
+
+4) Definicion real en la base (user_source): coincide con
+   tabla/FACTURAS_DET.sql
+     TRIGGER trg_actualiza_totales_factura
+     FOR INSERT OR UPDATE OR DELETE ON FACTURAS_DET
+     COMPOUND TRIGGER
+
+5) Prueba funcional:
+     lineas_antes   = 40
+     update facturas_det set cantidad = cantidad where id_detalle = min(...)
+     -> 1 row(s) updated
+     lineas_despues = 40
+     rollback
+
+CONCLUSION
+- Causa: invalidacion por DDL, no un error de logica (escenario A).
+- Facturacion no estaba rota: el trigger se revalido y disparo correctamente.
+- Estado final: VALID.
+
+
+=======================================================================
+PENDIENTES QUE DEJA ESTA VERIFICACION
+=======================================================================
+
+1. Secuencias: 36 en total. Se esperan 3 nombradas + 1 ISEQ$$_ por cada
+   columna IDENTITY (11) = 14. Hay ~22 ISEQ$$_ de mas, probablemente
+   huerfanas de tablas recreadas. Limpieza P2, no rompe nada.
+   Validar con:
+     select s.sequence_name
+       from user_sequences s
+      where s.sequence_name like 'ISEQ$$_%'
+        and not exists (select 1 from user_tab_identity_cols i
+                         where s.sequence_name = i.sequence_name);
+
+2. Indices: 31. El repositorio define 29 unicos (38 definiciones con
+   duplicados). Diferencia esperada por los SYS_C* de constraints.
+
+3. La app APEX 100 sigue pendiente de reimportacion: el intento devolvio
+   HTTP 400 al finalizar. No se confirmo si los cambios se aplicaron.

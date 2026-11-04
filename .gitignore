@@ -1,0 +1,27 @@
+# Credenciales y artefactos locales: nunca versionar
+.env
+.env.*
+*.env
+
+# Dependencias de Node
+node_modules/
+package-lock.json
+
+# Cartera / credenciales de Autonomous Database
+wallet.zip
+*.zip
+cwallet.sso
+ewallet.p12
+tnsnames.ora
+sqlnet.ora
+ojdbc.properties
+
+# Salidas de cliente
+*.log
+
+# Volcado de datos reales de la base (incluye hashes de contraseña): nunca versionar
+datos_origen.sql
+
+# Copias duplicadas de exports y documentos (el canonico es pagina_apex/f100.sql)
+instalacion y migracion/f100*.sql
+instalacion y migracion/*(1)*

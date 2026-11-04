@@ -1,0 +1,21 @@
+
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "sypex": {
+      "type": "local",
+      "command": ["node", "sypex-mcp/index.js"],
+      "environment": {
+        "SYPEX_CLIENTES_URL": "https://gfd7e2575d251ae-sypexsystem.adb.mx-monterrey-1.oraclecloudapps.com/ords/sypexws/sypex/clientes/"
+      }
+    },
+    "oracle": {
+      "type": "local",
+      "command": [
+        "C:\\Oracle\\sqlcl\\bin\\sql.exe",
+        "-mcp"
+      ],
+      "enabled": true
+    }
+  }
+}

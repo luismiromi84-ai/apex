@@ -1,0 +1,153 @@
+-- =============================================================================
+-- plantillas_insert.sql
+-- Plantillas de INSERT para las 10 tablas que faltan por cargar (190 filas).
+--
+-- IMPORTANTE: todo está comentado y los valores son ejemplos. No ejecutar tal
+-- cual. Hay que reemplazar los valores por los reales del origen y descomentar
+-- la fila (o el bloque) que se quiera cargar.
+--
+-- Orden obligatorio (cada tabla necesita la anterior):
+--   1. DEPT              4 filas
+--   2. EMP              14 filas
+--   3. SYN_ROLES         4 filas
+--   4. USUARIO           8 filas
+--   5. TIPO_CAMBIO      36 filas
+--   6. PRODUCTO_SERVICIO 4 filas
+--   7. PRESUPUESTOS     40 filas
+--   8. PRESUPUESTOS_DET 18 filas
+--   9. FACTURAS         22 filas
+--  10. FACTURAS_DET     40 filas
+--
+-- Si se prefiere no escribir a mano, usar el camino automático:
+-- extraer_datos_origen.sql -> cargar_datos_destino.sql.
+--
+-- Al terminar cada bloque, correr validar_carga.sql para ver el conteo.
+-- =============================================================================
+
+-- =============================================================================
+-- 1. DEPT (4 filas)
+-- DEPTNO: si se omite, el trigger DEPT_TRG1 lo llena con DEPT_SEQ.
+-- =============================================================================
+-- insert into dept (deptno, dname, loc) values (10, 'ACCOUNTING', 'NEW YORK');
+-- insert into dept (deptno, dname, loc) values (20, 'RESEARCH',   'DALLAS');
+-- insert into dept (deptno, dname, loc) values (30, 'SALES',      'CHICAGO');
+-- insert into dept (deptno, dname, loc) values (40, 'OPERATIONS', 'BOSTON');
+
+-- =============================================================================
+-- 2. EMP (14 filas)
+-- EMPNO: si se omite, EMP_TRG1 lo llena con EMP_SEQ.
+-- MGR es FK a EMP.EMPNO: cargar primero los jefes o dejar MGR null.
+-- DEPTNO es FK a DEPT: debe existir el departamento.
+-- HIREDATE es DATE: usar date '1980-12-17'.
+-- =============================================================================
+-- insert into emp (empno, ename, job, mgr, hiredate, sal, comm, deptno)
+-- values (7369, 'SMITH', 'CLERK', null, date '1980-12-17', 800, null, 20);
+-- insert into emp (empno, ename, job, mgr, hiredate, sal, comm, deptno)
+-- values (7499, 'ALLEN', 'SALESMAN', 7698, date '1981-02-20', 1600, 300, 30);
+-- ... (12 filas más)
+
+-- =============================================================================
+-- 3. SYN_ROLES (4 filas)
+-- CODIGO_ROL es UNIQUE. Tiene que ir antes de USUARIO (FK_USUARIO_ROL).
+-- =============================================================================
+-- insert into syn_roles (id_rol, codigo_rol, nombre_rol, descripcion)
+-- values (1, 'ADMIN',   'Administrador', 'Acceso total');
+-- insert into syn_roles (id_rol, codigo_rol, nombre_rol, descripcion)
+-- values (2, 'VENTAS',  'Ventas',        null);
+
+-- =============================================================================
+-- 4. USUARIO (8 filas)
+-- USERNAME y EMAIL son UNIQUE. PASSWORD_HASH es NOT NULL y guarda el SHA-256
+-- que produce SYPEX_HASH_PASSWORD: 64 caracteres hex en minúsculas.
+-- ESTADO debe ser 'ACTIVO' para que el login y PRC_POST_LOGIN funcionen
+-- ('A' o '1' autentican pero dejan F_ID_EMPRESA/F_ID_ROL nulos).
+-- Para copiar el hash de un usuario del origen:
+--   select lower(rawtohex(standard_hash(password || 'SYPEX_SALT_2026','SHA256')))
+--     from dual;   -- solo si se conoce la contraseña; si no, usar el hash real
+-- =============================================================================
+-- insert into usuario (usuario_id, username, email, password_hash, estado,
+--                      fecha_creacion, id_empresa, rol_id)
+-- values (1, 'ADMIN', 'admin@empresa.com',
+--         'pegar_aqui_el_hash_de_64_caracteres', 'ACTIVO', sysdate, 1, 1);
+
+-- =============================================================================
+-- 5. TIPO_CAMBIO (36 filas)
+-- Se keyea por MONEDA_ORIGEN + MONEDA_DESTINO + TIPO_TASA + FECHA_VIGENCIA
+-- (constraint UQ_TASA_FECHA). TIPO_TASA es 'PRESUPUESTO' o 'REAL'.
+-- CREADO_EL es TIMESTAMP con default CURRENT_TIMESTAMP: se puede omitir.
+-- =============================================================================
+-- insert into tipo_cambio (moneda_origen, moneda_destino, tipo_tasa, tasa_cambio, fecha_vigencia)
+-- values ('USD', 'VES', 'REAL', 36.50, date '2026-10-28');
+-- insert into tipo_cambio (moneda_origen, moneda_destino, tipo_tasa, tasa_cambio, fecha_vigencia)
+-- values ('USD', 'VES', 'PRESUPUESTO', 36.80, date '2026-10-28');
+
+-- =============================================================================
+-- 6. PRODUCTO_SERVICIO (4 filas)
+-- CODIGO es UNIQUE. ID_PRODUCTO_SERVICIO sale de SEQ_PRODUCTO_SERVICIO, se
+-- puede omitir y dejar que el DEFAULT lo asigne.
+-- TIPO: 'PRODUCTO' o 'SERVICIO' (CHECK). ESTADO: 'ACTIVO' o 'INACTIVO' (CHECK).
+-- =============================================================================
+-- insert into producto_servicio (codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado)
+-- values ('SRV-001', 'Consultoría', 'Hora de consultoría', 'SERVICIO', 50.00, 16.00, 'ACTIVO');
+
+-- =============================================================================
+-- 7. PRESUPUESTOS (40 filas)
+-- OJO: FOLIO es NUMBER, no texto. ID_EMPRESA es FK a EMPRESAS (existe la 1).
+-- ID_CLIENTE no tiene FK, pero debe existir en CLIENTES para que la app lo
+-- muestre. COD_MONEDA y TIPO_CAMBIO son NOT NULL con default.
+-- SUBTOTAL / IMPUESTO_IVA / TOTAL: los recalcula el trigger compound al
+-- insertar el detalle; se pueden dejar en 0 aquí.
+-- =============================================================================
+-- insert into presupuestos (id_presupuesto, id_empresa, folio, id_cliente,
+--                           fecha_emision, fecha_vencimiento, estado,
+--                           cod_moneda, tipo_cambio, observaciones, creado_por)
+-- values (1, 1, 1001, 1, date '2026-10-28', date '2026-11-27', 'PENDIENTE',
+--         'USD', 1, 'cargado desde el origen', 'ADMIN_SYPEX');
+
+-- =============================================================================
+-- 8. PRESUPUESTOS_DET (18 filas)
+-- ATENCIÓN: esta tabla NO tiene NUM_LINEA (FACTURAS_DET sí).
+-- Las columnas de porcentaje están con la errata del origen:
+--   PORCENTAGE_DESCUENTO y PORCENTAGE_IMPUESTO. No "corregirlas".
+-- ID_PRODUCTO_SERVICIO no tiene FK, pero apunta a PRODUCTO_SERVICIO.
+-- Al insertar detalle, el trigger recalcula la cabecera.
+-- =============================================================================
+-- insert into presupuestos_det (id_presupuesto, id_producto_servicio, descripcion,
+--                               cantidad, precio_unitario, subtotal_linea,
+--                               porcentage_descuento, monto_descuento,
+--                               id_impuesto, porcentage_impuesto, monto_impuesto,
+--                               monto_total_linea)
+-- values (1, 1, 'Consultoría', 2, 50.00, 100.00, 0, 0, 1, 16, 16.00, 116.00);
+
+-- =============================================================================
+-- 9. FACTURAS (22 filas)
+-- FOLIO_FACTURA es VARCHAR2(50) (en presupuestos FOLIO es NUMBER).
+-- ID_EMPRESA e ID_CLIENTE son FK. ID_PRESUPUESTO es FK opcional.
+-- TIPO_DOCUMENTO: 'FAC', 'NC' o 'ND'. ESTADO: PENDIENTE/TIMBRADA/PAGADA/ANULADA/FACTURADO.
+-- Los montos los recalcula el trigger desde el detalle.
+-- =============================================================================
+-- insert into facturas (id_factura, id_empresa, id_cliente, id_presupuesto,
+--                       tipo_documento, folio_factura, cod_moneda, tipo_cambio,
+--                       fecha_emision, estado, observaciones, creado_por)
+-- values (1, 1, 1, 1, 'FAC', 'F-0001', 'USD', 1,
+--         date '2026-10-29', 'PENDIENTE', null, 'ADMIN_SYPEX');
+
+-- =============================================================================
+-- 10. FACTURAS_DET (40 filas)
+-- ATENCIÓN: conviven las columnas correctas y las legacy, todas obligatorias
+-- salvo PORCENTAGE_DESCUENTO. Llenar las dos parejas con el mismo valor:
+--   PORCENTAJE_IMPUESTO  = PORCENTAGE_IMPUESTO
+--   PORCENTAJE_DESCUENTO = PORCENTAGE_DESCUENTO
+-- La página 10 lee PORCENTAJE_*; la lógica vieja y algunos reportes leen
+-- PORCENTAGE_*. Si solo se llena una, la app muestra valores distintos.
+-- =============================================================================
+-- insert into facturas_det (id_factura, num_linea, id_producto, codigo_producto,
+--                           descripcion, cantidad, precio_unitario,
+--                           porcentaje_descuento, monto_descuento,
+--                           id_impuesto, porcentaje_impuesto, monto_impuesto,
+--                           subtotal_linea, monto_total_linea,
+--                           tasa_cambio_aplicada, subtotal_bs, total_bs,
+--                           porcentage_impuesto, porcentage_descuento, creado_por)
+-- values (1, 1, 1, 'SRV-001', 'Consultoría', 2, 50.00,
+--         0, 0, 1, 16, 16.00, 100.00, 116.00,
+--         1, 100.00, 116.00, 16, 0, 'ADMIN_SYPEX');
