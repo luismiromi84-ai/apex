@@ -1,0 +1,49 @@
+Pagina 7 y LOVs por pais (2026-11-04)
+=====================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, esquema WKSP_SYPEXWS
+
+1. Titulo de la pagina 7
+   PAGE_TITLE: (vacio) -> 'Gestion de Presupuestos'   (medido en apex_application_pages)
+   Se agrego p_step_title al bloque de la pagina, igual que la pagina 4.
+
+2. Estado con color en la lista de presupuestos (pagina 5)
+   La columna ESTADO (alias L) ahora usa:
+     <span class="status-badge status-#ESTADO#"><span class="status-dot"></span>#ESTADO#</span>
+   Las clases .status-badge / .status-dot y los colores por estado se movieron al CSS
+   de la pagina global (0) para que sirvan en cualquier lista:
+     ACTIVO/INACTIVO, PENDIENTE, ENVIADO, APROBADO, RECHAZADO, CANCELADO, FACTURADO
+   Re-export: 2 columnas con la insignia (paginas 3 y 5).
+
+3. LOV de empresa con codigo de pais
+   Antes: e.nombre_empresa
+   Ahora: e.nombre_empresa || ' (' || e.cod_pais || ')'
+   Medido con mx.demo: 'Empresa Mexico (MX)'.
+
+4. Moneda filtrada por el pais de la empresa
+   Dos LOVs nuevas (una por pagina, porque cada una tiene su item de empresa):
+     MONEDA_PRESUPUESTO -> paises.moneda_local del :P7_ID_EMPRESA + USD
+     MONEDA_FACTURA     -> paises.moneda_local del :P9_ID_EMPRESA + USD
+   P7_COD_MONEDA y P9_COD_MONEDA quedaron con cascada y ajax_items_to_submit.
+   Prueba de la consulta:
+     empresa 1 (VE) -> USD, VES
+     empresa 2 (MX) -> MXN, USD
+
+5. Datos para comprobar la cascada empresa -> cliente
+   instalacion y migracion/datos_empresa_mx.sql (idempotente):
+     empresa 2 'Empresa Mexico' (MX)
+     clientes 201-203 (3)
+     usuario mx.demo (9010, empresa 2, rol ADMIN, Demo#2026)
+   Medido: empresa 1 -> 15 clientes; empresa 2 -> 3 clientes.
+   La LOV CLIENTE ya filtraba por :P7_ID_EMPRESA; con una sola empresa y todos los
+   clientes de ella parecia que "traia todos". Con mx.demo la diferencia es visible.
+
+6. Import: 0 ERROR/ORA-/PLS-. Re-export verificado:
+     p_lov_name=>'MONEDA_PRESUPUESTO' .. 1
+     p_lov_name=>'MONEDA_FACTURA' ..... 1
+     status-badge status-#ESTADO# ...... 2
+     e.cod_pais ....................... 3
+
+PENDIENTE DE PRUEBA VISUAL (navegador)
+   - Login con mx.demo / Demo#2026: empresa 2 y solo sus 3 clientes; moneda MXN o USD.
+   - Login con luis: empresa 1, monedas VES o USD, 15 clientes.
+   - Lista de presupuestos: insignia de color en Estado.

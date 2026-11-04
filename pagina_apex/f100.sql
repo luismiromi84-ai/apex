@@ -33,7 +33,7 @@ prompt APPLICATION 100 - Synpex
 -- Application Export:
 --   Application:     100
 --   Name:            Synpex
---   Date and Time:   18:11 Miércoles Noviembre 4, 2026
+--   Date and Time:   18:19 Miércoles Noviembre 4, 2026
 --   Exported By:     ADMIN
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -60,7 +60,7 @@ prompt APPLICATION 100 - Synpex
 --         Themes:                 1
 --         Templates:
 --           Region:               1
---         LOVs:                   7
+--         LOVs:                   9
 --       PWA:
 --       Globalization:
 --       Reports:
@@ -4882,7 +4882,7 @@ wwv_flow_imp_shared.create_list_of_values(
 ,p_lov_name=>'EMPRESA'
 ,p_static_id=>'empresas-nombre-empresa'
 ,p_lov_query=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT e.nombre_empresa AS display_value,',
+'SELECT e.nombre_empresa || '' ('' || e.cod_pais || '')'' AS display_value,',
 '       e.id_empresa     AS return_value',
 '  FROM empresas e',
 '  JOIN usuario u ',
@@ -4935,6 +4935,50 @@ wwv_flow_imp_shared.create_list_of_values(
 ,p_return_column_name=>'RETURN_VALUE'
 ,p_display_column_name=>'DISPLAY_VALUE'
 ,p_version_scn=>'SH256:zULvZtX5ffOYCeeUikwDJ3adYkqjCHdwE-Q4Sit_rlo'
+);
+end;
+/
+prompt --application/shared_components/user_interface/lovs/moneda_factura
+begin
+wwv_flow_imp_shared.create_list_of_values(
+ p_id=>wwv_flow_imp.id(43000000000000052)
+,p_lov_name=>'MONEDA_FACTURA'
+,p_static_id=>'moneda-factura'
+,p_lov_query=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT p.moneda_local AS display_value,',
+'       p.moneda_local AS return_value',
+'  FROM paises p',
+' WHERE p.activo = ''S''',
+'   AND p.cod_pais = (SELECT cod_pais FROM empresas WHERE id_empresa = :P9_ID_EMPRESA)',
+'UNION',
+'SELECT ''USD'', ''USD'' FROM dual',
+'ORDER BY 1'))
+,p_source_type=>'SQL'
+,p_location=>'LOCAL'
+,p_return_column_name=>'RETURN_VALUE'
+,p_display_column_name=>'DISPLAY_VALUE'
+);
+end;
+/
+prompt --application/shared_components/user_interface/lovs/moneda_presupuesto
+begin
+wwv_flow_imp_shared.create_list_of_values(
+ p_id=>wwv_flow_imp.id(43000000000000051)
+,p_lov_name=>'MONEDA_PRESUPUESTO'
+,p_static_id=>'moneda-presupuesto'
+,p_lov_query=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT p.moneda_local AS display_value,',
+'       p.moneda_local AS return_value',
+'  FROM paises p',
+' WHERE p.activo = ''S''',
+'   AND p.cod_pais = (SELECT cod_pais FROM empresas WHERE id_empresa = :P7_ID_EMPRESA)',
+'UNION',
+'SELECT ''USD'', ''USD'' FROM dual',
+'ORDER BY 1'))
+,p_source_type=>'SQL'
+,p_location=>'LOCAL'
+,p_return_column_name=>'RETURN_VALUE'
+,p_display_column_name=>'DISPLAY_VALUE'
 );
 end;
 /
@@ -8967,6 +9011,38 @@ wwv_flow_imp_page.create_page(
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
 'input[type="password"]::-ms-reveal { display: none; }',
+'/* Insignias de estado: presupuestos y facturas */',
+'.status-badge {',
+'  display: inline-flex;',
+'  align-items: center;',
+'  gap: 6px;',
+'  font-weight: 600;',
+'  font-size: 0.85rem;',
+'  padding: 4px 10px;',
+'  border-radius: 12px;',
+'}',
+'.status-dot {',
+'  width: 8px;',
+'  height: 8px;',
+'  border-radius: 50%;',
+'  display: inline-block;',
+'}',
+'.status-ACTIVO, .status-Activo { color: #15803d; background-color: #f0fdf4; }',
+'.status-ACTIVO .status-dot, .status-Activo .status-dot { background-color: #22c55e; }',
+'.status-INACTIVO, .status-Inactivo { color: #b91c1c; background-color: #fef2f2; }',
+'.status-INACTIVO .status-dot, .status-Inactivo .status-dot { background-color: #ef4444; }',
+'.status-PENDIENTE, .status-Pendiente { color: #b45309; background-color: #fffbeb; }',
+'.status-PENDIENTE .status-dot, .status-Pendiente .status-dot { background-color: #f59e0b; }',
+'.status-ENVIADO, .status-Enviado { color: #1d4ed8; background-color: #eff6ff; }',
+'.status-ENVIADO .status-dot, .status-Enviado .status-dot { background-color: #3b82f6; }',
+'.status-APROBADO, .status-Aprobado { color: #15803d; background-color: #f0fdf4; }',
+'.status-APROBADO .status-dot, .status-Aprobado .status-dot { background-color: #22c55e; }',
+'.status-RECHAZADO, .status-Rechazado { color: #b91c1c; background-color: #fef2f2; }',
+'.status-RECHAZADO .status-dot, .status-Rechazado .status-dot { background-color: #ef4444; }',
+'.status-CANCELADO, .status-Cancelado { color: #475569; background-color: #f8fafc; }',
+'.status-CANCELADO .status-dot, .status-Cancelado .status-dot { background-color: #94a3b8; }',
+'.status-FACTURADO, .status-Facturado { color: #6d28d9; background-color: #f5f3ff; }',
+'.status-FACTURADO .status-dot, .status-Facturado .status-dot { background-color: #8b5cf6; }',
 ':root {',
 '  --synpex-ink: #17364a;',
 '  --synpex-blue: #0c5f8a;',
@@ -10884,6 +10960,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>120
 ,p_column_identifier=>'L'
 ,p_column_label=>'Estado'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="status-badge status-#ESTADO#">',
+'    <span class="status-dot"></span>',
+'    #ESTADO#',
+'</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -12326,6 +12407,7 @@ wwv_flow_imp_page.create_page(
 ,p_name=>unistr('Gesti\00F3n de Presupuestos')
 ,p_alias=>'GESTION-PRESUPUESTOS'
 ,p_page_mode=>'MODAL'
+,p_step_title=>unistr('Gesti\00F3n de Presupuestos')
 ,p_autocomplete_on_off=>'OFF'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 unistr('/* Cabecera uniforme en azul degradado sin sombras/recuadros extra\00F1os */'),
@@ -12458,9 +12540,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Moneda'
 ,p_source=>'COD_MONEDA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
-,p_named_lov=>'MONEDA'
+,p_named_lov=>'MONEDA_PRESUPUESTO'
 ,p_lov_display_null=>'YES'
 ,p_lov_null_value=>'-- Seleccione Moneda --'
+,p_lov_cascade_parent_items=>'P7_ID_EMPRESA'
+,p_ajax_items_to_submit=>'P7_ID_EMPRESA'
 ,p_cSize=>30
 ,p_cMaxlength=>3
 ,p_begin_on_new_line=>'N'
@@ -14181,9 +14265,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Moneda'
 ,p_source=>'COD_MONEDA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
-,p_named_lov=>'MONEDA'
+,p_named_lov=>'MONEDA_FACTURA'
 ,p_lov_display_null=>'YES'
 ,p_lov_null_value=>'-- Seleccione Moneda --'
+,p_lov_cascade_parent_items=>'P9_ID_EMPRESA'
+,p_ajax_items_to_submit=>'P9_ID_EMPRESA'
 ,p_cSize=>30
 ,p_cMaxlength=>3
 ,p_colspan=>2
