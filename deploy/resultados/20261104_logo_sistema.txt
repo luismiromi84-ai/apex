@@ -1,0 +1,46 @@
+Logo del sistema en la pagina de login (2026-11-04)
+===================================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, esquema WKSP_SYPEXWS
+
+1. Que habia
+   La pagina 9999 (login) usa el template de region "Login - Synpex", que dibujaba un
+   monograma SVG generico (cubo con gradiente #38bdf8 -> #0284c7, animado) y el texto
+   "Synpex" + "SISTEMA DE GESTION" en CSS. El template tenia ademas
+   <img src="#REGION_IMAGE_URL#" data-app-icon>, pero la region no define imagen, asi que
+   lo que se veia era el cubo, no el logo.
+   Nota: "SISTEMA DE GESTION" aparecia escrito a mano; el logo nuevo ya lo trae.
+   La pagina 2 (registro) oculta el logo con .t-Login-logo { display: none } (sin cambios).
+
+2. Activos recibidos y medidos
+   libreria/logo.png                 1536x1024, PNG 24 bits SIN canal alfa, fondo blanco
+                                     horneado, 1.168.678 bytes. Paleta medida: azul marino
+                                     #0B2C65, azul brillante #0495F1, naranja #FCC545.
+   libreria/vectorizer/lockup_600.svg 600x271, SVG trazado real: 152 paths, 0 imagenes
+                                     embebidas, 53.248 bytes.
+   libreria/variantes/lockup_1200.png y lockup_600.png  recortes del lockup sin margen
+                                     blanco (generados con System.Drawing).
+   No hay version con canal alfa ni mark aislado: el icono (S + portapapeles + engranaje)
+   se solapa con el wordmark, asi que un corte rectangular deja una rebanada de la "S" de
+   "Synpex". Por eso NO se toco la barra de navegacion (p_logo, que necesita el mark sobre
+   fondo oscuro) ni el app icon/favicon.
+
+3. Cambio aplicado
+   - Nuevo archivo estatico de la app: logo_synpex.svg (image/svg+xml, utf-8, 53.248 bytes),
+     id 43000000000000041.
+   - Template "Login - Synpex": se reemplazo el bloque del cubo + texto por
+       <img src="#APP_IMAGES#logo_synpex.svg" class="synpex-login-logo" ...>
+     con .synpex-login-logo { width:100%; max-width:320px; height:auto; margin:0 auto; }.
+     Se conservaron las animaciones CSS del template (las usa tambien la marca del Home).
+
+4. Verificacion
+   - Round-trip local: los 533 chunks hex del export decodifican a 53.248 bytes, 0 bytes
+     distintos contra libreria/vectorizer/lockup_600.svg.
+   - Import: 0 ERROR / ORA- / PLS-, termina en "...done".
+   - apex_application_static_files: logo_synpex.svg / image/svg+xml / 53248 bytes.
+   - App: 16 paginas, 0 objetos INVALID.
+
+PENDIENTE DE MIRAR EN EL NAVEGADOR
+   - El login debe mostrar el logo completo; si no aparece, revisar la sustitucion
+     #APP_IMAGES# (alternativa: #APP_FILES#).
+   - La barra de navegacion sigue con el monograma SVG anterior: falta el mark aislado.
+   - El icono de la app (favicon / data-app-icon) sigue siendo el anterior.
