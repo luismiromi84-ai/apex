@@ -380,6 +380,11 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 p_usuario           => p_usuario
             );
         END IF;
+
+    EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            RAISE_APPLICATION_ERROR(-20022,
+                'El folio ' || p_folio_factura || ' ya existe para esta empresa. Elige otro numero.');
     END prc_guardar_factura;
 
 --------------------------------------------------------------------------------

@@ -67,6 +67,9 @@ create or replace PACKAGE BODY pkg_presupuestos AS
         END IF;
 
     EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            RAISE_APPLICATION_ERROR(-20021,
+                'El folio ' || p_folio || ' ya existe para esta empresa. Elige otro numero.');
         WHEN OTHERS THEN
             RAISE_APPLICATION_ERROR(-20001, 'Error al procesar el presupuesto: ' || SQLERRM);
     END;

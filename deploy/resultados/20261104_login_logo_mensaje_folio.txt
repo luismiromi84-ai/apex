@@ -1,0 +1,52 @@
+Login con el logo completo y mensaje de folio repetido (2026-11-04)
+===================================================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, esquema WKSP_SYPEXWS
+
+1. Que reporto el usuario
+   - En la pagina 9999 no se veia el logo, y se veia la "S" sola en lugar del logotipo completo.
+   - Al guardar un folio repetido aparecia ORA-00001 en crudo, sin mensaje de negocio.
+
+2. Causa del logo
+   El login renderizaba dos imagenes: la del template (<img src="#APP_IMAGES#logo_synpex.svg">)
+   y la del atributo p_image_template del region template, que apunta a #REGION_IMAGE_URL# y
+   muestra el icono de la app (el isotipo, la S). La primera no se resolvio: el logo no
+   aparecio. La segunda si, por eso se veia la S.
+
+3. Correccion del logo (sin depender de rutas)
+   - El SVG del lockup va INCRUSTADO en el template "Login - Synpex": 140 lineas del archivo
+     libreria/vectorizer/lockup_600.svg, sin el path de fondo #fefefe.
+   - Se elimino el atributo p_image_template (la S).
+   - CSS: .synpex-login-svg { width:100%; max-width:340px; height:auto; margin:0 auto } y
+     animacion desactivada para el logo del login (se conserva en la barra).
+   Asi no hay sustitucion #APP_IMAGES#/#APP_FILES# ni peticion de archivo que pueda fallar.
+
+4. Mensaje de folio repetido
+   Antes: el ORA-00001 de UQ_*_FOLIO llegaba crudo a la pagina.
+   Ahora, en los dos packages (body compilado en la base, VALID, 0 errores de compilacion):
+     pkg_presupuestos.prc_guardar_presupuesto -> ORA-20021
+       "El folio 1001 ya existe para esta empresa. Elige otro numero."
+     pkg_facturacion.prc_guardar_factura     -> ORA-20022
+       "El folio F-1001 ya existe para esta empresa. Elige otro numero."
+   Prueba: llamada real a los dos procedimientos con folio repetido, capturando el error y
+   haciendo rollback. Datos: 45 presupuestos y 40 facturas, sin cambios.
+
+5. Como se aplico (importante para el futuro)
+   SQLcl por conhost NO ejecuto nada en esta ronda (el log no crecio) y la invocacion directa
+   sigue muriendo con java.io.IOException: Funcion incorrecta devolviendo rc=0.
+   El export se ejecuto con python-oracledb:
+     python deploy/conexion/importar_export.py pagina_apex/f100.sql
+   Resultado: 72 sentencias, 72 OK, 6.9 s, sin errores. El script queda versionado en
+   deploy/conexion/importar_export.py como alternativa estable a SQLcl.
+
+6. Verificacion despues del import
+   Paginas ........ 16
+   Archivos ....... 7 (5 iconos + logo_synpex.png + logo_synpex.svg)
+   Items p7 / p9 .. 15 / 25
+   Regiones p13 ... 8
+   DA en 7 y 9 .... 9
+   Objetos INVALID  0
+
+PENDIENTE DE MIRAR EN EL NAVEGADOR
+   - Login (Ctrl+F5): debe verse el logotipo completo, sin la S suelta.
+   - Guardar un presupuesto o una factura con un folio ya usado: debe salir la notificacion
+     con el texto "El folio ... ya existe para esta empresa. Elige otro numero."
