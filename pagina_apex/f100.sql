@@ -7392,13 +7392,12 @@ wwv_flow_imp_shared.create_authentication(
  p_id=>wwv_flow_imp.id(9144549589584420)
 ,p_name=>'Synpex Custom Auth'
 ,p_static_id=>'oracle-apex-accounts'
-,p_scheme_type=>'NATIVE_CUSTOM'
+,p_scheme_type=>'NATIVE_APEX_ACCOUNTS'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'authentication_function', 'fn_autenticar_usuario',
   'enable_legacy_attributes', 'N')).to_clob
 ,p_invalid_session_type=>'LOGIN'
 ,p_post_auth_process=>'prc_post_login'
-,p_use_secure_cookie_yn=>'N'
+,p_use_secure_cookie_yn=>'Y'
 ,p_ras_mode=>0
 ,p_version_scn=>'SH256:6_Lo4cn8LGft6zd5GpMpIOspD-u8XJiUm-FrZKp0e78'
 );
