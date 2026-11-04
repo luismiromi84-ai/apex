@@ -10023,6 +10023,19 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'maintain_pagination', 'N')).to_clob
 );
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000001)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol administrador'
+,p_static_id=>'valida-rol-admin'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+);
 end;
 /
 prompt --application/pages/page_00004
@@ -10475,6 +10488,19 @@ unistr('       id_empresa    = :P4_ID_EMPRESA, -- <--- L\00CDNEA 6: Este nombre 
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(10562251657198329)
 ,p_internal_uid=>11938733711907303
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000002)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol administrador'
+,p_static_id=>'valida-rol-admin'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
 );
 end;
 /
