@@ -33,17 +33,17 @@ prompt APPLICATION 100 - Synpex
 -- Application Export:
 --   Application:     100
 --   Name:            Synpex
---   Date and Time:   17:49 Miércoles Noviembre 4, 2026
+--   Date and Time:   18:11 Miércoles Noviembre 4, 2026
 --   Exported By:     ADMIN
 --   Flashback:       0
 --   Export Type:     Application Export
---     Pages:                     15
---       Items:                  101
+--     Pages:                     16
+--       Items:                  105
 --       Computations:             1
 --       Validations:              2
---       Processes:               41
---       Regions:                 28
---       Buttons:                 30
+--       Processes:               42
+--       Regions:                 29
+--       Buttons:                 32
 --       Dynamic Actions:         24
 --     Shared Components:
 --       Logic:
@@ -17426,6 +17426,171 @@ wwv_flow_imp_page.create_page_item(
 );
 end;
 /
+prompt --application/pages/page_00014
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>14
+,p_name=>unistr('Recuperar Contrase\00F1a')
+,p_alias=>'RECUPERAR-CONTRASENA'
+,p_step_title=>unistr('Recuperar Contrase\00F1a')
+,p_warn_on_unsaved_changes=>'N'
+,p_first_item=>'AUTO_FIRST_ITEM'
+,p_autocomplete_on_off=>'OFF'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
+'input[type="password"]::-ms-reveal { display: none; }'))
+,p_step_template=>2102634289808461002
+,p_page_template_options=>'#DEFAULT#'
+,p_page_is_public_y_n=>'Y'
+,p_protection_level=>'C'
+,p_page_component_map=>'12'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000041)
+,p_plug_name=>unistr('Recuperar contrase\00F1a')
+,p_static_id=>unistr('recuperar-contrase\00F1a')
+,p_region_template_options=>'#DEFAULT#:t-Login-region--headerHidden js-removeLandmark'
+,p_plug_template=>2675634334296186762
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000046)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_button_name=>'RESTABLECER'
+,p_static_id=>'btn-restablecer'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4073839297780169708
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>unistr('Restablecer contrase\00F1a')
+,p_button_position=>'NEXT'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_branch(
+ p_id=>wwv_flow_imp.id(43000000000000048)
+,p_branch_action=>'f?p=&APP_ID.:9999:&SESSION.::&DEBUG.:::&success_msg=#SUCCESS_MSG#'
+,p_branch_point=>'AFTER_PROCESSING'
+,p_branch_type=>'REDIRECT_URL'
+,p_branch_sequence=>10
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000043)
+,p_name=>'P14_EMAIL'
+,p_source_data_type=>'VARCHAR2'
+,p_is_required=>true
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_prompt=>unistr('Correo Electr\00F3nico')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_field_template=>2042262243893469891
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000044)
+,p_name=>'P14_PASSWORD'
+,p_source_data_type=>'VARCHAR2'
+,p_is_required=>true
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_prompt=>unistr('Contrase\00F1a Nueva')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_PASSWORD'
+,p_cSize=>40
+,p_field_template=>2042262243893469891
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000045)
+,p_name=>'P14_PASSWORD_CONFIRM'
+,p_source_data_type=>'VARCHAR2'
+,p_is_required=>true
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_prompt=>unistr('Confirmar Contrase\00F1a')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_PASSWORD'
+,p_cSize=>40
+,p_field_template=>2042262243893469891
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000042)
+,p_name=>'P14_USERNAME'
+,p_source_data_type=>'VARCHAR2'
+,p_is_required=>true
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_prompt=>'Usuario'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_field_template=>2042262243893469891
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000047)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>unistr('Restablecer contrase\00F1a')
+,p_static_id=>'restablecer-password'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if :P14_PASSWORD <> :P14_PASSWORD_CONFIRM then',
+unistr('    raise_application_error(-20011, ''Las contrase\00F1as no coinciden.'');'),
+'end if;',
+'',
+'if length(:P14_PASSWORD) < 8 then',
+unistr('    raise_application_error(-20012, ''La contrase\00F1a debe tener al menos 8 caracteres.'');'),
+'end if;',
+'',
+'update usuario',
+'   set password_hash = sypex_hash_password(:P14_PASSWORD)',
+' where upper(username) = upper(:P14_USERNAME)',
+'   and lower(email)    = lower(:P14_EMAIL)',
+'   and estado in (''ACTIVO'', ''A'', ''1'');',
+'',
+'if sql%rowcount = 0 then',
+'    prc_log_reset_password(',
+'        p_usuario   => :P14_USERNAME,',
+'        p_correo    => :P14_EMAIL,',
+'        p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
+'        p_resultado => ''FALLO'');',
+'    raise_application_error(-20010, ''Los datos no coinciden con un usuario activo.'');',
+'end if;',
+'',
+'prc_log_reset_password(',
+'    p_usuario   => :P14_USERNAME,',
+'    p_correo    => :P14_EMAIL,',
+'    p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
+'    p_resultado => ''OK'');',
+'',
+unistr('apex_application.g_print_success_message := ''Contrase\00F1a actualizada. Inicia sesi\00F3n con la nueva.'';')))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_internal_uid=>43000000000000047
+);
+end;
+/
 prompt --application/pages/page_09999
 begin
 wwv_flow_imp_page.create_page(
@@ -17495,6 +17660,20 @@ unistr('    <a href="f?p=&APP_ID.:2">Reg\00EDstrate aqu\00ED</a>'),
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000049)
+,p_button_sequence=>50
+,p_button_plug_id=>wwv_flow_imp.id(9150741626584585)
+,p_button_name=>'BTN_RECUPERAR'
+,p_static_id=>'btn-olvide-password'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4073839297780169708
+,p_button_image_alt=>unistr('\00BFOlvidaste tu contrase\00F1a?')
+,p_button_position=>'NEXT'
+,p_button_redirect_url=>'f?p=&APP_ID.:14:&SESSION.::&DEBUG.:::'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(9152249287584607)

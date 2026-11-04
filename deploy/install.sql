@@ -34,6 +34,7 @@ prompt ============================================================
 @@../tabla/FACTURAS.sql
 @@../tabla/FACTURAS_DET.sql
 @@../tabla/gasto_real.sql
+@@../tabla/syn_reset_password_log.sql
 
 prompt ============================================================
 prompt 3/6 Funciones
@@ -62,6 +63,7 @@ prompt 5/6 Procedimientos
 prompt ============================================================
 @@../procedimientos/prc_post_login.sql
 @@../procedimientos/prc_actualizar_tasas_diarias.sql
+@@../procedimientos/prc_log_reset_password.sql
 
 prompt ============================================================
 prompt 6/6 Verificación
