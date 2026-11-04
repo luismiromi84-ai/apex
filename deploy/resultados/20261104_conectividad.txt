@@ -60,6 +60,35 @@ CONCLUSION
    Accion del dueno en la consola OCI (Sypex_SQL -> Network -> Access control list):
    agregar 201.173.64.11, o el rango 201.173.64.0/24, o "Secure access from everywhere".
 
+8. RESUELTO - 2026-11-04 11:34 (ACL aplicada por el dueno)
+   Prueba con credenciales falsas: ORA-01017 (antes DPY-6000/12506)
+   => el listener ya admite la IP y pasa a evaluar credenciales.
+
+   Conexion real (python-oracledb, usuario ADMIN del .env):
+     user       ADMIN
+     servicio   GFD7E2575D251AE_SYPEXSQL_low.adb.oraclecloud.com
+     db_name    GFD7E2575D251AE_SYPEXSQL
+
+   App 100: 15 paginas (0,1,2,3,4,5,6,7,8,9,10,11,12,13,9999), 1 esquema de
+   autorizacion, 2 guardas BEFORE_HEADER "Valida rol administrador" (paginas 3 y 4).
+
+   Esquema WKSP_SYPEXWS: 21 tablas (17 de la app + DEPT, EMP, DBTOOLS$MCP_LOG y
+   una de trabajo), 7 packages, 7 bodies, 6 triggers, 7 funciones, 3 procedimientos,
+   18 secuencias, 0 objetos INVALID.
+
+   Roles en syn_roles: 1001 ADMIN, 1002 GERENCIA, 1003 VENTAS, 1004 CONTABILIDAD,
+   1005 ALMACEN, 1006 CONSULTA, 9001 PRUEBA. **No existe FACTURACION** (lo pide el
+   plan de autorizacion, Task 1).
+
+   Usuarios: admin.demo(1001), gerencia.demo(1002), ventas1/2.demo(1003/1004),
+   contabilidad.demo(1005), almacen.demo(1006), consulta.demo(1007),
+   auditor.demo(1008), PRUEBA(9001), luis(9002), ter(9022); todos ACTIVO, empresa 1.
+   Ojo: los usuarios demo del plan (9003-9005) colisionan con los existentes
+   (consulta.demo ya es 1007) y con el rango 1000-1999 que purga datos_demo.sql.
+
+   SQLcl: el alias SYPEX_SQL_MCP funciona con el rodeo conhost + spool
+   (probado 11:35: ADMIN / ..._SYPEXSQL_low). `sql` directo sigue roto en el agente.
+
 Alias verificado en %APPDATA%\DBTools\connections\42ONU1gDZ2fs7Pyz6cs41g\dbtools.properties:
    name=SYPEX_SQL_MCP  user=ADMIN  tcps 1521  host=adb.mx-monterrey-1.oraclecloud.com
    service=gfd7e2575d251ae_sypexsql_low.adb.oraclecloud.com
