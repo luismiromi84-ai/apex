@@ -11540,79 +11540,6 @@ wwv_flow_imp_page.create_page_da_action(
     '    console.error("Error al asignar el ID:", e);',
     '}')))).to_clob
 );
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(13407980369030001)
-,p_name=>'NUEVO_FOLIO'
-,p_static_id=>'nuevo-folio'
-,p_event_sequence=>30
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P5_ID_EMPRESA'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(13408080941030002)
-,p_event_id=>wwv_flow_imp.id(13407980369030001)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
-,p_name=>'NUEVO FOLIO'
-,p_static_id=>'nuevo-folio'
-,p_action=>'NATIVE_SET_VALUE'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P5_FOLIO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'escape_special_characters', 'Y',
-  'items_to_submit', 'P5_ID_EMPRESA',
-  'plsql_function_body', wwv_flow_string.join(wwv_flow_t_varchar2(
-    'DECLARE',
-    '   v_folio NUMBER;',
-    'BEGIN',
-    '   SELECT to_number(NVL(MAX(folio), 0)) + 1',
-    '     INTO v_folio',
-    '     FROM presupuestos',
-    '    WHERE id_empresa = :P5_ID_EMPRESA;',
-    '    ',
-    '   RETURN v_folio;',
-    'EXCEPTION',
-    '   WHEN OTHERS THEN',
-    '      RETURN 1;',
-    'END;')),
-  'suppress_change_event', 'N',
-  'type', 'FUNCTION_BODY')).to_clob
-,p_wait_for_result=>'Y'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(12540847393283234)
-,p_name=>'TASA_INHABIL'
-,p_static_id=>'tasa-dia-inhabil'
-,p_event_sequence=>10
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P5_FECHA_EMISION'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(12540957199283235)
-,p_event_id=>wwv_flow_imp.id(12540847393283234)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_name=>'TASA INHABIL'
-,p_static_id=>'tasa-dia-inhabil'
-,p_action=>'NATIVE_SET_VALUE'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P5_TIPO_CAMBIO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'escape_special_characters', 'Y',
-  'items_to_submit', 'P5_FECHA_EMISION,P5_COD_MONEDA',
-  'plsql_expression', 'fn_tasa_cambio(:P5_FECHA_EMISION, :P5_COD_MONEDA)',
-  'suppress_change_event', 'N',
-  'type', 'PLSQL_EXPRESSION')).to_clob
-,p_wait_for_result=>'Y'
-);
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(23358420423028901)
 ,p_process_sequence=>10
@@ -12872,7 +12799,7 @@ wwv_flow_imp_page.create_page_computation(
 ,p_static_id=>'p7-folio'
 ,p_computation_point=>'BEFORE_HEADER'
 ,p_computation_type=>'QUERY'
-,p_computation=>'SELECT NVL(MAX(TO_NUMBER(folio)), 0) + 1 FROM presupuestos'
+,p_computation=>'SELECT NVL(MAX(folio), 0) + 1 FROM presupuestos WHERE id_empresa = :P7_ID_EMPRESA'
 ,p_compute_when=>'P7_ID_PRESUPUESTO'
 ,p_compute_when_type=>'ITEM_IS_NULL'
 );
@@ -12924,6 +12851,50 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'N',
   'type', 'PLSQL_EXPRESSION')).to_clob
 ,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000031)
+,p_name=>'NUEVO_FOLIO'
+,p_static_id=>'nuevo-folio'
+,p_event_sequence=>40
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P7_ID_EMPRESA'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000032)
+,p_event_id=>wwv_flow_imp.id(43000000000000031)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'NUEVO FOLIO'
+,p_static_id=>'nuevo-folio'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P7_FOLIO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'escape_special_characters', 'Y',
+  'items_to_submit', 'P7_ID_EMPRESA',
+  'plsql_function_body', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'DECLARE',
+    '   v_folio NUMBER;',
+    'BEGIN',
+    '   SELECT NVL(MAX(folio), 0) + 1',
+    '     INTO v_folio',
+    '     FROM presupuestos',
+    '    WHERE id_empresa = :P7_ID_EMPRESA;',
+    '   RETURN v_folio;',
+    'EXCEPTION',
+    '   WHEN OTHERS THEN',
+    '      RETURN 1;',
+    'END;')),
+  'suppress_change_event', 'N',
+  'type', 'FUNCTION_BODY')).to_clob
+,p_wait_for_result=>'Y'
+,p_client_condition_type=>'NULL'
+,p_client_condition_element=>'P7_ID_PRESUPUESTO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(16938116115414501)
@@ -14004,79 +13975,6 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_region_id=>wwv_flow_imp.id(30554313608864005)
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'maintain_pagination', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(18028989002580883)
-,p_name=>'NUEVO_FOLIO'
-,p_static_id=>'nuevo-folio'
-,p_event_sequence=>30
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P8_ID_EMPRESA'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(18029353571580884)
-,p_event_id=>wwv_flow_imp.id(18028989002580883)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
-,p_name=>'NUEVO FOLIO'
-,p_static_id=>'nuevo-folio'
-,p_action=>'NATIVE_SET_VALUE'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P8_FOLIO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'escape_special_characters', 'Y',
-  'items_to_submit', 'P8_ID_EMPRESA',
-  'plsql_function_body', wwv_flow_string.join(wwv_flow_t_varchar2(
-    'DECLARE',
-    '   v_folio NUMBER;',
-    'BEGIN',
-    '   SELECT to_number(NVL(MAX(folio), 0)) + 1',
-    '     INTO v_folio',
-    '     FROM presupuestos',
-    '    WHERE id_empresa = :P8_ID_EMPRESA;',
-    '    ',
-    '   RETURN v_folio;',
-    'EXCEPTION',
-    '   WHEN OTHERS THEN',
-    '      RETURN 1;',
-    'END;')),
-  'suppress_change_event', 'N',
-  'type', 'FUNCTION_BODY')).to_clob
-,p_wait_for_result=>'Y'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(18029893211580885)
-,p_name=>'TASA_INHABIL'
-,p_static_id=>'tasa-dia-inhabil'
-,p_event_sequence=>10
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P8_FECHA_EMISION'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(18030218578580886)
-,p_event_id=>wwv_flow_imp.id(18029893211580885)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
-,p_name=>'TASA INHABIL'
-,p_static_id=>'tasa-dia-inhabil'
-,p_action=>'NATIVE_SET_VALUE'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P8_TIPO_CAMBIO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'escape_special_characters', 'Y',
-  'items_to_submit', 'P8_FECHA_EMISION,P8_COD_MONEDA',
-  'plsql_expression', 'fn_tasa_cambio(:P8_FECHA_EMISION, :P8_COD_MONEDA)',
-  'suppress_change_event', 'N',
-  'type', 'PLSQL_EXPRESSION')).to_clob
-,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(23143830216112206)
@@ -15334,7 +15232,7 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_static_id=>'tipo-documento'
 ,p_event_sequence=>50
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P9_TIPO_DOCUMENTO'
+,p_triggering_element=>'P9_TIPO_DOCUMENTO,P9_ID_EMPRESA'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'focusout'
@@ -15352,11 +15250,11 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_elements=>'P9_FOLIO_FACTURA'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'escape_special_characters', 'Y',
-  'items_to_submit', 'P9_TIPO_DOCUMENTO',
+  'items_to_submit', 'P9_ID_EMPRESA',
   'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
-    'SELECT NVL(MAX(TO_NUMBER(REGEXP_REPLACE(folio_factura, ''[^0-9]'', ''''))), 0) + 1 ',
-    'FROM facturas ',
-    'WHERE tipo_documento = :P9_TIPO_DOCUMENTO;')),
+    'SELECT ''F-'' || (NVL(MAX(TO_NUMBER(REGEXP_SUBSTR(folio_factura, ''[0-9]+$''))), 0) + 1)',
+    'FROM facturas',
+    'WHERE id_empresa = :P9_ID_EMPRESA')),
   'suppress_change_event', 'N',
   'type', 'SQL_STATEMENT')).to_clob
 ,p_wait_for_result=>'Y'

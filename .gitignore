@@ -22,6 +22,9 @@ ojdbc.properties
 # Volcado de datos reales de la base (incluye hashes de contraseña): nunca versionar
 datos_origen.sql
 
+# Scratch de trabajo del agente (ledgers, briefs): no es entregable
+.superpowers/
+
 # Copias duplicadas de exports y documentos (el canonico es pagina_apex/f100.sql)
 instalacion y migracion/f100*.sql
 instalacion y migracion/*(1)*

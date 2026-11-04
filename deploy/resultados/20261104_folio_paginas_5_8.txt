@@ -1,0 +1,73 @@
+Folio por empresa y acciones muertas de las paginas 5 y 8 (2026-11-04)
+=====================================================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, esquema WKSP_SYPEXWS
+Rama: fix/folio-paginas-5-8
+
+1. Causa raiz (medida en el diccionario APEX, ANTES del cambio)
+   Paginas 5 y 8 solo tienen 4 items ocultos cada una:
+     5: P5_ID_PRESUPUESTO, P5_IVA, P5_SUBTOTAL, P5_TOTAL
+     8: P8_ID_FACTURAS,    P8_IVA, P8_SUBTOTAL, P8_TOTAL
+   Pero sus acciones dinamicas se disparaban con:
+     5: P5_ID_EMPRESA (NUEVO_FOLIO), P5_FECHA_EMISION (TASA_INHABIL)
+     8: P8_ID_EMPRESA (NUEVO_FOLIO), P8_FECHA_EMISION (TASA_INHABIL)
+   Ninguno de esos cuatro items existe en la pagina (item_exists = 0), asi que
+   los eventos nunca se enlazaban: sin error visible, sin efecto. Las dos
+   acciones NUEVO_FOLIO tenian ademas "Execute on Page Initialization = Yes",
+   o sea una llamada AJAX por carga de pagina cuyo resultado no iba a ningun item.
+   La de la pagina 8 calculaba el folio de FACTURA desde la tabla PRESUPUESTOS.
+
+   El defecto NO era la cascada empresa -> cliente: en la pagina 7 funciona de
+   forma nativa (LOV_CASCADE_PARENT_ITEMS = P7_ID_EMPRESA) y en la 9 la LOV de
+   cliente trae su propio filtro :P9_ID_EMPRESA. AGENTS.md decia lo contrario;
+   corregido.
+
+2. Verificacion (deploy/diagnostico/20261104_folio_5_8_verificacion.sql)
+   ANTES  (8 fallas): A x4 (DA muertas), B (sin DA de folio en 7),
+                      C (computacion de P7_FOLIO global), D y E (folio de
+                      factura sin prefijo, sin empresa, sin disparo por empresa)
+   DESPUES (0 fallas): "no se ha seleccionado ninguna fila"
+
+3. Cambios en pagina_apex/f100.sql
+   Pagina 5: eliminadas las DA NUEVO_FOLIO (13407980369030001/13408080941030002)
+             y TASA_INHABIL (12540847393283234/12540957199283235).
+   Pagina 8: eliminadas las DA NUEVO_FOLIO (18028989002580883/18029353571580884)
+             y TASA_INHABIL (18029893211580885/18030218578580886).
+   Pagina 7: la computacion de P7_FOLIO ahora filtra por empresa
+             (SELECT NVL(MAX(folio),0)+1 FROM presupuestos WHERE id_empresa = :P7_ID_EMPRESA).
+             Nueva DA NUEVO_FOLIO (43000000000000031/43000000000000032) disparada
+             por P7_ID_EMPRESA, escribe P7_FOLIO, con condicion de cliente
+             "P7_ID_PRESUPUESTO is null" para no recalcular al editar.
+   Pagina 9: la DA TIPO_DOCUMENTO (la que ya calculaba P9_FOLIO_FACTURA) pasa a
+             dispararse con 'P9_TIPO_DOCUMENTO,P9_ID_EMPRESA' y su consulta a
+             'F-' || (NVL(MAX(TO_NUMBER(REGEXP_SUBSTR(folio_factura,'[0-9]+$'))),0)+1)
+             FROM facturas WHERE id_empresa = :P9_ID_EMPRESA
+
+   Hallazgo que cambio el diseno: los folios de FACTURAS son correlativos por
+   empresa SIN importar el tipo de documento. Medido:
+     FAC 32 -> F-1001..F-1032 ; NC 5 -> F-1033..F-1037 ; ND 3 -> F-1038..F-1040
+   La consulta original filtraba por tipo_documento, asi que habria repetido
+   F-1033..F-1040. Se quito el filtro por tipo (el disparo por tipo se conserva).
+
+4. Medicion de los calculos con los datos reales
+   Empresa 1 -> presupuesto 1046, factura F-1041
+   Empresa 2 -> presupuesto 1,    factura F-1
+
+5. Import
+   cmd /c "conhost.exe C:\oracle\sqlcl\bin\sql.exe -S -L -name SYPEX_SQL_MCP @import_folio.sql"
+   Log: deploy/resultados/20261104_folio_import.log (72 lineas, 0 ERROR / ORA- / PLS-,
+   termina en "...done"). El export trae "whenever sqlerror exit sql.sqlcode rollback":
+   si algo fallaba, no quedaba nada aplicado.
+
+6. Invariantes despues del import
+   Paginas de la app ......... 16
+   Items de la pagina 7 ...... 15 (igual que en el export)
+   Regiones de la pagina 13 .. 8  (Filtros, Indicadores, 4 graficos, Ultimos
+                                  documentos, Tasa del dia)
+   Acciones DA pagina 5 ...... 11 (eran 13)
+   Acciones DA pagina 8 ...... 5  (eran 7)
+
+PENDIENTE DE PRUEBA EN NAVEGADOR
+   - Presupuesto nuevo, empresa 2 (mx.demo): el folio debe proponer 1 y no 1046.
+   - Presupuesto existente: cambiar la empresa no debe tocar el folio.
+   - Factura nueva: el folio debe proponer F-1041 (empresa 1) al elegir empresa.
+   - Factura existente: el folio no se recalcula.
