@@ -1,0 +1,47 @@
+Login: donde vive realmente la marca (2026-11-04, correccion)
+=============================================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100
+
+1. Lo que el usuario veia
+   En la pagina 9999 seguia apareciendo el monograma hexagonal viejo con "Synpex" +
+   "SISTEMA DE GESTION", aunque el logo de la app (barra) y los iconos ya eran los nuevos.
+
+2. Causa: habia tres marcas distintas y edite las dos equivocadas
+   a) p_logo (logo de la app, barra superior) -> ya era el isotipo. Correcto.
+   b) Template "Login - Synpex" -> NO lo usa nadie: reference_count = 0. La region del login
+      apunta a otro template (id 2675634334296186762, el "Login" del tema Universal).
+      Todo lo que edite ahi no se veia.
+   c) p_plug_header de la region 'synpex' de la pagina 9999 -> AQUI esta el hexagono con el
+      texto y el CSS. Es lo que renderiza el login. Nunca se habia tocado.
+   Verificacion: apex_application_page_regions.region_header_text de la pagina 9999
+   contenia el path del cubo (M24 2 42 12v24) y "synpex-login-name".
+
+3. Intento descartado: SVG incrustado en el header
+   Incrustar el lockup (140 lineas, 53 KB) en p_plug_header falla en el import:
+     ORA-20001: call=wwv_flow_imp_page.create_page_plug, component=synpex,
+     sqlerrm=ORA-06502: character string buffer too small
+   El header pasa por un VARCHAR2 de 32 KB; el template aguanta mas porque se guarda en CLOB,
+   pero el template no se usa.
+
+4. Solucion aplicada
+   - El template "Login - Synpex" se restauro a su contenido original (commit adc9cbe) para no
+     dejar 53 KB de SVG en una plantilla muerta. El export volvio a su tamano.
+   - El header de la region de la pagina 9999 ahora tiene:
+       <div class="synpex-login-brand">
+         <img class="synpex-login-img" src="#APP_IMAGES#logo_synpex.svg" alt="Synpex - Sistema de gestion"
+              onerror="this.onerror=null;this.src='#APP_FILES#logo_synpex.svg';" />
+       </div>
+     con .synpex-login-img { width:100%; max-width:340px; height:auto; margin:0 auto } y las
+     animaciones del SVG desactivadas.
+   Nota: el onerror usa &quot; en el export para no romper el literal PL/SQL.
+
+5. Verificacion en la base (no en el navegador)
+   region_header_text de la pagina 9999: contiene 'synpex-login-img' (offset 48) y
+   'logo_synpex.svg' (offset 83); ya NO contiene el path del cubo. Largo 1476 (antes 2039).
+   App: 16 paginas, 7 archivos estaticos, 0 objetos INVALID.
+   Import: 72 sentencias, 0 errores (deploy/conexion/importar_export.py).
+
+PENDIENTE DE MIRAR
+   - Ctrl+F5 en el login. Si no aparece el logo, la sustitucion correcta es #APP_FILES# en
+     lugar de #APP_IMAGES# (una palabra, una reimportacion). El fallback onerror ya cubre ese
+     caso en el navegador, no en el HTML servido.
