@@ -15235,7 +15235,7 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_triggering_element=>'P9_TIPO_DOCUMENTO,P9_ID_EMPRESA'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'focusout'
+,p_bind_event_type=>'change'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(18564821235054502)
