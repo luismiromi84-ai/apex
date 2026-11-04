@@ -356,6 +356,7 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_icon=>'fa-table'
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'3,4'
+,p_security_scheme=>'Administration Rights'
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(9156795883584624)
@@ -4700,7 +4701,7 @@ wwv_flow_imp_shared.create_security_scheme(
 ,p_static_id=>'administration-rights'
 ,p_scheme_type=>'NATIVE_FUNCTION_BODY'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'plsql_function_body', 'return fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'');')).to_clob
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then 1 else 0 end = 1;')).to_clob
 ,p_error_message=>'No tiene permisos de administrador.'
 ,p_version_scn=>'SH256:K94FzTYWdjDQ6WIg6w48Or20nhyD_tWnqCuRh9rK4CU'
 ,p_caching=>'BY_USER_BY_PAGE_VIEW'
