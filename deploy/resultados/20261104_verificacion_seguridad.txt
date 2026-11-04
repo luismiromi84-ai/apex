@@ -1,0 +1,32 @@
+Verificación del bloque de seguridad — 2026-11-04
+Base: SYPEX_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS
+Consultas de solo lectura vía alias SYPEX_SQL_MCP / SQLcl.
+
+1) Funciones (ALL_OBJECTS)
+FN_TIENE_ROL              FUNCTION  VALID
+FN_USUARIO_EMPRESA_VALIDA FUNCTION  VALID
+FN_EMPRESAS_DEL_USUARIO   FUNCTION  VALID
+
+Prueba funcional (apex_application.g_user = 'luis'):
+  fn_tiene_rol('ADMIN,GERENCIA,PRUEBA')   -> SI
+  fn_usuario_empresa_valida('LUIS', 1)    -> SI
+  fn_empresas_del_usuario('LUIS')         -> 1
+
+2) Autorización expuesta en el menú
+Entrada: "Gestión de Usuarios" (lista Navigation Menu)
+AUTHORIZATION_SCHEME      = Administration Rights
+AUTHORIZATION_SCHEME_ID   = 9149896901584567   (numérico; antes era el texto 'Administration Rights')
+Cuerpo del esquema        = return case when fn_tiene_rol('ADMIN,GERENCIA,PRUEBA') then 1 else 0 end = 1;
+
+3) Procesos de página
+Página 3: "Valida rol administrador" (PL/SQL anonymous block, BEFORE_HEADER)
+Página 4: "Valida rol administrador" (PL/SQL anonymous block, BEFORE_HEADER)
+
+4) Aplicación
+APEX_APPLICATION_PAGES  -> 15 páginas
+Objetos inválidos en WKSP_SYPEXWS -> 0
+
+5) Nota
+El ORA-06502 de la página 1 se producía porque APEX hace to_number(AUTHORIZATION_SCHEME_ID)
+y la entrada guardaba el nombre del esquema. Corregido reimportando el export con
+p_security_scheme=>wwv_flow_imp.id(9149896901584567).

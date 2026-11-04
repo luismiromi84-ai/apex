@@ -33,16 +33,16 @@ prompt APPLICATION 100 - Synpex
 -- Application Export:
 --   Application:     100
 --   Name:            Synpex
---   Date and Time:   01:54 Miércoles Noviembre 4, 2026
+--   Date and Time:   13:22 Miércoles Noviembre 4, 2026
 --   Exported By:     ADMIN
 --   Flashback:       0
 --   Export Type:     Application Export
---     Pages:                     16
+--     Pages:                     15
 --       Items:                  101
 --       Computations:             1
 --       Validations:              2
---       Processes:               31
---       Regions:                 30
+--       Processes:               33
+--       Regions:                 28
 --       Buttons:                 30
 --       Dynamic Actions:         24
 --     Shared Components:
@@ -354,9 +354,9 @@ wwv_flow_imp_shared.create_list_item(
 ,p_static_id=>unistr('gesti\00F3n-de-usuarios')
 ,p_list_item_link_target=>'f?p=&APP_ID.:3:&APP_SESSION.::&DEBUG.:::'
 ,p_list_item_icon=>'fa-table'
+,p_security_scheme=>wwv_flow_imp.id(9149896901584567)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'3,4'
-,p_security_scheme=>'Administration Rights'
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(9156795883584624)
@@ -10036,6 +10036,7 @@ wwv_flow_imp_page.create_page_process(
 '    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
 'end if;'))
 ,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000001
 );
 end;
 /
@@ -10502,6 +10503,7 @@ wwv_flow_imp_page.create_page_process(
 '    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
 'end if;'))
 ,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000002
 );
 end;
 /
@@ -16536,142 +16538,6 @@ unistr('/* --- Elevaci\00F3n al pasar el cursor --- */'),
 ,p_protection_level=>'C'
 ,p_page_component_map=>'23'
 );
-
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(23600000000000001)
-,p_plug_name=>'Filtros'
-,p_static_id=>'filtros-panel'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4502917002193490937
-,p_plug_display_sequence=>5
-,p_plug_item_display_point=>'ABOVE'
-,p_plug_source=>'&nbsp;'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(23600000000000002)
-,p_name=>'P13_ID_EMPRESA'
-,p_source_data_type=>'NUMBER'
-,p_is_required=>true
-,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
-,p_item_source_plug_id=>wwv_flow_imp.id(23600000000000001)
-,p_prompt=>'Empresa'
-,p_source=>'ID_EMPRESA'
-,p_display_as=>'NATIVE_SELECT_LIST'
-,p_named_lov=>'EMPRESA'
-,p_lov_display_null=>'NO'
-,p_lov_display_extra=>'NO'
-,p_cSize=>30
-,p_colspan=>2
-,p_field_template=>1610598304472262251
-,p_item_template_options=>'#DEFAULT#'
-,p_source_type=>'ALWAYS_NULL'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(23600000000000003)
-,p_name=>'P13_MONEDA'
-,p_source_data_type=>'VARCHAR2'
-,p_is_required=>true
-,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
-,p_item_source_plug_id=>wwv_flow_imp.id(23600000000000001)
-,p_prompt=>'Moneda'
-,p_source=>'COD_MONEDA'
-,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC:USD;USD,VES;VES,MXN;MXN'
-,p_lov_display_null=>'NO'
-,p_lov_display_extra=>'NO'
-,p_cSize=>10
-,p_colspan=>2
-,p_field_template=>1610598304472262251
-,p_item_template_options=>'#DEFAULT#'
-,p_source_type=>'ALWAYS_NULL'
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(23600000000000005)
-,p_button_sequence=>30
-,p_button_plug_id=>wwv_flow_imp.id(23600000000000001)
-,p_button_name=>'BTN_APLICAR'
-,p_static_id=>'aplicar-filtros'
-,p_button_action=>'SUBMIT'
-,p_button_template_options=>'#DEFAULT#'
-,p_button_template_id=>4073839297780169708
-,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Aplicar'
-,p_button_position=>'NEXT'
-,p_grid_new_row=>'N'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(23600000000000010)
-,p_plug_name=>'Indicadores'
-,p_static_id=>'indicadores'
-,p_title=>'Indicadores'
-,p_region_css_classes=>'metric-card'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4502917002193490937
-,p_plug_display_sequence=>20
-,p_plug_item_display_point=>'ABOVE'
-,p_query_type=>'SQL'
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-  'SELECT ''Facturado del mes'' AS titulo,',
-  '       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
-  '         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos'' AS valor',
-  '  FROM facturas',
-  ' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
-  '   AND cod_moneda = :P13_MONEDA',
-  '   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
-  '   AND estado <> ''ANULADA''',
-  '   AND fecha_emision >= TRUNC(SYSDATE,''MM'')',
-  'UNION ALL',
-  'SELECT ''Por cobrar'',',
-  '       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
-  '         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos''',
-  '  FROM facturas',
-  ' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
-  '   AND cod_moneda = :P13_MONEDA',
-  '   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
-  '   AND estado IN (''PENDIENTE'',''TIMBRADA'')',
-  'UNION ALL',
-  'SELECT ''Presupuestos en juego'',',
-  '       TO_CHAR(COUNT(*)) || ''  -  '' || :P13_MONEDA',
-  '  FROM presupuestos',
-  ' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
-  '   AND cod_moneda = :P13_MONEDA',
-  '   AND estado IN (''PENDIENTE'',''ENVIADO'',''APROBADO'')',
-  'UNION ALL',
-  'SELECT ''Tasa '' || :P13_MONEDA || '' a VES'',',
-  '       CASE WHEN :P13_MONEDA = ''VES'' THEN ''1.0000  -  moneda local''',
-  '            ELSE NVL((SELECT TO_CHAR(tasa_cambio,''FM999,990.0000'')',
-  '                        FROM tipo_cambio',
-  '                       WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL''',
-  '                         AND fecha_vigencia = (SELECT MAX(fecha_vigencia) FROM tipo_cambio',
-  '                                                WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL'')',
-  '                         AND ROWNUM = 1), ''sin datos'')',
-  '       END',
-  '  FROM dual'
-))
-,p_lazy_loading=>false
-,p_plug_source_type=>'NATIVE_CARDS'
-,p_plug_query_num_rows_type=>'SCROLL'
-,p_show_total_row_count=>false
-);
-wwv_flow_imp_page.create_card(
- p_id=>wwv_flow_imp.id(23600000000000011)
-,p_region_id=>wwv_flow_imp.id(23600000000000010)
-,p_layout_type=>'GRID'
-,p_grid_column_count=>4
-,p_title_adv_formatting=>false
-,p_title_column_name=>'TITULO'
-,p_sub_title_adv_formatting=>false
-,p_body_adv_formatting=>true
-,p_body_html_expr=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-top: 6px;">',
-'    &VALOR.',
-'</div>'))
-,p_second_body_adv_formatting=>false
-,p_media_adv_formatting=>false
-,p_pk1_column_name=>'TITULO'
-);
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(23600000000000020)
 ,p_plug_name=>'Facturacion 6 meses'
@@ -16682,7 +16548,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_escape_on_http_output=>'Y'
 ,p_plug_template=>2074200852440250129
 ,p_plug_display_sequence=>30
-,p_plug_new_grid_row=>true
 ,p_plug_grid_column_span=>7
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
@@ -16823,6 +16688,8 @@ wwv_flow_imp_page.create_jet_chart(
 ,p_data_cursor_behavior=>'auto'
 ,p_hide_and_show_behavior=>'withRescale'
 ,p_hover_behavior=>'dim'
+,p_stack=>'off'
+,p_stack_label=>'off'
 ,p_connect_nulls=>'Y'
 ,p_value_format_scaling=>'auto'
 ,p_sorting=>'label-asc'
@@ -16835,6 +16702,8 @@ wwv_flow_imp_page.create_jet_chart(
 ,p_legend_rendered=>'on'
 ,p_legend_position=>'auto'
 ,p_overview_rendered=>'off'
+,p_pie_other_threshold=>0
+,p_pie_selection_effect=>'highlight'
 );
 wwv_flow_imp_page.create_jet_chart_series(
  p_id=>wwv_flow_imp.id(23600000000000032)
@@ -16858,6 +16727,86 @@ wwv_flow_imp_page.create_jet_chart_series(
 ,p_threshold_display=>'onIndicator'
 );
 wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(23600000000000001)
+,p_plug_name=>'Filtros'
+,p_static_id=>'filtros-panel'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>5
+,p_plug_item_display_point=>'ABOVE'
+,p_plug_source=>'&nbsp;'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(23600000000000010)
+,p_plug_name=>'Indicadores'
+,p_static_id=>'indicadores'
+,p_title=>'Indicadores'
+,p_region_css_classes=>'metric-card'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT ''Facturado del mes'' AS titulo,',
+'       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
+'         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos'' AS valor',
+'  FROM facturas',
+' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+'   AND cod_moneda = :P13_MONEDA',
+'   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
+'   AND estado <> ''ANULADA''',
+'   AND fecha_emision >= TRUNC(SYSDATE,''MM'')',
+'UNION ALL',
+'SELECT ''Por cobrar'',',
+'       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
+'         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos''',
+'  FROM facturas',
+' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+'   AND cod_moneda = :P13_MONEDA',
+'   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
+'   AND estado IN (''PENDIENTE'',''TIMBRADA'')',
+'UNION ALL',
+'SELECT ''Presupuestos en juego'',',
+'       TO_CHAR(COUNT(*)) || ''  -  '' || :P13_MONEDA',
+'  FROM presupuestos',
+' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+'   AND cod_moneda = :P13_MONEDA',
+'   AND estado IN (''PENDIENTE'',''ENVIADO'',''APROBADO'')',
+'UNION ALL',
+'SELECT ''Tasa '' || :P13_MONEDA || '' a VES'',',
+'       CASE WHEN :P13_MONEDA = ''VES'' THEN ''1.0000  -  moneda local''',
+'            ELSE NVL((SELECT TO_CHAR(tasa_cambio,''FM999,990.0000'')',
+'                        FROM tipo_cambio',
+'                       WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL''',
+'                         AND fecha_vigencia = (SELECT MAX(fecha_vigencia) FROM tipo_cambio',
+'                                                WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL'')',
+'                         AND ROWNUM = 1), ''sin datos'')',
+'       END',
+'  FROM dual'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_CARDS'
+,p_plug_query_num_rows_type=>'SCROLL'
+,p_show_total_row_count=>false
+);
+wwv_flow_imp_page.create_card(
+ p_id=>wwv_flow_imp.id(23600000000000011)
+,p_region_id=>wwv_flow_imp.id(23600000000000010)
+,p_layout_type=>'GRID'
+,p_grid_column_count=>4
+,p_title_adv_formatting=>false
+,p_title_column_name=>'TITULO'
+,p_sub_title_adv_formatting=>false
+,p_body_adv_formatting=>true
+,p_body_html_expr=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-top: 6px;">',
+'    &VALOR.',
+'</div>'))
+,p_second_body_adv_formatting=>false
+,p_media_adv_formatting=>false
+,p_pk1_column_name=>'TITULO'
+);
+wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(23600000000000040)
 ,p_plug_name=>'Presupuestos por estado'
 ,p_static_id=>'presupuestos-por-estado'
@@ -16867,7 +16816,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_escape_on_http_output=>'Y'
 ,p_plug_template=>2074200852440250129
 ,p_plug_display_sequence=>50
-,p_plug_new_grid_row=>true
 ,p_plug_grid_column_span=>6
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
@@ -16956,6 +16904,50 @@ wwv_flow_imp_page.create_jet_chart_axis(
 ,p_major_tick_rendered=>'on'
 ,p_minor_tick_rendered=>'auto'
 ,p_tick_label_rendered=>'on'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(23600000000000070)
+,p_plug_name=>'Tasa del dia'
+,p_static_id=>'tasa-del-dia'
+,p_title=>unistr('Tasa del d\00EDa')
+,p_region_css_classes=>'metric-card'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>80
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT ''Tasa '' || :P13_MONEDA || '' a VES'' AS titulo,',
+'       CASE WHEN :P13_MONEDA = ''VES'' THEN ''1.0000  -  moneda local''',
+'            ELSE NVL((SELECT TO_CHAR(tasa_cambio,''FM999,990.0000'') || ''   vigencia '' || TO_CHAR(fecha_vigencia,''DD/MM/YYYY'')',
+'                        FROM tipo_cambio',
+'                       WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL''',
+'                         AND fecha_vigencia = (SELECT MAX(fecha_vigencia) FROM tipo_cambio',
+'                                                WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL'')',
+'                         AND ROWNUM = 1), ''sin datos'')',
+'       END AS valor',
+'  FROM dual'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_CARDS'
+,p_plug_query_num_rows_type=>'SCROLL'
+,p_show_total_row_count=>false
+);
+wwv_flow_imp_page.create_card(
+ p_id=>wwv_flow_imp.id(23600000000000071)
+,p_region_id=>wwv_flow_imp.id(23600000000000070)
+,p_layout_type=>'GRID'
+,p_grid_column_count=>2
+,p_title_adv_formatting=>false
+,p_title_column_name=>'TITULO'
+,p_sub_title_adv_formatting=>false
+,p_body_adv_formatting=>true
+,p_body_html_expr=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-top: 4px;">',
+'    &VALOR.',
+'</div>'))
+,p_second_body_adv_formatting=>false
+,p_media_adv_formatting=>false
+,p_pk1_column_name=>'TITULO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(23600000000000050)
@@ -17123,55 +17115,61 @@ wwv_flow_imp_page.create_card(
 ,p_media_adv_formatting=>false
 ,p_pk1_column_name=>'TITULO'
 );
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(23600000000000070)
-,p_plug_name=>'Tasa del dia'
-,p_static_id=>'tasa-del-dia'
-,p_title=>unistr('Tasa del d\00EDa')
-,p_region_css_classes=>'metric-card'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4502917002193490937
-,p_plug_display_sequence=>80
-,p_plug_item_display_point=>'ABOVE'
-,p_query_type=>'SQL'
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-  'SELECT ''Tasa '' || :P13_MONEDA || '' a VES'' AS titulo,',
-  '       CASE WHEN :P13_MONEDA = ''VES'' THEN ''1.0000  -  moneda local''',
-  '            ELSE NVL((SELECT TO_CHAR(tasa_cambio,''FM999,990.0000'') || ''   vigencia '' || TO_CHAR(fecha_vigencia,''DD/MM/YYYY'')',
-  '                        FROM tipo_cambio',
-  '                       WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL''',
-  '                         AND fecha_vigencia = (SELECT MAX(fecha_vigencia) FROM tipo_cambio',
-  '                                                WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL'')',
-  '                         AND ROWNUM = 1), ''sin datos'')',
-  '       END AS valor',
-  '  FROM dual'
-))
-,p_lazy_loading=>false
-,p_plug_source_type=>'NATIVE_CARDS'
-,p_plug_query_num_rows_type=>'SCROLL'
-,p_show_total_row_count=>false
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(23600000000000005)
+,p_button_sequence=>30
+,p_button_plug_id=>wwv_flow_imp.id(23600000000000001)
+,p_button_name=>'BTN_APLICAR'
+,p_static_id=>'aplicar-filtros'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4073839297780169708
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Aplicar'
+,p_button_position=>'NEXT'
+,p_grid_new_row=>'N'
 );
-wwv_flow_imp_page.create_card(
- p_id=>wwv_flow_imp.id(23600000000000071)
-,p_region_id=>wwv_flow_imp.id(23600000000000070)
-,p_layout_type=>'GRID'
-,p_grid_column_count=>2
-,p_title_adv_formatting=>false
-,p_title_column_name=>'TITULO'
-,p_sub_title_adv_formatting=>false
-,p_body_adv_formatting=>true
-,p_body_html_expr=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-top: 4px;">',
-'    &VALOR.',
-'</div>'))
-,p_second_body_adv_formatting=>false
-,p_media_adv_formatting=>false
-,p_pk1_column_name=>'TITULO'
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(23600000000000002)
+,p_name=>'P13_ID_EMPRESA'
+,p_source_data_type=>'NUMBER'
+,p_is_required=>true
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
+,p_item_source_plug_id=>wwv_flow_imp.id(23600000000000001)
+,p_prompt=>'Empresa'
+,p_source=>'ID_EMPRESA'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_named_lov=>'EMPRESA'
+,p_cSize=>30
+,p_colspan=>2
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(23600000000000003)
+,p_name=>'P13_MONEDA'
+,p_source_data_type=>'VARCHAR2'
+,p_is_required=>true
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
+,p_item_source_plug_id=>wwv_flow_imp.id(23600000000000001)
+,p_prompt=>'Moneda'
+,p_source=>'COD_MONEDA'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC:USD;USD,VES;VES,MXN;MXN'
+,p_cSize=>10
+,p_colspan=>2
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
 );
 end;
 /
-prompt
---application/pages/page_09999
+prompt --application/pages/page_09999
 begin
 wwv_flow_imp_page.create_page(
  p_id=>9999
