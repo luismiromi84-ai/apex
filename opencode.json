@@ -6,7 +6,7 @@
       "type": "local",
       "command": ["node", "sypex-mcp/index.js"],
       "environment": {
-        "SYPEX_CLIENTES_URL": "https://gfd7e2575d251ae-sypexsystem.adb.mx-monterrey-1.oraclecloudapps.com/ords/sypexws/sypex/clientes/"
+        "SYPEX_CLIENTES_URL": "https://gfd7e2575d251ae-sypexsql.adb.mx-monterrey-1.oraclecloudapps.com/ords/sypexws/sypex/clientes/"
       }
     },
     "oracle": {

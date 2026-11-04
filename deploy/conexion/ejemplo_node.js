@@ -1,4 +1,5 @@
-// Conexión TLS a SypexSystem (Autonomous Database, tipo de carga APEX) sin cartera.
+// Conexión TLS a Sypex_SQL (Autonomous Database, tipo de carga APEX) sin cartera.
+// SypexSystem es la base original y solo se usa como respaldo de lectura: no conectar ahí.
 //
 // Modo "thin": no requiere Instant Client, ni ORACLE_HOME, ni wallet.
 // Requiere node-oracledb 6 o superior:  npm install oracledb
@@ -18,15 +19,15 @@ const oracledb = require('oracledb');
 
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
-// El SERVICE_NAME se arma con el DB_NAME (GFD...), NO con el display name (SypexSystem).
+// El SERVICE_NAME se arma con el DB_NAME (GFD...), NO con el display name (Sypex_SQL).
 // Dominio del servicio: adb.oraclecloud.com (sin subdominio de región); la región va en el HOST.
 // _low está confirmado en esta instancia; _high es el patrón equivalente.
 const CONNECT_STRING =
   process.env.DB_CONNECT_STRING ||
   `(DESCRIPTION=
      (RETRY_COUNT=20)(RETRY_DELAY=3)
-     (ADDRESS=(PROTOCOL=TCPS)(PORT=1522)(HOST=adb.mx-monterrey-1.oraclecloud.com))
-     (CONNECT_DATA=(SERVICE_NAME=GFD7E2575D251AE_SYPEXSYSTEM_high.adb.oraclecloud.com))
+     (ADDRESS=(PROTOCOL=TCPS)(PORT=1521)(HOST=adb.mx-monterrey-1.oraclecloud.com))
+     (CONNECT_DATA=(SERVICE_NAME=GFD7E2575D251AE_SYPEXSQL_high.adb.oraclecloud.com))
      (SECURITY=(SSL_SERVER_DN_MATCH=YES)))`;
 
 async function main() {
@@ -57,13 +58,15 @@ async function main() {
          from dual`
     );
 
-    console.log('Conexión exitosa a SypexSystem:');
+    console.log('Conexión exitosa a Sypex_SQL:');
     console.log(resultado.rows[0]);
   } catch (error) {
     // Diagnóstico rápido:
     //   ORA-01017 -> usuario/contraseña del esquema. NO es la cadena de conexión.
     //   ORA-28000 / ORA-28001 -> cuenta bloqueada o contraseña expirada.
-    //   ORA-12506 / ORA-12560 -> protocolo o puerto incorrectos (TCPS 1522).
+    //   ORA-12506 -> ACL de la instancia: la IP pública del equipo no está autorizada.
+    //               Se arregla en la consola OCI (Network -> Access control list), no en la cadena.
+    //   ORA-12560 -> protocolo o puerto incorrectos (TCPS en 1521/1522, nunca TCP).
     //   ORA-29024 -> validación del certificado del servidor.
     //   NJS-xxx -> versión de node-oracledb o parámetro mal armado.
     console.error('Error de conexión:', error.message);

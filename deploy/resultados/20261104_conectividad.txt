@@ -1,0 +1,65 @@
+﻿Verificacion de conectividad - 2026-11-04 2026-11-04 10:55 (hora local)
+=============================================================
+
+Objetivo: confirmar si la app/base siguen alcanzables y si el rechazo ORA-12506
+del plan de autorizacion por roles persiste.
+
+1. Red del equipo
+   IP publica medida ......... 201.173.64.11  (api.ipify.org)
+   IP registrada en el plan .. 201.173.67.57  (Task 0, 07:xx del 2026-11-04)
+   => la IP cambio de subred (67.x -> 64.x): proveedor reasigno.
+
+2. Alcanzabilidad de red
+   DNS adb.mx-monterrey-1.oraclecloud.com -> 139.177.107.29
+   Test-NetConnection puerto 1521 ....... True (TCP acepta conexion)
+
+3. Listener de base de datos (TCPS 1521, servicio gfd7e2575d251ae_sypexsql_low)
+   Prueba con python-oracledb 26.1.0 (credenciales de prueba a proposito):
+     DPY-6005: cannot connect to database
+     DPY-6000: Listener refused connection. (Similar to ORA-12506)
+   => rechazo en el listener por ACL de la base, no por credenciales,
+      no por red y no por instancia detenida.
+
+4. Servicio REST (ORDS) de la instancia
+   sypex_estado_api() ........ {"disponible":true,"registros":3,"hasMore":false}
+   sypex_listar_clientes() ... devuelve clientes (id 1, 2, 3...)
+   => la instancia esta encendida y responde por HTTPS; el bloqueo es solo
+      del listener de la base para esta IP.
+
+5. SQLcl
+   sql -name SYPEX_SQL_MCP falla antes de conectar con
+   java.io.IOException: "Funcion incorrecta" en SqlclConsole.<init>
+   (lectura de stdin en consola no interactiva del agente). No es un error de red:
+   el diagnostico de red se hizo con python-oracledb, que si alcanza el listener.
+
+6. Rodeo encontrado para SQLcl en este entorno
+   Invocado directo (PowerShell, cmd, python CREATE_NEW_CONSOLE) siempre muere con
+   java.io.IOException "Funcion incorrecta" y devuelve rc=0 SIN ejecutar nada:
+   un falso OK peligroso. Envolviendolo en conhost.exe si arranca, pero la salida
+   se va a la pantalla y no a stdout; hay que espiar con spool a archivo:
+
+   cmd /c "conhost.exe C:\oracle\sqlcl\bin\sql.exe -S -L -name SYPEX_SQL_MCP @script.sql > NUL 2>&1"
+   -- y dentro de script.sql:  spool C:\...\out.txt ... spool off
+
+   Probado con /nolog + spool: escribe el archivo (SP2-0640 en el spool). Pendiente
+   de confirmar contra la base en cuanto la ACL permita la IP.
+
+7. HALLAZGO: el MCP `sypex` apuntaba a la instancia equivocada
+   `opencode.json` -> SYPEX_CLIENTES_URL = "...gfd7e2575d251ae-sypexsystem..." (respaldo).
+   Por eso `sypex_estado_api` devolvia datos con el listener de Sypex_SQL caido.
+   Medido el 2026-11-04 11:20 sobre el modulo `ords/sypexws/sypex/clientes/`:
+     sypexsystem -> HTTP 200 con los 3 clientes
+     sypexsql    -> HTTP 404 (el modulo ORDS NO se migro a la instancia de trabajo)
+   Corregido: `opencode.json` y el valor por defecto de `sypex-mcp/index.js` ahora apuntan a
+   `gfd7e2575d251ae-sypexsql...`, y el servidor se niega a arrancar si la URL no contiene
+   "sypexsql". Consecuencia: `sypex_estado_api` devuelve HTTP 404 hasta que se cree el modulo
+   ORDS en Sypex_SQL; falla en vez de mentir.
+
+CONCLUSION
+   Unico bloqueo: la ACL del listener de Sypex_SQL no incluye 201.173.64.11.
+   Accion del dueno en la consola OCI (Sypex_SQL -> Network -> Access control list):
+   agregar 201.173.64.11, o el rango 201.173.64.0/24, o "Secure access from everywhere".
+
+Alias verificado en %APPDATA%\DBTools\connections\42ONU1gDZ2fs7Pyz6cs41g\dbtools.properties:
+   name=SYPEX_SQL_MCP  user=ADMIN  tcps 1521  host=adb.mx-monterrey-1.oraclecloud.com
+   service=gfd7e2575d251ae_sypexsql_low.adb.oraclecloud.com
