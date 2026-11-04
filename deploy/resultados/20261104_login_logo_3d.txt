@@ -1,0 +1,38 @@
+Logo del login: 3D y sin fondo blanco (2026-11-04)
+==================================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100
+
+1. Lo que se veia
+   El login mostraba el SVG trazado: plano (el trazado convirtio los degradados del render en
+   bandas) y con el rectangulo blanco del fondo, visible porque el header cae fuera de la
+   tarjeta blanca.
+
+2. Solucion: volver al render original y quitarle el fondo
+   Fuente: libreria/logo.png (1536x1024, el 3D original sobre blanco).
+   Recorte de fondo por relleno desde el borde (no por color plano), para no agujerear el
+   portapapeles blanco interior ni las letras claras:
+     pasada 1: gris claro / blanco (min >= 205, saturacion <= 18) conectado al borde.
+     pasada 2: desde lo ya transparente, un poco mas permisivo (min >= 190, sat <= 30), para
+               comerse el halo de la sombra.
+   Resultado: libreria/variantes/logo_3d_sin_fondo_{700,900}.png
+     700 px -> 700x317, 178.318 bytes   (el que se usa)
+     900 px -> 900x407, 282.247 bytes
+   Vista previa sobre gris: libreria/variantes/preview_3d_gris.png
+
+3. Que se subio
+   - Se reutilizo el archivo logo_synpex.png (antes era un JPEG de 198.372 bytes que no usaba
+     nadie): ahora es el PNG con transparencia de 178.318 bytes, mismo p_id.
+   - El header del login apunta a #APP_IMAGES#logo_synpex.png (una sola imagen, sin fallback:
+     #APP_IMAGES# ya quedo confirmado en el navegador).
+   - Se elimino el archivo estatico logo_synpex.svg y su bloque de 129.715 caracteres.
+   - Export: 1.872.604 bytes (antes ~2,25 MB con el SVG).
+
+4. Verificacion
+   apex_application_static_files: 6 archivos; logo_synpex.png = 178.318 bytes, image/png.
+   region_header_text de la pagina 9999: contiene 'logo_synpex.png' (offset 83), largo 1476.
+   App: 16 paginas, 15 items en la pagina 7, 0 objetos INVALID.
+   Import: 70 sentencias, 0 errores.
+
+PENDIENTE DE MIRAR
+   Ctrl+F5 en el login: debe verse el logo con volumen (degradados y sombra) y sin recuadro.
+   Queda un halo muy tenue bajo el portapapeles, resto de la sombra suave del render original.
