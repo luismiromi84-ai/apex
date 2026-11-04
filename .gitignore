@@ -25,3 +25,4 @@ datos_origen.sql
 # Copias duplicadas de exports y documentos (el canonico es pagina_apex/f100.sql)
 instalacion y migracion/f100*.sql
 instalacion y migracion/*(1)*
+*(1).*
