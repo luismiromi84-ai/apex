@@ -42,5 +42,27 @@ Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, esquema WKSP_SYPEXWS
 PENDIENTE DE MIRAR EN EL NAVEGADOR
    - El login debe mostrar el logo completo; si no aparece, revisar la sustitucion
      #APP_IMAGES# (alternativa: #APP_FILES#).
-   - La barra de navegacion sigue con el monograma SVG anterior: falta el mark aislado.
-   - El icono de la app (favicon / data-app-icon) sigue siendo el anterior.
+
+5. Isotipo: barra de navegacion e iconos de la app (misma fecha)
+   Activo recibido: libreria/synpex_isotipo.svg — 512x512, 1.875 bytes, vector propio
+   (no trazado), fondo transparente, gradientes #123B70->#087FC3 y #FF9A27->#F26A21.
+   Rasterizado con @resvg/resvg-js (Node 26) a 512/256/192/144/96/32 px; NO se uso el
+   lockup porque su mark se solapa con el wordmark.
+
+   - p_logo (barra de navegacion): el cubo SVG generico se reemplazo por el isotipo,
+     conservando el texto "Synpex" + "SISTEMA DE GESTION". Los ids de las gradientes se
+     renombraron a spxBlue/spxOrange para no chocar con otros SVG del DOM.
+     Medido en apex_applications: logo_type='Custom Logo', contiene 'spxBlue'.
+   - Iconos de la app (los 5 archivos icons/app-icon-*): isotipo compuesto sobre cuadrado
+     blanco redondeado (radio 19%, inset 9%; el de 32 px con radio 14% e inset 7%).
+     Medido en apex_application_static_files:
+       512 -> 43.799    256 rounded -> 18.040    192 -> 12.740
+       144 rounded -> 9.009    32 -> 1.262   bytes
+
+   Verificacion: import 0 ERROR / ORA- / PLS-; 16 paginas; 0 objetos INVALID.
+   Los p_id de los 5 bloques de archivo se conservaron (9148522468584563, 9148296098584563,
+   9147923421584562, 9147645080584551, 9147385751584547).
+
+   Nota de marca: la "S" del isotipo no es la misma silueta que la del lockup (esa es
+   ribbon 3D con swoosh). No coinciden nunca en la misma pantalla, porque el login no pinta
+   la barra; pero el favicon si aparece junto al login.

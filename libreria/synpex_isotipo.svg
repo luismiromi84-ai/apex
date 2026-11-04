@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Synpex — isotipo</title>
+<desc id="desc">Símbolo independiente con S azul y naranja, portapapeles y engranaje. Fondo transparente.</desc>
+<defs>
+ <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#123B70"/><stop offset="1" stop-color="#087FC3"/></linearGradient>
+ <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF9A27"/><stop offset="1" stop-color="#F26A21"/></linearGradient>
+</defs>
+<!-- Portapapeles -->
+<path d="M188 105h137a25 25 0 0 1 25 25v235a25 25 0 0 1-25 25H188a25 25 0 0 1-25-25V130a25 25 0 0 1 25-25Z" fill="#fff" stroke="url(#blue)" stroke-width="17" stroke-linejoin="round"/>
+<path d="M220 91h73a17 17 0 0 1 17 17v20H203v-20a17 17 0 0 1 17-17Z" fill="#fff" stroke="url(#blue)" stroke-width="14" stroke-linejoin="round"/>
+<path d="M217 188h80M217 225h80M217 262h55" fill="none" stroke="#B9D8EA" stroke-width="13" stroke-linecap="round"/>
+<path d="m216 303 15 15 28-32" fill="none" stroke="#F28A24" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Engranaje -->
+<path d="m379 255 20 5 10 24 22 8-2 25-21 11-7 25-23 10-19-15-26 2-14-20 8-24-12-23 14-21 26 1 18-18 24 10Z" fill="url(#blue)" stroke="#fff" stroke-width="8" stroke-linejoin="round"/>
+<circle cx="373" cy="299" r="17" fill="#fff"/>
+<!-- S estilizada -->
+<path d="M246 151c-47-28-113-13-135 26-24 43 6 76 55 91l44 14c24 8 34 17 28 31-8 18-43 22-73 8-19-9-34-22-44-37l-39 35c16 25 40 44 67 55 62 26 135 10 160-35 26-48-7-83-59-100l-45-14c-22-7-30-15-24-27 7-14 32-17 56-7 14 6 27 15 37 27l37-34c-17-20-39-36-65-45Z" fill="url(#blue)"/>
+<path d="M82 319c17 24 40 42 67 54 20 9 42 14 63 14 33 0 64-11 83-31l-34-36c-18 17-48 21-74 9-18-8-33-21-44-36l-61 26Z" fill="url(#orange)"/>
+</svg>
