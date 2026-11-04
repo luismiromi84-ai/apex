@@ -1,0 +1,49 @@
+UNIQUE de folio por empresa (2026-11-04)
+========================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS
+Script: deploy/migrations/20261104_folio_unico.sql
+DDL canonico actualizado: tabla/presupuestos.sql, tabla/FACTURAS.sql
+
+1. Por que
+   La numeracion la decide solo la pagina: pagina 7 calcula MAX(folio)+1 por empresa y la
+   pagina 9 F-<numero> por empresa. Sin restriccion en la base, dos altas simultaneas
+   pueden calcular el mismo numero y las dos se guardan: la factura cambia de numero fiscal
+   sin aviso. La semana 2 del cronograma ya lo tenia listado como pendiente.
+
+2. Medicion previa (la restriccion no se puede crear con duplicados)
+   duplicados presupuestos (id_empresa, folio) ....... 0 filas
+   duplicados facturas (id_empresa, folio_factura) ... 0 filas
+   folio / folio_factura nulos ....................... 0 / 0
+   id_empresa nulos .................................. 0 / 0
+
+3. Prueba ANTES (RED) — comportamiento, no metadatos
+   Bloque que copia la primera fila de cada tabla con su mismo folio, captura
+   dup_val_on_index y hace rollback:
+     presupuesto=ACEPTADO factura=ACEPTADO
+   Los datos quedaron en 45 / 40 filas (el rollback funciono).
+
+4. DDL aplicado
+   alter table presupuestos add constraint uq_presupuestos_folio unique (id_empresa, folio) enable;
+   alter table facturas    add constraint uq_facturas_folio    unique (id_empresa, folio_factura) enable;
+   El indice de facturas NO incluye tipo_documento a proposito: los folios reales son
+   correlativos por empresa (FAC F-1001..F-1032, NC F-1033..F-1037, ND F-1038..F-1040).
+
+5. Prueba DESPUES (GREEN)
+     presupuesto=RECHAZADO factura=RECHAZADO
+   all_constraints: UQ_PRESUPUESTOS_FOLIO y UQ_FACTURAS_FOLIO -> ENABLED / VALIDATED
+   all_indexes:     UQ_PRESUPUESTOS_FOLIO y UQ_FACTURAS_FOLIO -> UNIQUE / VALID
+   Filas: 45 presupuestos, 40 facturas (sin cambios).
+
+6. Como se aplico
+   Con la conexion MCP (sql_run). El script de migracion es el artefacto para re-ejecutar en
+   un entorno limpio; en esta sesion SQLcl por conhost no ejecuto nada (no genero log) y la
+   invocacion directa sigue fallando con java.io.IOException: Funcion incorrecta, rc=0, tal
+   como esta documentado en AGENTS.md.
+
+EFECTO EN LA APP
+   Un folio repetido ahora falla con
+     ORA-00001: unique constraint (WKSP_SYPEXWS.UQ_PRESUPUESTOS_FOLIO) violated
+   y la pagina lo muestra dentro de su mensaje de error ("Error al guardar el presupuesto:
+   ..."). Queda pendiente, si se quiere, traducirlo a un mensaje propio del negocio
+   ("El folio N ya existe para esta empresa") capturando DUP_VAL_ON_INDEX en
+   pkg_presupuestos.prc_guardar_presupuesto y pkg_facturacion.prc_guardar_factura.
