@@ -1,0 +1,51 @@
+Task 1 - Roles de modulo y usuarios demo (2026-11-04 11:45)
+===========================================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS
+Via: SQLcl alias SYPEX_SQL_MCP (rodeo conhost.exe + spool) y python-oracledb ADMIN
+
+1. deploy/migrations/20261104_roles_modulos.sql  (1a ejecucion)
+Session alterado.
+1 fila fusionadas.
+Confirmacion terminada.
+   ID_ROL CODIGO_ROL      NOMBRE_ROL
+     1005 ALMACEN         Almacén
+     1006 CONSULTA        Consulta
+     1004 CONTABILIDAD    Contabilidad
+     9005 FACTURACION     Facturación
+
+   Nota: FACTURACION recibio id_rol 9005 porque la identidad de SYN_ROLES ya paso
+   por los inserts explicitos 9001/9002/9022. Fuera del rango 1000-1999 que purga
+   datos_demo.sql, asi que sobrevive a la recarga del dataset.
+
+2. instalacion y migracion/usuarios_demo_roles.sql  (1a ejecucion)
+Session alterado.
+1 fila fusionadas.
+Confirmacion terminada.
+   USUARIO_ID USERNAME            CODIGO_ROL     ESTADO   ID_EMPRESA
+         9001 PRUEBA              PRUEBA         ACTIVO              1
+         9002 luis                ADMIN          ACTIVO              1
+         9003 facturacion.demo    FACTURACION    ACTIVO              1
+         9022 ter                 ADMIN          ACTIVO              1
+
+3. Idempotencia (segunda ejecucion de ambos scripts)
+0 filas fusionadas.   <- roles
+0 filas fusionadas.   <- usuario
+Los ids no cambiaron (FACTURACION 9005, facturacion.demo 9003). Sin ORA-.
+
+4. Verificacion de credenciales (python-oracledb)
+facturacion.demo con hash correcto ........ 1
+codigos de rol presentes (esperado 8) ..... 8
+id de facturacion.demo .................... (9003, 'facturacion.demo')
+
+   Administracion 1001 | Gerencia 1002 | Ventas 1003 | Contabilidad 1004
+   Almacen 1005 | Consulta 1006 | Facturacion 9005 | Prueba 9001
+
+5. Usuarios demo ya existentes (no los crea este script)
+   1001 admin.demo ADMIN | 1002 gerencia.demo GERENCIA | 1003 ventas1.demo VENTAS
+   1004 ventas2.demo VENTAS | 1005 contabilidad.demo CONTABILIDAD
+   1006 almacen.demo ALMACEN | 1007 consulta.demo CONSULTA | 1008 auditor.demo CONSULTA
+   Todos ACTIVO, empresa 1.
+
+PENDIENTE CONOCIDO
+   datos_demo.sql purga ids 1000-1999: recargar el dataset borra los usuarios demo
+   1001-1008. Solo facturacion.demo (9003) esta fuera de ese rango.
