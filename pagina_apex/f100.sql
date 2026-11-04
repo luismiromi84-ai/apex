@@ -33,7 +33,7 @@ prompt APPLICATION 100 - Synpex
 -- Application Export:
 --   Application:     100
 --   Name:            Synpex
---   Date and Time:   13:49 Miércoles Noviembre 4, 2026
+--   Date and Time:   17:49 Miércoles Noviembre 4, 2026
 --   Exported By:     ADMIN
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -41,7 +41,7 @@ prompt APPLICATION 100 - Synpex
 --       Items:                  101
 --       Computations:             1
 --       Validations:              2
---       Processes:               33
+--       Processes:               41
 --       Regions:                 28
 --       Buttons:                 30
 --       Dynamic Actions:         24
@@ -55,7 +55,7 @@ prompt APPLICATION 100 - Synpex
 --           Entries:              5
 --       Security:
 --         Authentication:         1
---         Authorization:          1
+--         Authorization:          5
 --       User Interface:
 --         Themes:                 1
 --         Templates:
@@ -143,7 +143,7 @@ unistr('    <span class="synpex-tag">SISTEMA DE GESTI\00D3N</span>'),
 ,p_substitution_value_01=>'Sypex'
 ,p_file_prefix=>nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>2461307155612
-,p_version_scn=>'17018122599'
+,p_version_scn=>'17147935886'
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
@@ -344,6 +344,7 @@ wwv_flow_imp_shared.create_list_item(
 ,p_static_id=>'facturacion'
 ,p_list_item_link_target=>'f?p=&APP_ID.:8:&APP_SESSION.::&DEBUG.:::'
 ,p_list_item_icon=>'fa-file-invoice'
+,p_security_scheme=>wwv_flow_imp.id(43000000000000023)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'8'
 );
@@ -384,6 +385,7 @@ wwv_flow_imp_shared.create_list_item(
 ,p_static_id=>'presupuestos'
 ,p_list_item_link_target=>'f?p=&APP_ID.:5:&APP_SESSION.::&DEBUG.:::'
 ,p_list_item_icon=>'fa-file-text-o'
+,p_security_scheme=>wwv_flow_imp.id(43000000000000021)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'5,6'
 );
@@ -4704,6 +4706,62 @@ wwv_flow_imp_shared.create_security_scheme(
   'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then 1 else 0 end = 1;')).to_clob
 ,p_error_message=>'No tiene permisos de administrador.'
 ,p_version_scn=>'SH256:K94FzTYWdjDQ6WIg6w48Or20nhyD_tWnqCuRh9rK4CU'
+,p_caching=>'BY_USER_BY_PAGE_VIEW'
+);
+end;
+/
+prompt --application/shared_components/security/authorizations/editar_facturacion
+begin
+wwv_flow_imp_shared.create_security_scheme(
+ p_id=>wwv_flow_imp.id(43000000000000024)
+,p_name=>'Editar Facturacion'
+,p_static_id=>'editar-facturacion'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then 1 else 0 end = 1;')).to_clob
+,p_error_message=>'No tiene permisos para editar facturacion.'
+,p_caching=>'BY_USER_BY_PAGE_VIEW'
+);
+end;
+/
+prompt --application/shared_components/security/authorizations/editar_presupuestos
+begin
+wwv_flow_imp_shared.create_security_scheme(
+ p_id=>wwv_flow_imp.id(43000000000000022)
+,p_name=>'Editar Presupuestos'
+,p_static_id=>'editar-presupuestos'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then 1 else 0 end = 1;')).to_clob
+,p_error_message=>'No tiene permisos para editar presupuestos.'
+,p_caching=>'BY_USER_BY_PAGE_VIEW'
+);
+end;
+/
+prompt --application/shared_components/security/authorizations/ver_facturacion
+begin
+wwv_flow_imp_shared.create_security_scheme(
+ p_id=>wwv_flow_imp.id(43000000000000023)
+,p_name=>'Ver Facturacion'
+,p_static_id=>'ver-facturacion'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'') then 1 else 0 end = 1;')).to_clob
+,p_error_message=>'No tiene permisos para ver facturacion.'
+,p_caching=>'BY_USER_BY_PAGE_VIEW'
+);
+end;
+/
+prompt --application/shared_components/security/authorizations/ver_presupuestos
+begin
+wwv_flow_imp_shared.create_security_scheme(
+ p_id=>wwv_flow_imp.id(43000000000000021)
+,p_name=>'Ver Presupuestos'
+,p_static_id=>'ver-presupuestos'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'') then 1 else 0 end = 1;')).to_clob
+,p_error_message=>'No tiene permisos para ver presupuestos.'
 ,p_caching=>'BY_USER_BY_PAGE_VIEW'
 );
 end;
@@ -10743,6 +10801,15 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(11813031871563873)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'DESCRIPCION:CANTIDAD:PRECIO_UNITARIO:DESCUENTO_PCT:MONTO_DESCUENTO:IMPUESTO_PCT:MONTO_IMPUESTO:SUBTOTAL_LINEA:MONTO_TOTAL_LINEA'
+);
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(11950647600514906)
 ,p_plug_name=>'Lista de Presupuestos'
@@ -10919,6 +10986,15 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(11812531185563901)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'SELECCIONAR:EDITAR:FOLIO:RAZON_SOCIAL:RIF:FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:SUBTOTAL:IMPUESTO_IVA:TOTAL:ESTADO'
+);
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(12541094704283236)
 ,p_plug_name=>'Resumen Financiero'
@@ -11035,6 +11111,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_image_alt=>'Nuevo Presupuesto'
 ,p_button_redirect_url=>'f?p=&APP_ID.:7:&SESSION.::&DEBUG.:7:P7_ID_PRESUPUESTO,P5_ID_PRESUPUESTO:,'
 ,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-plus'
 ,p_grid_new_row=>'Y'
 );
@@ -11052,6 +11131,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_image_alt=>'Nueva Linea'
 ,p_button_redirect_url=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.:6:P6_ID_PRESUPUESTO,P6_ID_DETALLE:,'
 ,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-plus'
 ,p_grid_new_row=>'Y'
 );
@@ -11068,6 +11150,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Procesar Presupuesto'
 ,p_button_position=>'NEXT'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_button_css_classes=>'u-button--success'
 ,p_icon_css_classes=>'fa-check-circle'
 );
@@ -11459,6 +11544,9 @@ wwv_flow_imp_page.create_page_process(
 '    v_nuevo_estado VARCHAR2(50);',
 '    v_nuevas_obs   VARCHAR2(4000);',
 'BEGIN',
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 unistr('    -- Se agregan los dos puntos (:) al \00EDtem de APEX y se usan par\00E1metros con nombre para mayor claridad'),
 '    pkg_presupuestos.prc_procesar_presupuesto (',
 '        p_id_presupuesto => :P5_ID_PRESUPUESTO,',
@@ -11476,6 +11564,20 @@ unistr('    -- Se agregan los dos puntos (:) al \00EDtem de APEX y se usan par\0
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(23178508649997402)
 ,p_internal_uid=>23358420423028901
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000011)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: ver presupuestos'
+,p_static_id=>'valida-rol-ver-presupuestos'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000011
 );
 end;
 /
@@ -11680,8 +11782,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Nueva Linea'
 ,p_button_position=>'CLOSE'
-,p_button_condition=>'P6_ID_PRESUPUESTO'
-,p_button_condition_type=>'ITEM_IS_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P6_ID_PRESUPUESTO is null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-check'
 );
 wwv_flow_imp_page.create_page_button(
@@ -11699,8 +11802,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_execute_validations=>'N'
 ,p_confirm_message=>'&APP_TEXT$DELETE_MSG!RAW.'
 ,p_confirm_style=>'danger'
-,p_button_condition=>'P6_ID_DETALLE'
-,p_button_condition_type=>'ITEM_IS_NOT_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P6_ID_DETALLE is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-trash-o'
 );
 wwv_flow_imp_page.create_page_button(
@@ -11716,8 +11820,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Guardar '
 ,p_button_position=>'CLOSE'
-,p_button_condition=>'P6_ID_PRESUPUESTO'
-,p_button_condition_type=>'ITEM_IS_NOT_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P6_ID_PRESUPUESTO is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-save'
 ,p_database_action=>'UPDATE'
 );
@@ -12126,6 +12231,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Eliminar detalle'
 ,p_static_id=>'eliminar-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 'pkg_presupuesto_detalle.eliminar_detalle(',
 '    p_id_presupuesto => :P6_ID_PRESUPUESTO,',
 '    p_id_detalle     => :P6_ID_DETALLE',
@@ -12172,6 +12280,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_clob_language=>'PLSQL'
 ,p_process_error_message=>'Error al guardar el Detalle del presupuesto: #SQLERRM#'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
 ,p_internal_uid=>14358096998309201
 );
 wwv_flow_imp_page.create_page_process(
@@ -12191,6 +12302,20 @@ wwv_flow_imp_page.create_page_process(
 'END IF;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>23591636421484203
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000012)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: ver presupuestos detalle'
+,p_static_id=>'valida-rol-ver-presupuestos-det'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000012
 );
 end;
 /
@@ -12290,8 +12415,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--danger:t-Button--iconLeft:t-Button--hoverIconSpin'
 ,p_button_template_id=>2084305881903810008
 ,p_button_image_alt=>'Eliminar'
-,p_button_condition=>'P7_ID_PRESUPUESTO'
-,p_button_condition_type=>'ITEM_IS_NOT_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P7_ID_PRESUPUESTO is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-trash-o'
 ,p_grid_new_row=>'N'
 ,p_grid_column=>6
@@ -12308,6 +12434,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Guardar'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-floppy-o'
 ,p_grid_new_row=>'Y'
 );
@@ -12722,6 +12851,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 'BEGIN',
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 '    pkg_presupuestos.prc_cancelar_presupuesto (',
 '        :P7_ID_PRESUPUESTO,',
 '        :APP_USER,',
@@ -12761,6 +12893,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Insert/Update Presupuesto'
 ,p_static_id=>'guardar-presupuesto'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 '-- 1. Ejecutamos el procedimiento normal',
 'pkg_presupuestos.prc_guardar_presupuesto(',
 '    p_id_presupuesto    => :P7_ID_PRESUPUESTO,',
@@ -12807,6 +12942,20 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Initialize form editar cabecera'
 ,p_static_id=>'initialize-form-editar-cabecera'
 ,p_internal_uid=>14428976181287802
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000013)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: editar presupuestos'
+,p_static_id=>'valida-rol-editar-presupuestos'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000013
 );
 end;
 /
@@ -13571,6 +13720,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_image_alt=>'Nueva Linea'
 ,p_button_redirect_url=>'f?p=&APP_ID.:10:&SESSION.::&DEBUG.:10:P10_ID_FACTURA:&P8_ID_FACTURAS.'
 ,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-plus'
 ,p_grid_new_row=>'Y'
 );
@@ -13587,6 +13739,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Procesar Factura'
 ,p_button_position=>'NEXT'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_button_css_classes=>'u-button--success'
 ,p_icon_css_classes=>'fa-check-circle'
 );
@@ -13604,6 +13759,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_image_alt=>'Nueva Facturas'
 ,p_button_redirect_url=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:9::'
 ,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-plus'
 ,p_grid_new_row=>'Y'
 );
@@ -13846,6 +14004,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 'BEGIN',
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 '    pkg_facturacion. prc_procesar_factura (',
 '        :P8_ID_FACTURAS,',
 '        :APP_USER);',
@@ -13860,6 +14021,20 @@ wwv_flow_imp_page.create_page_process(
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(23143782328112205)
 ,p_internal_uid=>23143830216112206
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000014)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: ver facturacion'
+,p_static_id=>'valida-rol-ver-facturacion'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000014
 );
 end;
 /
@@ -13970,8 +14145,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--danger:t-Button--iconLeft:t-Button--hoverIconSpin'
 ,p_button_template_id=>2084305881903810008
 ,p_button_image_alt=>'Eliminar'
-,p_button_condition=>'P9_ID_PRESUPUESTO'
-,p_button_condition_type=>'ITEM_IS_NOT_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and :P9_ID_PRESUPUESTO is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-trash-o'
 ,p_grid_new_row=>'N'
 ,p_grid_column=>6
@@ -13988,6 +14164,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Guardar'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-floppy-o'
 ,p_grid_new_row=>'Y'
 );
@@ -15107,6 +15286,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'cancelar-prepuesto'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 '    pkg_facturacion.prc_anular_factura(',
 '        p_id_factura     => :P9_ID_FACTURA,',
 '        p_id_presupuesto => :P9_ID_PRESUPUESTO,',
@@ -15170,6 +15352,9 @@ unistr('             WHERE creado_por = USER; -- O la condici\00F3n que asegure 
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
 ,p_internal_uid=>22585024194741110
 );
 wwv_flow_imp_page.create_page_process(
@@ -15201,6 +15386,9 @@ wwv_flow_imp_page.create_page_process(
 '    v_impuesto      NUMBER := NVL(fn_clean_num(:P9_MONTO_IMPUESTO), 0);',
 '    v_total         NUMBER := NVL(fn_clean_num(:P9_MONTO_TOTAL), 0);',
 'BEGIN',
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 '    IF :P9_ID_EMPRESA IS NULL OR :P9_ID_CLIENTE IS NULL THEN',
 '        raise_application_error(-20010, ''Seleccione la empresa y el cliente de la factura.'');',
 '    END IF;',
@@ -15296,6 +15484,20 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Initialize form editar cabecera'
 ,p_static_id=>'initialize-form-editar-cabecera'
 ,p_internal_uid=>18172157592230516
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000015)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: editar facturacion'
+,p_static_id=>'valida-rol-editar-facturacion'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000015
 );
 end;
 /
@@ -15479,8 +15681,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Nueva Linea'
 ,p_button_position=>'CLOSE'
-,p_button_condition=>'P10_ID_DETALLE'
-,p_button_condition_type=>'ITEM_IS_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and :P10_ID_DETALLE is null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-check'
 );
 wwv_flow_imp_page.create_page_button(
@@ -15498,8 +15701,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_execute_validations=>'N'
 ,p_confirm_message=>unistr('\00BFEst\00E1 seguro de que desea eliminar este \00EDtem de la factura? Esta acci\00F3n no se puede deshacer.')
 ,p_confirm_style=>'danger'
-,p_button_condition=>'P10_ID_DETALLE'
-,p_button_condition_type=>'ITEM_IS_NOT_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and :P10_ID_DETALLE is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-trash-o'
 );
 wwv_flow_imp_page.create_page_button(
@@ -15515,8 +15719,9 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Guardar '
 ,p_button_position=>'CLOSE'
-,p_button_condition=>'P10_ID_DETALLE'
-,p_button_condition_type=>'ITEM_IS_NOT_NULL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and :P10_ID_DETALLE is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-save'
 ,p_database_action=>'UPDATE'
 );
@@ -16095,6 +16300,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Eliminar Detalle'
 ,p_static_id=>'eliminar-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
 'pkg_factura_detalle.eliminar_detalle(',
 '    p_id_factura => :P10_ID_FACTURA,',
 '    p_id_detalle => :P10_ID_DETALLE',
@@ -16251,9 +16459,24 @@ unistr('                raise_application_error(-20004, ''El impuesto selecciona
 ,p_process_clob_language=>'PLSQL'
 ,p_process_error_message=>'Error al guardar el Detalle de la Factura: #SQLERRM#'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'CREATE,SAVE'
-,p_process_when_type=>'REQUEST_IN_CONDITION'
+,p_process_when=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and :REQUEST in (''CREATE'',''SAVE'')'
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
 ,p_internal_uid=>21947080813104101
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000016)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: ver facturacion detalle'
+,p_static_id=>'valida-rol-ver-facturacion-det'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000016
 );
 end;
 /
@@ -16361,6 +16584,20 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'Y')).to_clob
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000017)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: ver facturacion impresion'
+,p_static_id=>'valida-rol-ver-facturacion-imp'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000017
 );
 end;
 /
@@ -16504,6 +16741,20 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'Y')).to_clob
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000018)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: ver presupuestos impresion'
+,p_static_id=>'valida-rol-ver-presupuestos-imp'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000018
 );
 end;
 /

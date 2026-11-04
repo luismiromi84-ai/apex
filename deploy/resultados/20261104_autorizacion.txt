@@ -1,0 +1,85 @@
+Task 2 - Autorizacion por rol: esquemas, guardas, condiciones y menu (2026-11-04)
+==============================================================================
+Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, vistas APEX_260100
+Via: python-oracledb (ADMIN) + re-export con SQLcl
+
+Paginas de la app ............... 15
+Esquemas de autorizacion ........ 5
+   administration-rights      Administration Rights
+   editar-facturacion         Editar Facturacion
+   editar-presupuestos        Editar Presupuestos
+   ver-facturacion            Ver Facturacion
+   ver-presupuestos           Ver Presupuestos
+
+Guardas BEFORE_HEADER ('Valida rol...'): 10
+   pag  3  valida-rol-admin
+   pag  4  valida-rol-admin
+   pag  5  valida-rol-ver-presupuestos
+   pag  6  valida-rol-ver-presupuestos-det
+   pag  7  valida-rol-editar-presupuestos
+   pag  8  valida-rol-ver-facturacion
+   pag  9  valida-rol-editar-facturacion
+   pag 10  valida-rol-ver-facturacion-det
+   pag 11  valida-rol-ver-facturacion-imp
+   pag 12  valida-rol-ver-presupuestos-imp
+
+Botones con condicion PL/SQL (APEX exporta el tipo como EXPRESSION): 16
+   pag  5  BTN_NUEVO_DETALLE        fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA')
+   pag  5  BTN_NUEVO_PRESUPUESTO    fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA')
+   pag  5  BTN_PROCESAR             fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA')
+   pag  6  CREATE                   fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA') and :P6_ID_PRESUPUESTO is null
+   pag  6  DELETE                   fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA') and :P6_ID_DETALLE is not null
+   pag  6  SAVE                     fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA') and :P6_ID_PRESUPUESTO is not null
+   pag  7  BTN_CANCELAR             fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA') and :P7_ID_PRESUPUESTO is not null
+   pag  7  BTN_GUARDAR              fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA')
+   pag  8  BTN_FACTURAS             fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA')
+   pag  8  BTN_NUEVO_DETALLE        fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA')
+   pag  8  BTN_PROCESAR             fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA')
+   pag  9  BTN_CANCELAR             fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA') and :P9_ID_PRESUPUESTO is not null
+   pag  9  BTN_GUARDAR              fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA')
+   pag 10  CREATE                   fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA') and :P10_ID_DETALLE is null
+   pag 10  DELETE                   fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA') and :P10_ID_DETALLE is not null
+   pag 10  SAVE                     fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA') and :P10_ID_DETALLE is not null
+
+Procesos con condicion PL/SQL: 3
+   pag  6  Insert/Update del Detalle  fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA')
+   pag  9  Carga_Presupuesto          fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA')
+   pag 10  Insert/update del Detalle  fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA') and :REQUEST in ('CREATE','SAVE')
+
+Procesos con guarda dentro del cuerpo PL/SQL: 8
+   pag  5  Procesar Presupuesto
+   pag  6  Eliminar detalle
+   pag  7  Insert/Update Presupuesto
+   pag  7  cancelar Prepuesto
+   pag  8  Procesar Factura
+   pag  9  Elimiar factura
+   pag  9  Insert/update Facturacion
+   pag 10  Eliminar Detalle
+
+Menu:
+   facturacion      Ver Facturacion
+   home             (sin esquema)
+   panel-general    (sin esquema)
+   presupuestos     Ver Presupuestos
+
+Re-export (apex export) sobre las mismas marcas:
+   create_security_scheme ......... 5
+   p_button_condition_type EXPRESSION 16  (APEX normaliza PLSQL_EXPRESSION -> EXPRESSION)
+   p_process_when_type EXPRESSION .... 3
+   p_security_scheme 4300000000000002x 2
+   'Valida rol' .................... 10
+   guarda en cuerpo ............... 8
+   prompts de pagina .............. 16
+
+Desvio respecto del plan (con motivo):
+   Los 8 procesos que colgaban de un boton (p_process_when_button_id) NO se convirtieron a
+   PLSQL_EXPRESSION: eso habria perdido la condicion 'cuando se pulsa el boton' y el proceso
+   correria en cualquier submit. La comprobacion de rol se inserto dentro del cuerpo PL/SQL
+   (antes de la escritura) y el id del boton se conservo; la condicion de boton queda como
+   capa de presentacion.
+   Los otros 3 procesos (pag 6 detalle, pag 9 Carga_Presupuesto, pag 10 detalle) si llevan
+   p_process_when con fn_tiene_rol; el de pag 10 conserva :REQUEST in ('CREATE','SAVE').
+
+Intento de import fallido: el ancla de los esquemas se comio el 'end;/' del esquema
+'Administration Rights' y el PL/SQL no compilaba (ORA-06550/PLS-00103). Se verifico que la
+app quedo intacta (15 paginas, 1 esquema, 2 guardas: rollback completo) y se reimporto.
