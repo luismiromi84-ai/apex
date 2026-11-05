@@ -1,0 +1,93 @@
+Autenticacion propia (reemplaza PRUEBA A1)
+Fecha: 2026-11-04 / 2026-11-05 (sysdate de la base)
+Entorno: Sypex_SQL, APEX 26.1.6, app 100, esquema WKSP_SYPEXWS
+Plan: docs/superpowers/plans/2026-11-04-auth-propia.md
+
+==========================================================
+Por que
+==========================================================
+El administrador de la app (equipo de soporte del cliente) debe dar de alta
+usuarios desde la app y no debe tener acceso al App Builder. Se midio con un
+spike que APEX prohibe crear cuentas desde una aplicacion en ejecucion
+(APEX.API.RUNTIME_API_USAGE.ERROR en CHECK_API_USE_ALLOWED), y el cliente no
+tiene proveedor de identidad. Unica via: volver a la autenticacion propia,
+endurecida.
+
+==========================================================
+Base de datos (deploy/migrations/20261104_auth_propia.sql)
+==========================================================
+- grant execute on sys.dbms_crypto to wksp_sypexws
+- USUARIO: REINTENTOS_FALLIDOS, BLOQUEADO_HASTA, ULTIMO_INTENTO_LOGIN
+- indice unico UQ_USUARIO_USERNAME_UPPER sobre UPPER(username)
+- tabla SYN_LOGIN_LOG (usuario_intentado, ip, fecha, resultado) + indice por fecha
+- prc_auth_registrar: transaccion autonoma; log + contador + bloqueo + hash nuevo
+- sypex_hash_password: PBKDF2-HMAC-SHA256, 100000 iteraciones, sal de 16 bytes,
+  formato PBKDF2-SHA256$<iter>$<sal_hex>$<hash_hex>
+- fn_verificar_password: acepta el formato nuevo y el legado (sha256 + sal literal)
+- fn_password_es_legado
+- fn_autenticar_usuario: estados ACTIVO/A/1, bloqueo 5 intentos / 15 min, rechaza
+  sin empresa o rol, convierte el hash legado en el login correcto
+- prc_post_login: acepta ACTIVO/A/1 y lanza -20013 si no hay empresa o rol
+- dbms_utility.compile_schema al final (el ALTER TABLE invalida 5 dependientes)
+
+==========================================================
+Verificacion PL/SQL
+==========================================================
+python deploy/conexion/importar_export.py deploy/diagnostico/20261104_auth_propia_verificacion.sql
+  -> RESULTADO: FALLAS=0
+Cubre: esquema, prc_auth_registrar (5 fallos bloquean, un OK resetea, 6 filas de
+log), hash (formato, ida y vuelta, clave mala, sal aleatoria, legado, nulos,
+< 2 s) y fn_autenticar_usuario (10 casos: clave correcta, clave mala, bloqueo,
+clave correcta estando bloqueado, desbloqueo, inactivo, sin empresa, hash legado
+convertido, clave nula, mayusculas y espacios).
+Nota: el script siempre levanta -20100 con el resumen; codigo de salida 1 con
+FALLAS=0 significa EXITO.
+
+Prueba sobre datos reales:
+  fn_autenticar_usuario('luis','123') = OK  y el hash de luis paso de legado a
+  PBKDF2-SHA256$100000$...
+  fn_autenticar_usuario('luis','mala') = NO y SYN_LOGIN_LOG registro CLAVE_MALA
+
+==========================================================
+APEX (pagina_apex/f100.sql reimportado)
+==========================================================
+- Esquema Synpex Custom Auth: NATIVE_CUSTOM + authentication_function =
+  fn_autenticar_usuario (columna ATTRIBUTES), post-autenticacion prc_post_login,
+  cookie segura Y.
+- Pagina 2: P2_ID_EMPRESA (select list de empresas activas) y P2_ROL_ID (LOV ROLES);
+  el INSERT los guarda; logo real (logo_synpex.png) y enlace de vuelta al login.
+- Pagina 4: validacion "Activo exige empresa y rol" (-20014), validacion de usuario
+  unico case-insensitive (-20015), boton Desbloquear y ayuda de P4_PASSWORD al dia.
+- Pagina 14: rotulos visibles (plantilla de campo 2320077351817916916; antes usaba
+  2042262243893469891 y no los dibujaba), enlace de vuelta al login, el reset limpia
+  contador y bloqueo, y textos de recuperacion reales.
+Verificado en la base y por HTTP (paginas publicas 2 y 14 responden 200).
+
+==========================================================
+Lo que NO se entrego y por que
+==========================================================
+La region "Ultimos intentos de acceso" en la pagina 3 se intento dos veces por
+export y se retiro:
+  1. Contenido dinamico (NATIVE_DYNAMIC_CONTENT): ORA-06592 al renderizar.
+     Devuelve igual que las otras (VARCHAR2) y sigue fallando.
+  2. Interactive Report clonado: tumba la pagina (400) incluso en la 14.
+Conclusión: insertar regiones nuevas editando el export no es fiable en esta
+instancia. La pagina 3 vuelve a su estado anterior.
+El log queda en la tabla, consultable:
+
+  select to_char(fecha,'DD-MM-YYYY HH24:MI:SS') fecha,
+         usuario_intentado, ip, resultado
+    from syn_login_log
+   order by fecha desc
+   fetch first 50 rows only;
+
+Resultados posibles: OK, CLAVE_MALA, NO_EXISTE, INACTIVO, BLOQUEADO,
+SIN_EMPRESA, ERROR.
+
+==========================================================
+Pendiente de prueba en navegador
+==========================================================
+1. Login con luis / 123.
+2. Registro en la pagina 2 con empresa y rol -> nace PENDIENTE.
+3. Activacion en la pagina 4 sin empresa/rol -> debe rechazar; con ambos -> entra.
+4. 5 fallos con el usuario nuevo -> bloqueado; Desbloquear en la pagina 4.
