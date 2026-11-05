@@ -1,0 +1,172 @@
+===============================================================================
+20261105_propiedad_documentos.txt
+Evidencia de la correccion "propiedad de documentos" (semana 3, seguridad).
+Base: Sypex_SQL, esquema WKSP_SYPEXWS. Medido el 2026-11-05.
+===============================================================================
+
+Que se hizo
+-----------
+Dos funciones nuevas y siete guardas en los procesos de las paginas 5, 6, 8, 9
+y 10, para que ningun proceso pueda tocar un presupuesto o una factura de otra
+empresa cuando el id llega del navegador.
+
+  funciones/fn_presupuesto_propio.sql
+  funciones/fn_factura_propio.sql
+  deploy/migrations/20261105_propiedad_documentos.sql                (idempotente)
+  deploy/diagnostico/20261105_propiedad_documentos_verificacion.sql  (16 casos)
+  pagina_apex/f100.sql                                               (7 guardas)
+
+El export NO se importo en esta sesion: lo importa el controlador despues de
+revisar. Por eso la base todavia NO tiene las guardas en los procesos.
+
+
+1. Objetos en la base
+---------------------
+SQL> select object_name, object_type, status from all_objects
+      where owner='WKSP_SYPEXWS' and object_name like 'FN_%';
+
+FN_AUTENTICAR_USUARIO    FUNCTION  VALID
+FN_CLEAN_NUM             FUNCTION  VALID
+FN_EMPRESAS_DEL_USUARIO  FUNCTION  VALID
+FN_FACTURA_PROPIO        FUNCTION  VALID     <- nuevo, creado 2026-11-05 14:10
+FN_PASSWORD_ES_LEGADO    FUNCTION  VALID
+FN_PRESUPUESTO_PROPIO    FUNCTION  VALID     <- nuevo, creado 2026-11-05 14:10
+FN_TASA_CAMBIO           FUNCTION  VALID
+FN_TIENE_ROL             FUNCTION  VALID
+FN_USUARIO_EMPRESA_VALIDA FUNCTION VALID
+FN_VERIFICAR_PASSWORD    FUNCTION  VALID
+
+Objetos INVALID en el esquema: 0.
+
+El fuente compilado coincide con los archivos de funciones/ (20 lineas cada
+uno; la unica diferencia es el "create or replace" que Oracle no guarda en
+ALL_SOURCE).
+
+
+2. Migracion (ejecutada tres veces: es idempotente)
+---------------------------------------------------
+$ python deploy/conexion/importar_export.py deploy/migrations/20261105_propiedad_documentos.sql
+
+20261105_propiedad_documentos.sql: 8 sentencias
+ejecutadas OK: 8 en 1.2s
+rc=0
+
+Silencio en caso de exito y codigo de salida 0, como las otras migraciones del
+repo. El bloque final solo lanza -20100 si encuentra fallas o algun objeto
+INVALID, asi que un rc distinto de 0 siempre significa problema.
+
+Comprobacion de que ese bloque detecta de verdad una falla (mutando el codigo
+en una copia temporal: se invierte la expectativa del caso "id nulo"):
+
+FALLO en la sentencia 8 (codigo 20100): ORA-20100: RESULTADO: MIGRACION CON
+  FALLAS, FALLAS=1, OBJETOS INVALIDOS=0 | id nulo: alguna funcion devolvio TRUE
+
+
+3. Verificacion: deploy/diagnostico/20261105_propiedad_documentos_verificacion.sql
+----------------------------------------------------------------------------------
+$ python deploy/conexion/importar_export.py deploy/diagnostico/20261105_propiedad_documentos_verificacion.sql
+
+20261105_propiedad_documentos_verificacion.sql: 6 sentencias
+FALLO en la sentencia 6 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+  (presupuesto empresa 1 = 1001, factura = 1001, documentos temporales
+   empresa 2 = 1060/1054, revertidos)
+
+(Aqui el codigo de salida 1 con FALLAS=0 significa EXITO: el script cierra con
+raise_application_error -20100 a proposito, como las otras verificaciones del
+repo. Los ids 1060/1054 son los documentos temporales de esta ejecucion: suben
+en cada pasada porque la identity no se revierte.)
+
+Los casos C1 a C16 (detalle en la cabecera del script) cubren:
+  - las dos funciones VALID y con EXECUTE para PUBLIC;
+  - documento de cada empresa con su propio usuario -> TRUE (C3 a C6);
+  - documento de una empresa con usuario de la otra -> FALSE (C7 a C10),
+    en los dos sentidos;
+  - id nulo, id inexistente, usuario inexistente, usuario nulo y usuario
+    inactivo -> FALSE (C11 a C14);
+  - el rollback no deja documentos de prueba (C15);
+  - ningun objeto INVALID (C16).
+
+La empresa 2 no tiene documentos cargados, asi que el script inserta un
+presupuesto y una factura temporales de esa empresa y los revierte con
+ROLLBACK. Los ids de los documentos de prueba (1060/1054) son los que aparecen
+en la salida: confirman que las pruebas se hicieron contra filas reales de las
+dos empresas.
+
+Prueba de mutacion (que el script detecte una falla de verdad): cambiando la
+expectativa de C7 a TRUE, la salida es
+
+FALLO en la sentencia 6 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1
+  (... ) | C7: devolvio FALSE y se esperaba TRUE
+
+Lo mismo con C14-inact-p (el usuario desactivado dentro de la transaccion):
+
+FALLO en la sentencia 6 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1
+  (... ) | C14-inact-p: devolvio FALSE y se esperaba TRUE
+
+Las dos mutaciones se hicieron sobre copias temporales; el script del repo
+conserva las expectativas correctas.
+
+
+4. Prueba punta a punta de los siete procesos (con el export ya modificado)
+--------------------------------------------------------------------------
+Se reconstruye de pagina_apex/f100.sql el cuerpo PL/SQL de cada uno de los
+siete procesos, se sustituyen los items por literales y se ejecuta contra la
+base con un usuario de la empresa 2 sobre documentos de la empresa 1. Se espera
+ORA-20003 "No tiene permisos sobre este documento." y que no cambie nada.
+
+OK    Procesar Presupuesto           rechazo ORA-20003: No tiene permisos sobre este documento.
+OK    Eliminar detalle               rechazo ORA-20003: No tiene permisos sobre este documento.
+OK    Insert/Update del Detalle      rechazo ORA-20003: No tiene permisos sobre este documento.
+OK    Procesar Factura               rechazo ORA-20003: No tiene permisos sobre este documento.
+OK    Elimiar factura                rechazo ORA-20003: No tiene permisos sobre este documento.
+OK    Eliminar Detalle               rechazo ORA-20003: No tiene permisos sobre este documento.
+OK    Insert/update del Detalle      rechazo ORA-20003: No tiene permisos sobre este documento.
+documentos intactos: presupuesto 1001 estado ENVIADO->ENVIADO, detalles 2->2;
+                     factura 1001 estado PENDIENTE->PENDIENTE, detalles 2->2
+OK    control positivo (empresa 1 + admin.demo) pasa la guarda; respuesta del
+      package: ORA-20003: No tiene permisos para esta accion. ORA-06512: at line 8
+RESUMEN: procesos que no rechazaron = 0
+
+El control positivo importa: en una sesion de base de datos (sin APEX)
+apex_application.g_user es nulo, asi que fn_tiene_rol devuelve FALSE y el
+proceso se detiene en la comprobacion de rol. Que el error sea "para esta
+accion" y no "sobre este documento" demuestra que la guarda de propiedad dejo
+pasar al usuario de la empresa del documento.
+
+
+5. Sintaxis de los siete cuerpos del export
+-------------------------------------------
+Cada cuerpo se reconstruye y se pasa a dbms_sql.parse (compila, no ejecuta),
+envolviendolo en begin/end cuando APEX lo haria. Ademas se comprueba que la
+guarda va antes de fn_tiene_rol y antes de la llamada al package.
+
+Procesar Presupuesto             P5_ID_PRESUPUESTO      OK
+Eliminar detalle                 P6_ID_PRESUPUESTO      OK
+Insert/Update del Detalle        P6_ID_PRESUPUESTO      OK
+Procesar Factura                 P8_ID_FACTURAS         OK
+Elimiar factura                  P9_ID_FACTURA          OK
+Eliminar Detalle                 P10_ID_FACTURA         OK
+Insert/update del Detalle        P10_ID_FACTURA         OK
+RESUMEN: procesos con problema = 0
+
+
+6. Sin residuos
+---------------
+Tras las pruebas: 0 documentos en la empresa 2, 0 documentos con los folios de
+prueba (999000001 y ZZ-PROP-TEST), y los usuarios usados (admin.demo, mx.demo,
+ventas2.demo) siguen ACTIVO. La identity de presupuestos/facturas avanzo unos
+pocos valores por los documentos temporales (las identity no se revierten); no
+afecta a nada y el purgado/realineado del demo vuelve a dejarlas en su sitio.
+
+
+7. Pendiente
+------------
+- Importar pagina_apex/f100.sql (lo hace el controlador). El export hace
+  delete_application + create_application: no importarlo sin revisar antes.
+- deploy/install.sql no lista las dos funciones nuevas. Una instalacion limpia
+  crearia el esquema sin ellas y la app fallaria al pulsar los botones de las
+  paginas 5, 6, 8, 9 y 10. Falta agregar, despues de
+  @@../funciones/fn_usuario_empresa_valida.sql:
+      @@../funciones/fn_presupuesto_propio.sql
+      @@../funciones/fn_factura_propio.sql
+  (No se toco install.sql porque el brief limita los archivos del cambio.)
