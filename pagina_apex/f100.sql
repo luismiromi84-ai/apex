@@ -9385,6 +9385,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT p.id_presupuesto AS seleccionar,',
 '       p.id_presupuesto AS editar,',
+'       p.id_presupuesto AS print_link,',
 '       p.folio,',
 '       c.razon_social,',
 '       c.rif,',
@@ -9451,6 +9452,20 @@ wwv_flow_imp_page.create_worksheet_column(
 '    #ESTADO#',
 '</span>'))
 ,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000050)
+,p_db_column_name=>'PRINT_LINK'
+,p_display_order=>130
+,p_column_identifier=>'M'
+,p_column_label=>unistr('Impresi\00F3n')
+,p_column_link=>'f?p=&APP_ID.:12:&SESSION.::&DEBUG.:12:P12_ID_PRESUPUESTO:#PRINT_LINK#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-print"></span> Imprimir'
+,p_column_link_attr=>'target="_blank"'
+,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
@@ -9559,7 +9574,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'primary'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'SELECCIONAR:EDITAR:FOLIO:RAZON_SOCIAL:RIF:FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:SUBTOTAL:IMPUESTO_IVA:TOTAL:ESTADO'
+,p_report_columns=>'SELECCIONAR:EDITAR:FOLIO:RAZON_SOCIAL:RIF:FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:SUBTOTAL:IMPUESTO_IVA:TOTAL:ESTADO:PRINT_LINK'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(12541094704283236)

@@ -25,7 +25,8 @@ Sesion: ADMIN -> alter session set current_schema = WKSP_SYPEXWS
 
 - Descripcion con '<b>' se insertaba tal cual: sin escapar.
 
-- Solo la pagina 9 tiene columna "Impresion" -> pagina 11.
+- La pagina 8 ("Lista de Facturas") tiene columna "Impresion" -> pagina 11.
+  La pagina 5 ("Lista de Presupuestos") no tenia ninguna: la 12 era inalcanzable.
   NINGUNA pagina enlaza a la 12: el presupuesto no se puede imprimir desde la app.
 
 2. Verificacion (primero en rojo)
@@ -48,6 +49,8 @@ package_bodies/pkg_reportes_factura.sql       (body completo)
 deploy/migrations/20261105_reportes_impresion.sql
 pagina_apex/f100.sql  -> paginas 11 y 12: boton 'Descarga' -> 'Imprimir';
                           se quita el @media print duplicado (vive en el package)
+                       -> pagina 5: columna nueva PRINT_LINK ("Impresion") que abre la
+                          pagina 12 con P12_ID_PRESUPUESTO, replicando la de la pagina 8
 
   - Aviso en lugar de reporte falso (ID nulo o inexistente).
   - sys.htf.escape_sc en cliente, descripcion, observaciones, estado, folio y RFC.
@@ -115,6 +118,21 @@ Comprobado despues del import:
 7. PENDIENTE
 ------------
 - Prueba visual en navegador de las paginas 11 y 12 (imprimir y que se oculte el chrome).
-- La pagina 12 sigue sin entrada desde la app: crear la columna/boton de impresion en la
-  pagina 5 (o 7). Es columna nueva de UI -> App Builder (por export falla).
 - El PDF real (opcion C) queda al final del CRONOGRAMA, a la espera del requisito fiscal.
+
+8. Pagina 5 -> pagina 12 (misma sesion)
+----------------------------------------
+Se agrego la columna PRINT_LINK a la "Lista de Presupuestos", copiando el patron de la
+pagina 8 (que ya llevaba a la 11): p_db_column_name, p_column_link a
+f?p=&APP_ID.:12:...:P12_ID_PRESUPUESTO:#PRINT_LINK#, p_column_link_attr target="_blank",
+icono fa-print, identificador 'M' y display_order 130. Tambien se anadio PRINT_LINK a
+p_report_columns del reporte guardado y p.id_presupuesto AS print_link a la consulta.
+
+Import: 70 sentencias OK, 16 paginas, 0 objetos INVALID.
+Medido en apex_application_page_ir_col:
+  pagina 5 -> PRINT_LINK "Impresion" -> :12:P12_ID_PRESUPUESTO
+  pagina 8 -> PRINT_LINK "Impresion" -> :11:P11_ID_FACTURA   (ya existia)
+
+Esto matiza la regla "por export no se crean objetos nuevos de UI": una columna de IR si
+se crea cuando replica una que ya funciona. Lo que falla son COMPUTED, las regiones
+nuevas y los IR clonados.
