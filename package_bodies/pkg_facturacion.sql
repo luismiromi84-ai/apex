@@ -221,8 +221,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
 
                     INSERT INTO facturas_det (
                         id_factura, num_linea, id_producto, codigo_producto, descripcion,
-                        cantidad, precio_unitario, porcentage_descuento, monto_descuento,
-                        id_impuesto, porcentage_impuesto, monto_impuesto, subtotal_linea,
+                        cantidad, precio_unitario, porcentaje_descuento, monto_descuento,
+                        id_impuesto, porcentaje_impuesto, monto_impuesto, subtotal_linea,
                         monto_total_linea, tasa_cambio_aplicada, subtotal_bs, total_bs
                     )
                     SELECT 
