@@ -8629,7 +8629,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
-'    v_html CLOB;',
+'    v_html VARCHAR2(32767);',
 'BEGIN',
 '    v_html := ''<table class="t-Report-report" style="width:100%">'' ||',
 '              ''<thead><tr><th>Fecha</th><th>Usuario</th><th>IP</th><th>Resultado</th></tr></thead><tbody>'';',
@@ -8637,7 +8637,7 @@ wwv_flow_imp_page.create_page_plug(
 '                     usuario_intentado, ip, resultado',
 '                FROM syn_login_log',
 '               ORDER BY fecha DESC',
-'               FETCH FIRST 50 ROWS ONLY) LOOP',
+'               FETCH FIRST 30 ROWS ONLY) LOOP',
 '        v_html := v_html || ''<tr><td>'' || r.fecha_txt || ''</td><td>'' ||',
 '                  NVL(r.usuario_intentado, ''-'') || ''</td><td>'' || NVL(r.ip, ''-'') ||',
 '                  ''</td><td>'' || r.resultado || ''</td></tr>'';',
