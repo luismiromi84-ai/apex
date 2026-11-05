@@ -9283,6 +9283,10 @@ wwv_flow_imp_page.create_page_plug(
 '       d.monto_total_linea',
 '  FROM presupuestos_det d',
 ' WHERE d.id_presupuesto = :P5_ID_PRESUPUESTO',
+'   AND d.id_presupuesto IN (SELECT p.id_presupuesto FROM presupuestos p',
+'                            WHERE p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
+'                                                    WHERE upper(u.username) = upper(:APP_USER)',
+'                                                      AND u.estado IN (''ACTIVO'', ''A'', ''1'')))',
 ' ORDER BY d.id_detalle'))
 ,p_plug_source_type=>'NATIVE_IR'
 );
@@ -9641,6 +9645,11 @@ wwv_flow_imp_page.create_page_plug(
 '    v_color             VARCHAR2(10);',
 '    v_html              VARCHAR2(4000);',
 'BEGIN',
+'    -- Si el usuario no es de la empresa del documento, no se muestra nada',
+'    IF v_id_presupuesto IS NOT NULL AND NOT fn_presupuesto_propio(v_id_presupuesto, :APP_USER) THEN',
+'        RETURN NULL;',
+'    END IF;',
+'',
 '    -- Si hay un presupuesto seleccionado, calculamos sus valores',
 '    IF v_id_presupuesto IS NOT NULL THEN',
 '        SELECT NVL(SUM(cantidad * precio_unitario), 0),',
@@ -10308,7 +10317,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS_DET'
-,p_query_where=>'id_detalle = :P6_ID_DETALLE'
+,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = presupuestos_det.id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
@@ -11712,7 +11721,10 @@ wwv_flow_imp_page.create_page_plug(
 'AND EXISTS (',
 '    SELECT 1 FROM facturas f ',
 '    WHERE f.id_factura = :P8_ID_FACTURAS ',
-'      AND f.estado NOT IN (''CANCELADA'', ''ANULADA'', ''TIMBRADA''))'))
+'      AND f.estado NOT IN (''CANCELADA'', ''ANULADA'', ''TIMBRADA'')',
+'      AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
+'                            WHERE upper(u.username) = upper(:APP_USER)',
+'                              AND u.estado IN (''ACTIVO'', ''A'', ''1'')))'))
 ,p_include_rowid_column=>false
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P8_ID_FACTURAS'
@@ -12273,6 +12285,11 @@ wwv_flow_imp_page.create_page_plug(
 '    v_moneda       VARCHAR2(5);',
 '    v_html         VARCHAR2(4000);',
 'BEGIN',
+'    -- Si el usuario no es de la empresa de la factura, no se muestra nada',
+'    IF :P8_ID_FACTURAS IS NOT NULL AND NOT fn_factura_propio(:P8_ID_FACTURAS, :APP_USER) THEN',
+'        RETURN NULL;',
+'    END IF;',
+'',
 '    IF :P8_ID_FACTURAS IS NOT NULL THEN',
 '        SELECT f.cod_moneda,',
 '               NVL(SUM(d.cantidad * d.precio_unitario), 0),',
@@ -14198,7 +14215,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'FACTURAS_DET'
-,p_query_where=>'id_detalle = :P10_ID_DETALLE'
+,p_query_where=>'id_detalle = :P10_ID_DETALLE and exists (select 1 from facturas f where f.id_factura = facturas_det.id_factura and f.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
