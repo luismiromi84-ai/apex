@@ -43,15 +43,31 @@ create table syn_login_log (
 create index ix_syn_login_log_fecha on syn_login_log (fecha);
 /
 
+alter table syn_login_log add constraint ck_syn_login_log_resultado
+  check (resultado in (OK,CLAVE_MALA,NO_EXISTE,INACTIVO,BLOQUEADO,SIN_EMPRESA,ERROR)) enable;
+/
+
 create unique index uq_usuario_username_upper on usuario (upper(username));
 /
 
 -- -----------------------------------------------------------------------------
 -- 2. Registro de intentos en transaccion autonoma
---
--- APEX descarta el DML de una autenticacion fallida, asi que el contador y el
--- bloqueo tienen que guardarse fuera de esa transaccion o nunca subirian.
 -- -----------------------------------------------------------------------------
+-- =============================================================================
+-- prc_auth_registrar.sql
+--
+-- Registra un intento de login en transaccion autonoma: escribe el log y
+-- actualiza contador, bloqueo y (si el login fue bueno) el hash nuevo.
+--
+-- Por que autonoma: APEX descarta el DML de una autenticacion fallida, asi que
+-- dentro de la transaccion normal el contador nunca subiria y el bloqueo no se
+-- activaria nunca.
+--
+-- OJO al editar: deploy/conexion/importar_export.py descarta las lineas que
+-- empiezan por "set " (las confunde con comandos de SQL*Plus). Por eso los
+-- UPDATE llevan "set" al final de la linea anterior.
+-- =============================================================================
+
 create or replace procedure prc_auth_registrar (
     p_usuario_id        in number,
     p_resultado         in varchar2,
@@ -74,11 +90,13 @@ begin
 
     if p_usuario_id is not null then
         begin
+            -- nowait: si un administrador esta guardando esa fila, el login no
+            -- se queda esperando un lock; se registra el intento y ya.
             select nvl(reintentos_fallidos, 0), bloqueado_hasta
               into v_reintentos, v_bloqueado
               from usuario
              where usuario_id = p_usuario_id
-               for update;
+               for update nowait;
 
             if p_resultado = 'OK' then
                 update usuario set
@@ -88,11 +106,14 @@ begin
                        password_hash        = nvl(p_nuevo_hash, password_hash)
                  where usuario_id = p_usuario_id;
             elsif p_resultado = 'CLAVE_MALA' then
+                -- si el bloqueo anterior ya vencio, la cuenta empieza de cero
+                if v_bloqueado is not null and v_bloqueado <= sysdate then
+                    v_reintentos := 0;
+                end if;
                 v_reintentos := v_reintentos + 1;
                 update usuario set
                        reintentos_fallidos  = v_reintentos,
                        bloqueado_hasta      = case
-                           when v_bloqueado is not null then v_bloqueado
                            when v_reintentos >= c_max_intentos
                                then sysdate + c_minutos_bloqueo / 1440
                            else null
@@ -109,6 +130,12 @@ begin
         exception
             when no_data_found then
                 null;  -- el usuario desaparecio entre autenticar y registrar
+            when others then
+                if sqlcode = -54 then
+                    null;  -- fila bloqueada por otra sesion: solo queda el log
+                else
+                    raise;
+                end if;
         end;
     end if;
 
@@ -121,10 +148,24 @@ begin
     commit;
 end prc_auth_registrar;
 /
+/
 
 -- -----------------------------------------------------------------------------
 -- 3. Hash de contrasena (PBKDF2-HMAC-SHA256, sal por usuario)
 -- -----------------------------------------------------------------------------
+-- =============================================================================
+-- sypex_hash_password.sql
+--
+-- Hash de contrasena: PBKDF2-HMAC-SHA256 con sal aleatoria por usuario.
+-- Formato guardado en USUARIO.PASSWORD_HASH (VARCHAR2(512)):
+--
+--   PBKDF2-SHA256$<iteraciones>$<sal_hex>$<hash_hex>
+--
+-- La firma no cambia a proposito: las paginas 2, 4 y 14 la llaman dentro de
+-- INSERT/UPDATE y siguen funcionando sin tocarse.
+--
+-- Requiere: grant execute on sys.dbms_crypto to WKSP_SYPEXWS
+-- =============================================================================
 
 create or replace function sypex_hash_password (
     p_password in varchar2
@@ -154,6 +195,18 @@ begin
     return 'PBKDF2-SHA256$' || c_iteraciones || '$' || rawtohex(v_sal) || '$' || rawtohex(v_xor);
 end sypex_hash_password;
 /
+
+-- =============================================================================
+-- fn_verificar_password.sql
+--
+-- Comprueba una contrasena contra el hash guardado en USUARIO.PASSWORD_HASH.
+-- Acepta dos formatos:
+--   * PBKDF2-SHA256$<iter>$<sal_hex>$<hash_hex>  (actual)
+--   * hex de 64 caracteres = sha256(password || 'SYPEX_SALT_2026')  (legado)
+--
+-- Devuelve FALSE ante cualquier entrada invalida en vez de lanzar error: la
+-- llama fn_autenticar_usuario en el camino del login.
+-- =============================================================================
 
 create or replace function fn_verificar_password (
     p_password in varchar2,
@@ -189,7 +242,7 @@ begin
     v_sal  := hextoraw(substr(p_hash, v_p2 + 1, v_p3 - v_p2 - 1));
     v_hash := hextoraw(substr(p_hash, v_p3 + 1));
 
-    if v_iter is null or v_iter < 1 or v_sal is null or v_hash is null then
+    if v_iter is null or v_iter < 1 or v_iter > 1000000 or v_sal is null or v_hash is null then
         return false;
     end if;
 
@@ -208,6 +261,13 @@ exception
 end fn_verificar_password;
 /
 
+-- =============================================================================
+-- fn_password_es_legado.sql
+--
+-- TRUE si el hash guardado no es del formato actual. Sirve para convertir el
+-- hash viejo (sha256 + sal literal) la primera vez que el usuario entra.
+-- =============================================================================
+
 create or replace function fn_password_es_legado (
     p_hash in varchar2
 ) return boolean is
@@ -215,22 +275,38 @@ begin
     return p_hash is not null and p_hash not like 'PBKDF2-SHA256$%';
 end fn_password_es_legado;
 /
+/
 
 -- -----------------------------------------------------------------------------
 -- 4. Autenticacion
 -- -----------------------------------------------------------------------------
+-- =============================================================================
+-- fn_autenticar_usuario.sql
+--
+-- Funcion de autenticacion de la app (esquema NATIVE_CUSTOM de APEX).
+-- Reemplaza la version retirada el 2026-11-04: ahora usa PBKDF2, aplica bloqueo
+-- por intentos y convierte el hash legado en el primer login correcto.
+--
+-- Reglas:
+--   * Estados que entran: ACTIVO, A, 1 (un estado nulo NO entra).
+--   * Sin empresa o sin rol -> no entra (no se crea sesion a medias).
+--   * Al usuario se le da SIEMPRE el mismo mensaje: el motivo real (usuario
+--     inexistente, inactivo, bloqueado, sin empresa, clave mala) va a
+--     SYN_LOGIN_LOG, nunca a la pantalla.
+-- =============================================================================
 
 create or replace function fn_autenticar_usuario (
     p_username in varchar2,
     p_password in varchar2
 ) return boolean is
-    v_usuario varchar2(50);
-    v_id      number;
-    v_hash    varchar2(512);
-    v_estado  varchar2(20);
-    v_bloq    date;
-    v_empresa number;
-    v_rol     number;
+    c_generico constant varchar2(120) := 'Usuario o contraseña incorrectos.';
+    v_usuario  varchar2(50);
+    v_id       number;
+    v_hash     varchar2(512);
+    v_estado   varchar2(20);
+    v_bloq     date;
+    v_empresa  number;
+    v_rol      number;
 begin
     v_usuario := trim(p_username);
 
@@ -238,7 +314,7 @@ begin
         prc_auth_registrar(p_usuario_id        => null,
                            p_resultado         => 'ERROR',
                            p_usuario_intentado => nvl(v_usuario, '(vacio)'));
-        apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
@@ -250,38 +326,35 @@ begin
     exception
         when no_data_found then
             prc_auth_registrar(null, 'NO_EXISTE', v_usuario);
-            apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+            apex_util.set_custom_auth_status(p_status => c_generico);
             return false;
         when too_many_rows then
             prc_auth_registrar(null, 'ERROR', v_usuario);
-            apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+            apex_util.set_custom_auth_status(p_status => c_generico);
             return false;
     end;
 
-    if upper(v_estado) not in ('ACTIVO', 'A', '1') then
+    if nvl(upper(v_estado), '#') not in ('ACTIVO', 'A', '1') then
         prc_auth_registrar(v_id, 'INACTIVO', v_usuario);
-        apex_util.set_custom_auth_status(
-            p_status => 'El usuario no est?? activo. Contacta al administrador.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
     if v_bloq is not null and v_bloq > sysdate then
         prc_auth_registrar(v_id, 'BLOQUEADO', v_usuario);
-        apex_util.set_custom_auth_status(
-            p_status => 'La cuenta est?? bloqueada temporalmente por intentos fallidos.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
     if v_empresa is null or v_rol is null then
         prc_auth_registrar(v_id, 'SIN_EMPRESA', v_usuario);
-        apex_util.set_custom_auth_status(
-            p_status => 'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
     if not fn_verificar_password(p_password, v_hash) then
         prc_auth_registrar(v_id, 'CLAVE_MALA', v_usuario);
-        apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
@@ -300,14 +373,28 @@ exception
         exception
             when others then null;
         end;
-        apex_util.set_custom_auth_status(p_status => 'Error al procesar la autenticaci??n.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
 end fn_autenticar_usuario;
+/
 /
 
 -- -----------------------------------------------------------------------------
 -- 5. Post-login
 -- -----------------------------------------------------------------------------
+-- =============================================================================
+-- prc_post_login.sql
+--
+-- Proceso de post-autenticacion: deja en la sesion la empresa y el rol del
+-- usuario. Lo llama el esquema de autenticacion (p_post_auth_process).
+--
+-- Acepta los mismos estados que fn_autenticar_usuario (ACTIVO, A, 1); antes
+-- solo miraba ACTIVO y con 'A'/'1' el login entraba pero F_* quedaban nulos.
+--
+-- Si el usuario no tiene empresa o rol se lanza error en vez de silenciar
+-- NO_DATA_FOUND. fn_autenticar_usuario ya lo rechaza antes de crear sesion, asi
+-- que esto solo deberia alcanzarse si los datos cambian entre ambos pasos.
+-- =============================================================================
 
 create or replace procedure prc_post_login is
     v_id_empresa     usuario.id_empresa%type;
@@ -338,6 +425,7 @@ exception
         raise_application_error(-20013,
             'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
 end prc_post_login;
+/
 /
 
 -- =============================================================================

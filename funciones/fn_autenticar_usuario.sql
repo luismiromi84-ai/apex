@@ -6,22 +6,25 @@
 -- por intentos y convierte el hash legado en el primer login correcto.
 --
 -- Reglas:
---   * Estados que entran: ACTIVO, A, 1.
+--   * Estados que entran: ACTIVO, A, 1 (un estado nulo NO entra).
 --   * Sin empresa o sin rol -> no entra (no se crea sesion a medias).
---   * El motivo real va a SYN_LOGIN_LOG; al usuario se le da el mensaje generico.
+--   * Al usuario se le da SIEMPRE el mismo mensaje: el motivo real (usuario
+--     inexistente, inactivo, bloqueado, sin empresa, clave mala) va a
+--     SYN_LOGIN_LOG, nunca a la pantalla.
 -- =============================================================================
 
 create or replace function fn_autenticar_usuario (
     p_username in varchar2,
     p_password in varchar2
 ) return boolean is
-    v_usuario varchar2(50);
-    v_id      number;
-    v_hash    varchar2(512);
-    v_estado  varchar2(20);
-    v_bloq    date;
-    v_empresa number;
-    v_rol     number;
+    c_generico constant varchar2(120) := 'Usuario o contraseña incorrectos.';
+    v_usuario  varchar2(50);
+    v_id       number;
+    v_hash     varchar2(512);
+    v_estado   varchar2(20);
+    v_bloq     date;
+    v_empresa  number;
+    v_rol      number;
 begin
     v_usuario := trim(p_username);
 
@@ -29,7 +32,7 @@ begin
         prc_auth_registrar(p_usuario_id        => null,
                            p_resultado         => 'ERROR',
                            p_usuario_intentado => nvl(v_usuario, '(vacio)'));
-        apex_util.set_custom_auth_status(p_status => 'Usuario o contraseña incorrectos.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
@@ -41,38 +44,35 @@ begin
     exception
         when no_data_found then
             prc_auth_registrar(null, 'NO_EXISTE', v_usuario);
-            apex_util.set_custom_auth_status(p_status => 'Usuario o contraseña incorrectos.');
+            apex_util.set_custom_auth_status(p_status => c_generico);
             return false;
         when too_many_rows then
             prc_auth_registrar(null, 'ERROR', v_usuario);
-            apex_util.set_custom_auth_status(p_status => 'Usuario o contraseña incorrectos.');
+            apex_util.set_custom_auth_status(p_status => c_generico);
             return false;
     end;
 
-    if upper(v_estado) not in ('ACTIVO', 'A', '1') then
+    if nvl(upper(v_estado), '#') not in ('ACTIVO', 'A', '1') then
         prc_auth_registrar(v_id, 'INACTIVO', v_usuario);
-        apex_util.set_custom_auth_status(
-            p_status => 'El usuario no está activo. Contacta al administrador.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
     if v_bloq is not null and v_bloq > sysdate then
         prc_auth_registrar(v_id, 'BLOQUEADO', v_usuario);
-        apex_util.set_custom_auth_status(
-            p_status => 'La cuenta está bloqueada temporalmente por intentos fallidos.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
     if v_empresa is null or v_rol is null then
         prc_auth_registrar(v_id, 'SIN_EMPRESA', v_usuario);
-        apex_util.set_custom_auth_status(
-            p_status => 'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
     if not fn_verificar_password(p_password, v_hash) then
         prc_auth_registrar(v_id, 'CLAVE_MALA', v_usuario);
-        apex_util.set_custom_auth_status(p_status => 'Usuario o contraseña incorrectos.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
     end if;
 
@@ -91,7 +91,7 @@ exception
         exception
             when others then null;
         end;
-        apex_util.set_custom_auth_status(p_status => 'Error al procesar la autenticación.');
+        apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
 end fn_autenticar_usuario;
 /

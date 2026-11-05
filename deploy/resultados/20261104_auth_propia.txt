@@ -54,8 +54,9 @@ APEX (pagina_apex/f100.sql reimportado)
 - Esquema Synpex Custom Auth: NATIVE_CUSTOM + authentication_function =
   fn_autenticar_usuario (columna ATTRIBUTES), post-autenticacion prc_post_login,
   cookie segura Y.
-- Pagina 2: P2_ID_EMPRESA (select list de empresas activas) y P2_ROL_ID (LOV ROLES);
-  el INSERT los guarda; logo real (logo_synpex.png) y enlace de vuelta al login.
+- Pagina 2: registro con usuario, correo y contrasena (sin empresa ni rol: los
+  asigna quien activa), validaciones de usuario y correo unicos, logo real y
+  enlace de vuelta al login.
 - Pagina 4: validacion "Activo exige empresa y rol" (-20014), validacion de usuario
   unico case-insensitive (-20015), boton Desbloquear y ayuda de P4_PASSWORD al dia.
 - Pagina 14: rotulos visibles (plantilla de campo 2320077351817916916; antes usaba
@@ -108,3 +109,28 @@ Estado medido: ANA ACTIVO, empresa 1, rol 1006 (CONSULTA),
 REINTENTOS_FALLIDOS = 3, BLOQUEADO_HASTA nulo (hacen falta 5).
 La validacion 'Activo exige empresa y rol' rechazo la activacion sin
 empresa/rol y acepto la activacion con ambos.
+
+==========================================================
+Revision de codigo final (2026-11-05): lo que se corrigio
+==========================================================
+1. El bloqueo solo funcionaba una vez. Tras vencer, BLOQUEADO_HASTA seguia no
+   nulo y el CASE reescribia la fecha vencida: la cuenta no se volvia a bloquear
+   nunca. Ahora, si el bloqueo vencio, el contador arranca de cero y vuelve a
+   bloquear a los 5 fallos. Prueba: caso 12 (adelanta el bloqueo al pasado, 5
+   fallos y exige bloqueo nuevo).
+2. ESTADO nulo autenticaba: upper(null) not in (...) es NULL y el IF no entraba.
+   Ahora nvl(upper(estado),'#'). Prueba: caso 13.
+3. Los mensajes revelaban si el usuario existe, esta inactivo o bloqueado. Ahora
+   todos devuelven el mismo texto y el motivo queda en SYN_LOGIN_LOG.
+4. La migracion tenia los acentos rotos ('contrase??a') porque se genero en ASCII;
+   se regenero desde los archivos canonicos en UTF-8 y se recompilo la base.
+5. install.sql no creaba SYN_LOGIN_LOG ni las columnas de bloqueo, y compilaba
+   fn_autenticar_usuario antes de prc_auth_registrar (quedaba INVALID). Se agrego
+   tabla/syn_login_log.sql, las 3 columnas en tabla/usuario.sql y el procedimiento
+   antes del bloque de funciones.
+6. prc_auth_registrar usa for update nowait: si un admin esta guardando la fila, el
+   login no espera indefinidamente (ORA-00054 se ignora y el intento queda en el log).
+7. fn_verificar_password rechaza hashes con mas de 1.000.000 de iteraciones.
+8. CHECK CK_SYN_LOGIN_LOG_RESULTADO con los 7 valores posibles.
+
+Verificacion final: RESULTADO: FALLAS=0 con 13 casos.

@@ -44,7 +44,7 @@ begin
     v_sal  := hextoraw(substr(p_hash, v_p2 + 1, v_p3 - v_p2 - 1));
     v_hash := hextoraw(substr(p_hash, v_p3 + 1));
 
-    if v_iter is null or v_iter < 1 or v_sal is null or v_hash is null then
+    if v_iter is null or v_iter < 1 or v_iter > 1000000 or v_sal is null or v_hash is null then
         return false;
     end if;
 

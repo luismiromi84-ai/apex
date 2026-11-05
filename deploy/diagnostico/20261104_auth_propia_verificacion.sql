@@ -250,6 +250,29 @@ begin
     v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso10: no entra con espacios]';
   end if;
 
+  -- caso 12: un bloqueo vencido tiene que volver a contar y a bloquear
+  update usuario set reintentos_fallidos = 5, bloqueado_hasta = sysdate - 1/1440
+   where usuario_id = v_id2;
+  commit;
+  for i in 1..5 loop
+    v_ok := fn_autenticar_usuario('ZZ_AUTH_TEST', 'mala');
+  end loop;
+  select reintentos_fallidos, bloqueado_hasta into v_reint, v_bloq
+    from usuario where usuario_id = v_id2;
+  if v_bloq is null or v_bloq <= sysdate then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso12: el bloqueo no se rearma]';
+  end if;
+
+  -- caso 13: estado nulo no autentica
+  update usuario set estado = null, bloqueado_hasta = null, reintentos_fallidos = 0,
+                     password_hash = sypex_hash_password('Clave#2026')
+   where usuario_id = v_id2;
+  commit;
+  v_ok := fn_autenticar_usuario('ZZ_AUTH_TEST', 'Clave#2026');
+  if v_ok then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso13: autentica con estado nulo]';
+  end if;
+
   delete from syn_login_log where usuario_intentado = 'ZZ_AUTH_TEST';
   delete from usuario where usuario_id = v_id2;
   commit;

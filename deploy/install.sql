@@ -22,6 +22,7 @@ prompt ============================================================
 @@../tabla/empresas.sql
 @@../tabla/syn_roles.sql
 @@../tabla/usuario.sql
+@@../tabla/syn_login_log.sql
 @@../tabla/clientes.sql
 @@../tabla/impuestos.sql
 @@../tabla/tipo_cambio.sql
@@ -41,6 +42,8 @@ prompt 3/6 Funciones
 prompt ============================================================
 prompt    Requiere, como ADMIN, antes de este bloque:
 prompt      grant execute on sys.dbms_crypto to <esquema>;
+prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
+@@../procedimientos/prc_auth_registrar.sql
 @@../funciones/sypex_hash_password.sql
 @@../funciones/fn_verificar_password.sql
 @@../funciones/fn_password_es_legado.sql
@@ -65,7 +68,6 @@ prompt ============================================================
 prompt ============================================================
 prompt 5/6 Procedimientos
 prompt ============================================================
-@@../procedimientos/prc_auth_registrar.sql
 @@../procedimientos/prc_post_login.sql
 @@../procedimientos/prc_actualizar_tasas_diarias.sql
 @@../procedimientos/prc_log_reset_password.sql

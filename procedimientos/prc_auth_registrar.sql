@@ -35,11 +35,13 @@ begin
 
     if p_usuario_id is not null then
         begin
+            -- nowait: si un administrador esta guardando esa fila, el login no
+            -- se queda esperando un lock; se registra el intento y ya.
             select nvl(reintentos_fallidos, 0), bloqueado_hasta
               into v_reintentos, v_bloqueado
               from usuario
              where usuario_id = p_usuario_id
-               for update;
+               for update nowait;
 
             if p_resultado = 'OK' then
                 update usuario set
@@ -49,11 +51,14 @@ begin
                        password_hash        = nvl(p_nuevo_hash, password_hash)
                  where usuario_id = p_usuario_id;
             elsif p_resultado = 'CLAVE_MALA' then
+                -- si el bloqueo anterior ya vencio, la cuenta empieza de cero
+                if v_bloqueado is not null and v_bloqueado <= sysdate then
+                    v_reintentos := 0;
+                end if;
                 v_reintentos := v_reintentos + 1;
                 update usuario set
                        reintentos_fallidos  = v_reintentos,
                        bloqueado_hasta      = case
-                           when v_bloqueado is not null then v_bloqueado
                            when v_reintentos >= c_max_intentos
                                then sysdate + c_minutos_bloqueo / 1440
                            else null
@@ -70,6 +75,12 @@ begin
         exception
             when no_data_found then
                 null;  -- el usuario desaparecio entre autenticar y registrar
+            when others then
+                if sqlcode = -54 then
+                    null;  -- fila bloqueada por otra sesion: solo queda el log
+                else
+                    raise;
+                end if;
         end;
     end if;
 
