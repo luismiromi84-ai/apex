@@ -73,6 +73,7 @@ prompt ============================================================
 @@../procedimientos/prc_post_login.sql
 @@../procedimientos/prc_actualizar_tasas_diarias.sql
 @@../procedimientos/prc_log_reset_password.sql
+@@../procedimientos/prc_purgar_logs.sql
 
 prompt ============================================================
 prompt 6/6 Verificación
