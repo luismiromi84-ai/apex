@@ -25,5 +25,16 @@ create or replace PACKAGE pkg_factura_detalle IS
         p_id_detalle           IN NUMBER
     );
 
+    -- Reconstruye todo el detalle de una factura a partir de un presupuesto,
+    -- aplicando el factor de la tasa. Lo usa PKG_FACTURACION al facturar, para
+    -- que TODO lo que escribe en FACTURAS_DET pase por este package.
+    PROCEDURE reemplazar_desde_presupuesto (
+        p_id_factura     IN NUMBER,
+        p_id_presupuesto IN NUMBER,
+        p_factor         IN NUMBER,
+        p_tasa_cambio    IN NUMBER,
+        p_usuario        IN VARCHAR2
+    );
+
 END pkg_factura_detalle;
 /

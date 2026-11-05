@@ -215,36 +215,15 @@ create or replace PACKAGE BODY pkg_facturacion AS
                   FROM presupuestos p
                  WHERE p.id_presupuesto = v_id_presupuesto;
 
-                -- 4. Reconstruir el detalle de la factura aplicando también el factor a las líneas
+                -- 4. Reconstruir el detalle de la factura aplicando también el factor a las líneas.
+                --    El INSERT vive en PKG_FACTURA_DETALLE: un solo package escribe en FACTURAS_DET.
                 IF p_id_factura IS NOT NULL THEN
-                    DELETE FROM facturas_det WHERE id_factura = p_id_factura;
-
-                    INSERT INTO facturas_det (
-                        id_factura, num_linea, id_producto, codigo_producto, descripcion,
-                        cantidad, precio_unitario, porcentaje_descuento, monto_descuento,
-                        id_impuesto, porcentaje_impuesto, monto_impuesto, subtotal_linea,
-                        monto_total_linea, tasa_cambio_aplicada, subtotal_bs, total_bs
-                    )
-                    SELECT 
-                        p_id_factura, 
-                        ROW_NUMBER() OVER (ORDER BY pd.id_detalle) AS num_linea,
-                        pd.id_producto_servicio, 
-                        NULL AS codigo_producto,
-                        pd.descripcion,
-                        pd.cantidad, 
-                        pd.precio_unitario * v_factor, -- Recalcula precio unitario con la nueva tasa
-                        NVL(pd.porcentaje_descuento, 0), 
-                        NVL(pd.monto_descuento, 0) * v_factor,
-                        pd.id_impuesto, 
-                        NVL(pd.porcentaje_impuesto, 16), 
-                        NVL(pd.monto_impuesto, 0) * v_factor,
-                        NVL(pd.subtotal_linea, pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) * v_factor,
-                        NVL(pd.monto_total_linea, (pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) + NVL(pd.monto_impuesto, 0)) * v_factor,
-                        v_tasa,
-                        (NVL(pd.subtotal_linea, pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) * v_factor) * v_tasa,
-                        (NVL(pd.monto_total_linea, (pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) + NVL(pd.monto_impuesto, 0)) * v_factor) * v_tasa
-                      FROM presupuestos_det pd
-                     WHERE pd.id_presupuesto = v_id_presupuesto;
+                    pkg_factura_detalle.reemplazar_desde_presupuesto(
+                        p_id_factura     => p_id_factura,
+                        p_id_presupuesto => v_id_presupuesto,
+                        p_factor         => v_factor,
+                        p_tasa_cambio    => v_tasa,
+                        p_usuario        => v('APP_USER'));
                 END IF;
             END IF;
         ELSE

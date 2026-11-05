@@ -65,6 +65,8 @@ prompt ============================================================
 @@../package/pkg_presupuesto_detalle.sql
 @@../package/pkg_facturacion.sql
 @@../package/pkg_factura_detalle.sql
+@@../package/pkg_gasto_real.sql
+@@../package/pkg_empresa_logo.sql
 @@../package/pkg_reportes_presupuesto.sql
 @@../package/pkg_reportes_factura.sql
 

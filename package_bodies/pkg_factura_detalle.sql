@@ -167,5 +167,54 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
             raise_application_error(-20002, SQLERRM);
     END eliminar_detalle;
 
+    --------------------------------------------------------------------------------
+    -- PROCEDIMIENTO: REEMPLAZAR EL DETALLE DESDE UN PRESUPUESTO
+    -- Vivia dentro de PKG_FACTURACION.prc_guardar_factura, con el INSERT directo.
+    -- Se movio aqui para que todos los INSERT sobre FACTURAS_DET esten en el
+    -- mismo package: el bug de los porcentajes se pudo colar justo por tener dos
+    -- escritores.
+    --------------------------------------------------------------------------------
+    PROCEDURE reemplazar_desde_presupuesto (
+        p_id_factura     IN NUMBER,
+        p_id_presupuesto IN NUMBER,
+        p_factor         IN NUMBER,
+        p_tasa_cambio    IN NUMBER,
+        p_usuario        IN VARCHAR2
+    ) IS
+        v_factor number := nvl(p_factor, 1);
+        v_tasa   number := nvl(p_tasa_cambio, 1);
+    BEGIN
+        DELETE FROM facturas_det WHERE id_factura = p_id_factura;
+
+        INSERT INTO facturas_det (
+            id_factura, num_linea, id_producto, codigo_producto, descripcion,
+            cantidad, precio_unitario, porcentaje_descuento, monto_descuento,
+            id_impuesto, porcentaje_impuesto, monto_impuesto, subtotal_linea,
+            monto_total_linea, tasa_cambio_aplicada, subtotal_bs, total_bs,
+            creado_por
+        )
+        SELECT
+            p_id_factura,
+            ROW_NUMBER() OVER (ORDER BY pd.id_detalle) AS num_linea,
+            pd.id_producto_servicio,
+            NULL AS codigo_producto,
+            pd.descripcion,
+            pd.cantidad,
+            pd.precio_unitario * v_factor,
+            NVL(pd.porcentaje_descuento, 0),
+            NVL(pd.monto_descuento, 0) * v_factor,
+            pd.id_impuesto,
+            NVL(pd.porcentaje_impuesto, 16),
+            NVL(pd.monto_impuesto, 0) * v_factor,
+            NVL(pd.subtotal_linea, pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) * v_factor,
+            NVL(pd.monto_total_linea, (pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) + NVL(pd.monto_impuesto, 0)) * v_factor,
+            v_tasa,
+            (NVL(pd.subtotal_linea, pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) * v_factor) * v_tasa,
+            (NVL(pd.monto_total_linea, (pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) + NVL(pd.monto_impuesto, 0)) * v_factor) * v_tasa,
+            p_usuario
+          FROM presupuestos_det pd
+         WHERE pd.id_presupuesto = p_id_presupuesto;
+    END reemplazar_desde_presupuesto;
+
 END pkg_factura_detalle;
 /

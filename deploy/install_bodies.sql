@@ -14,6 +14,8 @@ whenever sqlerror exit sql.sqlcode rollback
 @@../package_bodies/pkg_presupuesto_detalle.sql
 @@../package_bodies/pkg_facturacion.sql
 @@../package_bodies/pkg_factura_detalle.sql
+@@../package_bodies/pkg_gasto_real.sql
+@@../package_bodies/pkg_empresa_logo.sql
 @@../package_bodies/pkg_reportes_presupuesto.sql
 @@../package_bodies/pkg_reportes_factura.sql
 
