@@ -47,7 +47,17 @@ begin
     apex_util.set_session_state('F_DEBE_CAMBIAR_CLAVE', v_debe_cambiar);
 exception
     when no_data_found then
+        -- Falla controlada: se deja constancia del motivo y se corta la entrada
+        -- con un mensaje entendible. No se sigue con F_* nulos (era el bug viejo).
+        begin
+            prc_auth_registrar(p_usuario_id        => null,
+                               p_resultado         => 'SIN_EMPRESA',
+                               p_usuario_intentado => v('APP_USER'));
+        exception
+            when others then null;
+        end;
+
         raise_application_error(-20013,
-            'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
+            'Tu cuenta no tiene empresa o rol asignado. Contacta al administrador.');
 end prc_post_login;
 /

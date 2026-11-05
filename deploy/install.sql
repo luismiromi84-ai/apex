@@ -52,7 +52,9 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_tasa_cambio.sql
 @@../funciones/fn_tiene_rol.sql
 @@../funciones/fn_usuario_empresa_valida.sql
-@@../funciones/fn_empresas_del_usuario.sql
+@@../funciones/fn_presupuesto_propio.sql
+@@../funciones/fn_factura_propio.sql
+@@../funciones/fn_empresas_del_usuario.sql  
 
 prompt ============================================================
 prompt 4/6 Especificaciones de packages

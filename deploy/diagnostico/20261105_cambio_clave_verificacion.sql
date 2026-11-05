@@ -51,6 +51,12 @@ select 'FALLA: prc_post_login no publica F_DEBE_CAMBIAR_CLAVE' as caso from dual
                       and lower(text) like '%f_debe_cambiar_clave%');
 /
 
+select 'FALLA: prc_post_login no registra el fallo SIN_EMPRESA' as caso from dual
+ where not exists (select 1 from all_source
+                    where owner='WKSP_SYPEXWS' and name='PRC_POST_LOGIN'
+                      and upper(text) like '%SIN_EMPRESA%');
+/
+
 select 'FALLA: F_DEBE_CAMBIAR_CLAVE no es item de aplicacion' as caso from dual
  where not exists (select 1 from apex_application_items
                     where application_id=100 and item_name='F_DEBE_CAMBIAR_CLAVE');
