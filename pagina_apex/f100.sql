@@ -8490,6 +8490,18 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000073)
+,p_db_column_name=>'SITUACION'
+,p_display_order=>27
+,p_column_identifier=>'K'
+,p_column_label=>'Situación'
+,p_column_type=>'COMPUTED'
+,p_column_expr=>'case when bloqueado_hasta > sysdate then ''Bloqueado hasta '' || to_char(bloqueado_hasta, ''HH24:MI'') else ''Libre'' end'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(10566808651198528)
 ,p_db_column_name=>'USERNAME'
 ,p_display_order=>2
