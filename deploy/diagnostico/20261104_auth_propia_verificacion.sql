@@ -40,7 +40,9 @@ select 'FALLA: ' || o || ' no compila' as caso
   from (select 'PRC_AUTH_REGISTRAR' o from dual union all
         select 'SYPEX_HASH_PASSWORD'  from dual union all
         select 'FN_VERIFICAR_PASSWORD' from dual union all
-        select 'FN_PASSWORD_ES_LEGADO' from dual)
+        select 'FN_PASSWORD_ES_LEGADO' from dual union all
+        select 'FN_AUTENTICAR_USUARIO' from dual union all
+        select 'PRC_POST_LOGIN'        from dual)
  where not exists (select 1 from all_objects
                     where owner = 'WKSP_SYPEXWS' and object_name = o and status = 'VALID');
 /
@@ -250,6 +252,25 @@ begin
 
   delete from syn_login_log where usuario_intentado = 'ZZ_AUTH_TEST';
   delete from usuario where usuario_id = v_id2;
+  commit;
+
+  -- 2.4 prc_post_login resuelve empresa y rol tambien para estado 'A'
+  delete from usuario where upper(username) = 'ZZ_POST_TEST';
+  insert into usuario (username, email, password_hash, estado, fecha_creacion, id_empresa, rol_id)
+  values ('ZZ_POST_TEST', 'zz3@test.local', 'x', 'A', sysdate, 1, 1001);
+  commit;
+
+  select count(*) into v_log
+    from usuario u
+    join empresas e on e.id_empresa = u.id_empresa
+    join syn_roles r on r.id_rol = u.rol_id
+   where upper(u.username) = 'ZZ_POST_TEST'
+     and u.estado in ('ACTIVO', 'A', '1');
+  if v_log = 0 then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso11: estado A no resuelve empresa/rol]';
+  end if;
+
+  delete from usuario where upper(username) = 'ZZ_POST_TEST';
   commit;
 
   raise_application_error(-20100, 'RESULTADO: FALLAS=' || v_fallas || v_detalle);
