@@ -1,37 +1,67 @@
-create or replace FUNCTION fn_clean_num (p_val IN VARCHAR2) 
+-- =============================================================================
+-- fn_clean_num.sql
+--
+-- Convierte texto en numero aceptando formato latino (1.234,56) y estandar
+-- (1234.56).
+--
+-- Cambio del 2026-11-05: antes borraba los caracteres que no eran numero con un
+-- REGEXP_REPLACE, asi que "12,5x" se convertia en 12,5 y el error desaparecia.
+-- Ahora se valida la cadena completa: si no es un numero, devuelve NULL. Un NULL
+-- revienta en una columna obligatoria y se ve; un 12,5 silencioso no.
+--
+-- Reglas:
+--   * NULL o cadena vacia -> 0 (una casilla vacia significa cero, no error).
+--   * Numero valido -> su valor.
+--   * Cualquier otra cosa -> NULL. NO se recorta ni se convierte a 0.
+--
+-- Ojo: los llamadores que hacian nvl(fn_clean_num(x), 0) siguen dando cero; los
+-- que no, ahora reciben NULL y fallan de forma visible.
+-- =============================================================================
+
+create or replace FUNCTION fn_clean_num (p_val IN VARCHAR2)
 RETURN NUMBER IS
     l_limpio VARCHAR2(100);
 BEGIN
-    IF p_val IS NULL OR TRIM(p_val) = '' THEN  
-        RETURN 0;  
+    IF p_val IS NULL OR TRIM(p_val) IS NULL THEN
+        RETURN 0;
     END IF;
 
-    -- 1. Eliminar cualquier carácter que no sea número, punto, coma o signo menos
-    l_limpio := REGEXP_REPLACE(p_val, '[^0-9\.,-]', '');
+    l_limpio := TRIM(p_val);
 
-    -- 2. Si usa la coma como decimal (formato venezolano/latino), 
-    -- reemplazamos los puntos de miles por nada y la coma por punto para que TO_NUMBER lo entienda universalmente.
-    -- O si viene con formato estándar con punto, lo adaptamos.
-    -- Ejemplo seguro: si contiene coma, asumimos coma decimal y punto de mil.
+    -- Solo digitos, separadores y signo. Si aparece cualquier otra cosa
+    -- (letras, simbolos de moneda, basura), no es un numero.
+    IF NOT REGEXP_LIKE(l_limpio, '^[-+]?[0-9]+([.,][0-9]+)*$')
+       AND NOT REGEXP_LIKE(l_limpio, '^[-+]?[.,][0-9]+$') THEN
+        RETURN NULL;
+    END IF;
+
+    -- Formato latino: si tiene coma y punto, el que este mas a la derecha es el
+    -- decimal y el otro el separador de miles.
     IF INSTR(l_limpio, ',') > 0 AND INSTR(l_limpio, '.') > 0 THEN
-        -- Si tiene ambos, el que esté más a la derecha suele ser el decimal
         IF INSTR(l_limpio, ',') > INSTR(l_limpio, '.') THEN
-            l_limpio := REPLACE(l_limpio, '.', ''); -- Quitar puntos de miles
-            l_limpio := REPLACE(l_limpio, ',', '.'); -- Cambiar coma decimal por punto
+            l_limpio := REPLACE(l_limpio, '.', '');
+            l_limpio := REPLACE(l_limpio, ',', '.');
         ELSE
-            l_limpio := REPLACE(l_limpio, ',', ''); -- Quitar comas de miles
+            l_limpio := REPLACE(l_limpio, ',', '');
         END IF;
     ELSIF INSTR(l_limpio, ',') > 0 THEN
-        -- Solo tiene coma, la convertimos a punto decimal
         l_limpio := REPLACE(l_limpio, ',', '.');
     END IF;
 
-    -- 3. Conversión directa y limpia
-    RETURN TO_NUMBER(l_limpio);
-    
+    IF l_limpio IN ('.', '-', '+', '-.', '+.') THEN
+        RETURN NULL;
+    END IF;
+
+    -- El signo + no lo acepta la mascara de TO_NUMBER.
+    IF SUBSTR(l_limpio, 1, 1) = '+' THEN
+        l_limpio := SUBSTR(l_limpio, 2);
+    END IF;
+
+    RETURN TO_NUMBER(l_limpio, 'FM999999999999999999.9999', 'NLS_NUMERIC_CHARACTERS=''.,''');
+
 EXCEPTION
     WHEN OTHERS THEN
-        -- Opcional: puedes registrar el error con RAISE_APPLICATION_ERROR si vuelve a fallar para depurar
-        RETURN 0;
+        -- Cadena con pinta de numero pero que no convierte: es invalida, no cero.
+        RETURN NULL;
 END fn_clean_num;
 /
