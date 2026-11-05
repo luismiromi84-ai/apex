@@ -1,0 +1,120 @@
+REPORTES DE IMPRESION - PAGINAS 11 Y 12
+========================================
+Fecha: 2026-11-05
+Base:  Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS, app 100
+Sesion: ADMIN -> alter session set current_schema = WKSP_SYPEXWS
+
+1. Estado ANTES (medido ejecutando las funciones, no leyendo el codigo)
+----------------------------------------------------------------------
+- fn_imprimir_presupuesto(1046)  ...... 4577 bytes  (1046 no existe; devuelve el reporte de relleno)
+- fn_imprimir_presupuesto(999999)...... 4577 bytes  (identico)
+- fn_imprimir_presupuesto(null)  ...... 4577 bytes  (identico)
+  Texto: "Sypex Systems RIF / NIT: Sistema de Facturacion y Presupuestos B2B
+          PRESUPUESTO No: Emision: Vencimiento: Cliente: RIF / Cedula:
+          Estado: PENDIENTE Tasa BCV: VES ... TOTAL USD: $0.00"
+  -> Un documento inexistente producia un reporte completo, con totales en cero
+     y una empresa que no es la del cliente. Parecia valido.
+
+- Factura 1040 (MXN, empresa 1): "Tasa BCV: 1.0000 VES"
+  -> La moneda local y la etiqueta fiscal se imprimian fijas.
+
+- Factura 1040: lineas 208,80 + 58,00 = 266,80 pero el pie decia
+  "Subtotal Bruto: $230.00". El subtotal no cuadraba con el detalle.
+
+- Factura 1040: "N Control: F-1040" repetido del folio (uuid_fiscal nulo).
+
+- Descripcion con '<b>' se insertaba tal cual: sin escapar.
+
+- Solo la pagina 9 tiene columna "Impresion" -> pagina 11.
+  NINGUNA pagina enlaza a la 12: el presupuesto no se puede imprimir desde la app.
+
+2. Verificacion (primero en rojo)
+---------------------------------
+deploy/diagnostico/20261105_reportes_verificacion.sql
+  ejecucion 1 ................................ RESULTADO: FALLAS=7
+  ejecucion 2 (casos C4/C5/C7/C9 completados) . RESULTADO: FALLAS=14
+    C1 ID nulo devuelve relleno / no informa
+    C2 ID inexistente devuelve relleno / no avisa
+    C3 factura inexistente idem
+    C4 factura de empresa MX habla de BCV / sin RFC
+    C5 presupuesto de empresa MX rotulado RIF / NIT, sin RFC, con BCV
+    C6 descripcion se inserta sin escapar
+    C9 N Control sin uuid_fiscal
+
+3. Cambios aplicados
+--------------------
+package_bodies/pkg_reportes_presupuesto.sql   (body completo)
+package_bodies/pkg_reportes_factura.sql       (body completo)
+deploy/migrations/20261105_reportes_impresion.sql
+pagina_apex/f100.sql  -> paginas 11 y 12: boton 'Descarga' -> 'Imprimir';
+                          se quita el @media print duplicado (vive en el package)
+
+  - Aviso en lugar de reporte falso (ID nulo o inexistente).
+  - sys.htf.escape_sc en cliente, descripcion, observaciones, estado, folio y RFC.
+  - Etiquetas por pais: EMPRESAS.TIPO_IDENT_FISCAL (RIF/RFC) y PAISES.MONEDA_LOCAL
+    (VES -> "Tasa BCV"/"Bs.", MXN -> "Tipo de cambio"/"MXN $", USD -> sin bloque local).
+  - Detalle con columnas Desc. e Impuesto; el pie es
+    Subtotal (sin impuestos) + Descuentos + Impuestos = TOTAL.
+  - "N Control" solo si uuid_fiscal no es nulo.
+  - fn_num() con NLS_NUMERIC_CHARACTERS='.,' fijo.
+
+4. Verificacion despues
+-----------------------
+deploy/diagnostico/20261105_reportes_verificacion.sql .. RESULTADO: FALLAS=0
+
+Muestras (texto plano del HTML generado):
+
+  PRESUPUESTO 1045
+    Empresa Principal RIF: EMP123456789 ... PRESUPUESTO No: 1045
+    Emision: 19/08/2026  Vencimiento: N/D
+    Cliente: Servicios Monterrey SA de CV  RIF / Cedula: SCM900202CD2
+    Estado: RECHAZADO  Tasa BCV: 1.0000 VES
+     1  Linea 1 del presupuesto 1045  3.00 900.00 0.00 432.00 3,132.00 3,132.00
+    Subtotal (sin impuestos): $2,700.00  Impuestos / IVA: $432.00
+    TOTAL USD: $3,132.00  TOTAL BS: Bs. 3,132.00
+
+  FACTURA 1040 (MXN, sin uuid)
+    ... FACTURA DE VENTA  No: F-1040  Fecha: 01/07/2026
+     1  3.00 60.00 0.00 28.80 208.80 208.80
+     2  1.00 50.00 0.00  8.00  58.00  58.00
+    Subtotal (sin impuestos): $230.00  Impuestos / IVA: $36.80
+    TOTAL USD: $266.80   (208.80 + 58.00 = 266.80, cuadra)
+    -> NO imprime "N Control" porque uuid_fiscal es nulo.
+
+  FACTURA con ID nulo
+    "No se puede imprimir la factura. No se recibio el identificador de la factura."
+
+  Visto como empresa mexicana (prueba dentro de transaccion con rollback):
+    rotulo "RFC", sin "BCV", moneda local MXN.
+
+5. Import del export
+--------------------
+python deploy/conexion/importar_export.py pagina_apex/f100.sql
+  f100.sql: 70 sentencias - ejecutadas OK: 70 en 5.1s
+
+Comprobado despues del import:
+  paginas de la app .............. 16
+  botones 11/12 .................. IMPRIMIR / rotulo "Imprimir" (antes 'Descarga')
+  regiones 11/12 ................. Dynamic Content (intactas)
+  guardas "Valida rol" ........... 10 (paginas 3 a 12)
+  auth ........................... Synpex Custom Auth / Custom
+  esquemas de autorizacion ....... 5
+  objetos INVALID en el esquema ... 0
+  css inline 11/12 ............... 136 caracteres (la nota; antes ~1.500)
+
+6. Trampas encontradas (anotadas en AGENTS.md)
+---------------------------------------------
+- importar_export.py descarta lineas que empiezan por 'set ': un UPDATE con 'set' al
+  inicio de linea queda sin SET (ORA-00971). Poner 'set' al final de la linea anterior.
+- Los bodies canonicos no llevan alter session: compilados tal cual se crean en ADMIN
+  y la app sigue usando el viejo (se creo y luego se borro ADMIN.PKG_REPORTES_PRESUPUESTO).
+- Los acentos se corrompen al pasar por el runner: 'Cedula' con acento no es igual a
+  unistr(...). En HTML se usan entidades (&oacute;) sin pasar por escape_sc.
+- En q'~...~' el cierre es ~'; escribir "$' || expr" deja la expresion dentro del literal.
+
+7. PENDIENTE
+------------
+- Prueba visual en navegador de las paginas 11 y 12 (imprimir y que se oculte el chrome).
+- La pagina 12 sigue sin entrada desde la app: crear la columna/boton de impresion en la
+  pagina 5 (o 7). Es columna nueva de UI -> App Builder (por export falla).
+- El PDF real (opcion C) queda al final del CRONOGRAMA, a la espera del requisito fiscal.

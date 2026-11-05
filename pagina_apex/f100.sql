@@ -14957,50 +14957,7 @@ wwv_flow_imp_page.create_page(
 ,p_alias=>unistr('IMPRESI\00D3N-DE-FACTURA')
 ,p_step_title=>unistr('Impresi\00F3n de Factura')
 ,p_autocomplete_on_off=>'OFF'
-,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'@media print {',
-unistr('    /* 1. Ocultar elementos de navegaci\00F3n, cabeceras, botones y barras de APEX */'),
-'    .t-Header, ',
-'    .t-Footer, ',
-'    .t-Button, ',
-'    .u-no-print, ',
-'    #u-DevToolbar, ',
-'    .apex-developer-toolbar, ',
-'    header, ',
-'    footer, ',
-'    .apex-toolbar, ',
-'    .a-Toolbar, ',
-'    div[role="contentinfo"],',
-'    .a-DevToolbar,',
-'    .t-Body-nav,',
-'    .t-Header-branding {',
-'        display: none !important;',
-'    }',
-'     ',
-'    /* 2. Reiniciar fondos y asegurar visibilidad total */',
-'    body, html {',
-'        background-color: #ffffff !important;',
-'        height: auto !important;',
-'        overflow: visible !important;',
-'    }',
-'',
-unistr('    /* 3. Limpiar m\00E1rgenes y dejar que el contenido fluya correctamente a lo ancho */'),
-'    .t-Body, ',
-'    .t-Body-content, ',
-'    .t-Body-mainContent {',
-'        display: block !important;',
-'        position: static !important;',
-'        width: 100% !important;',
-'        margin: 0 !important;',
-'        padding: 0 !important;',
-'    }',
-'',
-unistr('    /* 4. Evitar que el contenedor del reporte se corte grotescamente entre p\00E1ginas */'),
-'    .t-Body-main {',
-'        margin-left: 0 !important;',
-'        padding: 0 !important;',
-'    }',
-'}'))
+,p_inline_css=>'/* Las reglas @media print de esta pagina las emite el package PKG_REPORTES_*, que genera el documento completo. No duplicarlas aqui. */'
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -15024,13 +14981,13 @@ wwv_flow_imp_page.create_page_plug(
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(23165949215481701)
 ,p_button_sequence=>30
-,p_button_name=>'Descarga'
+,p_button_name=>'IMPRIMIR'
 ,p_static_id=>'descarga'
 ,p_show_as_disabled=>false
 ,p_button_action=>'DEFINED_BY_DA_ACTION'
 ,p_button_template_options=>'#DEFAULT#'
 ,p_button_template_id=>4073839297780169708
-,p_button_image_alt=>'Descarga'
+,p_button_image_alt=>'Imprimir'
 ,p_warn_on_unsaved_changes=>null
 ,p_button_css_classes=>'u-no-print'
 ,p_grid_new_row=>'Y'
@@ -15078,86 +15035,7 @@ wwv_flow_imp_page.create_page(
 ,p_alias=>unistr('IMPRESI\00D3N-DE-PRESUPUESTO')
 ,p_step_title=>unistr('Impresi\00F3n de Presupuesto')
 ,p_autocomplete_on_off=>'OFF'
-,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'@media print {',
-unistr('    /* 1. Ocultar elementos de navegaci\00F3n, cabeceras, botones y barras de APEX */'),
-'    .t-Header, ',
-'    .t-Footer, ',
-'    .t-Button, ',
-'    .u-no-print, ',
-'    #u-DevToolbar, ',
-'    .apex-developer-toolbar, ',
-'    header, ',
-'    footer, ',
-'    .apex-toolbar, ',
-'    .a-Toolbar, ',
-'    div[role="contentinfo"],',
-'    .a-DevToolbar,',
-'    .t-Body-nav,',
-'    .t-Header-branding {',
-'        display: none !important;',
-'    }',
-'     ',
-'    /* 2. Reiniciar fondos y asegurar visibilidad total */',
-'    body, html {',
-'        background-color: #ffffff !important;',
-'        height: auto !important;',
-'        overflow: visible !important;',
-'    }',
-'',
-unistr('    /* 3. Limpiar m\00E1rgenes y dejar que el contenido fluya correctamente a lo ancho */'),
-'    .t-Body, ',
-'    .t-Body-content, ',
-'    .t-Body-mainContent {',
-'        display: block !important;',
-'        position: static !important;',
-'        width: 100% !important;',
-'        margin: 0 !important;',
-'        padding: 0 !important;',
-'    }',
-'',
-unistr('    /* 4. Evitar que el contenedor del reporte se corte grotescamente entre p\00E1ginas */'),
-'    .t-Body-main {',
-'        margin-left: 0 !important;',
-'        padding: 0 !important;',
-'    }',
-'}@media print {',
-unistr('    /* 1. Ocultar todos los elementos de navegaci\00F3n, botones y barras de APEX */'),
-'    .t-Header, ',
-'    .t-Footer, ',
-'    .t-Button, ',
-'    .u-no-print, ',
-'    #u-DevToolbar, ',
-'    .apex-developer-toolbar, ',
-'    header, ',
-'    footer, ',
-'    .apex-toolbar, ',
-'    .a-Toolbar, ',
-'    div[role="contentinfo"],',
-'    .a-DevToolbar {',
-'        display: none !important;',
-'    }',
-'    ',
-unistr('    /* 2. Reiniciar los estilos corporativos para la hoja de impresi\00F3n */'),
-'    body, html {',
-'        background-color: #ffffff !important;',
-'        height: 100% !important;',
-'        overflow: visible !important;',
-'    }',
-'',
-'    /* 3. Forzar al cuerpo principal a mostrarse completo desde el inicio de la hoja */',
-'    .t-Body, ',
-'    .t-Body-content, ',
-'    .t-Body-mainContent {',
-'        display: block !important;',
-'        position: absolute !important;',
-'        top: 0 !important;',
-'        left: 0 !important;',
-'        width: 100% !important;',
-'        margin: 0 !important;',
-'        padding: 0 !important;',
-'    }',
-'}'))
+,p_inline_css=>'/* Las reglas @media print de esta pagina las emite el package PKG_REPORTES_*, que genera el documento completo. No duplicarlas aqui. */'
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -15181,13 +15059,13 @@ wwv_flow_imp_page.create_page_plug(
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(23166308051481705)
 ,p_button_sequence=>30
-,p_button_name=>'Descarga'
+,p_button_name=>'IMPRIMIR'
 ,p_static_id=>'new'
 ,p_show_as_disabled=>false
 ,p_button_action=>'DEFINED_BY_DA_ACTION'
 ,p_button_template_options=>'#DEFAULT#'
 ,p_button_template_id=>4073839297780169708
-,p_button_image_alt=>'Descarga'
+,p_button_image_alt=>'Imprimir'
 ,p_warn_on_unsaved_changes=>null
 ,p_button_css_classes=>'u-no-print'
 ,p_grid_new_row=>'Y'
