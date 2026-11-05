@@ -16019,7 +16019,7 @@ unistr('    raise_application_error(-20012, ''La contrase\00F1a debe tener al me
 '        p_resultado => ''OK'');',
 '',
 unistr('    apex_application.g_print_success_message := ''Contrase\00F1a actualizada. Inicia sesi\00F3n con la nueva.'';'),
-'end;')))
+'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_internal_uid=>43000000000000047
