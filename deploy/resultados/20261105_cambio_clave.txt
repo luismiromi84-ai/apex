@@ -1,0 +1,90 @@
+CAMBIO DE CLAVE OBLIGATORIO
+===========================
+Fecha: 2026-11-05
+Base:  Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS, app 100
+Plan:  docs/superpowers/plans/2026-11-05-cambio-clave-obligatorio.md
+Spec:  docs/superpowers/specs/2026-11-05-cambio-clave-obligatorio-design.md
+
+1. Que hace
+-----------
+Si la contrasena de un usuario la eligio un administrador, el usuario no puede usar la
+app hasta cambiarla:
+
+  - USUARIO.DEBE_CAMBIAR_CLAVE ('S'/'N', DEFAULT 'N').
+  - Pagina 4: el alta nace en 'S' y el reseteo de clave la pone en 'S'.
+  - Pagina 2 y pagina 14 (autoservicio): la elige el usuario, no se marca.
+  - prc_post_login deja F_DEBE_CAMBIAR_CLAVE en sesion.
+  - Un proceso BEFORE_HEADER en la pagina global (0) redirige a la pagina 14 mientras
+    este en 'S'. Exentas: la propia 14 y el login (9999).
+  - La pagina 14, en ese modo, identifica al usuario por APP_USER (no por lo que se
+    escriba), cambia el hash, limpia la bandera, resetea contadores y vuelve a Home.
+
+2. Entregado (por tareas y commits)
+-----------------------------------
+  T1  80c71d0  Columna + CHECK; migracion idempotente con compile_schema al final
+      829325d  (correccion: recompila el esquema tras el ALTER)
+  T2  3b2fbaa  prc_post_login publica F_DEBE_CAMBIAR_CLAVE
+  T3  1973905  Pagina 4: alta y reseteo marcan 'S'
+  T4  79f14ef  Pagina 14: rama forzada y items opcionales
+  T5  60f8991  Item de aplicacion + guarda en la pagina 0
+      f0198a4  (correccion: parentesis de mas en el proceso de la 14)
+  T6  este archivo + verificacion + AGENTS.md
+
+3. Incidentes (y como se resolvieron)
+-------------------------------------
+  a) El ALTER TABLE dejo 8 objetos INVALID (FN_AUTENTICAR_USUARIO, PRC_AUTH_REGISTRAR,
+     PRC_POST_LOGIN, FN_EMPRESAS_DEL_USUARIO, FN_USUARIO_EMPRESA_VALIDA y 3 package
+     bodies) sin dejar nada en ALL_ERRORS. La app no habria podido autenticar.
+     -> Medido, recompilado con dbms_utility.compile_schema y metido en la migracion,
+        que ahora termina recompilando y validando 0 invalidos.
+
+  b) F_DEBE_CAMBIAR_CLAVE no existia como item de aplicacion y el plan no lo creaba:
+     set_session_state no falla, pero v() habria devuelto nulo y la guarda nunca
+     habria saltado. Lo detecto el implementador de T2. -> Se creo el item en T5.
+
+  c) El primer import fallo en la sentencia 66 (PLS-00103): el proceso nuevo cerraba
+     `'end;')))` con tres parentesis cuando solo habia dos abiertos (el unistr de la
+     linea anterior ya consumia uno). El export revierte entero, asi que la app quedo
+     intacta (16 paginas, 4 items de aplicacion). -> `'end;'))` y el import aplica.
+
+  d) La propia verificacion fallo dos veces antes de servir: una `/` de separador
+     olvidada (ORA-03405) y una fecha en una variable NUMBER (ORA-00932).
+
+4. Verificacion
+---------------
+deploy/diagnostico/20261105_cambio_clave_verificacion.sql .... FALLAS=0  (10 casos)
+deploy/diagnostico/20261104_auth_propia_verificacion.sql ...... FALLAS=0  (13 casos)
+
+Import del export: 71 sentencias, OK en 2.4s.
+
+Comprobado despues del import (15 comprobaciones, 0 fallas):
+  16 paginas                                         OK
+  item F_DEBE_CAMBIAR_CLAVE declarado (5 items)       OK
+  proceso cambio-clave-obligatorio en la pagina 0     OK
+    fuente: declare v_pagina number := nv('APP_PAGE_ID'); begin if nvl(v('F_DEBE...
+  pagina 4: alta y reseteo mencionan la bandera       OK
+  pagina 14: rama forzada y cierre en end;            OK
+  P14_USERNAME y P14_EMAIL opcionales                 OK
+  10 guardas "Valida rol" intactas                    OK
+  botones Imprimir en 11 y 12                         OK
+  columna Impresion en la pagina 5                    OK
+  auth personalizada y 5 esquemas de autorizacion     OK
+  0 objetos invalidos / 0 errores de compilacion      OK
+  14 usuarios en 'N'                                  OK
+
+5. PENDIENTE (necesita navegador)
+---------------------------------
+- Crear un usuario en la pagina 4 y entrar con la clave que puso el administrador:
+  debe caer en la pagina 14.
+- Con la bandera activa, escribir a mano f?p=100:5: debe volver a la 14.
+- Cambiar la clave: debe volver a Home (pagina 1) y dejar de forzar.
+- Con la bandera activa, intentar -20011 (no coinciden) y -20012 (menos de 8).
+- Volver a entrar con la clave nueva: sin redireccion.
+- Un administrador que se resetea su propia clave tambien queda forzado (es correcto).
+- Confirmar que el redirect no deja la URL rara si DEBUG viene vacio.
+
+6. Reversa
+----------
+  alter table usuario drop column debe_cambiar_clave;
+  begin dbms_utility.compile_schema('WKSP_SYPEXWS', false); end;
+  Y reimportar el export anterior (git checkout <commit previo> -- pagina_apex/f100.sql).
