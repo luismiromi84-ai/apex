@@ -8618,35 +8618,6 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>43000000000000001
 );
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(43000000000000063)
-,p_plug_name=>'Últimos intentos de acceso'
-,p_static_id=>'ultimos-intentos-acceso'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
-,p_plug_template=>4073835273271169698
-,p_plug_display_sequence=>20
-,p_plug_item_display_point=>'ABOVE'
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    v_html VARCHAR2(32767);',
-'BEGIN',
-'    v_html := ''<table class="t-Report-report" style="width:100%">'' ||',
-'              ''<thead><tr><th>Fecha</th><th>Usuario</th><th>IP</th><th>Resultado</th></tr></thead><tbody>'';',
-'    FOR r IN (SELECT TO_CHAR(fecha, ''DD-MM-YYYY HH24:MI'') AS fecha_txt,',
-'                     usuario_intentado, ip, resultado',
-'                FROM syn_login_log',
-'               ORDER BY fecha DESC',
-'               FETCH FIRST 30 ROWS ONLY) LOOP',
-'        v_html := v_html || ''<tr><td>'' || r.fecha_txt || ''</td><td>'' ||',
-'                  NVL(r.usuario_intentado, ''-'') || ''</td><td>'' || NVL(r.ip, ''-'') ||',
-'                  ''</td><td>'' || r.resultado || ''</td></tr>'';',
-'    END LOOP;',
-'    v_html := v_html || ''</tbody></table>'';',
-'    RETURN v_html;',
-'END;'))
-,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
-);
 end;
 /
 prompt --application/pages/page_00004
@@ -16107,6 +16078,7 @@ unistr('apex_application.g_print_success_message := ''Contrase\00F1a actualizada
 );
 end;
 /
+
 prompt --application/pages/page_09999
 begin
 wwv_flow_imp_page.create_page(
