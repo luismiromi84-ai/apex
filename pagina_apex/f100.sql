@@ -8833,7 +8833,6 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(11751501023216201)
 ,p_name=>'P4_PASSWORD'
-,p_is_required=>true
 ,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(10554535102198302)
 ,p_prompt=>'Password'
@@ -9018,15 +9017,23 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'update-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'UPDATE wksp_sypexws.usuario',
-'   SET username       = :P4_USERNAME,',
-'       email          = :P4_EMAIL,',
-'       estado         = :P4_ESTADO,',
-'       rol_id         = :P4_ROL_ID,',
-unistr('       id_empresa    = :P4_ID_EMPRESA, -- <--- L\00CDNEA 6: Este nombre de columna no existe en la tabla'),
-'       password_hash  = CASE ',
-'                          WHEN :P4_PASSWORD IS NOT NULL THEN sypex_hash_password(:P4_PASSWORD)',
-'                          ELSE password_hash',
-'                        END',
+'   SET username            = :P4_USERNAME,',
+'       email               = :P4_EMAIL,',
+'       estado              = :P4_ESTADO,',
+'       rol_id              = :P4_ROL_ID,',
+'       id_empresa          = :P4_ID_EMPRESA,',
+'       password_hash       = CASE',
+'                               WHEN :P4_PASSWORD IS NOT NULL THEN sypex_hash_password(:P4_PASSWORD)',
+'                               ELSE password_hash',
+'                             END,',
+'       reintentos_fallidos = CASE',
+'                               WHEN :P4_PASSWORD IS NOT NULL THEN 0',
+'                               ELSE reintentos_fallidos',
+'                             END,',
+'       bloqueado_hasta     = CASE',
+'                               WHEN :P4_PASSWORD IS NOT NULL THEN NULL',
+'                               ELSE bloqueado_hasta',
+'                             END',
 ' WHERE usuario_id     = :P4_USUARIO_ID;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
@@ -9066,6 +9073,29 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(username)) = LOWER(TRIM(:P4_USERNAME)) AND usuario_id <> NVL(fn_clean_num(:P4_USUARIO_ID), -1)'
 ,p_validation_type=>'NOT_EXISTS'
 ,p_error_message=>'Ese usuario ya existe.'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000072)
+,p_validation_name=>'Correo unico sin distinguir mayusculas'
+,p_static_id=>'correo-unico'
+,p_validation_sequence=>25
+,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(email)) = LOWER(TRIM(:P4_EMAIL)) AND usuario_id <> NVL(fn_clean_num(:P4_USUARIO_ID), -1)'
+,p_validation_type=>'NOT_EXISTS'
+,p_error_message=>'Ese correo ya está registrado.'
+,p_associated_item=>wwv_flow_imp.id(10555666118198307)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000071)
+,p_validation_name=>'Contrasena obligatoria al crear'
+,p_static_id=>'password-obligatoria-al-crear'
+,p_validation_sequence=>30
+,p_validation=>'NOT (:P4_USUARIO_ID IS NULL AND :P4_PASSWORD IS NULL)'
+,p_validation2=>'PLSQL'
+,p_validation_type=>'EXPRESSION'
+,p_error_message=>'La contraseña es obligatoria al crear el usuario.'
+,p_associated_item=>wwv_flow_imp.id(11751501023216201)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_button(
