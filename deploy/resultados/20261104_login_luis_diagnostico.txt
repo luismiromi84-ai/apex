@@ -128,3 +128,35 @@ el siguiente intento.
 
 Pendiente de decision: mantener PRUEBA A1 o revertirla (git revert d35456a
 + reimportar pagina_apex/f100.sql, que devuelve `luis` / `123`).
+
+==========================================================
+7. Retiro de FN_AUTENTICAR_USUARIO (decision: A1 queda definitiva)
+==========================================================
+Precondiciones verificadas antes del drop:
+  - APEX_APPLICATION_AUTH (app 100, esquema vigente):
+      SCHEME_TYPE_CODE = NATIVE_APEX_ACCOUNTS, VERIFICATION_FUNCTION vacia
+  - pagina_apex/f100.sql: 0 apariciones de fn_autenticar_usuario
+  - ALL_DEPENDENCIES: ninguna fila apunta a la funcion
+  - login de la app probado con la cuenta APEX LUIS (2026-11-05 02:02:52)
+
+Ejecutado: drop function wksp_sypexws.fn_autenticar_usuario;
+  -> "Function WKSP_SYPEXWS.FN_AUTENTICAR_USUARIO borrado."
+
+Verificacion despues:
+  - all_objects con object_name='FN_AUTENTICAR_USUARIO'  -> 0 filas
+  - objetos INVALID en WKSP_SYPEXWS                       -> 0
+  - funciones restantes (6, todas VALID): FN_CLEAN_NUM,
+    FN_EMPRESAS_DEL_USUARIO, FN_TASA_CAMBIO, FN_TIENE_ROL,
+    FN_USUARIO_EMPRESA_VALIDA, SYPEX_HASH_PASSWORD
+  - apex_application_auth sigue NATIVE_APEX_ACCOUNTS
+  - app 100 con sus 15 paginas (apex_application_pages incluye la 0)
+
+Archivos tocados:
+  - deploy/migrations/20261104_drop_fn_autenticar_usuario.sql (nuevo, con reversa)
+  - deploy/install.sql (fuera la linea @@../funciones/fn_autenticar_usuario.sql)
+  - funciones/fn_autenticar_usuario.sql (borrado; el fuente queda en la reversa y
+    en el historial de git, commit db6a745 o anterior)
+  - deploy/verify_plain.sql (lista de funciones esperadas)
+  - AGENTS.md
+
+No se toca sypex_hash_password: lo siguen usando las paginas 2, 4 y 14.

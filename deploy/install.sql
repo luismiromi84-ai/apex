@@ -42,7 +42,6 @@ prompt ============================================================
 @@../funciones/sypex_hash_password.sql
 @@../funciones/fn_clean_num.sql
 @@../funciones/fn_tasa_cambio.sql
-@@../funciones/fn_autenticar_usuario.sql
 @@../funciones/fn_tiene_rol.sql
 @@../funciones/fn_usuario_empresa_valida.sql
 @@../funciones/fn_empresas_del_usuario.sql
