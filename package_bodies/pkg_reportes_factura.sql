@@ -76,6 +76,8 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
 
     FUNCTION fn_imprimir_factura (p_id_factura IN NUMBER) RETURN CLOB IS
         v_empresa         VARCHAR2(200);
+        v_id_empresa      NUMBER;
+        v_logo            CLOB;
         v_ident_empresa   VARCHAR2(50);
         v_ident_label     VARCHAR2(20);
         v_cliente_label   VARCHAR2(30);
@@ -107,7 +109,7 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
 
         -- 1. Cabecera
         BEGIN
-            SELECT e.nombre_empresa, e.rfc, f.folio_factura, f.uuid_fiscal,
+            SELECT e.id_empresa, e.nombre_empresa, e.rfc, f.folio_factura, f.uuid_fiscal,
                    TO_CHAR(f.fecha_emision, 'DD/MM/YYYY'),
                    c.razon_social, c.rif,
                    nvl(cp.descripcion, 'Contado'),
@@ -115,7 +117,7 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
                    nvl(f.subtotal, 0), nvl(f.monto_impuesto, 0), nvl(f.monto_total, 0),
                    nvl(e.tipo_ident_fiscal, 'RIF'), nvl(e.cod_pais, 'VE'),
                    nvl(pa.moneda_local, 'USD')
-              INTO v_empresa, v_ident_empresa, v_folio, v_control,
+              INTO v_id_empresa, v_empresa, v_ident_empresa, v_folio, v_control,
                    v_fecha, v_cliente, v_rif_cliente,
                    v_condicion, v_tasa,
                    v_subtotal, v_iva, v_total,
@@ -166,11 +168,17 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
         END IF;
 
         -- 3. Cabecera del documento
+        v_logo := pkg_empresa_logo.fn_logo_img(
+            v_id_empresa,
+            'max-height:64px;max-width:220px;display:block;margin:0 0 8px 0;');
+
         v_html := fn_css() || q'~
 <div class="doc-container">
   <table class="header-table">
     <tr>
-      <td class="empresa-info" style="width: 60%;">
+      <td class="empresa-info" style="width: 60%;">~'
+      || v_logo
+      || q'~
         <h2>~' || sys.htf.escape_sc(v_empresa) || q'~</h2>
         <p><strong>~' || sys.htf.escape_sc(v_ident_label) || q'~:</strong> ~'
         || sys.htf.escape_sc(v_ident_empresa) || q'~<br>
@@ -242,7 +250,7 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
             v_desc_total := v_desc_total + r.monto_descuento;
 
             v_html := v_html
-                || '<tr><td>' || r.num_linea || '</td>'
+                || '<tr><td>' || to_char(r.num_linea) || '</td>'
                 || '<td>' || sys.htf.escape_sc(r.descripcion) || '</td>'
                 || '<td class="text-right">' || fn_num(r.cantidad, 'FM999,999,990.00') || '</td>'
                 || '<td class="text-right">' || fn_num(r.precio_unitario, 'FM999,999,990.00') || '</td>'
