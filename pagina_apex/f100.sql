@@ -9435,6 +9435,9 @@ wwv_flow_imp_page.create_page_plug(
 '    ON c.id_cliente = p.id_cliente',
 '   AND c.id_empresa = p.id_empresa',
 ' WHERE p.estado NOT IN (''CANCELADO'')',
+'   AND p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
+'                        WHERE upper(u.username) = upper(:APP_USER)',
+'                          AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
 ' ORDER BY p.id_presupuesto DESC'))
 ,p_plug_source_type=>'NATIVE_IR'
 );
@@ -9467,7 +9470,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>20
 ,p_column_identifier=>'B'
 ,p_column_label=>'Editar'
-,p_column_link=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.::P6_ID_PRESUPUESTO:#EDITAR#'
+,p_column_link=>'f?p=&APP_ID.:7:&SESSION.::&DEBUG.::P7_ID_PRESUPUESTO:#EDITAR#'
 ,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Editar'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
@@ -11983,6 +11986,9 @@ wwv_flow_imp_page.create_page_plug(
 '    ON f.id_cliente = c.id_cliente ',
 '   AND f.id_empresa = c.id_empresa',
 ' WHERE f.estado NOT IN (''CANCELADA'', ''ANULADA'', ''TIMBRADA'')',
+'   AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
+'                        WHERE upper(u.username) = upper(:APP_USER)',
+'                          AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
 ' ORDER BY f.id_factura DESC;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_prn_content_disposition=>'ATTACHMENT'
