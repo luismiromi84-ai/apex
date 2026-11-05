@@ -1,0 +1,130 @@
+Diagnostico: "no puedo entrar con luis"
+Fecha: 2026-11-04 (hora local) / 2026-11-05 01:4x (UTC, sysdate de la base)
+Entorno: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), APEX 26.1.6, workspace SYPEX_WS
+
+==========================================================
+1. Como autentica hoy la app 100
+==========================================================
+Commit d35456a "PRUEBA A1: autenticacion con cuentas nativas de APEX (revertible)"
+cambio el esquema de autenticacion.
+
+  APEX_APPLICATIONS
+    AUTHENTICATION_SCHEME    = Synpex Custom Auth
+    AUTHENTICATION_SCHEME_ID = 9144549589584420
+
+  APEX_APPLICATION_AUTH
+    SCHEME_TYPE      = Oracle APEX Accounts   (NATIVE_APEX_ACCOUNTS)
+    SCHEME_TYPE_CODE = NATIVE_APEX_ACCOUNTS
+    VERIFICATION_FUNCTION = (vacio)
+    POST_AUTHENTICATION_PROCESS = prc_post_login
+
+Consecuencia: la app YA NO valida contra WKSP_SYPEXWS.USUARIO.
+El hash de `luis` en esa tabla es exactamente sypex_hash_password('123')
+(comprobado con la funcion de la base), pero esa contrasena no se usa
+para autenticar desde el commit d35456a.
+
+==========================================================
+2. Evidencia del log de actividad de APEX
+==========================================================
+APEX_WORKSPACE_ACTIVITY_LOG (workspace SYPEX_WS), hora del servidor:
+
+  01:18:45  nobody  p9999  (GET, Edge 156)          -> el usuario abre el login
+  01:18:56  nobody  p9999  P9999_PASSWORD           -> Credenciales no validas (user=LUIS)
+  01:19:53  nobody  p9999  LOGIN                    -> Credenciales no validas (user=LUIS)
+  01:26:32  SYPEX_WS p20   GO_WORKSPACE SYPEX_WS    -> login en App Builder (humano)
+  01:26:36  SYPEX_WS p1500                          -> Manage Users
+  01:27:35  LUIS     p1    (sin error)              -> LOGIN CORRECTO
+  01:27:54  LUIS     p13                            -> Panel General
+  01:28:08  LUIS     p13   BTN_APLICAR
+  01:35:17  LUIS     p3                             -> Gestion de Usuarios
+
+Lectura: las dos fallas de 01:18/01:19 son de contrasena (user=LUIS, no
+vacio). A las 01:27:35 el mismo usuario SI entro y navego las paginas 1,
+13 y 3 sin errores. El esquema de autenticacion funciona.
+
+Nota: las pruebas por HTTP hechas por el agente despues de 01:41 muestran
+"user=" vacio porque el POST sin el JavaScript de APEX no envia
+pPageItemsProtected y APEX descarta el valor de P9999_USERNAME. No son
+fallas de la app.
+
+==========================================================
+3. Estado de la cuenta APEX LUIS
+==========================================================
+APEX_WORKSPACE_APEX_USERS / APEX_260100.WWV_FLOW_USERS
+
+  USER_NAME              LUIS
+  USER_ID                12423519631120514
+  ACCOUNT_LOCKED         N
+  FAILED_ACCESS_ATTEMPTS 0
+  CHANGE_PASSWORD_ON_FIRST_USE N
+  DEFAULT_SCHEMA         WKSP_SYPEXWS
+  ACCOUNT_EXPIRY         2026-11-05 01:44:57 (sysdate)
+
+ACCOUNT_EXPIRY NO bloquea el login: a las 01:27:35 el usuario entro con
+ACCOUNT_EXPIRY = 2026-11-04 00:00, ya vencida en ese momento. La hipotesis
+de "cuenta expirada" queda descartada con esa medicion.
+
+==========================================================
+4. Hallazgo importante (APEX 26.1)
+==========================================================
+APEX_UTIL.EDIT_USER ejecutado desde SQL (usuario ADMIN + apex_util.set_workspace)
+NO fija la contrasena de la cuenta APEX, aunque termine sin error:
+
+  - edit_user CON p_web_password/p_new_password -> is_login_password_valid
+    devuelve SI una vez, y luego NO tras la siguiente llamada.
+  - edit_user SIN p_web_password/p_new_password -> deja la cuenta sin
+    contrasena valida.
+  - Todas las pruebas siguientes con contrasenas nuevas devuelven NO.
+
+Medido con WWV_FLOW_USER_API.IS_LOGIN_PASSWORD_VALID en la MISMA sesion
+PL/SQL (con apex_util.set_workspace('SYPEX_WS')):
+
+  Luis#2026x      -> NO
+  Synpex#2026A    -> NO
+  Luis2026Abcd    -> NO
+  123             -> NO
+
+Conclusion: la contrasena de una cuenta APEX solo se puede fijar desde
+App Builder (Manage Users) o con un contexto de sesion APEX real; no es
+posible hacerlo por SQL en esta instancia.
+
+Estado resultante: la cuenta LUIS quedo SIN contrasena valida. Hay que
+volver a fijarla desde App Builder -> Manage Users -> LUIS.
+
+==========================================================
+5. Opciones
+==========================================================
+A) Mantener PRUEBA A1 (lo elegido): en App Builder -> Administration ->
+   "Manage Users and Groups" (f?p=4350:55), fijar la contrasena. El login
+   de la app 100 queda con esa contrasena (usuario `luis`, cuenta APEX).
+B) Revertir PRUEBA A1: git revert d35456a && reimportar pagina_apex/f100.sql
+   (deploy/conexion/importar_export.py). Vuelve la autenticacion propia:
+   usuario `luis`, contrasena `123` (hash ya verificado).
+
+==========================================================
+6. Cierre (resuelto)
+==========================================================
+La contrasena se fijo desde la UI, no por SQL:
+
+  02:00:42  SYPEX_WS  pagina 55  Manage Users and Groups
+  02:01:45  SYPEX_WS  pagina 56  edicion del usuario
+  02:01:58  SYPEX_WS  pagina 56  APPLY_CHANGES   <- guardado
+  02:01:58  SYPEX_WS  pagina 55
+
+Login verificado en el log:
+
+  02:02:43  nobody    pagina 9999  (abre el login)
+  02:02:52  LUIS      pagina 9999  P9999_PASSWORD  SIN ERROR
+  02:02:52  LUIS      pagina 1                     SIN ERROR
+
+Estado final de la cuenta: ACCOUNT_LOCKED = N, FAILED_ACCESS_ATTEMPTS = 0,
+ACCOUNT_EXPIRY = 2026-11-05 02:01:58 (fecha del ultimo cambio de
+contrasena; no bloquea el login).
+
+Vigencia: inmediata. El esquema de autenticacion es NATIVE_APEX_ACCOUNTS y
+se evalua en cada submit del login, asi que no hay que reimportar la app
+ni reiniciar nada. La contrasena nueva es la que usa la pagina 9999 desde
+el siguiente intento.
+
+Pendiente de decision: mantener PRUEBA A1 o revertirla (git revert d35456a
++ reimportar pagina_apex/f100.sql, que devuelve `luis` / `123`).
