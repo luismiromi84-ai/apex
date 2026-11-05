@@ -339,3 +339,22 @@ exception
             'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
 end prc_post_login;
 /
+
+-- =============================================================================
+-- REVERSA
+--
+-- OJO: solo es completa si se ejecuta ANTES del primer login. Despues los
+-- hashes son PBKDF2 y no se pueden recalcular al formato legado sin la
+-- contrasena en claro: restaurar sypex_hash_password viejo dejaria a todo el
+-- mundo fuera. Pasado ese punto, la reversa es solo la de APEX (volver el
+-- esquema de autenticacion a NATIVE_APEX_ACCOUNTS reimportando f100.sql).
+-- =============================================================================
+-- alter session set current_schema = WKSP_SYPEXWS;
+-- drop function fn_autenticar_usuario;
+-- drop function fn_verificar_password;
+-- drop function fn_password_es_legado;
+-- drop procedure prc_auth_registrar;
+-- drop table syn_login_log purge;
+-- drop index uq_usuario_username_upper;
+-- alter table usuario drop (reintentos_fallidos, bloqueado_hasta, ultimo_intento_login);
+-- revoke execute on sys.dbms_crypto from wksp_sypexws;
