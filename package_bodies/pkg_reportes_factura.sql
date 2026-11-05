@@ -35,6 +35,18 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
       width: 100% !important; margin: 0 !important; padding: 0 !important;
     }
     .t-Body-main { margin-left: 0 !important; padding: 0 !important; }
+
+    /* Lo unico visible al imprimir es el documento. No depende de los nombres
+       de clase del tema: si APEX cambia el chrome (barra, menu, botones), esto
+       sigue funcionando. Se probo con la lista de clases de arriba y el marco
+       seguia saliendo. */
+    body * { visibility: hidden !important; }
+    .doc-container, .doc-container * { visibility: visible !important; }
+    .doc-container {
+      position: absolute !important; left: 0 !important; top: 0 !important;
+      width: 100% !important; max-width: none !important;
+      border: 0 !important; margin: 0 !important; padding: 0 !important;
+    }
   }
   .doc-aviso {
     font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 18px 20px;
