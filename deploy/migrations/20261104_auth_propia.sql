@@ -304,3 +304,38 @@ exception
         return false;
 end fn_autenticar_usuario;
 /
+
+-- -----------------------------------------------------------------------------
+-- 5. Post-login
+-- -----------------------------------------------------------------------------
+
+create or replace procedure prc_post_login is
+    v_id_empresa     usuario.id_empresa%type;
+    v_nombre_empresa empresas.nombre_empresa%type;
+    v_id_rol         usuario.rol_id%type;
+    v_nombre_rol     syn_roles.nombre_rol%type;
+begin
+    select u.id_empresa,
+           e.nombre_empresa,
+           u.rol_id,
+           r.nombre_rol
+      into v_id_empresa,
+           v_nombre_empresa,
+           v_id_rol,
+           v_nombre_rol
+      from usuario u
+      join empresas e on e.id_empresa = u.id_empresa
+      join syn_roles r on r.id_rol = u.rol_id
+     where upper(u.username) = upper(v('APP_USER'))
+       and u.estado in ('ACTIVO', 'A', '1');
+
+    apex_util.set_session_state('F_ID_EMPRESA', v_id_empresa);
+    apex_util.set_session_state('F_NOMBRE_EMPRESA', v_nombre_empresa);
+    apex_util.set_session_state('F_ID_ROL', v_id_rol);
+    apex_util.set_session_state('F_NOMBRE_ROL', v_nombre_rol);
+exception
+    when no_data_found then
+        raise_application_error(-20013,
+            'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
+end prc_post_login;
+/

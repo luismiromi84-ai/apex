@@ -1,31 +1,44 @@
-create or replace PROCEDURE prc_post_login IS
-    v_id_empresa     usuario.id_empresa%TYPE;
-    v_nombre_empresa empresas.nombre_empresa%TYPE;
-    v_id_rol         usuario.rol_id%TYPE;
-    v_nombre_rol     syn_roles.nombre_rol%TYPE;
-BEGIN
-    -- Obtiene el usuario actual leyendo la sesión de APEX mediante v('APP_USER')
-    SELECT u.id_empresa,
+-- =============================================================================
+-- prc_post_login.sql
+--
+-- Proceso de post-autenticacion: deja en la sesion la empresa y el rol del
+-- usuario. Lo llama el esquema de autenticacion (p_post_auth_process).
+--
+-- Acepta los mismos estados que fn_autenticar_usuario (ACTIVO, A, 1); antes
+-- solo miraba ACTIVO y con 'A'/'1' el login entraba pero F_* quedaban nulos.
+--
+-- Si el usuario no tiene empresa o rol se lanza error en vez de silenciar
+-- NO_DATA_FOUND. fn_autenticar_usuario ya lo rechaza antes de crear sesion, asi
+-- que esto solo deberia alcanzarse si los datos cambian entre ambos pasos.
+-- =============================================================================
+
+create or replace procedure prc_post_login is
+    v_id_empresa     usuario.id_empresa%type;
+    v_nombre_empresa empresas.nombre_empresa%type;
+    v_id_rol         usuario.rol_id%type;
+    v_nombre_rol     syn_roles.nombre_rol%type;
+begin
+    select u.id_empresa,
            e.nombre_empresa,
            u.rol_id,
            r.nombre_rol
-      INTO v_id_empresa,
+      into v_id_empresa,
            v_nombre_empresa,
            v_id_rol,
            v_nombre_rol
-      FROM usuario u
-      JOIN empresas e ON e.id_empresa = u.id_empresa
-      JOIN syn_roles r    ON r.id_rol     = u.rol_id
-     WHERE UPPER(u.username) = UPPER(v('APP_USER'))
-       AND u.estado = 'ACTIVO';
+      from usuario u
+      join empresas e on e.id_empresa = u.id_empresa
+      join syn_roles r on r.id_rol = u.rol_id
+     where upper(u.username) = upper(v('APP_USER'))
+       and u.estado in ('ACTIVO', 'A', '1');
 
-    -- Asigna el valor a los Application Items de APEX
     apex_util.set_session_state('F_ID_EMPRESA', v_id_empresa);
     apex_util.set_session_state('F_NOMBRE_EMPRESA', v_nombre_empresa);
     apex_util.set_session_state('F_ID_ROL', v_id_rol);
     apex_util.set_session_state('F_NOMBRE_ROL', v_nombre_rol);
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        NULL;
-END prc_post_login;
+exception
+    when no_data_found then
+        raise_application_error(-20013,
+            'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
+end prc_post_login;
 /

@@ -39,7 +39,12 @@ prompt ============================================================
 prompt ============================================================
 prompt 3/6 Funciones
 prompt ============================================================
+prompt    Requiere, como ADMIN, antes de este bloque:
+prompt      grant execute on sys.dbms_crypto to <esquema>;
 @@../funciones/sypex_hash_password.sql
+@@../funciones/fn_verificar_password.sql
+@@../funciones/fn_password_es_legado.sql
+@@../funciones/fn_autenticar_usuario.sql
 @@../funciones/fn_clean_num.sql
 @@../funciones/fn_tasa_cambio.sql
 @@../funciones/fn_tiene_rol.sql
@@ -60,6 +65,7 @@ prompt ============================================================
 prompt ============================================================
 prompt 5/6 Procedimientos
 prompt ============================================================
+@@../procedimientos/prc_auth_registrar.sql
 @@../procedimientos/prc_post_login.sql
 @@../procedimientos/prc_actualizar_tasas_diarias.sql
 @@../procedimientos/prc_log_reset_password.sql

@@ -170,11 +170,12 @@ select object_type, count(*) as cantidad
 
 -- ============================================================
 -- 7. Funciones y procedimientos sueltos
---    Esperado: FN_CLEAN_NUM, FN_EMPRESAS_DEL_USUARIO, FN_TASA_CAMBIO,
---              FN_TIENE_ROL, FN_USUARIO_EMPRESA_VALIDA, SYPEX_HASH_PASSWORD,
---              PRC_POST_LOGIN, PRC_ACTUALIZAR_TASAS_DIARIAS
---    (FN_AUTENTICAR_USUARIO se retiro el 2026-11-04, ver
---     deploy/migrations/20261104_drop_fn_autenticar_usuario.sql)
+--    Esperado: FN_AUTENTICAR_USUARIO, FN_CLEAN_NUM, FN_EMPRESAS_DEL_USUARIO,
+--              FN_PASSWORD_ES_LEGADO, FN_TASA_CAMBIO, FN_TIENE_ROL,
+--              FN_USUARIO_EMPRESA_VALIDA, FN_VERIFICAR_PASSWORD,
+--              SYPEX_HASH_PASSWORD, PRC_ACTUALIZAR_TASAS_DIARIAS,
+--              PRC_AUTH_REGISTRAR, PRC_LOG_RESET_PASSWORD, PRC_POST_LOGIN
+--    (Requiere el grant sobre SYS.DBMS_CRYPTO; ver deploy/migrations/20261104_auth_propia.sql)
 -- ============================================================
 select object_type, object_name, status
   from user_objects
