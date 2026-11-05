@@ -61,6 +61,9 @@ declare
   v_h2      varchar2(512);
   v_leg     varchar2(64);
   v_t0      number;
+  v_id2     number;
+  v_ph      varchar2(512);
+  v_ok      boolean;
 begin
   -- 2.1 registro de intentos ---------------------------------------------------
   delete from syn_login_log where usuario_intentado = 'ZZ_TEST_AUTH';
@@ -148,6 +151,106 @@ begin
   if fn_verificar_password(null, null) then
     v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [null verifica]';
   end if;
+
+  -- 2.3 fn_autenticar_usuario -------------------------------------------------
+  delete from usuario where upper(username) = 'ZZ_AUTH_TEST';
+  commit;
+
+  insert into usuario (username, email, password_hash, estado, fecha_creacion, id_empresa, rol_id)
+  values ('ZZ_AUTH_TEST', 'zz2@test.local', sypex_hash_password('Clave#2026'), 'ACTIVO', sysdate, 1, 1001)
+  returning usuario_id into v_id2;
+  commit;
+
+  -- caso 1: clave correcta
+  if not fn_autenticar_usuario('ZZ_AUTH_TEST', 'Clave#2026') then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso1: no autentica con la clave correcta]';
+  end if;
+
+  -- caso 2: clave mala deja el contador en 1
+  v_ok := fn_autenticar_usuario('ZZ_AUTH_TEST', 'mala');
+  if v_ok then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso2: acepta clave mala]';
+  end if;
+  select reintentos_fallidos into v_reint from usuario where usuario_id = v_id2;
+  if v_reint <> 1 then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso2: contador=' || v_reint || ']';
+  end if;
+
+  -- caso 3: cinco fallos bloquean
+  for i in 1..4 loop
+    v_ok := fn_autenticar_usuario('ZZ_AUTH_TEST', 'mala');
+  end loop;
+  select bloqueado_hasta into v_bloq from usuario where usuario_id = v_id2;
+  if v_bloq is null then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso3: sin bloqueo tras 5 fallos]';
+  end if;
+
+  -- caso 4: clave correcta estando bloqueado no entra y no mueve el contador
+  v_ok := fn_autenticar_usuario('ZZ_AUTH_TEST', 'Clave#2026');
+  if v_ok then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso4: entra estando bloqueado]';
+  end if;
+  select reintentos_fallidos into v_reint from usuario where usuario_id = v_id2;
+  if v_reint <> 5 then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso4: contador=' || v_reint || ']';
+  end if;
+
+  -- caso 5: sin bloqueo vuelve a entrar
+  update usuario set bloqueado_hasta = null, reintentos_fallidos = 0 where usuario_id = v_id2;
+  commit;
+  if not fn_autenticar_usuario('ZZ_AUTH_TEST', 'Clave#2026') then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso5: no entra tras desbloquear]';
+  end if;
+
+  -- caso 6: inactivo
+  update usuario set estado = 'INACTIVO' where usuario_id = v_id2;
+  commit;
+  if fn_autenticar_usuario('ZZ_AUTH_TEST', 'Clave#2026') then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso6: entra estando inactivo]';
+  end if;
+
+  -- caso 7: sin empresa no entra y queda registrado
+  update usuario set estado = 'ACTIVO', id_empresa = null where usuario_id = v_id2;
+  commit;
+  if fn_autenticar_usuario('ZZ_AUTH_TEST', 'Clave#2026') then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso7: entra sin empresa]';
+  end if;
+  select count(*) into v_log from syn_login_log
+   where usuario_intentado = 'ZZ_AUTH_TEST' and resultado = 'SIN_EMPRESA';
+  if v_log = 0 then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso7: no registro SIN_EMPRESA]';
+  end if;
+
+  -- caso 8: hash legado entra y queda convertido
+  execute immediate 'select lower(rawtohex(standard_hash(:1,''SHA256''))) from dual'
+    into v_leg using '123' || 'SYPEX_SALT_2026';
+  update usuario set id_empresa = 1, password_hash = v_leg where usuario_id = v_id2;
+  commit;
+  if not fn_autenticar_usuario('ZZ_AUTH_TEST', '123') then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso8: no entra con hash legado]';
+  end if;
+  select password_hash into v_ph from usuario where usuario_id = v_id2;
+  if v_ph not like 'PBKDF2-SHA256$%' then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso8: hash legado sin convertir]';
+  end if;
+
+  -- caso 9: clave nula
+  v_ok := fn_autenticar_usuario('ZZ_AUTH_TEST', null);
+  if v_ok then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso9: autentica con clave nula]';
+  end if;
+
+  -- caso 10: mayusculas y espacios
+  if not fn_autenticar_usuario('zz_auth_test', '123') then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso10: no entra en minusculas]';
+  end if;
+  if not fn_autenticar_usuario('  ZZ_AUTH_TEST  ', '123') then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso10: no entra con espacios]';
+  end if;
+
+  delete from syn_login_log where usuario_intentado = 'ZZ_AUTH_TEST';
+  delete from usuario where usuario_id = v_id2;
+  commit;
 
   raise_application_error(-20100, 'RESULTADO: FALLAS=' || v_fallas || v_detalle);
 end;

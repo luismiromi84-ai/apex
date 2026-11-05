@@ -48,7 +48,7 @@ begin
                        ultimo_intento_login = sysdate,
                        password_hash        = nvl(p_nuevo_hash, password_hash)
                  where usuario_id = p_usuario_id;
-            else
+            elsif p_resultado = 'CLAVE_MALA' then
                 v_reintentos := v_reintentos + 1;
                 update usuario set
                        reintentos_fallidos  = v_reintentos,
@@ -58,6 +58,12 @@ begin
                                then sysdate + c_minutos_bloqueo / 1440
                            else null
                        end,
+                       ultimo_intento_login = sysdate
+                 where usuario_id = p_usuario_id;
+            else
+                -- INACTIVO, BLOQUEADO, SIN_EMPRESA, ERROR: se registra el intento
+                -- pero no cuentan como fallo de contrasena ni mueven el bloqueo
+                update usuario set
                        ultimo_intento_login = sysdate
                  where usuario_id = p_usuario_id;
             end if;

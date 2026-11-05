@@ -81,22 +81,28 @@ begin
                for update;
 
             if p_resultado = 'OK' then
-                update usuario
-                   set reintentos_fallidos = 0,
-                       bloqueado_hasta     = null,
+                update usuario set
+                       reintentos_fallidos  = 0,
+                       bloqueado_hasta      = null,
                        ultimo_intento_login = sysdate,
-                       password_hash       = nvl(p_nuevo_hash, password_hash)
+                       password_hash        = nvl(p_nuevo_hash, password_hash)
                  where usuario_id = p_usuario_id;
-            else
+            elsif p_resultado = 'CLAVE_MALA' then
                 v_reintentos := v_reintentos + 1;
-                update usuario
-                   set reintentos_fallidos = v_reintentos,
-                       bloqueado_hasta = case
+                update usuario set
+                       reintentos_fallidos  = v_reintentos,
+                       bloqueado_hasta      = case
                            when v_bloqueado is not null then v_bloqueado
                            when v_reintentos >= c_max_intentos
                                then sysdate + c_minutos_bloqueo / 1440
                            else null
                        end,
+                       ultimo_intento_login = sysdate
+                 where usuario_id = p_usuario_id;
+            else
+                -- INACTIVO, BLOQUEADO, SIN_EMPRESA, ERROR: se registra el intento
+                -- pero no cuentan como fallo de contrasena ni mueven el bloqueo
+                update usuario set
                        ultimo_intento_login = sysdate
                  where usuario_id = p_usuario_id;
             end if;
@@ -208,4 +214,93 @@ create or replace function fn_password_es_legado (
 begin
     return p_hash is not null and p_hash not like 'PBKDF2-SHA256$%';
 end fn_password_es_legado;
+/
+
+-- -----------------------------------------------------------------------------
+-- 4. Autenticacion
+-- -----------------------------------------------------------------------------
+
+create or replace function fn_autenticar_usuario (
+    p_username in varchar2,
+    p_password in varchar2
+) return boolean is
+    v_usuario varchar2(50);
+    v_id      number;
+    v_hash    varchar2(512);
+    v_estado  varchar2(20);
+    v_bloq    date;
+    v_empresa number;
+    v_rol     number;
+begin
+    v_usuario := trim(p_username);
+
+    if v_usuario is null or p_password is null then
+        prc_auth_registrar(p_usuario_id        => null,
+                           p_resultado         => 'ERROR',
+                           p_usuario_intentado => nvl(v_usuario, '(vacio)'));
+        apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+        return false;
+    end if;
+
+    begin
+        select usuario_id, password_hash, estado, bloqueado_hasta, id_empresa, rol_id
+          into v_id, v_hash, v_estado, v_bloq, v_empresa, v_rol
+          from usuario
+         where upper(username) = upper(v_usuario);
+    exception
+        when no_data_found then
+            prc_auth_registrar(null, 'NO_EXISTE', v_usuario);
+            apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+            return false;
+        when too_many_rows then
+            prc_auth_registrar(null, 'ERROR', v_usuario);
+            apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+            return false;
+    end;
+
+    if upper(v_estado) not in ('ACTIVO', 'A', '1') then
+        prc_auth_registrar(v_id, 'INACTIVO', v_usuario);
+        apex_util.set_custom_auth_status(
+            p_status => 'El usuario no est?? activo. Contacta al administrador.');
+        return false;
+    end if;
+
+    if v_bloq is not null and v_bloq > sysdate then
+        prc_auth_registrar(v_id, 'BLOQUEADO', v_usuario);
+        apex_util.set_custom_auth_status(
+            p_status => 'La cuenta est?? bloqueada temporalmente por intentos fallidos.');
+        return false;
+    end if;
+
+    if v_empresa is null or v_rol is null then
+        prc_auth_registrar(v_id, 'SIN_EMPRESA', v_usuario);
+        apex_util.set_custom_auth_status(
+            p_status => 'El usuario no tiene empresa o rol asignado. Contacta al administrador.');
+        return false;
+    end if;
+
+    if not fn_verificar_password(p_password, v_hash) then
+        prc_auth_registrar(v_id, 'CLAVE_MALA', v_usuario);
+        apex_util.set_custom_auth_status(p_status => 'Usuario o contrase??a incorrectos.');
+        return false;
+    end if;
+
+    prc_auth_registrar(
+        p_usuario_id        => v_id,
+        p_resultado         => 'OK',
+        p_usuario_intentado => v_usuario,
+        p_nuevo_hash        => case when fn_password_es_legado(v_hash)
+                                    then sypex_hash_password(p_password) end);
+
+    return true;
+exception
+    when others then
+        begin
+            prc_auth_registrar(null, 'ERROR', v_usuario);
+        exception
+            when others then null;
+        end;
+        apex_util.set_custom_auth_status(p_status => 'Error al procesar la autenticaci??n.');
+        return false;
+end fn_autenticar_usuario;
 /
