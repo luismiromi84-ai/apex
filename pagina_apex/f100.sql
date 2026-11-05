@@ -8273,7 +8273,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(9177125206212506)
-,p_process_success_message=>unistr('Usuario registrado correctamente. Por favor inicia sesi\00F3n.')
+,p_process_success_message=>unistr('Solicitud registrada. Un administrador debe activar la cuenta y asignarte el acceso antes de que puedas iniciar sesi\00F3n.')
 ,p_internal_uid=>9177463962212509
 );
 end;
@@ -8849,6 +8849,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_cMaxlength=>512
 ,p_colspan=>4
+,p_help_text=>unistr('Se guarda en el registro del usuario. La contrase\00F1a que usa el login de la app la asigna un administrador en APEX (Administraci\00F3n > Gestionar Usuarios).')
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -15846,6 +15847,9 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_display_sequence=>10
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
+,p_plug_header=>wwv_flow_string.join(wwv_flow_t_varchar2(
+unistr('<p class="spx-nota-acceso">La contrase\00F1a de acceso la asigna un administrador desde APEX (Administraci\00F3n &gt; Gestionar Usuarios). Aqu\00ED solo se actualiza el registro del usuario.</p>'),
+'<style>.spx-nota-acceso{font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.45;color:#475569;background:#f1f5f9;border-left:3px solid #0284c7;border-radius:6px;padding:10px 12px;margin:0 0 14px 0;}</style>'))
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000046)
@@ -15976,7 +15980,7 @@ unistr('    raise_application_error(-20012, ''La contrase\00F1a debe tener al me
 '    p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
 '    p_resultado => ''OK'');',
 '',
-unistr('apex_application.g_print_success_message := ''Contrase\00F1a actualizada. Inicia sesi\00F3n con la nueva.'';')))
+unistr('apex_application.g_print_success_message := ''Datos guardados. La contrase\00F1a de acceso al sistema la restablece un administrador desde APEX.'';')))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_internal_uid=>43000000000000047
