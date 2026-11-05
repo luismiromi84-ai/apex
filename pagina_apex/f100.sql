@@ -10086,6 +10086,9 @@ wwv_flow_imp_page.create_page_process(
 '    v_nuevo_estado VARCHAR2(50);',
 '    v_nuevas_obs   VARCHAR2(4000);',
 'BEGIN',
+'if not fn_presupuesto_propio(:P5_ID_PRESUPUESTO, :APP_USER) then',
+'    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'end if;',
 'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
@@ -10773,6 +10776,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Eliminar detalle'
 ,p_static_id=>'eliminar-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_presupuesto_propio(:P6_ID_PRESUPUESTO, :APP_USER) then',
+'    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'end if;',
 'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
@@ -10806,6 +10812,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Insert/Update del Detalle'
 ,p_static_id=>'insert-del-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_presupuesto_propio(:P6_ID_PRESUPUESTO, :APP_USER) then',
+'    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'end if;',
 'pkg_presupuesto_detalle.guardar_detalle(',
 '    p_id_presupuesto       => :P6_ID_PRESUPUESTO,',
 '    p_id_detalle           => :P6_ID_DETALLE,',
@@ -12520,6 +12529,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 'BEGIN',
+'if not fn_factura_propio(:P8_ID_FACTURAS, :APP_USER) then',
+'    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'end if;',
 'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
@@ -13804,6 +13816,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'cancelar-prepuesto'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
+'if not fn_factura_propio(:P9_ID_FACTURA, :APP_USER) then',
+'    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'end if;',
 'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
@@ -14818,6 +14833,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Eliminar Detalle'
 ,p_static_id=>'eliminar-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_factura_propio(:P10_ID_FACTURA, :APP_USER) then',
+'    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'end if;',
 'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
@@ -14875,6 +14893,9 @@ wwv_flow_imp_page.create_page_process(
 '    v_monto_impuesto   NUMBER;',
 '    v_total_linea      NUMBER;',
 'BEGIN',
+'if not fn_factura_propio(:P10_ID_FACTURA, :APP_USER) then',
+'    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'end if;',
 '    IF v_id_factura IS NULL OR v_id_factura <= 0 THEN',
 '        raise_application_error(-20001, ''La factura es obligatoria.'');',
 '    END IF;',
