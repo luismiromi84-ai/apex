@@ -91,3 +91,20 @@ Pendiente de prueba en navegador
 2. Registro en la pagina 2 con empresa y rol -> nace PENDIENTE.
 3. Activacion en la pagina 4 sin empresa/rol -> debe rechazar; con ambos -> entra.
 4. 5 fallos con el usuario nuevo -> bloqueado; Desbloquear en la pagina 4.
+
+==========================================================
+Prueba del dueno en el navegador (2026-11-05)
+==========================================================
+Usuario creado desde la pagina 2: ana (9054).
+SYN_LOGIN_LOG medido:
+  04:32:13  ANA  INACTIVO     (aun sin activar)
+  04:32:22  ANA  INACTIVO
+  04:40:11  ANA  OK           (tras asignarle empresa 1 y rol 1006)
+  04:40:45  ANA  CLAVE_MALA
+  04:41:00  ANA  CLAVE_MALA
+  04:41:10  ANA  CLAVE_MALA
+
+Estado medido: ANA ACTIVO, empresa 1, rol 1006 (CONSULTA),
+REINTENTOS_FALLIDOS = 3, BLOQUEADO_HASTA nulo (hacen falta 5).
+La validacion 'Activo exige empresa y rol' rechazo la activacion sin
+empresa/rol y acepto la activacion con ambos.
