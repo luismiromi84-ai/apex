@@ -29,3 +29,5 @@ datos_origen.sql
 instalacion y migracion/f100*.sql
 instalacion y migracion/*(1)*
 *(1).*
+
+__pycache__/
