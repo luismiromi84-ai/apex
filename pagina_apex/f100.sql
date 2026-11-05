@@ -9275,9 +9275,9 @@ wwv_flow_imp_page.create_page_plug(
 'SELECT d.descripcion,',
 '       d.cantidad,',
 '       d.precio_unitario,',
-'       d.porcentage_descuento  AS descuento_pct,',
+'       d.porcentaje_descuento  AS descuento_pct,',
 '       d.monto_descuento,',
-'       d.porcentage_impuesto   AS impuesto_pct,',
+'       d.porcentaje_impuesto   AS impuesto_pct,',
 '       d.monto_impuesto,',
 '       d.subtotal_linea,',
 '       d.monto_total_linea',
@@ -10621,7 +10621,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Porcentage Descuento'
 ,p_post_element_text=>'<span style="font-weight: bold; margin-left: 5px;">%</span>'
 ,p_format_mask=>'999G999G999G999G990D00'
-,p_source=>'PORCENTAGE_DESCUENTO'
+,p_source=>'PORCENTAJE_DESCUENTO'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>30
 ,p_colspan=>3
@@ -10642,7 +10642,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Porcentage Impuesto'
 ,p_post_element_text=>'<span style="font-weight: bold; margin-left: 5px;">%</span>'
 ,p_format_mask=>'999G999G999G999G990D00'
-,p_source=>'PORCENTAGE_IMPUESTO'
+,p_source=>'PORCENTAJE_IMPUESTO'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>30
 ,p_begin_on_new_line=>'N'

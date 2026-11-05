@@ -233,10 +233,10 @@ create or replace PACKAGE BODY pkg_facturacion AS
                         pd.descripcion,
                         pd.cantidad, 
                         pd.precio_unitario * v_factor, -- Recalcula precio unitario con la nueva tasa
-                        NVL(pd.porcentage_descuento, 0), 
+                        NVL(pd.porcentaje_descuento, 0), 
                         NVL(pd.monto_descuento, 0) * v_factor,
                         pd.id_impuesto, 
-                        NVL(pd.porcentage_impuesto, 16), 
+                        NVL(pd.porcentaje_impuesto, 16), 
                         NVL(pd.monto_impuesto, 0) * v_factor,
                         NVL(pd.subtotal_linea, pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) * v_factor,
                         NVL(pd.monto_total_linea, (pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) + NVL(pd.monto_impuesto, 0)) * v_factor,
