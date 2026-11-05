@@ -15823,7 +15823,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_plug_header=>wwv_flow_string.join(wwv_flow_t_varchar2(
-unistr('<p class="spx-nota-acceso">Escribe tu usuario y tu correo, y la contrase\00F1a nueva. Si coinciden con una cuenta activa, la contrase\00F1a se actualiza al instante y se quita cualquier bloqueo por intentos fallidos.</p>'),
+unistr('<p class="spx-nota-acceso">Escribe tu usuario y tu correo, y la contrase\00F1a nueva. Si coinciden con una cuenta activa, la contrase\00F1a se actualiza al instante y se quita cualquier bloqueo por intentos fallidos. Con una clave temporal asignada por un administrador, basta con escribir la clave nueva.</p>'),
 '<style>.spx-nota-acceso{font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.45;color:#475569;background:#f1f5f9;border-left:3px solid #0284c7;border-radius:6px;padding:10px 12px;margin:0 0 14px 0;}</style>',
 '<p class="synpex-volver"><a href="f?p=&APP_ID.:9999:&APP_SESSION.">Volver al inicio de sesión</a></p>',
 '<style>.synpex-volver{text-align:center;margin:10px 0 0 0;font-family:Inter,system-ui,sans-serif;font-size:13px;}.synpex-volver a{color:#0284c7;text-decoration:none;}</style>'))
@@ -15854,7 +15854,7 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000043)
 ,p_name=>'P14_EMAIL'
 ,p_source_data_type=>'VARCHAR2'
-,p_is_required=>true
+,p_is_required=>false
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
 ,p_prompt=>unistr('Correo Electr\00F3nico')
@@ -15904,7 +15904,7 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000042)
 ,p_name=>'P14_USERNAME'
 ,p_source_data_type=>'VARCHAR2'
-,p_is_required=>true
+,p_is_required=>false
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
 ,p_prompt=>'Usuario'
@@ -15928,38 +15928,70 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>unistr('Restablecer contrase\00F1a')
 ,p_static_id=>'restablecer-password'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'if :P14_PASSWORD <> :P14_PASSWORD_CONFIRM then',
+'declare',
+'    v_obligatorio varchar2(1) := nvl(v(''F_DEBE_CAMBIAR_CLAVE''), ''N'');',
+'    v_email       varchar2(100);',
+'begin',
+'    if :P14_PASSWORD <> :P14_PASSWORD_CONFIRM then',
 unistr('    raise_application_error(-20011, ''Las contrase\00F1as no coinciden.'');'),
-'end if;',
+'    end if;',
 '',
-'if length(:P14_PASSWORD) < 8 then',
+'    if length(:P14_PASSWORD) < 8 then',
 unistr('    raise_application_error(-20012, ''La contrase\00F1a debe tener al menos 8 caracteres.'');'),
-'end if;',
+'    end if;',
 '',
-'update usuario',
-'   set password_hash = sypex_hash_password(:P14_PASSWORD),',
-'       reintentos_fallidos = 0,',
-'       bloqueado_hasta = null',
-' where upper(username) = upper(:P14_USERNAME)',
-'   and lower(email)    = lower(:P14_EMAIL)',
-'   and estado in (''ACTIVO'', ''A'', ''1'');',
+'    if v_obligatorio = ''S'' then',
+'        update usuario',
+'           set password_hash      = sypex_hash_password(:P14_PASSWORD),',
+'               debe_cambiar_clave = ''N'',',
+'               reintentos_fallidos = 0,',
+'               bloqueado_hasta    = null',
+'         where upper(username) = upper(v(''APP_USER''));',
 '',
-'if sql%rowcount = 0 then',
+'        if sql%rowcount = 0 then',
+'            raise_application_error(-20010, ''Los datos no coinciden con un usuario activo.'');',
+'        end if;',
+'',
+'        select email into v_email',
+'          from usuario',
+'         where upper(username) = upper(v(''APP_USER''));',
+'',
+'        prc_log_reset_password(',
+'            p_usuario   => v(''APP_USER''),',
+'            p_correo    => v_email,',
+'            p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
+'            p_resultado => ''OK'');',
+'',
+'        apex_util.set_session_state(''F_DEBE_CAMBIAR_CLAVE'', ''N'');',
+'        apex_util.redirect_url(''f?p='' || v(''APP_ID'') || '':1:'' || v(''APP_SESSION'') || ''::'' || v(''DEBUG''));',
+'        return;',
+'    end if;',
+'',
+'    update usuario',
+'       set password_hash = sypex_hash_password(:P14_PASSWORD),',
+'           reintentos_fallidos = 0,',
+'           bloqueado_hasta = null',
+'     where upper(username) = upper(:P14_USERNAME)',
+'       and lower(email)    = lower(:P14_EMAIL)',
+'       and estado in (''ACTIVO'', ''A'', ''1'');',
+'',
+'    if sql%rowcount = 0 then',
+'        prc_log_reset_password(',
+'            p_usuario   => :P14_USERNAME,',
+'            p_correo    => :P14_EMAIL,',
+'            p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
+'            p_resultado => ''FALLO'');',
+'        raise_application_error(-20010, ''Los datos no coinciden con un usuario activo.'');',
+'    end if;',
+'',
 '    prc_log_reset_password(',
 '        p_usuario   => :P14_USERNAME,',
 '        p_correo    => :P14_EMAIL,',
 '        p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
-'        p_resultado => ''FALLO'');',
-'    raise_application_error(-20010, ''Los datos no coinciden con un usuario activo.'');',
-'end if;',
+'        p_resultado => ''OK'');',
 '',
-'prc_log_reset_password(',
-'    p_usuario   => :P14_USERNAME,',
-'    p_correo    => :P14_EMAIL,',
-'    p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
-'    p_resultado => ''OK'');',
-'',
-unistr('apex_application.g_print_success_message := ''Contrase\00F1a actualizada. Inicia sesi\00F3n con la nueva.'';')))
+unistr('    apex_application.g_print_success_message := ''Contrase\00F1a actualizada. Inicia sesi\00F3n con la nueva.'';'),
+'end;')))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_internal_uid=>43000000000000047
