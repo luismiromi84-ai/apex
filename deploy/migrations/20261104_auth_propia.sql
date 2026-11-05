@@ -358,3 +358,14 @@ end prc_post_login;
 -- drop index uq_usuario_username_upper;
 -- alter table usuario drop (reintentos_fallidos, bloqueado_hasta, ultimo_intento_login);
 -- revoke execute on sys.dbms_crypto from wksp_sypexws;
+
+-- -----------------------------------------------------------------------------
+-- 6. Recompilar dependientes
+--
+-- El ALTER TABLE ... ADD COLUMN invalida a quien depende de USUARIO
+-- (fn_usuario_empresa_valida, fn_empresas_del_usuario y tres package bodies).
+-- -----------------------------------------------------------------------------
+begin
+    dbms_utility.compile_schema('WKSP_SYPEXWS', false);
+end;
+/

@@ -7391,9 +7391,10 @@ begin
 wwv_flow_imp_shared.create_authentication(
  p_id=>wwv_flow_imp.id(9144549589584420)
 ,p_name=>'Synpex Custom Auth'
-,p_static_id=>'oracle-apex-accounts'
-,p_scheme_type=>'NATIVE_APEX_ACCOUNTS'
+,p_static_id=>'synpex-custom-auth'
+,p_scheme_type=>'NATIVE_CUSTOM'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'authentication_function', 'fn_autenticar_usuario',
   'enable_legacy_attributes', 'N')).to_clob
 ,p_invalid_session_type=>'LOGIN'
 ,p_post_auth_process=>'prc_post_login'
@@ -8101,36 +8102,15 @@ wwv_flow_imp_page.create_page_plug(
 ,p_location=>null
 ,p_plug_header=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="synpex-login-brand">',
-'  <svg width="46" height="46" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">',
-'    <defs>',
-'      <linearGradient id="spxl" x1="0" y1="0" x2="1" y2="1">',
-'        <stop offset="0%" stop-color="#38bdf8"/>',
-'        <stop offset="100%" stop-color="#0284c7"/>',
-'      </linearGradient>',
-'    </defs>',
-'    <path d="M24 2 42 12v24L24 46 6 36V12z" fill="url(#spxl)"/>',
-'    <path d="M24 9 36 15.5v17L24 39 12 32.5v-17z" fill="#0b1220" opacity="0.38"/>',
-'    <circle cx="24" cy="24" r="4.2" fill="#e0f2fe"/>',
-'    <path d="M24 11v7M24 30v7M11 24h7M30 24h7" stroke="#e0f2fe" stroke-width="2" stroke-linecap="round"/>',
-'    <path d="M15.5 15.5l3.5 3.5M32.5 15.5l-3.5 3.5M15.5 32.5l3.5-3.5M32.5 32.5l-3.5-3.5" stroke="#bae6fd" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>',
-'  </svg>',
-'  <div class="synpex-login-text">',
-'    <span class="synpex-login-name">Synpex</span>',
-unistr('    <span class="synpex-login-tag">SISTEMA DE GESTI\00D3N</span>'),
-'  </div>',
+'  <img class="synpex-login-img" src="#APP_IMAGES#logo_synpex.png" alt="Synpex - Sistema de gestion"',
+'       onerror="this.onerror=null;this.src=&quot;#APP_FILES#logo_synpex.png&quot;;" />',
 '</div>',
+'<p class="synpex-volver"><a href="f?p=&APP_ID.:9999:&APP_SESSION.">¿Ya tienes cuenta? Inicia sesión</a></p>',
 '<style>',
-'  @keyframes spxGlow {',
-'    0%, 100% { filter: drop-shadow(0 0 0 rgba(2,132,199,0)); transform: scale(1); }',
-'    50%      { filter: drop-shadow(0 0 10px rgba(56,189,248,0.9)); transform: scale(1.05); }',
-'  }',
-'  @keyframes spxTrace { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }',
-'  .synpex-brand svg, .synpex-login-brand svg { animation: spxGlow 3.2s ease-in-out infinite; }',
-'  .synpex-brand svg path:last-child, .synpex-login-brand svg path:last-child { animation: spxTrace 2.4s ease-in-out infinite; }',
+'  .synpex-volver { text-align: center; margin: -4px 0 12px 0; font-family: Inter, system-ui, sans-serif; font-size: 13px; }',
+'  .synpex-volver a { color: #0284c7; text-decoration: none; }',
+'  .synpex-volver a:hover { text-decoration: underline; }',
 '  .synpex-login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 0 10px 0; }',
-'  .synpex-login-text { display: flex; flex-direction: column; text-align: left; }',
-'  .synpex-login-name { font-family: Inter, system-ui, sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; color: #0f172a; }',
-'  .synpex-login-tag { font-family: Inter, system-ui, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #0284c7; margin-top: 4px; }',
 '</style>'))
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -8247,6 +8227,56 @@ wwv_flow_imp_page.create_page_validation(
 ,p_associated_item=>wwv_flow_imp.id(9176771455212502)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000061)
+,p_name=>'P2_ID_EMPRESA'
+,p_source_data_type=>'NUMBER'
+,p_is_required=>true
+,p_item_sequence=>25
+,p_item_plug_id=>wwv_flow_imp.id(9176668396212501)
+,p_prompt=>'Empresa'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT e.nombre_empresa,',
+'       e.id_empresa',
+'  FROM empresas e',
+' WHERE e.estado = ''ACTIVO''',
+' ORDER BY e.nombre_empresa'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Seleccione Empresa --'
+,p_cHeight=>1
+,p_field_template=>2320077351817916916
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000062)
+,p_name=>'P2_ROL_ID'
+,p_source_data_type=>'NUMBER'
+,p_is_required=>true
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(9176668396212501)
+,p_prompt=>'Rol solicitado'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_named_lov=>'ROLES'
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Seleccione Rol --'
+,p_cSize=>30
+,p_field_template=>2320077351817916916
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'YES'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'case_sensitive', 'N',
+  'display_as', 'DIALOG',
+  'fetch_on_open', 'Y',
+  'initial_fetch', 'FIRST_ROWSET')).to_clob
+);
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(9177463962212509)
 ,p_process_sequence=>10
@@ -8261,12 +8291,16 @@ wwv_flow_imp_page.create_page_process(
 '        email,',
 '        password_hash,',
 '        estado,',
+'        id_empresa,',
+'        rol_id,',
 '        fecha_creacion',
 '    ) VALUES (',
 '        :P2_USERNAME,',
 '        :P2_EMAIL,',
 '        sypex_hash_password(:P2_PASSWORD),',
 '        ''PENDIENTE'',',
+'        nullif(fn_clean_num(:P2_ID_EMPRESA), 0),',
+'        nullif(fn_clean_num(:P2_ROL_ID), 0),',
 '        SYSDATE',
 '    );',
 'END;'))
