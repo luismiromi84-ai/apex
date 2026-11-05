@@ -8964,7 +8964,8 @@ wwv_flow_imp_page.create_page_process(
 '    rol_id,',
 '    id_empresa,',
 '    password_hash,',
-'    fecha_creacion',
+'    fecha_creacion,',
+'    debe_cambiar_clave',
 ') VALUES (',
 '    :P4_USERNAME,',
 '    :P4_EMAIL,',
@@ -8972,7 +8973,8 @@ wwv_flow_imp_page.create_page_process(
 '    :P4_ROL_ID,',
 '    :P4_ID_EMPRESA,',
 '    sypex_hash_password(:P4_PASSWORD),',
-'    SYSDATE',
+'    SYSDATE,',
+'    ''S''',
 ');'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
@@ -9033,6 +9035,10 @@ wwv_flow_imp_page.create_page_process(
 '       bloqueado_hasta     = CASE',
 '                               WHEN :P4_PASSWORD IS NOT NULL THEN NULL',
 '                               ELSE bloqueado_hasta',
+'                             END,',
+'       debe_cambiar_clave  = CASE',
+'                               WHEN :P4_PASSWORD IS NOT NULL THEN ''S''',
+'                               ELSE debe_cambiar_clave',
 '                             END',
 ' WHERE usuario_id     = :P4_USUARIO_ID;'))
 ,p_process_clob_language=>'PLSQL'
