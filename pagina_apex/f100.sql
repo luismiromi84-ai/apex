@@ -3220,6 +3220,15 @@ wwv_flow_imp_shared.create_flow_item(
 );
 end;
 /
+prompt --application/shared_components/logic/application_items/f_debe_cambiar_clave
+begin
+wwv_flow_imp_shared.create_flow_item(
+ p_id=>wwv_flow_imp.id(43000000000000053)
+,p_name=>'F_DEBE_CAMBIAR_CLAVE'
+,p_protection_level=>'I'
+);
+end;
+/
 prompt --application/shared_components/logic/application_settings
 begin
 null;
@@ -7559,6 +7568,25 @@ wwv_flow_imp_page.create_page(
 '}'))
 ,p_protection_level=>'D'
 ,p_page_component_map=>'14'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000054)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Cambio de clave obligatorio'
+,p_static_id=>'cambio-clave-obligatorio'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_pagina number := nv(''APP_PAGE_ID'');',
+'begin',
+'    if nvl(v(''F_DEBE_CAMBIAR_CLAVE''), ''N'') = ''S''',
+'       and v_pagina not in (14, 9999) then',
+'        apex_util.redirect_url(''f?p='' || v(''APP_ID'') || '':14:'' || v(''APP_SESSION'') || ''::'' || v(''DEBUG''));',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000054
 );
 end;
 /
