@@ -6,7 +6,8 @@
 --
 -- Los SELECT devuelven filas solo cuando algo FALLA. El bloque PL/SQL del final
 -- no puede imprimir, asi que informa levantando -20100 con el resumen
--- ('RESULTADO tarea N: FALLAS=0'); se lee el mensaje, no el codigo.
+-- ('RESULTADO: FALLAS=0'). Codigo de salida 1 con FALLAS=0 significa EXITO:
+-- el raise es solo el mecanismo para leer la salida.
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS;
@@ -35,15 +36,19 @@ select 'FALLA: falta UQ_USUARIO_USERNAME_UPPER' as caso from dual
                       and index_name = 'UQ_USUARIO_USERNAME_UPPER');
 /
 
-select 'FALLA: prc_auth_registrar no compila' as caso from dual
+select 'FALLA: ' || o || ' no compila' as caso
+  from (select 'PRC_AUTH_REGISTRAR' o from dual union all
+        select 'SYPEX_HASH_PASSWORD'  from dual union all
+        select 'FN_VERIFICAR_PASSWORD' from dual union all
+        select 'FN_PASSWORD_ES_LEGADO' from dual)
  where not exists (select 1 from all_objects
-                    where owner = 'WKSP_SYPEXWS' and object_name = 'PRC_AUTH_REGISTRAR'
-                      and status = 'VALID');
+                    where owner = 'WKSP_SYPEXWS' and object_name = o and status = 'VALID');
 /
 
 -- -----------------------------------------------------------------------------
--- 2. Comportamiento de prc_auth_registrar
---    5 fallos bloquean, un OK resetea, y cada llamada deja su fila en el log.
+-- 2. Comportamiento
+--    2.1 prc_auth_registrar: 5 fallos bloquean, un OK resetea, todo deja log.
+--    2.2 hash: formato, ida y vuelta, sal aleatoria, legado y nulos.
 -- -----------------------------------------------------------------------------
 declare
   v_id      number;
@@ -52,7 +57,12 @@ declare
   v_reint   number;
   v_bloq    date;
   v_log     number;
+  v_h       varchar2(512);
+  v_h2      varchar2(512);
+  v_leg     varchar2(64);
+  v_t0      number;
 begin
+  -- 2.1 registro de intentos ---------------------------------------------------
   delete from syn_login_log where usuario_intentado = 'ZZ_TEST_AUTH';
   delete from usuario where upper(username) = 'ZZ_TEST_AUTH';
 
@@ -91,15 +101,54 @@ begin
   delete from usuario where usuario_id = v_id;
   commit;
 
-  raise_application_error(-20100, 'RESULTADO tarea 1: FALLAS=' || v_fallas || v_detalle);
-exception
-  when others then
-    begin
-      delete from syn_login_log where usuario_intentado = 'ZZ_TEST_AUTH';
-      delete from usuario where upper(username) = 'ZZ_TEST_AUTH';
-      commit;
-    exception when others then null;
-    end;
-    raise;
+  -- 2.2 hash -------------------------------------------------------------------
+  v_t0 := dbms_utility.get_time;
+  v_h  := sypex_hash_password('abc');
+  if (dbms_utility.get_time - v_t0) / 100 > 2 then
+    v_fallas := v_fallas + 1;
+    v_detalle := v_detalle || ' [hash lento: ' || round((dbms_utility.get_time - v_t0)/100,2) || ' s]';
+  end if;
+
+  if v_h not like 'PBKDF2-SHA256$100000$%' then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [formato del hash]';
+  end if;
+
+  if not fn_verificar_password('abc', v_h) then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [ida y vuelta]';
+  end if;
+
+  if fn_verificar_password('abd', v_h) then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [acepta clave incorrecta]';
+  end if;
+
+  v_h2 := sypex_hash_password('abc');
+  if v_h2 = v_h then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [sal no aleatoria]';
+  end if;
+
+  execute immediate 'select lower(rawtohex(standard_hash(:1,''SHA256''))) from dual'
+    into v_leg using '123' || 'SYPEX_SALT_2026';
+
+  if not fn_verificar_password('123', v_leg) then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [hash legado no verifica]';
+  end if;
+
+  if not fn_password_es_legado(v_leg) then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [legado no detectado]';
+  end if;
+
+  if fn_password_es_legado(v_h) then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [hash nuevo marcado como legado]';
+  end if;
+
+  if sypex_hash_password(null) is not null then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [hash de null no es null]';
+  end if;
+
+  if fn_verificar_password(null, null) then
+    v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [null verifica]';
+  end if;
+
+  raise_application_error(-20100, 'RESULTADO: FALLAS=' || v_fallas || v_detalle);
 end;
 /
