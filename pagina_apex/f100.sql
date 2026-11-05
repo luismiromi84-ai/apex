@@ -8227,56 +8227,19 @@ wwv_flow_imp_page.create_page_validation(
 ,p_associated_item=>wwv_flow_imp.id(9176771455212502)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000061)
-,p_name=>'P2_ID_EMPRESA'
-,p_source_data_type=>'NUMBER'
-,p_is_required=>true
-,p_item_sequence=>25
-,p_item_plug_id=>wwv_flow_imp.id(9176668396212501)
-,p_prompt=>'Empresa'
-,p_source_type=>'ALWAYS_NULL'
-,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT e.nombre_empresa,',
-'       e.id_empresa',
-'  FROM empresas e',
-' WHERE e.estado = ''ACTIVO''',
-' ORDER BY e.nombre_empresa'))
-,p_lov_display_null=>'YES'
-,p_lov_null_text=>'-- Seleccione Empresa --'
-,p_cHeight=>1
-,p_field_template=>2320077351817916916
-,p_item_template_options=>'#DEFAULT#'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000070)
+,p_validation_name=>'Validar Correo Unico'
+,p_static_id=>'validar-correo-unico'
+,p_validation_sequence=>30
+,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(email)) = LOWER(TRIM(:P2_EMAIL))'
+,p_validation_type=>'NOT_EXISTS'
+,p_error_message=>'Ese correo ya está registrado.'
+,p_associated_item=>wwv_flow_imp.id(9176872442212503)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000062)
-,p_name=>'P2_ROL_ID'
-,p_source_data_type=>'NUMBER'
-,p_is_required=>true
-,p_item_sequence=>30
-,p_item_plug_id=>wwv_flow_imp.id(9176668396212501)
-,p_prompt=>'Rol solicitado'
-,p_source_type=>'ALWAYS_NULL'
-,p_display_as=>'NATIVE_POPUP_LOV'
-,p_named_lov=>'ROLES'
-,p_lov_display_null=>'YES'
-,p_lov_null_text=>'-- Seleccione Rol --'
-,p_cSize=>30
-,p_field_template=>2320077351817916916
-,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'YES'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'case_sensitive', 'N',
-  'display_as', 'DIALOG',
-  'fetch_on_open', 'Y',
-  'initial_fetch', 'FIRST_ROWSET')).to_clob
-);
+
+
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(9177463962212509)
 ,p_process_sequence=>10
@@ -8291,23 +8254,19 @@ wwv_flow_imp_page.create_page_process(
 '        email,',
 '        password_hash,',
 '        estado,',
-'        id_empresa,',
-'        rol_id,',
 '        fecha_creacion',
 '    ) VALUES (',
 '        :P2_USERNAME,',
 '        :P2_EMAIL,',
 '        sypex_hash_password(:P2_PASSWORD),',
 '        ''PENDIENTE'',',
-'        nullif(fn_clean_num(:P2_ID_EMPRESA), 0),',
-'        nullif(fn_clean_num(:P2_ROL_ID), 0),',
 '        SYSDATE',
 '    );',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(9177125206212506)
-,p_process_success_message=>unistr('Solicitud registrada. Un administrador debe activar la cuenta y asignarte el acceso antes de que puedas iniciar sesi\00F3n.')
+,p_process_success_message=>unistr('Solicitud registrada. Un administrador debe activar la cuenta y asignarte empresa y rol antes de que puedas iniciar sesi\00F3n.')
 ,p_internal_uid=>9177463962212509
 );
 end;
