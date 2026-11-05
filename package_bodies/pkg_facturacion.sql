@@ -414,7 +414,9 @@ create or replace PACKAGE BODY pkg_facturacion AS
         END IF;
     EXCEPTION
         WHEN OTHERS THEN
-            ROLLBACK;
+            -- Sin ROLLBACK: el error se propaga y la transaccion la decide quien
+            -- llama (APEX revierte su proceso). Un ROLLBACK aqui descartaria
+            -- cualquier trabajo pendiente del llamador.
             raise_application_error(-20001, 'Error en pkg_facturacion.prc_anular_factura: ' || SQLERRM);
     END prc_anular_factura;
 
@@ -464,7 +466,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
         END IF;
     EXCEPTION
         WHEN OTHERS THEN
-            ROLLBACK;
+            -- Sin ROLLBACK, igual que en prc_anular_factura.
             raise_application_error(-20003, 'Error en pkg_facturacion.prc_procesar_factura: ' || SQLERRM);
     END prc_procesar_factura;
 END pkg_facturacion;
