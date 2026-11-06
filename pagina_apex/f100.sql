@@ -9799,6 +9799,26 @@ wwv_flow_imp_page.create_page_plug(
 ,p_prn_border_color=>'#666666'
 );
 wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000086)
+,p_button_sequence=>30
+,p_button_plug_id=>wwv_flow_imp.id(12950647600514910)
+,p_button_name=>'BTN_GASTOS'
+,p_static_id=>'btn-gastos'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Gastos'
+,p_button_redirect_url=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.:16:P16_ID_PRESUPUESTO:&P5_ID_PRESUPUESTO.'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P5_ID_PRESUPUESTO is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-money'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(14386874783113307)
 ,p_button_sequence=>20
 ,p_button_plug_id=>wwv_flow_imp.id(11950647600514906)
@@ -16518,6 +16538,379 @@ wwv_flow_imp_page.create_page_plug(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
+);
+end;
+/
+prompt --application/pages/page_00016
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>16
+,p_name=>'Gasto Real'
+,p_alias=>'GASTO-REAL'
+,p_step_title=>'Gasto Real'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000061)
+,p_plug_name=>'Gastos del presupuesto'
+,p_static_id=>'gastos-del-presupuesto'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select g.id_gasto as editar,',
+'       g.fecha_gasto,',
+'       g.monto_origen,',
+'       g.moneda_origen,',
+'       g.tasa_real,',
+'       g.monto_base_usd',
+'  from gasto_real g',
+'  join presupuestos p',
+'    on p.id_presupuesto = g.id_presupuesto',
+' where g.id_presupuesto = :P16_ID_PRESUPUESTO',
+'   and p.id_empresa in (select u.id_empresa from usuario u',
+'                         where upper(u.username) = upper(:APP_USER)',
+'                           and u.estado in (''ACTIVO'', ''A'', ''1''))',
+' order by g.fecha_gasto desc, g.id_gasto desc'))
+,p_plug_source_type=>'NATIVE_IR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000000079)
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_show_notify=>'Y'
+,p_internal_uid=>43000000000000079
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000080)
+,p_db_column_name=>'EDITAR'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>'Editar'
+,p_column_link=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.:16:P16_ID_GASTO:#EDITAR#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Editar'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000081)
+,p_db_column_name=>'FECHA_GASTO'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Fecha'
+,p_column_type=>'DATE'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000082)
+,p_db_column_name=>'MONTO_ORIGEN'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Monto'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000083)
+,p_db_column_name=>'MONEDA_ORIGEN'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'Moneda'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000084)
+,p_db_column_name=>'TASA_REAL'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Tasa'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000085)
+,p_db_column_name=>'MONTO_BASE_USD'
+,p_display_order=>60
+,p_column_identifier=>'F'
+,p_column_label=>'Monto (USD)'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000062)
+,p_plug_name=>'Gasto real'
+,p_static_id=>'gasto-real'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'TABLE'
+,p_query_table=>'GASTO_REAL'
+,p_query_where=>'id_gasto = :P16_ID_GASTO and exists (select 1 from presupuestos p where p.id_presupuesto = gasto_real.id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_include_rowid_column=>false
+,p_is_editable=>false
+,p_plug_source_type=>'NATIVE_FORM'
+,p_ajax_items_to_submit=>'P16_ID_GASTO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000055)
+,p_name=>'P16_ID_GASTO'
+,p_source_data_type=>'NUMBER'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_prompt=>'Gasto'
+,p_source=>'ID_GASTO'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000056)
+,p_name=>'P16_ID_PRESUPUESTO'
+,p_source_data_type=>'NUMBER'
+,p_is_required=>true
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_prompt=>'Presupuesto'
+,p_source=>'ID_PRESUPUESTO'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select p.folio || '' - '' || c.razon_social as display_value,',
+'       p.id_presupuesto as return_value',
+'  from presupuestos p',
+'  join clientes c on c.id_cliente = p.id_cliente and c.id_empresa = p.id_empresa',
+' where p.id_empresa in (select u.id_empresa from usuario u',
+'                         where upper(u.username) = upper(:APP_USER)',
+'                           and u.estado in (''ACTIVO'', ''A'', ''1''))',
+' order by p.id_presupuesto desc'))
+,p_cSize=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000057)
+,p_name=>'P16_FECHA_GASTO'
+,p_source_data_type=>'DATE'
+,p_is_required=>true
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_default=>'select sysdate from dual'
+,p_item_default_type=>'SQL_QUERY'
+,p_prompt=>'Fecha del gasto'
+,p_source=>'FECHA_GASTO'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000058)
+,p_name=>'P16_MONTO_ORIGEN'
+,p_source_data_type=>'NUMBER'
+,p_is_required=>true
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_prompt=>'Monto'
+,p_source=>'MONTO_ORIGEN'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>20
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000059)
+,p_name=>'P16_MONEDA_ORIGEN'
+,p_source_data_type=>'VARCHAR2'
+,p_is_required=>true
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_default=>'USD'
+,p_prompt=>'Moneda'
+,p_source=>'MONEDA_ORIGEN'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC:USD;USD,VES;VES,MXN;MXN'
+,p_cSize=>10
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000060)
+,p_name=>'P16_TASA_REAL'
+,p_source_data_type=>'NUMBER'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_prompt=>'Tasa (opcional)'
+,p_source=>'TASA_REAL'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>16
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000063)
+,p_name=>'P16_MONTO_BASE_USD'
+,p_source_data_type=>'NUMBER'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_prompt=>'Equivalente USD'
+,p_source=>'MONTO_BASE_USD'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000073)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_button_name=>'BTN_GUARDAR_GASTO'
+,p_static_id=>'btn-guardar-gasto'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P16_ID_PRESUPUESTO is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-floppy-o'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000074)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_button_name=>'BTN_ELIMINAR_GASTO'
+,p_static_id=>'btn-eliminar-gasto'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--danger:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Eliminar'
+,p_confirm_message=>'Se va a eliminar este gasto. Continua?'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P16_ID_GASTO is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-trash-o'
+,p_grid_new_row=>'N'
+,p_grid_column=>6
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000075)
+,p_button_sequence=>30
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000062)
+,p_button_name=>'BTN_VOLVER_GASTO'
+,p_static_id=>'btn-volver-gasto'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver a Presupuestos'
+,p_button_redirect_url=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5::'
+,p_warn_on_unsaved_changes=>null
+,p_icon_css_classes=>'fa-undo'
+,p_grid_new_row=>'N'
+,p_grid_column=>11
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000076)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: gasto real'
+,p_static_id=>'valida-rol-gasto-real'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000076
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000077)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar gasto'
+,p_static_id=>'guardar-gasto'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
+'',
+'pkg_gasto_real.prc_guardar_gasto(',
+'    p_id_gasto       => :P16_ID_GASTO,',
+'    p_id_presupuesto => fn_clean_num(:P16_ID_PRESUPUESTO),',
+'    p_fecha_gasto    => :P16_FECHA_GASTO,',
+'    p_monto_origen   => fn_clean_num(:P16_MONTO_ORIGEN),',
+'    p_moneda_origen  => :P16_MONEDA_ORIGEN,',
+'    p_tasa_real      => case when trim(nvl(:P16_TASA_REAL, '''')) is null',
+'                             then null',
+'                             else fn_clean_num(:P16_TASA_REAL) end,',
+'    p_usuario        => :APP_USER);',
+'',
+'apex_application.g_print_success_message := ''Gasto guardado.'';'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000073)
+,p_internal_uid=>43000000000000077
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000078)
+,p_process_sequence=>20
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Eliminar gasto'
+,p_static_id=>'eliminar-gasto'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
+'',
+'pkg_gasto_real.prc_eliminar_gasto(',
+'    p_id_gasto => fn_clean_num(:P16_ID_GASTO),',
+'    p_usuario  => :APP_USER);',
+'',
+'apex_application.g_print_success_message := ''Gasto eliminado.'';'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000074)
+,p_internal_uid=>43000000000000078
 );
 end;
 /
