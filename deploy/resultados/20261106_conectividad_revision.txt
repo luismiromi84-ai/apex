@@ -1,0 +1,125 @@
+REVISION DE CONECTIVIDAD - 2026-11-06 08:18 (America/Mexico_City)
+Repo: C:\Users\luism\OneDrive\Documents\Apex_luis   rama main   HEAD e0263a8
+Instancia de trabajo: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL, mx-monterrey-1, APEX 26.1.6)
+
+RESULTADO: BLOQUEADO POR LA ACL DE LA INSTANCIA (ORA-12506 / HTTP 403).
+No es credencial, no es el servicio y no es la cadena de conexion.
+
+--------------------------------------------------------------------------------
+1. IP PUBLICA DEL EQUIPO AHORA
+--------------------------------------------------------------------------------
+   actual:            201.173.65.70        (api.ipify.org, 2026-11-06 08:15)
+   ultima autorizada: 201.173.64.11        (segun AGENTS.md / 20261104_conectividad.txt)
+
+   Vuelve a cambiar: ya van tres IP distintas en tres dias
+   (201.173.67.57 -> 201.173.64.11 -> 201.173.65.70). Es IP dinamica del proveedor.
+
+--------------------------------------------------------------------------------
+2. RED: EL PUERTO LLEGA
+--------------------------------------------------------------------------------
+   Test-NetConnection adb.mx-monterrey-1.oraclecloud.com:1521
+     RemoteAddress      : 139.177.107.29
+     TcpTestSucceeded   : True
+   -> El host resuelve y el puerto 1521 acepta TCP. El bloqueo es posterior.
+
+--------------------------------------------------------------------------------
+3. TCPS 1521 CON python-oracledb 26.1.0 (modo thin)
+--------------------------------------------------------------------------------
+   usuario ADMIN (.env de la raiz, DB_USER/DB_PASSWORD presentes)
+
+   servicio _low : FALLO en 1.1s
+     DPY-6005: cannot connect to database
+     DPY-6000: Listener refused connection. (Similar to ORA-12506)
+   servicio _high: FALLO en 1.1s
+     DPY-6005 / DPY-6000 (Similar to ORA-12506)
+   (primer intento con RETRY_COUNT=5: FALLO en 10.4s, mismo codigo)
+
+   -> Identico en los dos niveles de servicio, asi que no es el SERVICE_NAME.
+
+--------------------------------------------------------------------------------
+4. ORDS / APEX POR HTTPS
+--------------------------------------------------------------------------------
+   GET https://gfd7e2575d251ae-sypexsql.adb.mx-monterrey-1.oraclecloudapps.com/ords/
+     HTTP/1.1 403 Forbidden
+     Content-Type: application/problem+json
+     {
+       "code": "Forbidden",
+       "title": "Unauthorized Access",
+       "message": "IP Address Rejected. Your client needs to be part of this
+                   database's Access Control List to access this link."
+     }
+   GET .../ords/f?p=100:15  ->  HTTP 403
+
+   -> Este mensaje es el diagnostico explicito: la IP no esta en la ACL.
+      Afecta por igual a APEX, a ORDS y al listener.
+
+--------------------------------------------------------------------------------
+5. HERRAMIENTAS DEL AGENTE
+--------------------------------------------------------------------------------
+   MCP oracle (SQLcl -mcp, alias SYPEX_SQL_MCP):
+     connect -> ERROR: ORA-12506: TNS: el listener ha rechazado la conexion
+                segun el filtrado ACL del servicio
+     sql_run -> "No se ha establecido la conexion"
+
+   MCP sypex (sypex_estado_api, modulo ORDS de clientes):
+     "Error consultando SYPEX: ORDS respondio HTTP 403"
+
+   Alias SQLcl (verificado, no roto):
+     %APPDATA%\DBTools\connections\42ONU1gDZ2fs7Pyz6cs41g\dbtools.properties
+       name=SYPEX_SQL_MCP   userName=ADMIN   TCPS 1521  ..._sypexsql_low...
+     %APPDATA%\DBTools\sqlcl\aliases.xml esta vacio, pero SQLcl 25+ ya no usa
+     ese archivo para las conexiones guardadas: no hay nada que recrear.
+     El alias `sypexsystem` sigue sin connectionString (el historico roto);
+     no se toco, y no hay que apuntar nada a el.
+
+--------------------------------------------------------------------------------
+6. DIAGNOSTICO (segun la tabla de errores del repo)
+--------------------------------------------------------------------------------
+   ORA-12506  = ACL de la instancia rechaza la IP publica del equipo.
+                NO se corrige en la cadena de conexion ni en la cartera.
+   HTTP 403 "IP Address Rejected" = la misma ACL, vista desde ORDS.
+   Descartados: ORA-01017 (credenciales), ORA-12514 (servicio inexistente),
+   DPY-6001 (servicio mal escrito), instancia caida (el listener responde).
+
+--------------------------------------------------------------------------------
+7. LO QUE HAY QUE HACER (no se puede desde aqui)
+--------------------------------------------------------------------------------
+   No hay OCI CLI instalado ni ~/.oci/config, asi que la correccion es manual:
+
+   OCI -> Autonomous Database `Sypex_SQL` -> Network -> Access control list
+     agregar 201.173.65.70/32
+     (mejor: 201.173.64.0/20 para no repetir esto cada vez que el proveedor
+      mueva la IP; la IP no es fija)
+
+   Despues, comprobacion minima (debe conectar y decir WKSP_SYPEXWS):
+     python deploy/conexion/verificar_conexion.py
+
+   No hace falta tocar .env, ni el alias SYPEX_SQL_MCP, ni el descriptor.
+   No reimportar el export: no hay nada corrupto.
+
+--------------------------------------------------------------------------------
+8. IMPACTO
+--------------------------------------------------------------------------------
+   Bloqueado mientras dure la ACL:
+   - importar/exportar la app (importar_export.py, abrir_pagina.py)
+   - las verificaciones SQL de deploy/diagnostico/
+   - cualquier consulta o migracion
+   Sin bloqueo: editar archivos del repo (f100.sql, packages, docs).
+
+--------------------------------------------------------------------------------
+9. HERRAMIENTA NUEVA Y SALIDA
+--------------------------------------------------------------------------------
+   deploy/conexion/verificar_conexion.py (nuevo en esta sesion): prueba de humo
+   que imprime usuario, IP publica, servicio, base, esquema, conteo de objetos
+   por tipo, invalidos y paginas de la app 100, y traduce el codigo de error a
+   causa y accion. Sale 1 si no conecta o si hay invalidos.
+
+   Salida hoy (2026-11-06 08:20):
+     usuario: ADMIN   IP publica: 201.173.65.70
+     FALLO al conectar (4.2s)
+       DPY-6005: cannot connect to database
+       DPY-6000: Listener refused connection. (Similar to ORA-12506)
+       causa:  ACL de la instancia: la IP publica de este equipo no esta autorizada.
+       accion: OCI -> Autonomous Database -> Network -> Access control list:
+               agregar la IP actual. NO se arregla en la cadena ni en el .env.
+
