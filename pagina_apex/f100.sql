@@ -94,6 +94,7 @@ wwv_imp_workspace.create_flow(
 ,p_timestamp_tz_format=>'DS'
 ,p_flow_image_prefix=>nvl(wwv_flow_application_install.get_image_prefix,'')
 ,p_authentication_id=>wwv_flow_imp.id(9144549589584420)
+,p_error_handling_function=>'fn_error_handler'
 ,p_application_tab_set=>0
 ,p_logo_type=>'C'
 ,p_logo=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -8592,6 +8593,27 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_region_id=>wwv_flow_imp.id(10564941614198500)
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'maintain_pagination', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000092)
+,p_plug_name=>'Ultimos errores'
+,p_static_id=>'ultimos-errores'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select to_char(e.fecha, ''DD/MM/YYYY HH24:MI'') as fecha,',
+'       e.usuario,',
+'       e.id_pagina as pagina,',
+'       e.codigo,',
+'       e.mensaje,',
+'       e.peticion',
+'  from syn_error_log e',
+' order by e.id_error desc',
+' fetch first 20 rows only'))
+,p_plug_source_type=>'NATIVE_SQL_REPORT'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000001)

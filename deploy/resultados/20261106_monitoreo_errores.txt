@@ -1,0 +1,91 @@
+=============================================================
+Monitoreo basico de errores
+2026-11-06
+=============================================================
+
+1. EL PROBLEMA
+-------------------------------------------------------------
+Un fallo en produccion solo se veia si el usuario lo contaba. APEX deja el error en
+APEX_WORKSPACE_ACTIVITY_LOG, pero esa vista se recorta sola y solo se consulta por SQL.
+
+2. QUE SE CONSTRUYO
+-------------------------------------------------------------
+Tabla nueva SYN_ERROR_LOG:
+    id_error, fecha, usuario, sesion, id_aplicacion, id_pagina, peticion,
+    componente, codigo, mensaje, detalle, sentencia, es_interno
+    indice IX_SYN_ERROR_LOG_FECHA
+
+PRC_LOG_ERROR(p_usuario, p_codigo, p_mensaje, ...)
+    - transaccion AUTONOMA (sobrevive al rollback de APEX),
+    - nunca lanza: si no puede escribir, descarta el registro,
+    - recorta los textos al tamano de la columna (un mensaje de 5000 se guarda en 4000).
+
+FN_ERROR_HANDLER(p_error in apex_error.t_error) return apex_error.t_error_result
+    - es el «Error Handling Function» de la aplicacion 100
+      (p_error_handling_function=>'fn_error_handler' en el create_flow),
+    - registra y devuelve el mismo mensaje de siempre,
+    - copia display_location para no cambiar donde se ve cada error.
+
+Region «Ultimos errores» en la pagina 3 (Gestion de Usuarios), reporte clasico
+    (NATIVE_SQL_REPORT, SQL_QUERY) con los ultimos 20.
+
+PRC_PURGAR_LOGS ampliado: borra de SYN_ERROR_LOG lo anterior a la retencion (90 dias).
+    No se devuelve el conteo para no cambiar la firma (el job ya declara dos variables).
+
+3. TRAMPA MEDIDA: LOS CAMPOS DE apex_error.t_error EN APEX 26.1
+-------------------------------------------------------------
+El paquete esta wrapped, asi que se descubrieron compilando una funcion sonda que los
+tocaba todos. NO existen en 26.1 (dan PLS-00302):
+
+    component_name, type, error_type, error_code, internal_error_code,
+    region_id, is_constraint_violation
+
+Si existen y se usan: message, additional_info, ora_sqlcode, ora_sqlerrm,
+error_statement, page_item_name, is_internal_error (BOOLEAN), display_location.
+
+`is_internal_error` es BOOLEAN: pasarlo a un parametro VARCHAR2 da PLS-00306. Se
+convierte con `case when p_error.is_internal_error then 'S' else 'N' end`.
+
+4. PRUEBAS DE EXTREMO A EXTREMO
+-------------------------------------------------------------
+a) Error de negocio en una pagina normal:
+   ventas1.demo abre la pagina 3 (la guarda lanza -20003).
+   SYN_ERROR_LOG registra: 11:43:29 · VENTAS1.DEMO · pagina 3 · ORA-20003 ·
+   «No tiene permisos para esta pagina.» · es_interno = N.
+   La pagina sigue mostrando el mismo mensaje al usuario.
+   La region de la pagina 3 lo pinta (comprobado en el HTML: fila con fecha,
+   usuario, pagina, codigo y mensaje).
+
+b) Error de un proceso (pagina 14, recuperacion de clave):
+   se envia el formulario vacio y la app lanza -20010.
+   SYN_ERROR_LOG registra la fila y el usuario ve «Los datos no coinciden con un
+   usuario activo.» SIN el codigo ORA-20010: mejor que antes, que lo mostraba.
+
+5. VERIFICACION
+-------------------------------------------------------------
+deploy/diagnostico/20261106_monitoreo_errores_verificacion.sql -> FALLAS=0 (9 casos):
+    C1 tabla y columnas · C2 objetos VALID · C3 EXECUTE para PUBLIC ·
+    C4 la app usa fn_error_handler · C5 la region resuelve como NATIVE_SQL_REPORT ·
+    C6 registra y recorta a 4000 · C7 la purga borra lo de 100 dias y respeta lo de hoy ·
+    C8 las filas reales sobreviven a la purga · C9 0 objetos INVALID.
+    Las filas de prueba se borran y se confirman dentro del script (prc_log_error es
+    autonoma: el rollback de la conexion no las alcanza).
+
+Reejecutadas: portada (17 paginas) FALLAS=0 y paginas 7/9 FALLAS=0.
+
+6. DOS TRAMPAS QUE COSTARON TIEMPO
+-------------------------------------------------------------
+- `importar_export.py procedimientos/prc_log_error.sql` crea el objeto en **ADMIN**, no
+  en WKSP_SYPEXWS: los archivos canonicos no llevan `alter session`. Se uso el runner de
+  la migracion o `compilar_objeto.py`. La copia de ADMIN quedo INVALID y aparecio como
+  fallo en la verificacion de la portada.
+- La verificacion de la portada miraba `user_objects`, que son los de ADMIN (el usuario
+  de la conexion), no los de la app. Ahora pregunta por all_objects con
+  owner='WKSP_SYPEXWS'; antes no habria detectado un objeto invalido de la app.
+
+7. PENDIENTE / A DECIDIR
+-------------------------------------------------------------
+- La region «Ultimos errores» la ve cualquiera que entre a la pagina 3 (ADMIN, GERENCIA,
+  PRUEBA). Si debe ser solo ADMIN, se condiciona en App Builder en un minuto.
+- No hay aviso: el log se mira. Un correo diario o un contador en el Panel seria el
+  siguiente paso si hace falta.

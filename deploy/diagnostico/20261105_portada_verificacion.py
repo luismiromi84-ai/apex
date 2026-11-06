@@ -162,8 +162,13 @@ with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as c
                        and region_source like '%financial-summary%'
                        and region_source like '%monto_total_linea%'""") == 1)
 
-    comprobar("cero objetos invalidos",
-              uno("select count(*) from user_objects where status = 'INVALID'") == 0)
+    # Ojo: user_objects seria los objetos de ADMIN (el usuario de la conexion), no
+    # los de la app. Se pregunta por el esquema dueno.
+    comprobar("cero objetos invalidos en WKSP_SYPEXWS",
+              uno("""select count(*) from all_objects
+                      where owner = 'WKSP_SYPEXWS' and status = 'INVALID'
+                        and object_type in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                            'PACKAGE BODY', 'TRIGGER', 'VIEW')""") == 0)
 
 print(f"\nRESULTADO: FALLAS={len(fallas)}")
 for f in fallas:

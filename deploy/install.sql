@@ -23,6 +23,7 @@ prompt ============================================================
 @@../tabla/syn_roles.sql
 @@../tabla/usuario.sql
 @@../tabla/syn_login_log.sql
+@@../tabla/syn_error_log.sql
 @@../tabla/clientes.sql
 @@../tabla/impuestos.sql
 @@../tabla/tipo_cambio.sql
@@ -58,6 +59,10 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_presupuesto_editable.sql
 @@../funciones/fn_transicion_estado_valida.sql
 @@../funciones/fn_empresas_del_usuario.sql  
+
+-- Monitoreo de errores: el procedimiento va antes porque fn_error_handler lo llama.
+@@../procedimientos/prc_log_error.sql
+@@../funciones/fn_error_handler.sql
 
 prompt ============================================================
 prompt 4/6 Especificaciones de packages
