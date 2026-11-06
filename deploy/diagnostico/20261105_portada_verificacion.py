@@ -59,7 +59,7 @@ try:
     with urllib.request.urlopen(BASE, timeout=40) as r:
         raiz = r.read().decode("utf-8", errors="replace")
         comprobar("la raiz de la app sirve la portada",
-                  "Gestiona tu negocio" in raiz, f"(HTTP {r.status})")
+                  "Presupuestos, facturación y clientes" in raiz, f"(HTTP {r.status})")
 except urllib.error.HTTPError as e:
     comprobar("la raiz de la app sirve la portada", False, f"(HTTP {e.code})")
     raiz = ""
@@ -73,9 +73,15 @@ except urllib.error.HTTPError as e:
     portada = ""
     comprobar("la pagina 15 responde 200", False, f"(HTTP {e.code})")
 
-for marca in ("spx-portada", "spx-hero", "spx-monitor", "spx-beneficio",
-              "Gestiona tu negocio", "Control administrativo", "/synpex/home"):
+for marca in ("spx-portada", "spx-hero", "spx-servicios", "spx-servicio",
+              "spx-indicadores", "spx-pie", "wa.me/528111198920",
+              "Presupuestos, facturación y clientes"):
     comprobar(f"la portada trae {marca}", marca in portada)
+
+# Desde el 2026-11-06 la portada es una pagina comercial con cuatro secciones
+# reales; antes el menu apuntaba tres veces al mismo ancla.
+for ancla in ("spx-inicio", "spx-servicios", "spx-nosotros", "spx-contacto"):
+    comprobar(f"la portada trae la seccion {ancla}", f'id="{ancla}"' in portada)
 
 comprobar("sin comentario de instrucciones a la vista",
           "Pegar TODO este bloque" not in portada)
