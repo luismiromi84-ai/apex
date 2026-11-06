@@ -6,25 +6,35 @@
 -- Defecto medido el 2026-11-05 (lo encontro el dueno con mx.demo): con una
 -- factura PAGADA (F-3, id 1203, empresa 2) se podia entrar a la pagina 9,
 -- cambiar los datos y guardar. La cabecera no tenia ninguna comprobacion y el
--- detalle solo bloqueaba el estado FACTURADO, que no es el que se usa.
+-- detalle solo bloqueaba el estado FACTURADO, que no es el que se usa. En
+-- presupuestos pasaba exactamente lo mismo con CANCELADO y FACTURADO.
 --
--- Regla: PAGADA y ANULADA son estados finales. Para corregir una factura hay
---        que anularla y emitir otra.
+-- Regla:
+--   Facturas      -> PAGADA y ANULADA son finales.
+--   Presupuestos  -> CANCELADO y FACTURADO son finales.
+--   Para corregir se anula/cancela y se emite otro documento.
 --
 -- Que hace:
---   1. Crea fn_factura_editable(id) -> false para PAGADA/ANULADA. Un id nulo
---      o inexistente devuelve true (es el caso de alta).
---   2. PKG_FACTURACION.prc_actualizar se niega a actualizar una factura cerrada
---      (-20024) con un mensaje que dice el folio y el estado.
---   3. PKG_FACTURA_DETALLE bloquea agregar, editar, eliminar y reemplazar
---      lineas cuando la factura esta PAGADA, ANULADA o FACTURADO (-20002).
---   4. La condicion del boton Guardar de la pagina 9 usa la misma funcion, asi
---      que en un documento cerrado el boton no aparece (va en el export).
+--   1. fn_factura_editable(id): false para PAGADA/ANULADA.
+--      fn_presupuesto_editable(id): false para CANCELADO/FACTURADO.
+--      Las dos devuelven true si el id es nulo o no existe (es el caso de alta).
+--   2. PKG_FACTURACION.prc_actualizar y PKG_PRESUPUESTOS.prc_guardar_presupuesto
+--      se niegan a actualizar (-20024) con un mensaje que dice folio y estado.
+--   3. PKG_FACTURA_DETALLE y PKG_PRESUPUESTO_DETALLE bloquean agregar, editar y
+--      eliminar lineas cuando el documento esta cerrado (-20002 / -20003).
+--   4. Los botones Guardar de las paginas 7 y 9 usan esas funciones en su
+--      condicion, asi que en un documento cerrado no aparecen (va en el export).
+--
+-- Ademas: los manejadores WHEN OTHERS de los cuatro packages ya no envuelven los
+-- errores de negocio. Antes PKG_FACTURA_DETALLE mostraba
+-- 'DEBUG ERROR: ORA-20002: ...' y PKG_PRESUPUESTOS convertia el -20024 en -20001.
+-- Ahora -20999..-20000 se propagan tal cual.
 --
 -- Reversa:
 --   drop function fn_factura_editable;
---   y volver a compilar los dos bodies de la version anterior
---   (git show <commit>:package_bodies/pkg_facturacion.sql).
+--   drop function fn_presupuesto_editable;
+--   y volver a compilar los cuatro bodies de la version anterior
+--   (git show <commit>:package_bodies/...).
 --
 -- Idempotente: se puede ejecutar varias veces.
 -- =============================================================================
@@ -32,7 +42,7 @@
 alter session set current_schema = WKSP_SYPEXWS;
 /
 
--- 1. Funcion de apoyo -------------------------------------------------------
+-- 1. Funcion de apoyo (facturas) -----------------------------------------
 create or replace function fn_factura_editable (p_id_factura number)
     return boolean
 is
@@ -55,8 +65,7 @@ end;
 /
 /
 
--- 2. Cabecera de factura ---------------------------------------------
-
+-- 2. Cabecera de factura -------------------------------------------------
 create or replace PACKAGE BODY pkg_facturacion AS
 
 --------------------------------------------------------------------------------
@@ -527,8 +536,7 @@ END pkg_facturacion;
 /
 /
 
--- 3. Detalle de factura ----------------------------------------------
-
+-- 3. Detalle de factura --------------------------------------------------
 create or replace PACKAGE BODY pkg_factura_detalle IS
 
     --------------------------------------------------------------------------------
@@ -776,16 +784,422 @@ END pkg_factura_detalle;
 /
 /
 
--- 4. Recompilar todo el esquema (obligatorio: tocar packages deja objetos
+-- 4. Funcion de apoyo (presupuestos) -------------------------------------
+create or replace function fn_presupuesto_editable (p_id_presupuesto number)
+    return boolean
+is
+    v_estado presupuestos.estado%type;
+begin
+    if p_id_presupuesto is null or p_id_presupuesto <= 0 then
+        return true;
+    end if;
+
+    select estado
+      into v_estado
+      from presupuestos
+     where id_presupuesto = p_id_presupuesto;
+
+    return nvl(upper(trim(v_estado)), 'PENDIENTE') not in ('CANCELADO', 'FACTURADO');
+exception
+    when no_data_found then
+        return true;
+end;
+/
+/
+
+-- 5. Cabecera de presupuesto ---------------------------------------------
+create or replace PACKAGE BODY pkg_presupuestos AS
+
+    ----------------------------------------------------------------------------
+    -- PROCEDIMIENTO: Guardar o Actualizar Presupuesto
+    ----------------------------------------------------------------------------
+    PROCEDURE prc_guardar_presupuesto (
+        p_id_presupuesto    IN OUT NUMBER,
+        p_id_empresa        IN     NUMBER,
+        p_id_cliente        IN     NUMBER,
+        p_folio             IN     VARCHAR2,
+        p_cod_moneda        IN     VARCHAR2,
+        p_fecha_vencimiento IN     DATE,
+        p_fecha_emision     IN     DATE,
+        p_tipo_cambio       IN     NUMBER,
+        p_estado            IN     VARCHAR2,
+        p_observaciones     IN     VARCHAR2,
+        p_usuario           IN     VARCHAR2
+    ) IS
+        v_folio  presupuestos.folio%type;
+        v_estado presupuestos.estado%type;
+    BEGIN
+    -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
+    if apex_application.g_user is not null
+       and not fn_usuario_empresa_valida(apex_application.g_user, p_id_empresa) then
+        raise_application_error(-20003, 'No tiene acceso a la empresa indicada.');
+    end if;
+
+        -- Un documento cerrado no se edita: CANCELADO y FACTURADO son finales.
+        IF p_id_presupuesto IS NOT NULL
+           AND NOT fn_presupuesto_editable(p_id_presupuesto) THEN
+            SELECT folio, UPPER(estado)
+              INTO v_folio, v_estado
+              FROM presupuestos
+             WHERE id_presupuesto = p_id_presupuesto;
+
+            raise_application_error(-20024,
+                'El presupuesto ' || v_folio || ' está ' || v_estado
+                || ': no se puede modificar un documento cerrado. '
+                || 'Crea uno nuevo.');
+        END IF;
+
+        IF p_id_presupuesto IS NOT NULL THEN
+            -- Actualización (Incluye MODIFICADO_POR)
+            UPDATE presupuestos SET
+                   id_empresa        = p_id_empresa,
+                   id_cliente        = p_id_cliente,
+                   folio             = p_folio,
+                   cod_moneda        = p_cod_moneda,
+                   fecha_vencimiento = p_fecha_vencimiento,
+                   fecha_emision     = p_fecha_emision,
+                   tipo_cambio       = p_tipo_cambio,
+                   estado            = p_estado,
+                   observaciones     = p_observaciones,
+                   modificado_por    = p_usuario
+             WHERE id_presupuesto    = p_id_presupuesto;
+        ELSE
+            -- Inserción (Incluye CREADO_POR y opcionalmente MODIFICADO_POR)
+            INSERT INTO presupuestos (
+                id_empresa,
+                id_cliente,
+                folio,
+                cod_moneda,
+                fecha_vencimiento,
+                fecha_emision,
+                tipo_cambio,
+                estado,
+                observaciones,
+                creado_por,
+                modificado_por
+            ) VALUES (
+                p_id_empresa,
+                p_id_cliente,
+                p_folio,
+                p_cod_moneda,
+                p_fecha_vencimiento,
+                p_fecha_emision,
+                p_tipo_cambio,
+                p_estado,
+                p_observaciones,
+                p_usuario,
+                p_usuario
+            ) RETURNING id_presupuesto INTO p_id_presupuesto;
+        END IF;
+
+    EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            RAISE_APPLICATION_ERROR(-20021,
+                'El folio ' || p_folio || ' ya existe para esta empresa. Elige otro numero.');
+        WHEN OTHERS THEN
+            -- Los errores de negocio (-20xxx) se propagan tal cual, con su mensaje.
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            RAISE_APPLICATION_ERROR(-20001, 'Error al procesar el presupuesto: ' || SQLERRM);
+    END;
+    ---------------------------------------------------------------------
+    -- PROCEDIMIENTO: Procesar Presupuesto (Desde la vista de detalles / botón APEX)
+    ----------------------------------------------------------------------------
+    PROCEDURE prc_procesar_presupuesto (
+        p_id_presupuesto    IN     NUMBER,
+        p_usuario           IN     VARCHAR2,
+        p_nuevo_estado      OUT    VARCHAR2,
+        p_nuevas_obs        OUT    VARCHAR2
+    ) IS
+        v_estado_actual     VARCHAR2(50);
+    BEGIN
+        -- Consultamos el estado actual para definir la transición de estado lógica
+        SELECT estado 
+          INTO v_estado_actual 
+          FROM presupuestos 
+         WHERE id_presupuesto = p_id_presupuesto;
+
+        -- Definimos la regla de negocio para el procesamiento:
+        -- Si está PENDIENTE, al procesarlo pasa a ENVIADO (puedes ajustarlo según tu flujo: APROBADO, etc.)
+        IF v_estado_actual IN ('PENDIENTE', 'APROBADO') THEN
+            p_nuevo_estado := 'ENVIADO';
+        ELSE
+            -- Si ya se encuentra en otro estado, puedes mantenerlo o avanzar según convenga
+            p_nuevo_estado := v_estado_actual; 
+        END IF;
+
+        -- Actualizamos el estado, la auditoría de modificación y agregamos una nota opcional en observaciones
+        UPDATE presupuestos SET
+               estado         = p_nuevo_estado,
+               modificado_por = p_usuario,
+               observaciones  = observaciones || ' [Procesado por ' || p_usuario || ' el ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI') || ']'
+         WHERE id_presupuesto = p_id_presupuesto;
+
+        -- Recuperamos los valores actualizados para la interfaz de Oracle APEX
+        SELECT estado, observaciones
+          INTO p_nuevo_estado, p_nuevas_obs
+          FROM presupuestos
+         WHERE id_presupuesto = p_id_presupuesto;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR(-20003, 'Error al procesar el presupuesto: ' || SQLERRM);
+    END prc_procesar_presupuesto;
+
+    ----------------------------------------------------------------------------
+    -- PROCEDIMIENTO: Cancelar Presupuesto
+    ----------------------------------------------------------------------------
+    PROCEDURE prc_cancelar_presupuesto (
+        p_id_presupuesto    IN     NUMBER,
+        p_usuario           IN     VARCHAR2,
+        p_nuevo_estado      OUT    VARCHAR2,
+        p_nuevas_obs        OUT    VARCHAR2
+    ) IS
+    BEGIN
+        -- Actualizamos el estado a CANCELADO, registramos quién modificó y concatenamos la observación
+        UPDATE presupuestos SET
+               estado         = 'CANCELADO',
+               modificado_por = p_usuario,
+               observaciones  = observaciones || ' [Cancelado por ' || p_usuario || ' el ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI') || ']'
+         WHERE id_presupuesto = p_id_presupuesto;
+
+        -- Recuperamos los valores actualizados para devolverlos a APEX
+        SELECT estado, observaciones
+          INTO p_nuevo_estado, p_nuevas_obs
+          FROM presupuestos
+         WHERE id_presupuesto = p_id_presupuesto;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR(-20002, 'Error al cancelar el presupuesto: ' || SQLERRM);
+    END prc_cancelar_presupuesto;
+
+END pkg_presupuestos;
+/
+/
+
+-- 6. Detalle de presupuesto ----------------------------------------------
+create or replace PACKAGE BODY pkg_presupuesto_detalle IS
+
+    --------------------------------------------------------------------------------
+    -- PROCEDIMIENTO: GUARDAR DETALLE (INSERT / UPDATE)
+    --------------------------------------------------------------------------------
+    PROCEDURE guardar_detalle (
+        p_id_presupuesto         IN NUMBER,
+        p_id_detalle             IN OUT NUMBER,
+        p_id_producto_servicio   IN VARCHAR2,
+        p_cantidad               IN VARCHAR2,
+        p_precio_unitario        IN VARCHAR2,
+        p_id_impuesto            IN VARCHAR2,
+        p_porcentaje_descuento   IN VARCHAR2,
+        p_monto_descuento        IN VARCHAR2,
+        p_porcentaje_impuesto    IN VARCHAR2,
+        p_subtotal_linea         IN VARCHAR2,
+        p_descripcion            IN VARCHAR2
+    ) IS
+        v_cantidad           NUMBER;
+        v_precio_unitario    NUMBER;
+        v_id_impuesto_num    NUMBER;
+        v_pct_descuento      NUMBER;
+        v_monto_descuento    NUMBER;
+        v_pct_impuesto       NUMBER;
+        v_subtotal_linea     NUMBER;
+        v_monto_impuesto     NUMBER;
+        v_monto_total_linea  NUMBER;
+        v_subtotal_cab       NUMBER := 0;
+        v_iva_cab            NUMBER := 0;
+        v_total_cab          NUMBER := 0;
+        v_estado_presupuesto VARCHAR2(50);
+    BEGIN
+        -- 0. Validar que el ID del presupuesto maestro no sea NULL
+        IF p_id_presupuesto IS NULL THEN
+            raise_application_error(-20001, 'No se ha proporcionado un ID de Presupuesto válido.');
+        END IF;
+
+        -- 0.1. Validar el estado del presupuesto antes de permitir cambios
+        BEGIN
+            SELECT estado INTO v_estado_presupuesto 
+              FROM presupuestos 
+             WHERE id_presupuesto = p_id_presupuesto;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                raise_application_error(-20002, 'El presupuesto especificado no existe.');
+        END;
+
+        IF UPPER(v_estado_presupuesto) IN ('CANCELADO', 'FACTURADO') THEN
+            raise_application_error(-20003,
+                'No se pueden modificar ni agregar líneas a un presupuesto en estado '
+                || UPPER(v_estado_presupuesto) || ': es un documento cerrado.');
+        END IF;
+
+        -- 1. Limpieza y conversión a NUMBER usando tu función fn_clean_num
+        v_cantidad           := fn_clean_num(p_cantidad);
+        v_precio_unitario    := fn_clean_num(p_precio_unitario);
+        v_id_impuesto_num    := fn_clean_num(p_id_impuesto);
+        v_pct_descuento      := fn_clean_num(p_porcentaje_descuento);
+        v_monto_descuento    := fn_clean_num(p_monto_descuento);
+        v_pct_impuesto       := fn_clean_num(p_porcentaje_impuesto);
+        v_subtotal_linea     := fn_clean_num(p_subtotal_linea);
+
+        -- 2. Calcular Impuesto y Total de la Línea
+        v_monto_impuesto     := v_subtotal_linea * (v_pct_impuesto / 100);
+        v_monto_total_linea  := v_subtotal_linea + v_monto_impuesto;
+
+        -- 3. Guardar o Actualizar el Detalle
+        IF p_id_detalle IS NULL THEN
+            INSERT INTO presupuestos_det (
+                id_presupuesto,
+                id_producto_servicio,
+                cantidad,
+                precio_unitario,
+                id_impuesto,
+                porcentaje_descuento,
+                monto_descuento,
+                porcentaje_impuesto,
+                monto_impuesto,
+                subtotal_linea,
+                monto_total_linea,
+                descripcion
+            ) VALUES (
+                p_id_presupuesto,
+                p_id_producto_servicio,
+                v_cantidad,
+                v_precio_unitario,
+                v_id_impuesto_num,
+                v_pct_descuento,
+                v_monto_descuento,
+                v_pct_impuesto,
+                v_monto_impuesto,
+                v_subtotal_linea,
+                v_monto_total_linea,
+                p_descripcion
+            ) RETURNING id_detalle INTO p_id_detalle;
+
+            apex_application.g_print_success_message := 'El Detalle del Presupuesto se guardó exitosamente.';
+        ELSE
+            UPDATE presupuestos_det SET
+                   id_producto_servicio = p_id_producto_servicio,
+                   cantidad             = v_cantidad,
+                   precio_unitario      = v_precio_unitario,
+                   id_impuesto          = v_id_impuesto_num,
+                   porcentaje_descuento = v_pct_descuento,
+                   monto_descuento      = v_monto_descuento,
+                   porcentaje_impuesto  = v_pct_impuesto,
+                   monto_impuesto       = v_monto_impuesto,
+                   subtotal_linea       = v_subtotal_linea,
+                   monto_total_linea    = v_monto_total_linea,
+                   descripcion          = p_descripcion
+             WHERE id_detalle           = p_id_detalle;
+
+            apex_application.g_print_success_message := 'El Detalle del Presupuesto se actualizó exitosamente.';
+        END IF;
+
+        -- 4. Obtener los acumulados reales de todas las líneas del presupuesto
+        SELECT NVL(SUM(subtotal_linea), 0),
+               NVL(SUM(monto_impuesto), 0),
+               NVL(SUM(monto_total_linea), 0)
+          INTO v_subtotal_cab, v_iva_cab, v_total_cab
+          FROM presupuestos_det
+         WHERE id_presupuesto = p_id_presupuesto;
+
+        -- 5. Actualización de la cabecera (PRESUPUESTOS)
+        UPDATE presupuestos SET
+               subtotal     = v_subtotal_cab,
+               impuesto_iva = v_iva_cab,
+               total        = v_total_cab
+         WHERE id_presupuesto = p_id_presupuesto;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            raise_application_error(-20004, 'No se pudo guardar la línea: ' || SQLERRM);
+    END guardar_detalle;
+
+    --------------------------------------------------------------------------------
+    -- PROCEDIMIENTO: ELIMINAR DETALLE
+    --------------------------------------------------------------------------------
+    PROCEDURE eliminar_detalle (
+        p_id_presupuesto         IN NUMBER,
+        p_id_detalle             IN NUMBER
+    ) IS
+        v_subtotal_cab       NUMBER := 0;
+        v_iva_cab            NUMBER := 0;
+        v_total_cab          NUMBER := 0;
+        v_estado_presupuesto VARCHAR2(50);
+    BEGIN
+        -- 0. Validar estado del presupuesto antes de eliminar
+        BEGIN
+            SELECT estado INTO v_estado_presupuesto 
+              FROM presupuestos 
+             WHERE id_presupuesto = p_id_presupuesto;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                raise_application_error(-20001, 'El presupuesto especificado no existe.');
+        END;
+
+        IF UPPER(v_estado_presupuesto) IN ('CANCELADO', 'FACTURADO') THEN
+            raise_application_error(-20002,
+                'No se pueden eliminar líneas de un presupuesto en estado '
+                || UPPER(v_estado_presupuesto) || ': es un documento cerrado.');
+        END IF;
+
+        IF p_id_detalle IS NULL THEN
+            raise_application_error(-20003, 'No se puede eliminar porque el ID del detalle está vacío.');
+        END IF;
+
+        -- 1. Eliminar el registro
+        DELETE FROM presupuestos_det
+         WHERE id_presupuesto = p_id_presupuesto
+           AND id_detalle     = p_id_detalle;
+
+        IF SQL%ROWCOUNT = 0 THEN
+            raise_application_error(-20004, 'No se encontró el registro para eliminar.');
+        END IF;
+
+        -- 2. Recalcular los acumulados de la cabecera tras la eliminación
+        SELECT NVL(SUM(subtotal_linea), 0),
+               NVL(SUM(monto_impuesto), 0),
+               NVL(SUM(monto_total_linea), 0)
+          INTO v_subtotal_cab, v_iva_cab, v_total_cab
+          FROM presupuestos_det
+         WHERE id_presupuesto = p_id_presupuesto;
+
+        UPDATE presupuestos SET
+               subtotal     = v_subtotal_cab,
+               impuesto_iva = v_iva_cab,
+               total        = v_total_cab
+         WHERE id_presupuesto = p_id_presupuesto;
+
+        apex_application.g_print_success_message := 'El Detalle se eliminó exitosamente.';
+    EXCEPTION
+        WHEN OTHERS THEN
+            -- Los errores de negocio (-20xxx) se propagan tal cual: envolverlos
+            -- le enseñaba jerga técnica al usuario y le ocultaba el motivo.
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            raise_application_error(-20005, 'No se pudo eliminar la línea: ' || SQLERRM);
+    END eliminar_detalle;
+
+END pkg_presupuesto_detalle;
+/
+/
+
+-- 7. Recompilar todo el esquema (obligatorio: tocar packages deja objetos
 --    dependientes INVALIDOS sin avisar en ALL_ERRORS) -----------------------
 begin
     dbms_utility.compile_schema(schema => 'WKSP_SYPEXWS', compile_all => false);
 end;
 /
 
--- 5. Comprobacion rapida ----------------------------------------------------
+-- 8. Comprobacion rapida ----------------------------------------------------
 select object_name, object_type, status
   from all_objects
  where owner = 'WKSP_SYPEXWS'
-   and object_name in ('FN_FACTURA_EDITABLE', 'PKG_FACTURACION', 'PKG_FACTURA_DETALLE')
+   and object_name in ('FN_FACTURA_EDITABLE', 'FN_PRESUPUESTO_EDITABLE',
+                       'PKG_FACTURACION', 'PKG_FACTURA_DETALLE',
+                       'PKG_PRESUPUESTOS', 'PKG_PRESUPUESTO_DETALLE')
  order by object_name, object_type;

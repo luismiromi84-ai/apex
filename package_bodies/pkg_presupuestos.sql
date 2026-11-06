@@ -16,6 +16,8 @@ create or replace PACKAGE BODY pkg_presupuestos AS
         p_observaciones     IN     VARCHAR2,
         p_usuario           IN     VARCHAR2
     ) IS
+        v_folio  presupuestos.folio%type;
+        v_estado presupuestos.estado%type;
     BEGIN
     -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
     if apex_application.g_user is not null
@@ -23,10 +25,24 @@ create or replace PACKAGE BODY pkg_presupuestos AS
         raise_application_error(-20003, 'No tiene acceso a la empresa indicada.');
     end if;
 
+        -- Un documento cerrado no se edita: CANCELADO y FACTURADO son finales.
+        IF p_id_presupuesto IS NOT NULL
+           AND NOT fn_presupuesto_editable(p_id_presupuesto) THEN
+            SELECT folio, UPPER(estado)
+              INTO v_folio, v_estado
+              FROM presupuestos
+             WHERE id_presupuesto = p_id_presupuesto;
+
+            raise_application_error(-20024,
+                'El presupuesto ' || v_folio || ' está ' || v_estado
+                || ': no se puede modificar un documento cerrado. '
+                || 'Crea uno nuevo.');
+        END IF;
+
         IF p_id_presupuesto IS NOT NULL THEN
             -- Actualización (Incluye MODIFICADO_POR)
-            UPDATE presupuestos
-               SET id_empresa        = p_id_empresa,
+            UPDATE presupuestos SET
+                   id_empresa        = p_id_empresa,
                    id_cliente        = p_id_cliente,
                    folio             = p_folio,
                    cod_moneda        = p_cod_moneda,
@@ -71,6 +87,10 @@ create or replace PACKAGE BODY pkg_presupuestos AS
             RAISE_APPLICATION_ERROR(-20021,
                 'El folio ' || p_folio || ' ya existe para esta empresa. Elige otro numero.');
         WHEN OTHERS THEN
+            -- Los errores de negocio (-20xxx) se propagan tal cual, con su mensaje.
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
             RAISE_APPLICATION_ERROR(-20001, 'Error al procesar el presupuesto: ' || SQLERRM);
     END;
     ---------------------------------------------------------------------
@@ -100,8 +120,8 @@ create or replace PACKAGE BODY pkg_presupuestos AS
         END IF;
 
         -- Actualizamos el estado, la auditoría de modificación y agregamos una nota opcional en observaciones
-        UPDATE presupuestos
-           SET estado         = p_nuevo_estado,
+        UPDATE presupuestos SET
+               estado         = p_nuevo_estado,
                modificado_por = p_usuario,
                observaciones  = observaciones || ' [Procesado por ' || p_usuario || ' el ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI') || ']'
          WHERE id_presupuesto = p_id_presupuesto;
@@ -128,8 +148,8 @@ create or replace PACKAGE BODY pkg_presupuestos AS
     ) IS
     BEGIN
         -- Actualizamos el estado a CANCELADO, registramos quién modificó y concatenamos la observación
-        UPDATE presupuestos
-           SET estado         = 'CANCELADO',
+        UPDATE presupuestos SET
+               estado         = 'CANCELADO',
                modificado_por = p_usuario,
                observaciones  = observaciones || ' [Cancelado por ' || p_usuario || ' el ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI') || ']'
          WHERE id_presupuesto = p_id_presupuesto;

@@ -140,6 +140,28 @@ with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as c
               uno("""select count(*) from apex_application_list_entries
                      where application_id = 100
                        and entry_target like '%:15:%'""") == 0)
+
+    # --- acabado de las listas y navegacion ---
+    comprobar("el Panel General no avisa de cambios sin guardar",
+              uno("""select count(*) from apex_application_pages
+                     where application_id = 100 and page_id = 13
+                       and warn_on_unsaved_changes = 'No'""") == 1)
+
+    comprobar("la lista de Presupuestos selecciona con checkbox, como Facturacion",
+              uno("""select count(*) from apex_application_page_ir_col
+                     where application_id = 100 and page_id = 5
+                       and column_alias = 'SELECCIONAR'
+                       and html_expression like '%js-select-invoice%'
+                       and column_link is null""") == 1)
+
+    comprobar("la tarjeta de totales de Presupuestos usa el mismo formato",
+              uno("""select count(*) from apex_application_page_regions
+                     where application_id = 100 and page_id = 5
+                       and region_name = 'Resumen Financiero'
+                       and region_source like '%FM999G999G999G990D00%'
+                       and region_source like '%financial-summary%'
+                       and region_source like '%monto_total_linea%'""") == 1)
+
     comprobar("cero objetos invalidos",
               uno("select count(*) from user_objects where status = 'INVALID'") == 0)
 

@@ -21,7 +21,14 @@
 --   C8  Agregar/editar linea de una PAGADA falla con -20002
 --   C9  Eliminar linea de una PAGADA falla con -20002
 --   C10 Reemplazar el detalle de una PAGADA falla con -20002
---   C11..C13 Los datos quedan intactos
+--   C15..C18 Lo mismo en presupuestos: fn_presupuesto_editable
+--   C19 Editar la cabecera de un CANCELADO falla con -20024
+--   C20 Editar la cabecera de un FACTURADO falla con -20024
+--   C21 Editar la cabecera de un PENDIENTE sigue funcionando
+--   C22 Borrar una linea de un CANCELADO falla con -20002
+--   C23 El boton Guardar de la pagina 7 exige fn_presupuesto_editable
+--   C24 Los presupuestos quedan intactos
+--   C11..C13 Los datos de facturas quedan intactos
 --
 -- Todo va en una transaccion que se revierte: no deja rastro.
 --
@@ -41,6 +48,11 @@ declare
     v_pagada    facturas.id_factura%type;
     v_anulada   facturas.id_factura%type;
     v_pendiente facturas.id_factura%type;
+
+    v_pres_cancelado  presupuestos.id_presupuesto%type;
+    v_pres_facturado  presupuestos.id_presupuesto%type;
+    v_pres_pendiente  presupuestos.id_presupuesto%type;
+    v_presupuestos_antes number;
 
     v_facturas_antes number;
     v_lineas_antes   number;
@@ -92,15 +104,42 @@ declare
             p_tipo_cambio       => r.tipo_cambio);
     end;
 
+    -- Lo mismo para un presupuesto: se reenvian sus propios valores.
+    procedure editar_presupuesto (p_id number) is
+        r presupuestos%rowtype;
+        v_id number;
+    begin
+        select * into r from presupuestos where id_presupuesto = p_id;
+        v_id := r.id_presupuesto;
+
+        pkg_presupuestos.prc_guardar_presupuesto(
+            p_id_presupuesto    => v_id,
+            p_id_empresa        => r.id_empresa,
+            p_id_cliente        => r.id_cliente,
+            p_folio             => r.folio,
+            p_cod_moneda        => r.cod_moneda,
+            p_fecha_vencimiento => r.fecha_vencimiento,
+            p_fecha_emision     => r.fecha_emision,
+            p_tipo_cambio       => r.tipo_cambio,
+            p_estado            => r.estado,
+            p_observaciones     => r.observaciones || ' [prueba]',
+            p_usuario           => 'prueba');
+    end;
+
 begin
     select count(*), nvl(sum(monto_total), 0)
       into v_facturas_antes, v_total_antes
       from facturas;
     select count(*) into v_lineas_antes from facturas_det;
+    select count(*) into v_presupuestos_antes from presupuestos;
 
     select min(id_factura) into v_pagada     from facturas where estado = 'PAGADA';
     select min(id_factura) into v_anulada    from facturas where estado = 'ANULADA';
     select min(id_factura) into v_pendiente  from facturas where estado = 'PENDIENTE';
+
+    select min(id_presupuesto) into v_pres_cancelado from presupuestos where estado = 'CANCELADO';
+    select min(id_presupuesto) into v_pres_facturado from presupuestos where estado = 'FACTURADO';
+    select min(id_presupuesto) into v_pres_pendiente from presupuestos where estado = 'PENDIENTE';
 
     -- C1..C4: la funcion de apoyo
     resultado('C1 fn_factura_editable(null)', fn_factura_editable(null));
@@ -233,6 +272,104 @@ begin
                 dbms_output.put_line(procedimiento_error || 'C10 reemplazar de PAGADA dio '
                                      || sqlcode || ': ' || substr(sqlerrm, 1, 90));
             end if;
+    end;
+
+    -- C15..C18: presupuesto, funcion de apoyo
+    resultado('C15 fn_presupuesto_editable(null)', fn_presupuesto_editable(null));
+    resultado('C16 CANCELADO no es editable',  not fn_presupuesto_editable(v_pres_cancelado));
+    resultado('C17 FACTURADO no es editable',  not fn_presupuesto_editable(v_pres_facturado));
+    resultado('C18 PENDIENTE es editable',     fn_presupuesto_editable(v_pres_pendiente));
+
+    -- C19: cabecera de un CANCELADO
+    v_casos := v_casos + 1;
+    begin
+        savepoint c19;
+        editar_presupuesto(v_pres_cancelado);
+        rollback to savepoint c19;
+        v_fallas := v_fallas + 1;
+        dbms_output.put_line(procedimiento_error || 'C19 cabecera CANCELADO no dio error');
+    exception
+        when others then
+            if sqlcode <> -20024 then
+                v_fallas := v_fallas + 1;
+                dbms_output.put_line(procedimiento_error || 'C19 cabecera CANCELADO dio '
+                                     || sqlcode || ': ' || substr(sqlerrm, 1, 90));
+            end if;
+    end;
+
+    -- C20: cabecera de un FACTURADO
+    v_casos := v_casos + 1;
+    begin
+        savepoint c20;
+        editar_presupuesto(v_pres_facturado);
+        rollback to savepoint c20;
+        v_fallas := v_fallas + 1;
+        dbms_output.put_line(procedimiento_error || 'C20 cabecera FACTURADO no dio error');
+    exception
+        when others then
+            if sqlcode <> -20024 then
+                v_fallas := v_fallas + 1;
+                dbms_output.put_line(procedimiento_error || 'C20 cabecera FACTURADO dio '
+                                     || sqlcode || ': ' || substr(sqlerrm, 1, 90));
+            end if;
+    end;
+
+    -- C21: cabecera de un PENDIENTE (debe seguir funcionando)
+    v_casos := v_casos + 1;
+    begin
+        savepoint c21;
+        editar_presupuesto(v_pres_pendiente);
+        rollback to savepoint c21;
+    exception
+        when others then
+            v_fallas := v_fallas + 1;
+            dbms_output.put_line(procedimiento_error || 'C21 cabecera PENDIENTE dio '
+                                 || sqlcode || ': ' || substr(sqlerrm, 1, 90));
+    end;
+
+    -- C22: borrar una linea de un CANCELADO
+    v_casos := v_casos + 1;
+    declare
+        v_id_detalle presupuestos_det.id_detalle%type;
+    begin
+        select min(id_detalle) into v_id_detalle
+          from presupuestos_det where id_presupuesto = v_pres_cancelado;
+
+        savepoint c22;
+        pkg_presupuesto_detalle.eliminar_detalle(
+            p_id_presupuesto => v_pres_cancelado,
+            p_id_detalle     => v_id_detalle);
+        rollback to savepoint c22;
+        v_fallas := v_fallas + 1;
+        dbms_output.put_line(procedimiento_error || 'C22 borrar linea de CANCELADO no dio error');
+    exception
+        when others then
+            if sqlcode <> -20002 then
+                v_fallas := v_fallas + 1;
+                dbms_output.put_line(procedimiento_error || 'C22 borrar linea de CANCELADO dio '
+                                     || sqlcode || ': ' || substr(sqlerrm, 1, 90));
+            end if;
+    end;
+
+    -- C23..C24: los dos botones Guardar y los presupuestos intactos
+    declare
+        v_botones number;
+    begin
+        select count(*) into v_botones
+          from apex_application_page_buttons
+         where application_id = 100
+           and page_id = 7
+           and button_name = 'BTN_GUARDAR'
+           and upper(condition_expression1) like '%FN_PRESUPUESTO_EDITABLE%';
+        resultado('C23 el boton Guardar de la pagina 7 exige fn_presupuesto_editable',
+                  v_botones = 1);
+    end;
+
+    declare
+        v_presupuestos_ahora number;
+    begin
+        select count(*) into v_presupuestos_ahora from presupuestos;
+        resultado('C24 presupuestos intactos', v_presupuestos_antes = v_presupuestos_ahora);
     end;
 
     -- C11..C13: nada cambio

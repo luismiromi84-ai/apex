@@ -1,6 +1,6 @@
 20261105_documentos_cerrados_verificacion.sql: 2 sentencias
-FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0 de 14 casos
-ORA-06512: at line 221
+FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0 de 24 casos
+ORA-06512: at line 344
 --- inicio de la sentencia ---
 
 declare
@@ -11,7 +11,7 @@ declare
     v_anulada   facturas.id_factura%type;
     v_pendiente facturas.id_factura%type;
 
-    v_facturas_antes number;
+    v_pres_cancelado  presupuestos.id_presupuesto%type;
 == HTTP ==
   [OK   ] la raiz de la app sirve la portada (HTTP 200)
   [OK   ] la pagina 15 responde 200 (21,014 bytes)
@@ -41,6 +41,9 @@ declare
   [OK   ] sigue la guarda del cambio de clave (pagina 0)
   [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
   [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] el Panel General no avisa de cambios sin guardar
+  [OK   ] la lista de Presupuestos selecciona con checkbox, como Facturacion
+  [OK   ] la tarjeta de totales de Presupuestos usa el mismo formato
   [OK   ] cero objetos invalidos
 
 RESULTADO: FALLAS=0

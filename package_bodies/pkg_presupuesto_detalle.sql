@@ -45,8 +45,10 @@ create or replace PACKAGE BODY pkg_presupuesto_detalle IS
                 raise_application_error(-20002, 'El presupuesto especificado no existe.');
         END;
 
-        IF v_estado_presupuesto = 'FACTURADO' THEN
-            raise_application_error(-20003, 'No se pueden modificar ni agregar líneas a un presupuesto que ya se encuentra FACTURADO.');
+        IF UPPER(v_estado_presupuesto) IN ('CANCELADO', 'FACTURADO') THEN
+            raise_application_error(-20003,
+                'No se pueden modificar ni agregar líneas a un presupuesto en estado '
+                || UPPER(v_estado_presupuesto) || ': es un documento cerrado.');
         END IF;
 
         -- 1. Limpieza y conversión a NUMBER usando tu función fn_clean_num
@@ -94,8 +96,8 @@ create or replace PACKAGE BODY pkg_presupuesto_detalle IS
 
             apex_application.g_print_success_message := 'El Detalle del Presupuesto se guardó exitosamente.';
         ELSE
-            UPDATE presupuestos_det
-               SET id_producto_servicio = p_id_producto_servicio,
+            UPDATE presupuestos_det SET
+                   id_producto_servicio = p_id_producto_servicio,
                    cantidad             = v_cantidad,
                    precio_unitario      = v_precio_unitario,
                    id_impuesto          = v_id_impuesto_num,
@@ -120,15 +122,18 @@ create or replace PACKAGE BODY pkg_presupuesto_detalle IS
          WHERE id_presupuesto = p_id_presupuesto;
 
         -- 5. Actualización de la cabecera (PRESUPUESTOS)
-        UPDATE presupuestos
-           SET subtotal     = v_subtotal_cab,
+        UPDATE presupuestos SET
+               subtotal     = v_subtotal_cab,
                impuesto_iva = v_iva_cab,
                total        = v_total_cab
          WHERE id_presupuesto = p_id_presupuesto;
 
     EXCEPTION
         WHEN OTHERS THEN
-            raise_application_error(-20004, 'Error en PKG_PRESUPUESTO_DETALLE.GUARDAR: ' || SQLERRM);
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            raise_application_error(-20004, 'No se pudo guardar la línea: ' || SQLERRM);
     END guardar_detalle;
 
     --------------------------------------------------------------------------------
@@ -153,8 +158,10 @@ create or replace PACKAGE BODY pkg_presupuesto_detalle IS
                 raise_application_error(-20001, 'El presupuesto especificado no existe.');
         END;
 
-        IF v_estado_presupuesto = 'FACTURADO' THEN
-            raise_application_error(-20002, 'No se pueden eliminar líneas de un presupuesto que ya se encuentra FACTURADO.');
+        IF UPPER(v_estado_presupuesto) IN ('CANCELADO', 'FACTURADO') THEN
+            raise_application_error(-20002,
+                'No se pueden eliminar líneas de un presupuesto en estado '
+                || UPPER(v_estado_presupuesto) || ': es un documento cerrado.');
         END IF;
 
         IF p_id_detalle IS NULL THEN
@@ -178,8 +185,8 @@ create or replace PACKAGE BODY pkg_presupuesto_detalle IS
           FROM presupuestos_det
          WHERE id_presupuesto = p_id_presupuesto;
 
-        UPDATE presupuestos
-           SET subtotal     = v_subtotal_cab,
+        UPDATE presupuestos SET
+               subtotal     = v_subtotal_cab,
                impuesto_iva = v_iva_cab,
                total        = v_total_cab
          WHERE id_presupuesto = p_id_presupuesto;
@@ -187,7 +194,12 @@ create or replace PACKAGE BODY pkg_presupuesto_detalle IS
         apex_application.g_print_success_message := 'El Detalle se eliminó exitosamente.';
     EXCEPTION
         WHEN OTHERS THEN
-            raise_application_error(-20005, 'Error en PKG_PRESUMPUESTO_DETALLE.ELIMINAR: ' || SQLERRM);
+            -- Los errores de negocio (-20xxx) se propagan tal cual: envolverlos
+            -- le enseñaba jerga técnica al usuario y le ocultaba el motivo.
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            raise_application_error(-20005, 'No se pudo eliminar la línea: ' || SQLERRM);
     END eliminar_detalle;
 
 END pkg_presupuesto_detalle;
