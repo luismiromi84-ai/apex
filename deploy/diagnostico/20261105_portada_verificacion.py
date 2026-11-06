@@ -1,0 +1,145 @@
+"""
+Verificacion de la portada publica (pagina 15) y del arranque de la app.
+
+Comprueba dos capas:
+
+  1. HTTP: la raiz de la app sirve la portada, la portada trae todas sus
+     secciones y no se cuelan el cromo de APEX ni enlaces a paginas que no
+     existen. Las paginas que ya funcionaban siguen respondiendo igual.
+  2. Base de datos: la region tiene un tipo de plugin que resuelve, la pagina
+     es publica con la plantilla Blank y no se rompio nada del resto
+     (17 paginas, guardas de rol y de propiedad, item del cambio de clave,
+     cero objetos invalidos).
+
+Uso:
+    python deploy/diagnostico/20261105_portada_verificacion.py
+
+Sale con codigo 1 solo si alguna comprobacion falla; con todo bien, 0.
+
+Nota sobre el pasado: esta pagina respondia HTTP 400 porque el export traia
+,p_plug_source_type=>'NATIVE_STATIC_CONTENT' en la region, un identificador que
+no existe en APEX 26.1. La region quedaba con SOURCE_TYPE_CODE
+'NATIVE_STATIC_CONTENT' y el render moria en WWV_FLOW_PLUGIN con ORA-01403.
+Una region de contenido estatico no lleva ese atributo: el tipo valido es
+STATIC_TEXT / NATIVE_STATIC.
+"""
+import os
+import sys
+import urllib.error
+import urllib.request
+
+import oracledb
+
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+REPO = r"C:\Users\luism\OneDrive\Documents\Apex_luis"
+CS = ("(DESCRIPTION=(RETRY_COUNT=5)(RETRY_DELAY=2)"
+      "(ADDRESS=(PROTOCOL=TCPS)(PORT=1521)(HOST=adb.mx-monterrey-1.oraclecloud.com))"
+      "(CONNECT_DATA=(SERVICE_NAME=GFD7E2575D251AE_SYPEXSQL_high.adb.oraclecloud.com))"
+      "(SECURITY=(SSL_SERVER_DN_MATCH=YES)))")
+BASE = "https://gfd7e2575d251ae-sypexsql.adb.mx-monterrey-1.oraclecloudapps.com/ords/f?p=100"
+
+d = {}
+for l in open(os.path.join(REPO, ".env"), encoding="utf-8"):
+    l = l.strip()
+    if l and not l.startswith("#") and "=" in l:
+        k, v = l.split("=", 1); d[k.strip()] = v.strip()
+
+fallas = []
+
+
+def comprobar(nombre, condicion, detalle=""):
+    print(f"  [{'OK   ' if condicion else 'FALLA'}] {nombre} {detalle}".rstrip())
+    if not condicion:
+        fallas.append(nombre)
+
+
+print("== HTTP ==")
+try:
+    with urllib.request.urlopen(BASE, timeout=40) as r:
+        raiz = r.read().decode("utf-8", errors="replace")
+        comprobar("la raiz de la app sirve la portada",
+                  "Gestiona tu negocio" in raiz, f"(HTTP {r.status})")
+except urllib.error.HTTPError as e:
+    comprobar("la raiz de la app sirve la portada", False, f"(HTTP {e.code})")
+    raiz = ""
+
+try:
+    with urllib.request.urlopen(BASE + ":15", timeout=40) as r:
+        portada = r.read().decode("utf-8", errors="replace")
+        comprobar("la pagina 15 responde 200", r.status == 200,
+                  f"({len(portada):,} bytes)")
+except urllib.error.HTTPError as e:
+    portada = ""
+    comprobar("la pagina 15 responde 200", False, f"(HTTP {e.code})")
+
+for marca in ("spx-portada", "spx-hero", "spx-monitor", "spx-beneficio",
+              "Gestiona tu negocio", "Control administrativo", "/synpex/home"):
+    comprobar(f"la portada trae {marca}", marca in portada)
+
+comprobar("sin comentario de instrucciones a la vista",
+          "Pegar TODO este bloque" not in portada)
+comprobar("sin la cabecera de la region (New)", ">New<" not in portada)
+comprobar("sin el usuario de APEX a la vista", ">nobody<" not in portada)
+comprobar("sin enlaces a la pagina 17 (no existe)", "/synpex/17" not in portada)
+
+for pagina, esperado, que in ((2, 200, "registro"), (14, 200, "recuperar clave"),
+                              (9999, 200, "login"), (1, 302, "home privada")):
+    try:
+        with urllib.request.urlopen(f"{BASE}:{pagina}", timeout=40) as r:
+            comprobar(f"pagina {pagina} ({que}) sigue igual", r.status == esperado,
+                      f"(HTTP {r.status})")
+    except urllib.error.HTTPError as e:
+        comprobar(f"pagina {pagina} ({que}) sigue igual", e.code == esperado,
+                  f"(HTTP {e.code})")
+
+print("\n== base de datos ==")
+with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as con:
+    cur = con.cursor()
+    cur.execute("alter session set current_schema = WKSP_SYPEXWS")
+
+    def uno(sql):
+        cur.execute(sql)
+        return cur.fetchone()[0]
+
+    comprobar("la app tiene 17 paginas",
+              uno("select count(*) from apex_application_pages where application_id = 100") == 17)
+
+    cur.execute("""select source_type, source_type_code
+                   from apex_application_page_regions
+                   where application_id = 100 and page_id = 15""")
+    fila = cur.fetchone()
+    comprobar("la region tiene tipo de plugin que resuelve",
+              fila == ("Static Content", "STATIC_TEXT"), str(fila))
+
+    cur.execute("""select page_template, page_requires_authentication, page_access_protection
+                   from apex_application_pages
+                   where application_id = 100 and page_id = 15""")
+    plantilla, requiere_auth, proteccion = cur.fetchone()
+    comprobar("la pagina 15 es publica", requiere_auth == "No", f"({proteccion})")
+    comprobar("la pagina 15 usa la plantilla Blank", plantilla == "Blank", f"({plantilla})")
+
+    comprobar("siguen las 10 guardas de rol",
+              uno("""select count(*) from apex_application_page_proc
+                     where application_id = 100
+                       and upper(process_name) like 'VALIDA ROL%'""") == 10)
+    comprobar("siguen las 7 guardas de propiedad de documento",
+              uno("""select count(*) from apex_application_page_proc
+                     where application_id = 100
+                       and (process_source like '%fn_presupuesto_propio%'
+                            or process_source like '%fn_factura_propio%')""") == 7)
+    comprobar("sigue la guarda del cambio de clave (pagina 0)",
+              uno("""select count(*) from apex_application_page_proc
+                     where application_id = 100 and page_id = 0
+                       and upper(process_name) like 'CAMBIO%CLAVE%'""") == 1)
+    comprobar("sigue el item F_DEBE_CAMBIAR_CLAVE",
+              uno("""select count(*) from apex_application_items
+                     where application_id = 100
+                       and upper(item_name) = 'F_DEBE_CAMBIAR_CLAVE'""") == 1)
+    comprobar("cero objetos invalidos",
+              uno("select count(*) from user_objects where status = 'INVALID'") == 0)
+
+print(f"\nRESULTADO: FALLAS={len(fallas)}")
+for f in fallas:
+    print("  -", f)
+sys.exit(1 if fallas else 0)

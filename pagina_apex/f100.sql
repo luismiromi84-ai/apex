@@ -33,26 +33,25 @@ prompt APPLICATION 100 - Synpex
 -- Application Export:
 --   Application:     100
 --   Name:            Synpex
---   Date and Time:   18:19 Miércoles Noviembre 4, 2026
 --   Exported By:     ADMIN
 --   Flashback:       0
 --   Export Type:     Application Export
---     Pages:                     16
+--     Pages:                     17
 --       Items:                  105
 --       Computations:             1
---       Validations:              2
---       Processes:               42
---       Regions:                 29
---       Buttons:                 32
---       Dynamic Actions:         24
+--       Validations:              7
+--       Processes:               44
+--       Regions:                 31
+--       Buttons:                 33
+--       Dynamic Actions:         21
 --     Shared Components:
 --       Logic:
---         Items:                  4
+--         Items:                  5
 --         Build Options:          1
 --       Navigation:
 --         Lists:                  2
 --         Breadcrumbs:            1
---           Entries:              5
+--           Entries:              6
 --       Security:
 --         Authentication:         1
 --         Authorization:          5
@@ -65,7 +64,7 @@ prompt APPLICATION 100 - Synpex
 --       Globalization:
 --       Reports:
 --       E-Mail:
---     Supporting Objects:  Included
+--     Supporting Objects:  Excluded
 --   Version:         26.1.6
 --   Instance ID:     9386806482217745
 --
@@ -110,7 +109,8 @@ wwv_imp_workspace.create_flow(
 '    <path d="m216 303 15 15 28-32" fill="none" stroke="#F28A24" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>',
 '    <path d="m379 255 20 5 10 24 22 8-2 25-21 11-7 25-23 10-19-15-26 2-14-20 8-24-12-23 14-21 26 1 18-18 24 10Z" fill="url(#spxBlue)" stroke="#fff" stroke-width="8" stroke-linejoin="round"/>',
 '    <circle cx="373" cy="299" r="17" fill="#fff"/>',
-'    <path d="M246 151c-47-28-113-13-135 26-24 43 6 76 55 91l44 14c24 8 34 17 28 31-8 18-43 22-73 8-19-9-34-22-44-37l-39 35c16 25 40 44 67 55 62 26 135 10 160-35 26-48-7-83-59-100l-45-14c-22-7-30-15-24-27 7-14 32-17 56-7 14 6 27 15 37 27l37-34c-17-20-39-36-65-45Z" fill="url(#spxBlue)"/>',
+'    <path d="M246 151c-47-28-113-13-135 26-24 43 6 76 55 91l44 14c24 8 34 17 28 31-8 18-43 22-73 8-19-9-34-22-44-37l-39 35c16 25 40 44 67 55 62 26 135 10 160-35 26-48-7-83-59-100l-45-14c-22-7-30-15-24-27 7-14 32-17 56-7 14 6 27 15 37 27l37-34c-17-20-'
+||'39-36-65-45Z" fill="url(#spxBlue)"/>',
 '    <path d="M82 319c17 24 40 42 67 54 20 9 42 14 63 14 33 0 64-11 83-31l-34-36c-18 17-48 21-74 9-18-8-33-21-44-36l-61 26Z" fill="url(#spxOrange)"/>',
 '  </svg>',
 '  <div class="synpex-brand-text">',
@@ -144,14 +144,14 @@ unistr('    <span class="synpex-tag">SISTEMA DE GESTI\00D3N</span>'),
 ,p_substitution_value_01=>'Sypex'
 ,p_file_prefix=>nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>2461307155612
-,p_version_scn=>'17147935886'
+,p_version_scn=>'17194872601'
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
 ,p_pwa_is_installable=>'N'
 ,p_pwa_is_push_enabled=>'N'
 ,p_theme_id=>42
-,p_home_url=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
+,p_home_url=>'f?p=&APP_ID.:15:&APP_SESSION.::&DEBUG.:::'
 ,p_login_url=>'f?p=&APP_ID.:LOGIN:&APP_SESSION.::&DEBUG.:::'
 ,p_theme_style_by_user_pref=>false
 ,p_built_with_love=>false
@@ -336,7 +336,7 @@ wwv_flow_imp_shared.create_list(
  p_id=>wwv_flow_imp.id(9145480815584435)
 ,p_name=>'Navigation Menu'
 ,p_static_id=>'navigation-menu'
-,p_version_scn=>'SH256:LIm3uYixji8r6tGZkcuOqgFv2PFRx_gFLlzVVITqj-0'
+,p_version_scn=>'SH256:rLhLTyXMcNkLntsWRB4C9pd1UmVaGtrgpb0QBO-CZYs'
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(18272401440108059)
@@ -368,6 +368,16 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_link_target=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
 ,p_list_item_icon=>'fa-home'
 ,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(13039578563825150)
+,p_list_item_display_sequence=>60
+,p_list_item_link_text=>'Inicio'
+,p_static_id=>'inicio'
+,p_list_item_link_target=>'f?p=&APP_ID.:15:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-file-o'
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'15'
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(23607896982365977)
@@ -2811,6 +2821,10 @@ wwv_flow_imp.g_varchar2_table(1497) := '619600B7970C727782E925835D79F895422DC1AD
 wwv_flow_imp.g_varchar2_table(1498) := '152DD55ED6F6C87C2A348FE56668D7B609C7B035B93F3563FDBF498597DEEADA2F3BEBAEA21FE8DE7658BAFB74EFEF77A392D79AA08B6EDDC6649F6AE8920355EB64A859C77221344F463397C4D75B422EE9106C741F95985FC3251FEA165150A32CBA69';
 wwv_flow_imp.g_varchar2_table(1499) := '045FCE902B774877A4A250C92903B55D3351D73D17BAD3B26E7B275CE37E56C0EBEA9D87273DA6DBABC201BBD07A7002FC926F7D931D24A018BBE974728321F950A1C9B4FD7CA06E16009BF919E83321899B842BB28C80AA4D3CACE6655F56B4509067BF';
 wwv_flow_imp.g_varchar2_table(1500) := 'FF94CC2275AA3E609E84F66372C589D2ACDBE085E933EB0FCA04A3E78B3AB6A1E83B21A94CDD22082A26F43F36085D46663CF977026F72D1D3012D871D29632C53A0E998459680E08941F7AAB71E99F752CD2619ED87A761A9F73967821C9D99C7B9B291';
+null;
+end;
+/
+begin
 wwv_flow_imp.g_varchar2_table(1501) := '55ED936039EFC86EAF7DB79AB470882E13F6DA0B4D93883726B373390B8EE7B6E38B6A39C640C5703FAADB2462E8F22353159FB7D7E4F44C914D0E84660950358B41FA497A9B3CECF21D31812BF7DEA386650C44BA7BC1E804A2A37B5CB1E2794896F352';
 wwv_flow_imp.g_varchar2_table(1502) := '0755B54D848A5120544D8350C331056ECBF392FF62E815194E4FBB2A328B82C894EE8E06A19A4B06DC57E553A6F71B3B4BDEE567F59B7BE43F626D72C1586562C0D4AC7B8A701C7DF4BE5ECB11473E51ED76BAD5CF52F2C8200A2D47A53F4D2B7E5ADEBC';
 wwv_flow_imp.g_varchar2_table(1503) := '82BEF8E9CCC88BD270CC82C88626EF2583318C479B3105581871A3827D63F68153836A39C67393BA2BD9C662E4E66315AE3DBD8FB6A392CF086DD3B9C980D59D6271EDE16BFEDA97F17E5D5989B06B8FDFA33E659F297133C00735EDE33E8CDE925FA1A9';
@@ -3180,6 +3194,15 @@ begin
 null;
 end;
 /
+prompt --application/shared_components/logic/application_items/f_debe_cambiar_clave
+begin
+wwv_flow_imp_shared.create_flow_item(
+ p_id=>wwv_flow_imp.id(43000000000000053)
+,p_name=>'F_DEBE_CAMBIAR_CLAVE'
+,p_protection_level=>'I'
+);
+end;
+/
 prompt --application/shared_components/logic/application_items/f_id_empresa
 begin
 wwv_flow_imp_shared.create_flow_item(
@@ -3217,15 +3240,6 @@ wwv_flow_imp_shared.create_flow_item(
 ,p_name=>'F_NOMBRE_ROL'
 ,p_protection_level=>'I'
 ,p_version_scn=>'SH256:fGoFXIaMfH0jsjerfUKk5xKr-AEEofxnnsoqDxk47r8'
-);
-end;
-/
-prompt --application/shared_components/logic/application_items/f_debe_cambiar_clave
-begin
-wwv_flow_imp_shared.create_flow_item(
- p_id=>wwv_flow_imp.id(43000000000000053)
-,p_name=>'F_DEBE_CAMBIAR_CLAVE'
-,p_protection_level=>'I'
 );
 end;
 /
@@ -3484,6 +3498,13 @@ wwv_flow_imp_shared.create_menu_option(
 ,p_static_id=>'home'
 ,p_link=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
 ,p_page_id=>1
+);
+wwv_flow_imp_shared.create_menu_option(
+ p_id=>wwv_flow_imp.id(13040542878825122)
+,p_short_name=>'Inicio'
+,p_static_id=>'inicio'
+,p_link=>'f?p=&APP_ID.:15:&APP_SESSION.::&DEBUG.:::'
+,p_page_id=>15
 );
 wwv_flow_imp_shared.create_menu_option(
  p_id=>wwv_flow_imp.id(23608707238366012)
@@ -8133,7 +8154,7 @@ wwv_flow_imp_page.create_page_plug(
 '  <img class="synpex-login-img" src="#APP_IMAGES#logo_synpex.png" alt="Synpex - Sistema de gestion"',
 '       onerror="this.onerror=null;this.src=&quot;#APP_FILES#logo_synpex.png&quot;;" />',
 '</div>',
-'<p class="synpex-volver"><a href="f?p=&APP_ID.:9999:&APP_SESSION.">¿Ya tienes cuenta? Inicia sesión</a></p>',
+unistr('<p class="synpex-volver"><a href="f?p=&APP_ID.:9999:&APP_SESSION.">\00BFYa tienes cuenta? Inicia sesi\00F3n</a></p>'),
 '<style>',
 '  .synpex-volver { text-align: center; margin: -4px 0 12px 0; font-family: Inter, system-ui, sans-serif; font-size: 13px; }',
 '  .synpex-volver a { color: #0284c7; text-decoration: none; }',
@@ -8245,6 +8266,17 @@ wwv_flow_imp_page.create_page_validation(
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000070)
+,p_validation_name=>'Validar Correo Unico'
+,p_static_id=>'validar-correo-unico'
+,p_validation_sequence=>30
+,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(email)) = LOWER(TRIM(:P2_EMAIL))'
+,p_validation_type=>'NOT_EXISTS'
+,p_error_message=>unistr('Ese correo ya est\00E1 registrado.')
+,p_associated_item=>wwv_flow_imp.id(9176872442212503)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(9177311893212508)
 ,p_validation_name=>'Validar Usuario Unico'
 ,p_static_id=>'validar-usuario-unico'
@@ -8255,19 +8287,6 @@ wwv_flow_imp_page.create_page_validation(
 ,p_associated_item=>wwv_flow_imp.id(9176771455212502)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(43000000000000070)
-,p_validation_name=>'Validar Correo Unico'
-,p_static_id=>'validar-correo-unico'
-,p_validation_sequence=>30
-,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(email)) = LOWER(TRIM(:P2_EMAIL))'
-,p_validation_type=>'NOT_EXISTS'
-,p_error_message=>'Ese correo ya está registrado.'
-,p_associated_item=>wwv_flow_imp.id(9176872442212503)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-
-
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(9177463962212509)
 ,p_process_sequence=>10
@@ -8746,6 +8765,20 @@ wwv_flow_imp_page.create_page_button(
 ,p_database_action=>'DELETE'
 );
 wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000064)
+,p_button_sequence=>90
+,p_button_plug_id=>wwv_flow_imp.id(10560480882198323)
+,p_button_name=>'DESBLOQUEAR'
+,p_static_id=>'desbloquear'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4073839297780169708
+,p_button_image_alt=>'Desbloquear'
+,p_button_position=>'NEXT'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(10562251657198329)
 ,p_button_sequence=>10
 ,p_button_plug_id=>wwv_flow_imp.id(10560480882198323)
@@ -8869,9 +8902,9 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_cMaxlength=>512
 ,p_colspan=>4
-,p_help_text=>unistr('Es la contrase\00F1a con la que el usuario entra a la app. Al guardarla se quita cualquier bloqueo por intentos fallidos.')
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>unistr('Es la contrase\00F1a con la que el usuario entra a la app. Al guardarla se quita cualquier bloqueo por intentos fallidos.')
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
   'submit_when_enter_pressed', 'N',
@@ -8963,6 +8996,50 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'Y')).to_clob
 );
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000066)
+,p_validation_name=>'Activo exige empresa y rol'
+,p_static_id=>'activo-exige-empresa-rol'
+,p_validation_sequence=>10
+,p_validation=>'NOT (:P4_ESTADO = ''ACTIVO'' AND (:P4_ID_EMPRESA IS NULL OR :P4_ROL_ID IS NULL))'
+,p_validation2=>'PLSQL'
+,p_validation_type=>'EXPRESSION'
+,p_error_message=>'No se puede activar un usuario sin empresa y rol.'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000072)
+,p_validation_name=>'Correo unico sin distinguir mayusculas'
+,p_static_id=>'correo-unico'
+,p_validation_sequence=>25
+,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(email)) = LOWER(TRIM(:P4_EMAIL)) AND usuario_id <> NVL(fn_clean_num(:P4_USUARIO_ID), -1)'
+,p_validation_type=>'NOT_EXISTS'
+,p_error_message=>unistr('Ese correo ya est\00E1 registrado.')
+,p_associated_item=>wwv_flow_imp.id(10555666118198307)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000071)
+,p_validation_name=>'Contrasena obligatoria al crear'
+,p_static_id=>'password-obligatoria-al-crear'
+,p_validation_sequence=>30
+,p_validation=>'NOT (:P4_USUARIO_ID IS NULL AND :P4_PASSWORD IS NULL)'
+,p_validation2=>'PLSQL'
+,p_validation_type=>'EXPRESSION'
+,p_error_message=>unistr('La contrase\00F1a es obligatoria al crear el usuario.')
+,p_associated_item=>wwv_flow_imp.id(11751501023216201)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000067)
+,p_validation_name=>'Usuario unico sin distinguir mayusculas'
+,p_static_id=>'usuario-unico'
+,p_validation_sequence=>20
+,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(username)) = LOWER(TRIM(:P4_USERNAME)) AND usuario_id <> NVL(fn_clean_num(:P4_USUARIO_ID), -1)'
+,p_validation_type=>'NOT_EXISTS'
+,p_error_message=>'Ese usuario ya existe.'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(10563870351198334)
 ,p_process_sequence=>40
@@ -9008,6 +9085,24 @@ wwv_flow_imp_page.create_page_process(
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(10562677901198330)
 ,p_internal_uid=>11938553568907301
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000065)
+,p_process_sequence=>30
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Desbloquear usuario'
+,p_static_id=>'desbloquear-usuario'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'update usuario',
+'   set reintentos_fallidos = 0,',
+'       bloqueado_hasta = null',
+' where usuario_id = fn_clean_num(:P4_USUARIO_ID);'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000064)
+,p_process_success_message=>'Usuario desbloqueado.'
+,p_internal_uid=>43000000000000065
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(11938697403907302)
@@ -9087,82 +9182,6 @@ wwv_flow_imp_page.create_page_process(
 'end if;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>43000000000000002
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(43000000000000066)
-,p_validation_name=>'Activo exige empresa y rol'
-,p_static_id=>'activo-exige-empresa-rol'
-,p_validation_sequence=>10
-,p_validation=>'NOT (:P4_ESTADO = ''ACTIVO'' AND (:P4_ID_EMPRESA IS NULL OR :P4_ROL_ID IS NULL))'
-,p_validation2=>'PLSQL'
-,p_validation_type=>'EXPRESSION'
-,p_error_message=>'No se puede activar un usuario sin empresa y rol.'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(43000000000000067)
-,p_validation_name=>'Usuario unico sin distinguir mayusculas'
-,p_static_id=>'usuario-unico'
-,p_validation_sequence=>20
-,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(username)) = LOWER(TRIM(:P4_USERNAME)) AND usuario_id <> NVL(fn_clean_num(:P4_USUARIO_ID), -1)'
-,p_validation_type=>'NOT_EXISTS'
-,p_error_message=>'Ese usuario ya existe.'
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(43000000000000072)
-,p_validation_name=>'Correo unico sin distinguir mayusculas'
-,p_static_id=>'correo-unico'
-,p_validation_sequence=>25
-,p_validation=>'SELECT 1 FROM usuario WHERE LOWER(TRIM(email)) = LOWER(TRIM(:P4_EMAIL)) AND usuario_id <> NVL(fn_clean_num(:P4_USUARIO_ID), -1)'
-,p_validation_type=>'NOT_EXISTS'
-,p_error_message=>'Ese correo ya está registrado.'
-,p_associated_item=>wwv_flow_imp.id(10555666118198307)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(43000000000000071)
-,p_validation_name=>'Contrasena obligatoria al crear'
-,p_static_id=>'password-obligatoria-al-crear'
-,p_validation_sequence=>30
-,p_validation=>'NOT (:P4_USUARIO_ID IS NULL AND :P4_PASSWORD IS NULL)'
-,p_validation2=>'PLSQL'
-,p_validation_type=>'EXPRESSION'
-,p_error_message=>'La contraseña es obligatoria al crear el usuario.'
-,p_associated_item=>wwv_flow_imp.id(11751501023216201)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(43000000000000064)
-,p_button_sequence=>90
-,p_button_plug_id=>wwv_flow_imp.id(10560480882198323)
-,p_button_name=>'DESBLOQUEAR'
-,p_static_id=>'desbloquear'
-,p_show_as_disabled=>false
-,p_button_action=>'SUBMIT'
-,p_button_template_options=>'#DEFAULT#'
-,p_button_template_id=>4073839297780169708
-,p_button_is_hot=>'N'
-,p_button_image_alt=>'Desbloquear'
-,p_button_position=>'NEXT'
-,p_grid_new_row=>'N'
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(43000000000000065)
-,p_process_sequence=>30
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Desbloquear usuario'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'update usuario',
-'   set reintentos_fallidos = 0,',
-'       bloqueado_hasta = null',
-' where usuario_id = fn_clean_num(:P4_USUARIO_ID);'))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when_button_id=>wwv_flow_imp.id(43000000000000064)
-,p_process_success_message=>'Usuario desbloqueado.'
-,p_internal_uid=>43000000000000065
 );
 end;
 /
@@ -9498,20 +9517,6 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(43000000000000050)
-,p_db_column_name=>'PRINT_LINK'
-,p_display_order=>130
-,p_column_identifier=>'M'
-,p_column_label=>unistr('Impresi\00F3n')
-,p_column_link=>'f?p=&APP_ID.:12:&SESSION.::&DEBUG.:12:P12_ID_PRESUPUESTO:#PRINT_LINK#'
-,p_column_linktext=>'<span aria-hidden="true" class="fa fa-print"></span> Imprimir'
-,p_column_link_attr=>'target="_blank"'
-,p_column_type=>'NUMBER'
-,p_column_alignment=>'CENTER'
-,p_use_as_row_header=>'N'
-,p_available_clientside=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(32950647600515006)
 ,p_db_column_name=>'FECHA_EMISION'
 ,p_display_order=>60
@@ -9549,6 +9554,20 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_label=>'IVA'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000050)
+,p_db_column_name=>'PRINT_LINK'
+,p_display_order=>130
+,p_column_identifier=>'M'
+,p_column_label=>unistr('Impresi\00F3n')
+,p_column_link=>'f?p=&APP_ID.:12:&SESSION.::&DEBUG.:12:P12_ID_PRESUPUESTO:#PRINT_LINK#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-print"></span> Imprimir'
+,p_column_link_attr=>'target="_blank"'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
@@ -10317,7 +10336,8 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS_DET'
-,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = presupuestos_det.id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = presupuestos_det.id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'''
+||', ''A'', ''1'')))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
@@ -11383,6 +11403,50 @@ wwv_flow_imp_page.create_page_computation(
 ,p_compute_when_type=>'ITEM_IS_NULL'
 );
 wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000031)
+,p_name=>'NUEVO_FOLIO'
+,p_static_id=>'nuevo-folio'
+,p_event_sequence=>40
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P7_ID_EMPRESA'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000032)
+,p_event_id=>wwv_flow_imp.id(43000000000000031)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'NUEVO FOLIO'
+,p_static_id=>'nuevo-folio'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P7_FOLIO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'escape_special_characters', 'Y',
+  'items_to_submit', 'P7_ID_EMPRESA',
+  'plsql_function_body', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'DECLARE',
+    '   v_folio NUMBER;',
+    'BEGIN',
+    '   SELECT NVL(MAX(folio), 0) + 1',
+    '     INTO v_folio',
+    '     FROM presupuestos',
+    '    WHERE id_empresa = :P7_ID_EMPRESA;',
+    '   RETURN v_folio;',
+    'EXCEPTION',
+    '   WHEN OTHERS THEN',
+    '      RETURN 1;',
+    'END;')),
+  'suppress_change_event', 'N',
+  'type', 'FUNCTION_BODY')).to_clob
+,p_wait_for_result=>'Y'
+,p_client_condition_type=>'NULL'
+,p_client_condition_element=>'P7_ID_PRESUPUESTO'
+);
+wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(14503532631406501)
 ,p_name=>'TIPO_CAMBIO'
 ,p_static_id=>'tipo-cambio'
@@ -11430,50 +11494,6 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'N',
   'type', 'PLSQL_EXPRESSION')).to_clob
 ,p_wait_for_result=>'Y'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(43000000000000031)
-,p_name=>'NUEVO_FOLIO'
-,p_static_id=>'nuevo-folio'
-,p_event_sequence=>40
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P7_ID_EMPRESA'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(43000000000000032)
-,p_event_id=>wwv_flow_imp.id(43000000000000031)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_name=>'NUEVO FOLIO'
-,p_static_id=>'nuevo-folio'
-,p_action=>'NATIVE_SET_VALUE'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P7_FOLIO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'escape_special_characters', 'Y',
-  'items_to_submit', 'P7_ID_EMPRESA',
-  'plsql_function_body', wwv_flow_string.join(wwv_flow_t_varchar2(
-    'DECLARE',
-    '   v_folio NUMBER;',
-    'BEGIN',
-    '   SELECT NVL(MAX(folio), 0) + 1',
-    '     INTO v_folio',
-    '     FROM presupuestos',
-    '    WHERE id_empresa = :P7_ID_EMPRESA;',
-    '   RETURN v_folio;',
-    'EXCEPTION',
-    '   WHEN OTHERS THEN',
-    '      RETURN 1;',
-    'END;')),
-  'suppress_change_event', 'N',
-  'type', 'FUNCTION_BODY')).to_clob
-,p_wait_for_result=>'Y'
-,p_client_condition_type=>'NULL'
-,p_client_condition_element=>'P7_ID_PRESUPUESTO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(16938116115414501)
@@ -15919,9 +15939,10 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_plug_header=>wwv_flow_string.join(wwv_flow_t_varchar2(
-unistr('<p class="spx-nota-acceso">Escribe tu usuario y tu correo, y la contrase\00F1a nueva. Si coinciden con una cuenta activa, la contrase\00F1a se actualiza al instante y se quita cualquier bloqueo por intentos fallidos. Con una clave temporal asignada por un administrador, basta con escribir la clave nueva.</p>'),
+unistr('<p class="spx-nota-acceso">Escribe tu usuario y tu correo, y la contrase\00F1a nueva. Si coinciden con una cuenta activa, la contrase\00F1a se actualiza al instante y se quita cualquier bloqueo por intentos fallidos. Con una clave temporal asignada por un ad')
+||'ministrador, basta con escribir la clave nueva.</p>',
 '<style>.spx-nota-acceso{font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.45;color:#475569;background:#f1f5f9;border-left:3px solid #0284c7;border-radius:6px;padding:10px 12px;margin:0 0 14px 0;}</style>',
-'<p class="synpex-volver"><a href="f?p=&APP_ID.:9999:&APP_SESSION.">Volver al inicio de sesión</a></p>',
+unistr('<p class="synpex-volver"><a href="f?p=&APP_ID.:9999:&APP_SESSION.">Volver al inicio de sesi\00F3n</a></p>'),
 '<style>.synpex-volver{text-align:center;margin:10px 0 0 0;font-family:Inter,system-ui,sans-serif;font-size:13px;}.synpex-volver a{color:#0284c7;text-decoration:none;}</style>'))
 );
 wwv_flow_imp_page.create_page_button(
@@ -15950,7 +15971,6 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000043)
 ,p_name=>'P14_EMAIL'
 ,p_source_data_type=>'VARCHAR2'
-,p_is_required=>false
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
 ,p_prompt=>unistr('Correo Electr\00F3nico')
@@ -16000,7 +16020,6 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000042)
 ,p_name=>'P14_USERNAME'
 ,p_source_data_type=>'VARCHAR2'
-,p_is_required=>false
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
 ,p_prompt=>'Usuario'
@@ -16094,7 +16113,340 @@ unistr('    apex_application.g_print_success_message := ''Contrase\00F1a actuali
 );
 end;
 /
-
+prompt --application/pages/page_00015
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>15
+,p_name=>'Inicio'
+,p_alias=>'INICIO'
+,p_step_title=>'Inicio'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>3812028674738483
+,p_page_template_options=>'#DEFAULT#'
+,p_page_is_public_y_n=>'Y'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(13040711855823801)
+,p_plug_name=>'New'
+,p_static_id=>'new'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="spx-portada">',
+'',
+'  <style>',
+'    .spx-portada {',
+'      --spx-azul-oscuro: #0b2a5b;',
+'      --spx-azul: #0b72c4;',
+'      --spx-azul-claro: #e8f2fb;',
+'      --spx-naranja: #f7941d;',
+'      --spx-texto: #1f2a3a;',
+'      --spx-gris: #5b6b80;',
+'      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;',
+'      color: var(--spx-texto);',
+'      background: #ffffff;',
+'      margin: -16px -16px 0 -16px;',
+'      padding: 0;',
+'      overflow-x: hidden;',
+'    }',
+'    .spx-portada *, .spx-portada *::before, .spx-portada *::after { box-sizing: border-box; }',
+'',
+'    /* ---------------- encabezado ---------------- */',
+'    .spx-cabecera {',
+'      display: flex; align-items: center; justify-content: space-between;',
+'      gap: 24px; padding: 18px 6%;',
+'      border-bottom: 1px solid #e6ebf3;',
+'      background: #ffffff;',
+'      position: relative; z-index: 5;',
+'    }',
+'    .spx-marca { display: flex; align-items: center; gap: 12px; text-decoration: none; }',
+'    .spx-marca img { height: 46px; width: auto; display: block; }',
+'    .spx-marca-texto { display: flex; flex-direction: column; line-height: 1; }',
+'    .spx-marca-nombre { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; color: var(--spx-azul-oscuro); }',
+'    .spx-marca-tag { font-size: 9px; font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; color: var(--spx-gris); margin-top: 5px; }',
+'    .spx-marca-lema { font-size: 11px; font-style: italic; color: var(--spx-naranja); margin-top: 3px; }',
+'',
+'    .spx-menu { display: flex; align-items: center; gap: 34px; }',
+'    .spx-menu a {',
+'      color: var(--spx-texto); text-decoration: none; font-size: 15px; font-weight: 500;',
+'      padding: 6px 2px; border-bottom: 2px solid transparent;',
+'    }',
+'    .spx-menu a:hover { color: var(--spx-azul); border-bottom-color: var(--spx-azul); }',
+'',
+'    .spx-boton-ingresar {',
+'      display: inline-flex; align-items: center; gap: 8px;',
+'      background: var(--spx-azul); color: #ffffff !important;',
+'      text-decoration: none; font-weight: 600; font-size: 15px;',
+'      padding: 11px 26px; border-radius: 26px;',
+'      box-shadow: 0 6px 16px rgba(11, 114, 196, 0.28);',
+'      transition: transform .15s ease, box-shadow .15s ease;',
+'    }',
+'    .spx-boton-ingresar:hover { transform: translateY(-1px); box-shadow: 0 9px 22px rgba(11, 114, 196, 0.34); }',
+'    .spx-boton-ingresar svg { width: 17px; height: 17px; }',
+'',
+'    /* ---------------- portada ---------------- */',
+'    .spx-hero {',
+'      display: grid; grid-template-columns: 1fr 1.05fr;',
+'      align-items: center; gap: 40px;',
+'      padding: 64px 6% 76px;',
+'      position: relative;',
+'      background:',
+'        radial-gradient(1100px 520px at 108% -10%, rgba(11,114,196,.10), transparent 62%),',
+'        linear-gradient(180deg, #ffffff 0%, #f7fafd 100%);',
+'    }',
+'    .spx-hero-texto { max-width: 560px; }',
+'    .spx-hero-titulo {',
+'      margin: 0 0 18px; font-size: 58px; line-height: 1.03;',
+'      font-weight: 800; letter-spacing: -1.6px; color: var(--spx-azul-oscuro);',
+'    }',
+'    .spx-hero-titulo span { display: block; color: var(--spx-azul); }',
+'    .spx-hero-raya { width: 64px; height: 5px; border-radius: 3px; background: var(--spx-naranja); margin: 0 0 22px; }',
+'    .spx-hero-bajada { font-size: 19px; line-height: 1.55; color: #34435a; margin: 0 0 34px; }',
+'',
+'    .spx-acciones { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }',
+'    .spx-boton-primario {',
+'      display: inline-flex; align-items: center; gap: 10px;',
+'      background: var(--spx-azul); color: #ffffff !important; text-decoration: none;',
+'      font-weight: 600; font-size: 17px; padding: 15px 34px; border-radius: 10px;',
+'      box-shadow: 0 10px 24px rgba(11, 114, 196, 0.30);',
+'      transition: transform .15s ease, box-shadow .15s ease;',
+'    }',
+'    .spx-boton-primario:hover { transform: translateY(-1px); box-shadow: 0 13px 30px rgba(11, 114, 196, 0.36); }',
+'    .spx-enlace {',
+'      display: inline-flex; align-items: center; gap: 8px;',
+'      color: var(--spx-azul) !important; font-weight: 600; font-size: 17px; text-decoration: none;',
+'      border-bottom: 2px solid var(--spx-azul); padding-bottom: 3px;',
+'    }',
+'    .spx-flecha { font-size: 20px; line-height: 1; }',
+'',
+'    /* ---------------- monitor con panel (CSS, sin captura) ---------------- */',
+'    .spx-monitor { position: relative; }',
+'    .spx-monitor-marco {',
+'      background: #dfe6ef; border-radius: 16px; padding: 12px 12px 0;',
+'      box-shadow: 0 30px 60px -25px rgba(11, 42, 91, .45);',
+'    }',
+'    .spx-pantalla {',
+'      background: #ffffff; border-radius: 8px; overflow: hidden;',
+'      border: 1px solid #cdd7e3; display: grid; grid-template-columns: 132px 1fr;',
+'      min-height: 330px;',
+'    }',
+'    .spx-pantalla-menu {',
+'      background: var(--spx-azul-oscuro); color: #cddff2; padding: 14px 10px;',
+'      font-size: 10.5px; display: flex; flex-direction: column; gap: 12px;',
+'    }',
+'    .spx-pantalla-menu .item {',
+'      display: flex; align-items: center; gap: 7px; opacity: .78;',
+'    }',
+'    .spx-pantalla-menu .item.activo {',
+'      background: var(--spx-azul); color: #fff; border-radius: 5px; padding: 6px 7px; opacity: 1;',
+'    }',
+'    .spx-pantalla-menu .punto { width: 9px; height: 9px; border-radius: 3px; background: currentColor; opacity: .55; }',
+'    .spx-pantalla-cuerpo { padding: 14px 16px; }',
+'    .spx-pantalla-titulo { font-size: 15px; font-weight: 700; color: var(--spx-azul-oscuro); margin: 0 0 2px; }',
+'    .spx-pantalla-sub { font-size: 9.5px; color: var(--spx-gris); margin: 0 0 12px; }',
+'    .spx-tarjetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }',
+'    .spx-tarjeta { border-radius: 7px; padding: 8px 9px; background: var(--spx-azul-claro); }',
+'    .spx-tarjeta.naranja { background: #fff2e2; }',
+'    .spx-tarjeta .cifra { font-size: 15px; font-weight: 800; color: var(--spx-azul-oscuro); }',
+'    .spx-tarjeta .rotulo { font-size: 8.5px; color: var(--spx-gris); }',
+'    .spx-tarjeta .sube { font-size: 8.5px; color: #1a9c5b; font-weight: 700; }',
+'    .spx-panel-inferior { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; }',
+'    .spx-caja { border: 1px solid #e6ebf3; border-radius: 7px; padding: 8px 9px; }',
+'    .spx-caja-titulo { font-size: 9.5px; font-weight: 700; color: var(--spx-azul-oscuro); margin-bottom: 8px; }',
+'    .spx-barras { display: flex; align-items: flex-end; gap: 7px; height: 74px; }',
+'    .spx-barras .barra { flex: 1; background: var(--spx-azul); border-radius: 3px 3px 0 0; }',
+'    .spx-barras .barra:nth-child(1) { height: 34%; }',
+'    .spx-barras .barra:nth-child(2) { height: 56%; }',
+'    .spx-barras .barra:nth-child(3) { height: 45%; }',
+'    .spx-barras .barra:nth-child(4) { height: 70%; }',
+'    .spx-barras .barra:nth-child(5) { height: 58%; }',
+'    .spx-barras .barra:nth-child(6) { height: 92%; }',
+'    .spx-lista { display: flex; flex-direction: column; gap: 7px; }',
+'    .spx-lista .fila { display: flex; align-items: center; gap: 6px; font-size: 8.5px; color: #45526b; }',
+'    .spx-lista .bola { width: 6px; height: 6px; border-radius: 50%; flex: none; }',
+'    .spx-lista .hora { margin-left: auto; color: #98a4b6; }',
+'    .spx-monitor-pie {',
+'      height: 16px; background: #cfd8e4; border-radius: 0 0 14px 14px;',
+'      margin: 0 34px; box-shadow: 0 12px 22px -14px rgba(11,42,91,.5);',
+'    }',
+'',
+'    /* ---------------- beneficios ---------------- */',
+'    .spx-beneficios {',
+'      display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;',
+'      padding: 34px 6%; background: #f4f8fc; border-top: 1px solid #e2eaf3;',
+'    }',
+'    .spx-beneficio { display: flex; align-items: center; gap: 16px; }',
+'    .spx-beneficio-icono {',
+'      width: 54px; height: 54px; border-radius: 50%; flex: none;',
+'      background: var(--spx-azul); color: #ffffff;',
+'      display: flex; align-items: center; justify-content: center;',
+'      box-shadow: 0 6px 14px rgba(11,114,196,.24);',
+'    }',
+'    .spx-beneficio-icono svg { width: 26px; height: 26px; }',
+'    .spx-beneficio h4 { margin: 0 0 3px; font-size: 17px; font-weight: 700; color: var(--spx-azul-oscuro); }',
+'    .spx-beneficio p { margin: 0; font-size: 14px; color: var(--spx-gris); }',
+'',
+'    /* ---------------- franja decorativa ---------------- */',
+'    .spx-franja { height: 14px; background: linear-gradient(90deg, var(--spx-azul) 0%, var(--spx-azul) 62%, var(--spx-naranja) 62%, var(--spx-naranja) 100%); }',
+'',
+'    /* ---------------- adaptable ---------------- */',
+'    @media (max-width: 1080px) {',
+'      .spx-hero { grid-template-columns: 1fr; padding-top: 44px; }',
+'      .spx-hero-titulo { font-size: 44px; }',
+'      .spx-menu { display: none; }',
+'      .spx-beneficios { grid-template-columns: 1fr; gap: 18px; }',
+'    }',
+'    @media (max-width: 640px) {',
+'      .spx-hero-titulo { font-size: 34px; letter-spacing: -1px; }',
+'      .spx-hero-bajada { font-size: 16px; }',
+'      .spx-pantalla { grid-template-columns: 1fr; }',
+'      .spx-pantalla-menu { display: none; }',
+'      .spx-cabecera { padding: 14px 5%; }',
+'      .spx-marca img { height: 38px; }',
+'    }',
+'  </style>',
+'',
+'  <!-- ======================= encabezado ======================= -->',
+'  <header class="spx-cabecera">',
+'    <a class="spx-marca" href="f?p=&APP_ID.:15:&APP_SESSION.">',
+'      <img src="#APP_IMAGES#logo_synpex.png" alt="Synpex">',
+'      <span class="spx-marca-texto">',
+'        <span class="spx-marca-nombre">Synpex</span>',
+'        <span class="spx-marca-tag">Sistema de gestión</span>',
+'        <span class="spx-marca-lema">Tu gestión, más simple</span>',
+'      </span>',
+'    </a>',
+'',
+'    <nav class="spx-menu">',
+'      <a href="#spx-inicio">Inicio</a>',
+'      <a href="#spx-beneficios">Servicios</a>',
+'      <a href="#spx-beneficios">Nosotros</a>',
+'      <a href="#spx-beneficios">Contacto</a>',
+'    </nav>',
+'',
+'    <a class="spx-boton-ingresar" href="f?p=&APP_ID.:1:&APP_SESSION.">',
+'      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">',
+'        <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
+'      </svg>',
+'      Ingresar',
+'    </a>',
+'  </header>',
+'',
+'  <!-- ======================= portada ======================= -->',
+'  <section class="spx-hero" id="spx-inicio">',
+'    <div class="spx-hero-texto">',
+'      <h1 class="spx-hero-titulo">Gestiona tu negocio <span>de forma simple</span></h1>',
+'      <div class="spx-hero-raya"></div>',
+'      <p class="spx-hero-bajada">',
+'        Organiza tus procesos, controla tu información y toma mejores decisiones desde un solo lugar.',
+'      </p>',
+'      <div class="spx-acciones">',
+'        <a class="spx-boton-primario" href="f?p=&APP_ID.:1:&APP_SESSION.">',
+'          Comenzar <span class="spx-flecha">&rarr;</span>',
+'        </a>',
+'        <a class="spx-enlace" href="#spx-beneficios">Conoce más <span class="spx-flecha">&rarr;</span></a>',
+'      </div>',
+'    </div>',
+'',
+'    <div class="spx-monitor" aria-hidden="true">',
+'      <div class="spx-monitor-marco">',
+'        <div class="spx-pantalla">',
+'          <div class="spx-pantalla-menu">',
+'            <div class="item activo"><span class="punto"></span> Inicio</div>',
+'            <div class="item"><span class="punto"></span> Catálogos</div>',
+'            <div class="item"><span class="punto"></span> Reportes</div>',
+'            <div class="item"><span class="punto"></span> Configuración</div>',
+'            <div class="item"><span class="punto"></span> Ayuda</div>',
+'          </div>',
+'          <div class="spx-pantalla-cuerpo">',
+'            <p class="spx-pantalla-titulo">Bienvenido a Synpex</p>',
+'            <p class="spx-pantalla-sub">Tu gestión, más simple</p>',
+'            <div class="spx-tarjetas">',
+'              <div class="spx-tarjeta"><div class="cifra">4.280</div><div class="rotulo">Proveedores</div><div class="sube">&uarr; 2,5 %</div></div>',
+'              <div class="spx-tarjeta"><div class="cifra">579.472</div><div class="rotulo">Sucursales</div><div class="sube">&uarr; 1,8 %</div></div>',
+'              <div class="spx-tarjeta naranja"><div class="cifra">98,7 %</div><div class="rotulo">Procesos OK</div><div class="sube">&uarr; 0,3 %</div></div>',
+'            </div>',
+'            <div class="spx-panel-inferior">',
+'              <div class="spx-caja">',
+'                <div class="spx-caja-titulo">Actividad del sistema</div>',
+'                <div class="spx-barras">',
+'                  <div class="barra"></div><div class="barra"></div><div class="barra"></div>',
+'                  <div class="barra"></div><div class="barra"></div><div class="barra"></div>',
+'                </div>',
+'              </div>',
+'              <div class="spx-caja">',
+'                <div class="spx-caja-titulo">Procesos recientes</div>',
+'                <div class="spx-lista">',
+'                  <div class="fila"><span class="bola" style="background:#22c55e"></span> Carga de proveedores <span class="hora">10:24</span></div>',
+'                  <div class="fila"><span class="bola" style="background:#0b72c4"></span> Actualización de bancos <span class="hora">09:47</span></div>',
+'                  <div class="fila"><span class="bola" style="background:#22c55e"></span> Generación de reportes <span class="hora">09:30</span></div>',
+'                  <div class="fila"><span class="bola" style="background:#f7941d"></span> Validación de datos <span class="hora">08:55</span></div>',
+'                </div>',
+'              </div>',
+'            </div>',
+'          </div>',
+'        </div>',
+'      </div>',
+'      <div class="spx-monitor-pie"></div>',
+'    </div>',
+'  </section>',
+'',
+'  <!-- ======================= beneficios ======================= -->',
+'  <section class="spx-beneficios" id="spx-beneficios">',
+'    <div class="spx-beneficio">',
+'      <div class="spx-beneficio-icono">',
+'        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">',
+'          <path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6l7-3z"/>',
+'          <path d="M9 12l2 2 4-4"/>',
+'        </svg>',
+'      </div>',
+'      <div>',
+'        <h4>Control administrativo</h4>',
+'        <p>Supervisa y administra con confianza</p>',
+'      </div>',
+'    </div>',
+'',
+'    <div class="spx-beneficio">',
+'      <div class="spx-beneficio-icono">',
+'        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">',
+'          <path d="M7 17a4 4 0 1 1 .8-7.9A5 5 0 0 1 17.6 10 3.5 3.5 0 0 1 17 17H7z"/>',
+'          <path d="M12 12v5m0-5l-2 2m2-2l2 2"/>',
+'        </svg>',
+'      </div>',
+'      <div>',
+'        <h4>Información centralizada</h4>',
+'        <p>Todo en un solo lugar</p>',
+'      </div>',
+'    </div>',
+'',
+'    <div class="spx-beneficio">',
+'      <div class="spx-beneficio-icono">',
+'        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">',
+'          <circle cx="12" cy="12" r="8.5"/>',
+'          <path d="M12 12l3.5-2.5"/>',
+'          <path d="M15.5 9.5l.5 2.5-2.5-.5"/>',
+'        </svg>',
+'      </div>',
+'      <div>',
+'        <h4>Gestión eficiente</h4>',
+'        <p>Optimiza tus recursos</p>',
+'      </div>',
+'    </div>',
+'  </section>',
+'',
+'  <div class="spx-franja"></div>',
+'</div>',
+''))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+);
+end;
+/
 prompt --application/pages/page_09999
 begin
 wwv_flow_imp_page.create_page(
@@ -16365,21 +16717,6 @@ wwv_flow_imp_shared.create_invokeapi_comp_param(
 ,p_value_language=>'PLSQL'
 ,p_value=>'lower( :P9999_USERNAME )'
 );
-end;
-/
-prompt --application/deployment/definition
-begin
-null;
-end;
-/
-prompt --application/deployment/checks
-begin
-null;
-end;
-/
-prompt --application/deployment/buildoptions
-begin
-null;
 end;
 /
 prompt --application/end_environment
