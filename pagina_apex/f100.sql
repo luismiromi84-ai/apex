@@ -8570,6 +8570,26 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-user-plus'
 ,p_grid_new_row=>'Y'
 );
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000098)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(10564941614198500)
+,p_button_name=>'BTN_LOGOS'
+,p_static_id=>'btn-logos'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Logo de empresas'
+,p_button_redirect_url=>'f?p=&APP_ID.:17:&SESSION.::&DEBUG.:17::'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-image'
+,p_grid_new_row=>'N'
+);
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(10570004842198544)
 ,p_name=>'Edit Report - Dialog Closed'
@@ -16914,6 +16934,232 @@ wwv_flow_imp_page.create_page_process(
 );
 end;
 /
+prompt --application/pages/page_00017
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>17
+,p_name=>'Logo de Empresa'
+,p_alias=>'LOGO-EMPRESA'
+,p_step_title=>'Logo de Empresa'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000087)
+,p_plug_name=>'Logo actual'
+,p_static_id=>'logo-actual'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>3372714138756020509
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_html clob;',
+'begin',
+'    v_html := pkg_empresa_logo.fn_logo_img(:P17_ID_EMPRESA, ''max-height:120px'');',
+'    if v_html is null then',
+'        return ''<p class="u-color-50">Esta empresa no tiene logo cargado. Sus documentos salen sin imagen.</p>'';',
+'    end if;',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_ajax_items_to_submit=>'P17_ID_EMPRESA'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000088)
+,p_plug_name=>'Subir logo'
+,p_static_id=>'subir-logo'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000090)
+,p_name=>'P17_ARCHIVO'
+,p_is_required=>true
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000088)
+,p_prompt=>'Archivo (PNG o JPEG, maximo 2 MB)'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_FILE'
+,p_cSize=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'display_as', 'NATIVE',
+  'storage_type', 'APEX_APPLICATION_TEMP_FILES')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000089)
+,p_name=>'P17_ID_EMPRESA'
+,p_data_type=>'NUMBER'
+,p_is_required=>true
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000088)
+,p_item_default_type=>'SQL_QUERY'
+,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select min(u.id_empresa)',
+'  from usuario u',
+' where upper(u.username) = upper(:APP_USER)',
+'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
+' having count(*) = 1'))
+,p_prompt=>'Empresa'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_named_lov=>'EMPRESA'
+,p_cSize=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'case_sensitive', 'N',
+  'display_as', 'DIALOG',
+  'fetch_on_search', 'N',
+  'height', '250',
+  'initial_fetch', 'FIRST_ROWSET',
+  'manual_entry', 'N',
+  'match_type', 'CONTAINS',
+  'min_chars', '0',
+  'title', 'Empresas',
+  'width', '400')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000091)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000088)
+,p_button_name=>'BTN_SUBIR_LOGO'
+,p_static_id=>'btn-subir-logo'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Subir logo'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') and :P17_ID_EMPRESA is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-upload'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000093)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000088)
+,p_button_name=>'BTN_ELIMINAR_LOGO'
+,p_static_id=>'btn-eliminar-logo'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--danger:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Quitar logo'
+,p_confirm_message=>'Se va a quitar el logo de esta empresa. Sus documentos saldran sin imagen. Continua?'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') and :P17_ID_EMPRESA is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-trash-o'
+,p_grid_new_row=>'N'
+,p_grid_column=>6
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000094)
+,p_button_sequence=>30
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000088)
+,p_button_name=>'BTN_VOLVER_LOGO'
+,p_static_id=>'btn-volver-logo'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver'
+,p_button_redirect_url=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3::'
+,p_warn_on_unsaved_changes=>null
+,p_icon_css_classes=>'fa-undo'
+,p_grid_new_row=>'N'
+,p_grid_column=>11
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000095)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: logo empresa'
+,p_static_id=>'valida-rol-logo-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000095
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000096)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Subir logo'
+,p_static_id=>'subir-logo-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_blob blob;',
+'    v_mime varchar2(200);',
+'    v_name varchar2(255);',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    select blob_content, mime_type, filename',
+'      into v_blob, v_mime, v_name',
+'      from apex_application_temp_files',
+'     where name = :P17_ARCHIVO;',
+'',
+'    pkg_empresa_logo.prc_guardar_logo(',
+'        p_id_empresa => fn_clean_num(:P17_ID_EMPRESA),',
+'        p_imagen     => v_blob,',
+'        p_nombre     => v_name,',
+'        p_mime       => v_mime,',
+'        p_usuario    => :APP_USER);',
+'',
+'    delete from apex_application_temp_files where name = :P17_ARCHIVO;',
+'',
+'    apex_application.g_print_success_message := ''Logo guardado.'';',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000091)
+,p_internal_uid=>43000000000000096
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000097)
+,p_process_sequence=>20
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Quitar logo'
+,p_static_id=>'quitar-logo-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    pkg_empresa_logo.prc_eliminar_logo(fn_clean_num(:P17_ID_EMPRESA));',
+'',
+'    apex_application.g_print_success_message := ''Logo eliminado.'';',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000093)
+,p_internal_uid=>43000000000000097
+);
+end;
+/
+
 prompt --application/pages/page_09999
 begin
 wwv_flow_imp_page.create_page(
