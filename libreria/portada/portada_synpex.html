@@ -1,347 +1,302 @@
-<!-- =============================================================================
-     Portada pública de Synpex — página nueva en App Builder
-     Pegar TODO este bloque en una región de tipo "Static Content" (código HTML).
-
-     Antes de pegarlo: subir a Static Application Files el logo si se quiere otra
-     versión; el bloque usa #APP_IMAGES#logo_synpex.png y ya existe en la app.
-
-     El botón "Ingresar" apunta a f?p=&APP_ID.:1:&APP_SESSION. — la página de
-     login actual. No toca la autenticación.
-
-     Todas las clases llevan el prefijo spx- para no chocar con el tema de APEX.
-     ============================================================================= -->
-
 <div class="spx-portada">
-
   <style>
-    .spx-portada {
-      --spx-azul-oscuro: #0b2a5b;
-      --spx-azul: #0b72c4;
-      --spx-azul-claro: #e8f2fb;
-      --spx-naranja: #f7941d;
-      --spx-texto: #1f2a3a;
-      --spx-gris: #5b6b80;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-      color: var(--spx-texto);
-      background: #ffffff;
-      margin: -16px -16px 0 -16px;
-      padding: 0;
-      overflow-x: hidden;
-    }
-    .spx-portada *, .spx-portada *::before, .spx-portada *::after { box-sizing: border-box; }
+    .spx-portada { --azul-oscuro:#0b2a5b; --azul:#0b72c4; --azul-claro:#e8f2fb; --naranja:#f7941d; --verde:#25d366; --gris:#5b6b80; --borde:#e6ebf3;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color:#1f2a3a; background:#fff;
+      margin:-16px -16px 0 -16px; padding:0; overflow-x:hidden; }
+    .spx-portada *, .spx-portada *::before, .spx-portada *::after { box-sizing:border-box; }
+    .spx-portada h1, .spx-portada h2, .spx-portada h3, .spx-portada p, .spx-portada ul { margin:0; }
+    .spx-portada a { text-decoration:none; }
+    .spx-seccion { padding:72px 6%; }
+    .spx-seccion-titulo { font-size:32px; font-weight:800; letter-spacing:-.8px; color:var(--azul-oscuro); margin-bottom:10px; }
+    .spx-seccion-bajada { font-size:17px; color:var(--gris); max-width:660px; margin-bottom:38px; }
+    .spx-centrado { text-align:center; }
+    .spx-centrado .spx-seccion-bajada { margin-left:auto; margin-right:auto; }
 
-    /* ---------------- encabezado ---------------- */
-    .spx-cabecera {
-      display: flex; align-items: center; justify-content: flex-start;
-      gap: 24px; padding: 18px 6%;
-      border-bottom: 1px solid #e6ebf3;
-      background: #ffffff;
-      position: relative; z-index: 5;
-    }
-    /* La marca ES el lockup: el PNG ya trae «Synpex», «SISTEMA DE GESTIÓN» y
-       «Tu gestión, más simple», así que no se repite como texto al lado. */
-    .spx-marca {
-      display: flex; align-items: center; text-decoration: none;
-      animation: spxMarcaFlota 7s ease-in-out infinite;
-      will-change: transform;
-    }
-    .spx-marca img {
-      display: block; height: 88px; width: auto;
-      filter: drop-shadow(0 10px 18px rgba(11, 42, 91, 0.18))
-              drop-shadow(0 2px 4px rgba(11, 42, 91, 0.14));
-      transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.3, 1), filter 0.45s ease;
-    }
-    .spx-marca:hover img, .spx-marca:focus-visible img {
-      transform: perspective(900px) rotateY(-7deg) rotateX(3deg) scale(1.04);
-      filter: drop-shadow(0 18px 30px rgba(11, 114, 196, 0.32))
-              drop-shadow(0 4px 6px rgba(11, 42, 91, 0.20));
-    }
-    @keyframes spxMarcaFlota {
-      0%, 100% { transform: translateY(0); }
-      50%      { transform: translateY(-5px); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .spx-marca { animation: none; }
-      .spx-marca img { transition: none; }
-    }
+    .spx-cabecera { display:flex; align-items:center; gap:22px; padding:16px 6%; border-bottom:1px solid var(--borde); background:#fff; position:relative; z-index:20; }
+    .spx-marca img { display:block; height:76px; width:auto; filter:drop-shadow(0 8px 16px rgba(11,42,91,.16)); }
+    .spx-menu { display:flex; align-items:center; gap:30px; padding-left:28px; border-left:1px solid var(--borde); }
+    .spx-menu a { color:#1f2a3a; font-size:15px; font-weight:500; padding:6px 2px; border-bottom:2px solid transparent; }
+    .spx-menu a:hover, .spx-menu a:focus-visible { color:var(--azul); border-bottom-color:var(--azul); }
 
-    .spx-menu {
-      display: flex; align-items: center; gap: 34px;
-      padding-left: 34px; border-left: 1px solid #e6ebf3;
-    }
-    .spx-menu a {
-      color: var(--spx-texto); text-decoration: none; font-size: 15px; font-weight: 500;
-      padding: 6px 2px; border-bottom: 2px solid transparent;
-    }
-    .spx-menu a:hover { color: var(--spx-azul); border-bottom-color: var(--spx-azul); }
+    .spx-menu-movil { display:none; margin-left:auto; position:relative; }
+    .spx-menu-movil summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:10px; border:1px solid var(--borde); color:var(--azul-oscuro); background:#fff; }
+    .spx-menu-movil summary::-webkit-details-marker { display:none; }
+    .spx-menu-movil-lista { position:absolute; right:0; top:50px; z-index:30; display:flex; flex-direction:column; min-width:190px; background:#fff;
+      border:1px solid var(--borde); border-radius:12px; box-shadow:0 18px 40px -18px rgba(11,42,91,.45); padding:8px; }
+    .spx-menu-movil-lista a { color:#1f2a3a; font-size:15px; font-weight:500; padding:10px 12px; border-radius:8px; }
+    .spx-menu-movil-lista a:hover { background:var(--azul-claro); color:var(--azul); }
 
-    .spx-boton-ingresar {
-      display: inline-flex; align-items: center; gap: 8px;
-      margin-left: auto;
-      background: var(--spx-azul); color: #ffffff !important;
-      text-decoration: none; font-weight: 600; font-size: 15px;
-      padding: 11px 26px; border-radius: 26px;
-      box-shadow: 0 6px 16px rgba(11, 114, 196, 0.28);
-      transition: transform .15s ease, box-shadow .15s ease;
-    }
-    .spx-boton-ingresar:hover { transform: translateY(-1px); box-shadow: 0 9px 22px rgba(11, 114, 196, 0.34); }
-    .spx-boton-ingresar svg { width: 17px; height: 17px; }
+    .spx-boton-whatsapp { display:inline-flex; align-items:center; gap:9px; margin-left:auto; background:var(--verde); color:#fff !important;
+      font-weight:600; font-size:15px; padding:11px 20px; border-radius:26px; box-shadow:0 6px 16px rgba(37,211,102,.32); }
+    .spx-boton-ingresar { display:inline-flex; align-items:center; gap:8px; background:var(--azul); color:#fff !important;
+      font-weight:600; font-size:15px; padding:11px 26px; border-radius:26px; box-shadow:0 6px 16px rgba(11,114,196,.28); }
+    .spx-boton-whatsapp:hover, .spx-boton-ingresar:hover, .spx-boton-primario:hover, .spx-boton-claro:hover { filter:brightness(1.06); }
+    .spx-boton-whatsapp svg, .spx-boton-claro svg { width:19px; height:19px; }
+    .spx-boton-ingresar svg { width:17px; height:17px; }
 
-    /* ---------------- portada ---------------- */
-    .spx-hero {
-      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-      align-items: center; gap: 40px;
-      padding: 64px 6% 76px;
-      position: relative;
-      background:
-        radial-gradient(1100px 520px at 108% -10%, rgba(11,114,196,.10), transparent 62%),
-        linear-gradient(180deg, #ffffff 0%, #f7fafd 100%);
-    }
-    .spx-hero-texto { max-width: 560px; min-width: 0; }
-    .spx-hero-titulo {
-      margin: 0 0 18px; font-size: 58px; line-height: 1.03;
-      font-weight: 800; letter-spacing: -1.6px; color: var(--spx-azul-oscuro);
-    }
-    .spx-hero-titulo span { display: block; color: var(--spx-azul); }
-    .spx-hero-raya { width: 64px; height: 5px; border-radius: 3px; background: var(--spx-naranja); margin: 0 0 22px; }
-    .spx-hero-bajada { font-size: 19px; line-height: 1.55; color: #34435a; margin: 0 0 34px; }
+    .spx-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); align-items:center; gap:44px; padding:64px 6% 76px;
+      background:radial-gradient(1100px 520px at 108% -10%, rgba(11,114,196,.10), transparent 62%), linear-gradient(180deg,#fff 0%,#f7fafd 100%); }
+    .spx-hero-texto { max-width:580px; min-width:0; }
+    .spx-hero-titulo { font-size:54px; line-height:1.04; font-weight:800; letter-spacing:-1.6px; color:var(--azul-oscuro); margin-bottom:18px; }
+    .spx-hero-raya { width:64px; height:5px; border-radius:3px; background:var(--naranja); margin-bottom:22px; }
+    .spx-hero-bajada { font-size:19px; line-height:1.55; color:#34435a; margin-bottom:34px; }
+    .spx-acciones { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+    .spx-boton-primario { display:inline-flex; align-items:center; gap:10px; background:var(--azul); color:#fff !important;
+      font-weight:600; font-size:17px; padding:15px 32px; border-radius:10px; box-shadow:0 10px 24px rgba(11,114,196,.30); }
+    .spx-enlace { display:inline-flex; align-items:center; gap:8px; color:var(--azul) !important; font-weight:600; font-size:17px; border-bottom:2px solid var(--azul); padding-bottom:3px; }
+    .spx-flecha { font-size:20px; line-height:1; }
 
-    .spx-acciones { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
-    .spx-boton-primario {
-      display: inline-flex; align-items: center; gap: 10px;
-      background: var(--spx-azul); color: #ffffff !important; text-decoration: none;
-      font-weight: 600; font-size: 17px; padding: 15px 34px; border-radius: 10px;
-      box-shadow: 0 10px 24px rgba(11, 114, 196, 0.30);
-      transition: transform .15s ease, box-shadow .15s ease;
-    }
-    .spx-boton-primario:hover { transform: translateY(-1px); box-shadow: 0 13px 30px rgba(11, 114, 196, 0.36); }
-    .spx-enlace {
-      display: inline-flex; align-items: center; gap: 8px;
-      color: var(--spx-azul) !important; font-weight: 600; font-size: 17px; text-decoration: none;
-      border-bottom: 2px solid var(--spx-azul); padding-bottom: 3px;
-    }
-    .spx-flecha { font-size: 20px; line-height: 1; }
+    .spx-mock { position:relative; min-width:0; transform:perspective(1800px) rotateY(-6deg) rotateX(1.5deg); transform-origin:center right; }
+    .spx-mock-marco { background:#dfe6ef; border-radius:16px; padding:12px 12px 0; box-shadow:0 30px 60px -25px rgba(11,42,91,.45); }
+    .spx-pantalla { background:#fff; border-radius:8px; overflow:hidden; border:1px solid #cdd7e3; display:grid; grid-template-columns:130px minmax(0,1fr); min-height:320px; }
+    .spx-pantalla-menu { background:var(--azul-oscuro); color:#cddff2; padding:14px 10px; font-size:10.5px; display:flex; flex-direction:column; gap:11px; }
+    .spx-pantalla-menu .item { display:flex; align-items:center; gap:7px; opacity:.78; }
+    .spx-pantalla-menu .item.activo { background:var(--azul); color:#fff; border-radius:5px; padding:6px 7px; opacity:1; }
+    .spx-pantalla-menu .punto { width:9px; height:9px; border-radius:3px; background:currentColor; opacity:.55; }
+    .spx-pantalla-cuerpo { padding:16px; min-width:0; }
+    .spx-pantalla-titulo { font-size:15px; font-weight:700; color:var(--azul-oscuro); }
+    .spx-pantalla-sub { font-size:9.5px; color:var(--gris); margin:2px 0 14px; }
+    .spx-tabla { display:flex; flex-direction:column; gap:1px; }
+    .spx-tabla-cab { display:grid; grid-template-columns:60px minmax(0,1fr) 42px 74px; gap:8px; font-size:8px; text-transform:uppercase; letter-spacing:.5px; color:#8c99ab; padding:0 4px 6px; }
+    .spx-tabla-fila { display:grid; grid-template-columns:60px minmax(0,1fr) 42px 74px; gap:8px; align-items:center; font-size:9.5px; color:#36445c; background:#f8fafc; border-radius:5px; padding:8px 4px; }
+    .spx-tabla-fila strong { font-weight:700; color:var(--azul-oscuro); }
+    .spx-estado { font-size:7.5px; font-weight:700; text-align:center; padding:3px 0; border-radius:20px; }
+    .spx-estado.aprobado { background:#e3f5ea; color:#1a7f4b; }
+    .spx-estado.pagada { background:#e8f2fb; color:#0b5fa5; }
+    .spx-estado.pendiente { background:#fff2e2; color:#a4620d; }
+    .spx-mock-pie { height:16px; background:#cfd8e4; border-radius:0 0 14px 14px; margin:0 34px; }
 
-    /* ---------------- monitor con panel (CSS, sin captura) ---------------- */
-    .spx-monitor {
-      position: relative;
-      min-width: 0;
-      /* profundidad suave, como el monitor de tu diseño; el pie va dentro para que
-         no se desalinee (era el defecto de aplicarlo solo al marco) */
-      transform: perspective(1800px) rotateY(-6deg) rotateX(1.5deg);
-      transform-origin: center right;
-    }
-    .spx-monitor-marco {
-      background: #dfe6ef; border-radius: 16px; padding: 12px 12px 0;
-      box-shadow: 0 30px 60px -25px rgba(11, 42, 91, .45);
-    }
-    @media (max-width: 1080px) {
-      .spx-monitor { transform: none; }
-    }
-    .spx-pantalla {
-      background: #ffffff; border-radius: 8px; overflow: hidden;
-      border: 1px solid #cdd7e3; display: grid; grid-template-columns: 132px 1fr;
-      min-height: 330px;
-    }
-    .spx-pantalla-menu {
-      background: var(--spx-azul-oscuro); color: #cddff2; padding: 14px 10px;
-      font-size: 10.5px; display: flex; flex-direction: column; gap: 12px;
-    }
-    .spx-pantalla-menu .item {
-      display: flex; align-items: center; gap: 7px; opacity: .78;
-    }
-    .spx-pantalla-menu .item.activo {
-      background: var(--spx-azul); color: #fff; border-radius: 5px; padding: 6px 7px; opacity: 1;
-    }
-    .spx-pantalla-menu .punto { width: 9px; height: 9px; border-radius: 3px; background: currentColor; opacity: .55; }
-    .spx-pantalla-cuerpo { padding: 14px 16px; }
-    .spx-pantalla-titulo { font-size: 15px; font-weight: 700; color: var(--spx-azul-oscuro); margin: 0 0 2px; }
-    .spx-pantalla-sub { font-size: 9.5px; color: var(--spx-gris); margin: 0 0 12px; }
-    .spx-tarjetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-    .spx-tarjeta { border-radius: 7px; padding: 8px 9px; background: var(--spx-azul-claro); }
-    .spx-tarjeta.naranja { background: #fff2e2; }
-    .spx-tarjeta .cifra { font-size: 15px; font-weight: 800; color: var(--spx-azul-oscuro); }
-    .spx-tarjeta .rotulo { font-size: 8.5px; color: var(--spx-gris); }
-    .spx-tarjeta .sube { font-size: 8.5px; color: #1a9c5b; font-weight: 700; }
-    .spx-panel-inferior { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; }
-    .spx-caja { border: 1px solid #e6ebf3; border-radius: 7px; padding: 8px 9px; }
-    .spx-caja-titulo { font-size: 9.5px; font-weight: 700; color: var(--spx-azul-oscuro); margin-bottom: 8px; }
-    .spx-barras { display: flex; align-items: flex-end; gap: 7px; height: 74px; }
-    .spx-barras .barra { flex: 1; background: var(--spx-azul); border-radius: 3px 3px 0 0; }
-    .spx-barras .barra:nth-child(1) { height: 34%; }
-    .spx-barras .barra:nth-child(2) { height: 56%; }
-    .spx-barras .barra:nth-child(3) { height: 45%; }
-    .spx-barras .barra:nth-child(4) { height: 70%; }
-    .spx-barras .barra:nth-child(5) { height: 58%; }
-    .spx-barras .barra:nth-child(6) { height: 92%; }
-    .spx-lista { display: flex; flex-direction: column; gap: 7px; }
-    .spx-lista .fila { display: flex; align-items: center; gap: 6px; font-size: 8.5px; color: #45526b; }
-    .spx-lista .bola { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-    .spx-lista .hora { margin-left: auto; color: #98a4b6; }
-    .spx-monitor-pie {
-      height: 16px; background: #cfd8e4; border-radius: 0 0 14px 14px;
-      margin: 0 34px; box-shadow: 0 12px 22px -14px rgba(11,42,91,.5);
-    }
+    .spx-servicios { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:22px; }
+    .spx-servicio { border:1px solid var(--borde); border-radius:14px; padding:26px 22px; background:#fff; display:flex; flex-direction:column; gap:12px; }
+    .spx-servicio-icono { width:46px; height:46px; border-radius:12px; flex:none; background:var(--azul-claro); color:var(--azul); display:flex; align-items:center; justify-content:center; }
+    .spx-servicio-icono svg { width:24px; height:24px; }
+    .spx-servicio h3 { font-size:18px; font-weight:700; color:var(--azul-oscuro); }
+    .spx-servicio p { font-size:14.5px; line-height:1.5; color:var(--gris); }
+    .spx-servicio-lista, .spx-nosotros-lista { list-style:none; padding:0; display:flex; flex-direction:column; gap:8px; }
+    .spx-servicio-lista { margin-top:auto; }
+    .spx-servicio-lista li, .spx-nosotros-lista li { position:relative; padding-left:22px; }
+    .spx-servicio-lista li { font-size:13px; color:#45526b; }
+    .spx-servicio-lista li::before, .spx-nosotros-lista li::before { content:"\2713"; position:absolute; left:0; font-weight:700; color:var(--naranja); }
+    .spx-nosotros-lista li::before { color:var(--azul); }
 
-    /* ---------------- beneficios ---------------- */
-    .spx-beneficios {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;
-      padding: 34px 6%; background: #f4f8fc; border-top: 1px solid #e2eaf3;
-    }
-    .spx-beneficio { display: flex; align-items: center; gap: 16px; }
-    .spx-beneficio-icono {
-      width: 54px; height: 54px; border-radius: 50%; flex: none;
-      background: var(--spx-azul); color: #ffffff;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 6px 14px rgba(11,114,196,.24);
-    }
-    .spx-beneficio-icono svg { width: 26px; height: 26px; }
-    .spx-beneficio h4 { margin: 0 0 3px; font-size: 17px; font-weight: 700; color: var(--spx-azul-oscuro); }
-    .spx-beneficio p { margin: 0; font-size: 14px; color: var(--spx-gris); }
+    .spx-indicadores { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:22px; padding:34px 6%; background:#f4f8fc; border-top:1px solid #e2eaf3; border-bottom:1px solid #e2eaf3; }
+    .spx-indicador { display:flex; align-items:center; gap:12px; }
+    .spx-indicador-icono { color:var(--azul); flex:none; }
+    .spx-indicador-icono svg { width:26px; height:26px; }
+    .spx-indicador strong { display:block; font-size:15px; font-weight:700; color:var(--azul-oscuro); }
+    .spx-indicador small { font-size:12.5px; color:var(--gris); }
 
-    /* ---------------- franja decorativa ---------------- */
-    .spx-franja { height: 14px; background: linear-gradient(90deg, var(--spx-azul) 0%, var(--spx-azul) 62%, var(--spx-naranja) 62%, var(--spx-naranja) 100%); }
+    .spx-nosotros-texto { max-width:760px; font-size:17px; line-height:1.6; color:#34435a; }
+    .spx-nosotros-lista { margin-top:26px; }
+    .spx-nosotros-lista li { font-size:15px; color:#34435a; }
 
-    /* ---------------- adaptable ---------------- */
-    @media (max-width: 1080px) {
-      .spx-hero { grid-template-columns: minmax(0, 1fr); padding-top: 44px; }
-      .spx-hero-titulo { font-size: 44px; }
-      .spx-menu { display: none; }
-      .spx-beneficios { grid-template-columns: 1fr; gap: 18px; }
+    .spx-contacto { background:linear-gradient(135deg, var(--azul-oscuro) 0%, #124a8f 100%); color:#fff; text-align:center; padding:64px 6%; }
+    .spx-contacto h2 { font-size:32px; font-weight:800; letter-spacing:-.6px; margin-bottom:12px; }
+    .spx-contacto p { font-size:17px; color:#cfe0f5; max-width:620px; margin:0 auto 30px; }
+    .spx-contacto-acciones { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+    .spx-boton-claro { display:inline-flex; align-items:center; gap:9px; background:var(--verde); color:#fff !important; font-weight:600; font-size:16px; padding:14px 30px; border-radius:10px; }
+    .spx-boton-borde { display:inline-flex; align-items:center; gap:9px; border:1.5px solid rgba(255,255,255,.55); color:#fff !important;
+      font-weight:600; font-size:16px; padding:13px 28px; border-radius:10px; }
+    .spx-boton-borde:hover { background:rgba(255,255,255,.10); }
+    .spx-boton-borde svg { width:19px; height:19px; }
+
+    .spx-pie { background:#071d3f; color:#b9cbe0; padding:44px 6% 34px; display:flex; flex-wrap:wrap; gap:26px; justify-content:space-between; }
+    .spx-pie-marca strong { display:block; font-size:19px; font-weight:800; color:#fff; letter-spacing:.3px; }
+    .spx-pie-marca small { font-size:13px; color:#8fabca; }
+    .spx-pie-datos { display:flex; flex-direction:column; gap:8px; font-size:14px; }
+    .spx-pie-datos a { color:#d6e4f2 !important; display:inline-flex; align-items:center; gap:8px; }
+    .spx-pie-datos a:hover { color:#fff !important; }
+    .spx-pie-datos svg { width:16px; height:16px; flex:none; }
+    .spx-pie-legal { width:100%; border-top:1px solid rgba(255,255,255,.14); padding-top:18px; font-size:12.5px; color:#7f9ab8; }
+
+    @media (max-width:1080px) {
+      .spx-hero { grid-template-columns:minmax(0,1fr); padding-top:44px; }
+      .spx-hero-titulo { font-size:42px; }
+      .spx-mock { transform:none; }
+      .spx-servicios, .spx-indicadores { grid-template-columns:repeat(2, minmax(0,1fr)); }
     }
-    @media (max-width: 640px) {
-      .spx-hero-titulo { font-size: 34px; letter-spacing: -1px; }
-      .spx-hero-bajada { font-size: 16px; }
-      .spx-pantalla { grid-template-columns: minmax(0, 1fr); }
-      .spx-tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .spx-pantalla-menu { display: none; }
-      .spx-cabecera { padding: 14px 5%; }
-      .spx-marca img { height: 60px; }
+    @media (max-width:900px) {
+      .spx-menu { display:none; }
+      .spx-menu-movil { display:block; }
+      .spx-boton-whatsapp { margin-left:0; padding:11px 13px; }
+      .spx-boton-whatsapp .spx-wa-texto { display:none; }
     }
+    @media (max-width:640px) {
+      .spx-seccion { padding:48px 5%; }
+      .spx-seccion-titulo { font-size:26px; }
+      .spx-hero { padding:36px 5% 52px; }
+      .spx-hero-titulo { font-size:31px; letter-spacing:-1px; }
+      .spx-hero-bajada { font-size:16px; }
+      .spx-cabecera { padding:12px 5%; gap:12px; }
+      .spx-marca img { height:56px; }
+      .spx-boton-ingresar { padding:10px 18px; font-size:14px; }
+      .spx-servicios, .spx-indicadores { grid-template-columns:minmax(0,1fr); }
+      .spx-indicadores { padding:26px 5%; }
+      .spx-pantalla { grid-template-columns:minmax(0,1fr); }
+      .spx-pantalla-menu { display:none; }
+      .spx-contacto h2 { font-size:26px; }
+      .spx-pie { flex-direction:column; gap:20px; }
+    }
+    @media (prefers-reduced-motion:reduce) { .spx-portada * { animation:none !important; transition:none !important; } }
   </style>
 
-  <!-- ======================= encabezado ======================= -->
   <header class="spx-cabecera">
-    <a class="spx-marca" href="f?p=&APP_ID.:15:&APP_SESSION.">
+    <a class="spx-marca" href="f?p=&APP_ID.:15:&APP_SESSION." aria-label="Synpex, inicio">
       <img src="#APP_IMAGES#logo_synpex.png" alt="Synpex — Sistema de gestión">
     </a>
-
-    <nav class="spx-menu">
+    <nav class="spx-menu" aria-label="Secciones">
       <a href="#spx-inicio">Inicio</a>
-      <a href="#spx-beneficios">Servicios</a>
-      <a href="#spx-beneficios">Nosotros</a>
-      <a href="#spx-beneficios">Contacto</a>
+      <a href="#spx-servicios">Servicios</a>
+      <a href="#spx-nosotros">Nosotros</a>
+      <a href="#spx-contacto">Contacto</a>
     </nav>
-
+    <details class="spx-menu-movil">
+      <summary aria-label="Abrir menú">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </summary>
+      <div class="spx-menu-movil-lista">
+        <a href="#spx-inicio">Inicio</a>
+        <a href="#spx-servicios">Servicios</a>
+        <a href="#spx-nosotros">Nosotros</a>
+        <a href="#spx-contacto">Contacto</a>
+      </div>
+    </details>
+    <a class="spx-boton-whatsapp" href="https://wa.me/528111198920" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2z"/></svg>
+      <span class="spx-wa-texto">WhatsApp</span>
+    </a>
     <a class="spx-boton-ingresar" href="f?p=&APP_ID.:1:&APP_SESSION.">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       Ingresar
     </a>
   </header>
 
-  <!-- ======================= portada ======================= -->
   <section class="spx-hero" id="spx-inicio">
     <div class="spx-hero-texto">
-      <h1 class="spx-hero-titulo">Gestiona tu negocio <span>de forma simple</span></h1>
+      <h1 class="spx-hero-titulo">Presupuestos, facturación y clientes en un solo lugar.</h1>
       <div class="spx-hero-raya"></div>
-      <p class="spx-hero-bajada">
-        Organiza tus procesos, controla tu información y toma mejores decisiones desde un solo lugar.
-      </p>
+      <p class="spx-hero-bajada">Para empresas que venden en Venezuela y México y necesitan controlar qué cotizan, qué cobran y cuánto gastan — sin hojas de cálculo.</p>
       <div class="spx-acciones">
-        <a class="spx-boton-primario" href="f?p=&APP_ID.:1:&APP_SESSION.">
-          Comenzar <span class="spx-flecha">&rarr;</span>
-        </a>
-        <a class="spx-enlace" href="#spx-beneficios">Conoce más <span class="spx-flecha">&rarr;</span></a>
+        <a class="spx-boton-primario" href="https://wa.me/528111198920" target="_blank" rel="noopener">Solicitar demostración <span class="spx-flecha">&rarr;</span></a>
+        <a class="spx-enlace" href="#spx-servicios">Conoce nuestros servicios <span class="spx-flecha">&rarr;</span></a>
       </div>
     </div>
-
-    <div class="spx-monitor" aria-hidden="true">
-      <div class="spx-monitor-marco">
+    <div class="spx-mock" aria-hidden="true">
+      <div class="spx-mock-marco">
         <div class="spx-pantalla">
           <div class="spx-pantalla-menu">
             <div class="item activo"><span class="punto"></span> Inicio</div>
-            <div class="item"><span class="punto"></span> Catálogos</div>
-            <div class="item"><span class="punto"></span> Reportes</div>
-            <div class="item"><span class="punto"></span> Configuración</div>
-            <div class="item"><span class="punto"></span> Ayuda</div>
+            <div class="item"><span class="punto"></span> Presupuestos</div>
+            <div class="item"><span class="punto"></span> Facturación</div>
+            <div class="item"><span class="punto"></span> Clientes</div>
+            <div class="item"><span class="punto"></span> Panel</div>
           </div>
           <div class="spx-pantalla-cuerpo">
-            <p class="spx-pantalla-titulo">Bienvenido a Synpex</p>
-            <p class="spx-pantalla-sub">Tu gestión, más simple</p>
-            <div class="spx-tarjetas">
-              <div class="spx-tarjeta"><div class="cifra">4.280</div><div class="rotulo">Proveedores</div><div class="sube">&uarr; 2,5 %</div></div>
-              <div class="spx-tarjeta"><div class="cifra">579.472</div><div class="rotulo">Sucursales</div><div class="sube">&uarr; 1,8 %</div></div>
-              <div class="spx-tarjeta naranja"><div class="cifra">98,7 %</div><div class="rotulo">Procesos OK</div><div class="sube">&uarr; 0,3 %</div></div>
-            </div>
-            <div class="spx-panel-inferior">
-              <div class="spx-caja">
-                <div class="spx-caja-titulo">Actividad del sistema</div>
-                <div class="spx-barras">
-                  <div class="barra"></div><div class="barra"></div><div class="barra"></div>
-                  <div class="barra"></div><div class="barra"></div><div class="barra"></div>
-                </div>
-              </div>
-              <div class="spx-caja">
-                <div class="spx-caja-titulo">Procesos recientes</div>
-                <div class="spx-lista">
-                  <div class="fila"><span class="bola" style="background:#22c55e"></span> Carga de proveedores <span class="hora">10:24</span></div>
-                  <div class="fila"><span class="bola" style="background:#0b72c4"></span> Actualización de bancos <span class="hora">09:47</span></div>
-                  <div class="fila"><span class="bola" style="background:#22c55e"></span> Generación de reportes <span class="hora">09:30</span></div>
-                  <div class="fila"><span class="bola" style="background:#f7941d"></span> Validación de datos <span class="hora">08:55</span></div>
-                </div>
-              </div>
+            <p class="spx-pantalla-titulo">Documentos</p>
+            <p class="spx-pantalla-sub">Empresa · moneda · estado</p>
+            <div class="spx-tabla">
+              <div class="spx-tabla-cab"><span>Folio</span><span>Cliente</span><span>Mon.</span><span>Estado</span></div>
+              <div class="spx-tabla-fila"><strong>P-2088</strong><span>Cliente Monterrey</span><span>MXN</span><span class="spx-estado aprobado">APROBADO</span></div>
+              <div class="spx-tabla-fila"><strong>F-1046</strong><span>Cliente Caracas</span><span>USD</span><span class="spx-estado pagada">PAGADA</span></div>
+              <div class="spx-tabla-fila"><strong>F-1047</strong><span>Cliente Valencia</span><span>VES</span><span class="spx-estado pendiente">PENDIENTE</span></div>
             </div>
           </div>
         </div>
       </div>
-      <div class="spx-monitor-pie"></div>
+      <div class="spx-mock-pie"></div>
     </div>
   </section>
 
-  <!-- ======================= beneficios ======================= -->
-  <section class="spx-beneficios" id="spx-beneficios">
-    <div class="spx-beneficio">
-      <div class="spx-beneficio-icono">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6l7-3z"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
-      </div>
-      <div>
-        <h4>Control administrativo</h4>
-        <p>Supervisa y administra con confianza</p>
-      </div>
-    </div>
-
-    <div class="spx-beneficio">
-      <div class="spx-beneficio-icono">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M7 17a4 4 0 1 1 .8-7.9A5 5 0 0 1 17.6 10 3.5 3.5 0 0 1 17 17H7z"/>
-          <path d="M12 12v5m0-5l-2 2m2-2l2 2"/>
-        </svg>
-      </div>
-      <div>
-        <h4>Información centralizada</h4>
-        <p>Todo en un solo lugar</p>
-      </div>
-    </div>
-
-    <div class="spx-beneficio">
-      <div class="spx-beneficio-icono">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <circle cx="12" cy="12" r="8.5"/>
-          <path d="M12 12l3.5-2.5"/>
-          <path d="M15.5 9.5l.5 2.5-2.5-.5"/>
-        </svg>
-      </div>
-      <div>
-        <h4>Gestión eficiente</h4>
-        <p>Optimiza tus recursos</p>
-      </div>
+  <section class="spx-seccion spx-centrado" id="spx-servicios">
+    <h2 class="spx-seccion-titulo">Nuestras soluciones</h2>
+    <p class="spx-seccion-bajada">Cuatro piezas que trabajan juntas: lo que cotizas se convierte en factura, y lo que facturas se ve en el panel — sin volver a capturar nada.</p>
+    <div class="spx-servicios">
+      <article class="spx-servicio">
+        <div class="spx-servicio-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 16h5"/></svg></div>
+        <h3>Presupuestos</h3>
+        <p>Del borrador al documento aprobado, y de ahí a factura sin volver a capturar.</p>
+        <ul class="spx-servicio-lista"><li>Folio único por empresa</li><li>Estados controlados</li><li>Impresión con tu logo</li></ul>
+      </article>
+      <article class="spx-servicio">
+        <div class="spx-servicio-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div>
+        <h3>Facturación</h3>
+        <p>Facturas con datos fiscales de Venezuela y México, y anulación con reverso.</p>
+        <ul class="spx-servicio-lista"><li>Numeración correlativa</li><li>Documentos cerrados que no se editan</li><li>Listo para imprimir</li></ul>
+      </article>
+      <article class="spx-servicio">
+        <div class="spx-servicio-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 20c0-3 2.5-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><path d="M16 7h5M16 11h5M16 15h3"/></svg></div>
+        <h3>Clientes y empresas</h3>
+        <p>Cada usuario ve solo su empresa, con su moneda y sus datos fiscales.</p>
+        <ul class="spx-servicio-lista"><li>Aislamiento por empresa</li><li>Moneda local y USD</li><li>RFC o RIF según el país</li></ul>
+      </article>
+      <article class="spx-servicio">
+        <div class="spx-servicio-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+        <h3>Control y reportes</h3>
+        <p>Panel con facturación por mes, documentos por estado y top de clientes.</p>
+        <ul class="spx-servicio-lista"><li>Gasto real contra presupuesto</li><li>Información al día</li><li>Gastos en cualquier moneda</li></ul>
+      </article>
     </div>
   </section>
 
-  <div class="spx-franja"></div>
+  <section class="spx-indicadores" aria-label="Características de Synpex">
+    <div class="spx-indicador">
+      <span class="spx-indicador-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 21V8l6-4 6 4v13M15 21V11l6 3v7M3 21h18"/></svg></span>
+      <span><strong>Multiempresa</strong><small>Cada empresa con sus datos</small></span>
+    </div>
+    <div class="spx-indicador">
+      <span class="spx-indicador-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c4 4.5 4 12 0 17M12 3.5c-4 4.5-4 12 0 17"/></svg></span>
+      <span><strong>Multimoneda</strong><small>USD · VES · MXN</small></span>
+    </div>
+    <div class="spx-indicador">
+      <span class="spx-indicador-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 8V4h10v4"/><path d="M7 18H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v6H7z"/></svg></span>
+      <span><strong>Listo para imprimir</strong><small>Documentos con tu logo</small></span>
+    </div>
+    <div class="spx-indicador">
+      <span class="spx-indicador-icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v4l-2 4h18l-2-4v-4a7 7 0 0 0-7-7z"/><path d="M9.5 20a2.5 2.5 0 0 0 5 0"/></svg></span>
+      <span><strong>Soporte directo</strong><small>Acompañamiento y atención</small></span>
+    </div>
+  </section>
+
+  <section class="spx-seccion" id="spx-nosotros">
+    <h2 class="spx-seccion-titulo">Quiénes somos</h2>
+    <p class="spx-nosotros-texto">Synpex es un sistema de gestión comercial para empresas que trabajan en más de un país. Reúne presupuestos, facturación, clientes y control en una sola aplicación, con la moneda y los datos fiscales de cada país donde se opera. Se usa desde el navegador, sin instalar nada, y cada empresa ve únicamente su información.</p>
+    <ul class="spx-nosotros-lista">
+      <li>Una empresa por usuario, con sus datos separados.</li>
+      <li>Preparado para operar en Venezuela y México.</li>
+      <li>Se usa desde el navegador, sin instalaciones.</li>
+    </ul>
+  </section>
+
+  <section class="spx-contacto" id="spx-contacto">
+    <h2>¿Listo para mejorar tu negocio?</h2>
+    <p>Conoce cómo Synpex puede ayudarte a optimizar tus operaciones.</p>
+    <div class="spx-contacto-acciones">
+      <a class="spx-boton-claro" href="https://wa.me/528111198920" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2z"/></svg>
+        Contáctanos
+      </a>
+      <a class="spx-boton-borde" href="mailto:luismiromi84@hotmail.com">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/></svg>
+        Escríbenos
+      </a>
+    </div>
+  </section>
+
+  <footer class="spx-pie">
+    <div class="spx-pie-marca">
+      <strong>Synpex</strong>
+      <small>Tecnología para una gestión más simple</small>
+    </div>
+    <div class="spx-pie-datos">
+      <a href="mailto:luismiromi84@hotmail.com">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/></svg>
+        luismiromi84@hotmail.com
+      </a>
+      <a href="https://wa.me/528111198920" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-4 4V5z"/></svg>
+        WhatsApp +52 811 119 8920
+      </a>
+    </div>
+    <div class="spx-pie-legal">© 2026 Synpex. Todos los derechos reservados.</div>
+  </footer>
 </div>

@@ -22,6 +22,7 @@
 # =============================================================================
 
 import os
+import re
 import sys
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -111,8 +112,12 @@ def main():
     comprobar("enlaces externos con noopener", 'rel="noopener"' in portada)
     comprobar("respeta reduced-motion", "prefers-reduced-motion" in portada)
     comprobar("tipografia con respaldo de sistema", "system-ui" in portada)
-    comprobar("sin desbordamiento horizontal", "overflow-x: hidden" in portada)
-    comprobar("hay media query movil", "@media (max-width: 900px)" in portada)
+    # El CSS se compara sin espacios alrededor de los dos puntos: el
+    # comportamiento es el mismo con "overflow-x: hidden" y "overflow-x:hidden",
+    # y el test no debe dictar el formato del archivo.
+    css = re.sub(r"\s*:\s*", ":", portada)
+    comprobar("sin desbordamiento horizontal", "overflow-x:hidden" in css)
+    comprobar("hay media query movil", "@media (max-width:900px)" in css)
 
     print("\n== region del export (pagina_apex/f100.sql, pagina 15) ==")
     comprobar("la region trae el mismo bloque", "spx-portada" in region)
