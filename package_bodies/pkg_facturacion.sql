@@ -409,10 +409,22 @@ create or replace PACKAGE BODY pkg_facturacion AS
         END IF;
     EXCEPTION
         WHEN OTHERS THEN
+            -- Los errores de negocio (-20xxx) se propagan tal cual: envolverlos
+            -- le enseña jerga al usuario y le oculta el motivo (el trigger de
+            -- transiciones lanza -20070, por ejemplo).
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
             -- Sin ROLLBACK: el error se propaga y la transaccion la decide quien
-            -- llama (APEX revierte su proceso). Un ROLLBACK aqui descartaria
-            -- cualquier trabajo pendiente del llamador.
-            raise_application_error(-20001, 'Error en pkg_facturacion.prc_anular_factura: ' || SQLERRM);
+            -- llama (APEX revierte su proceso). El detalle tecnico va al log.
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(SQLCODE)), 5, '0'),
+                p_mensaje   => 'No se pudo anular la factura',
+                p_detalle   => SQLERRM,
+                p_sentencia => dbms_utility.format_error_backtrace);
+            raise_application_error(-20001,
+                'No se pudo anular la factura. Avisa al administrador.');
     END prc_anular_factura;
 
 --------------------------------------------------------------------------------
@@ -461,8 +473,19 @@ create or replace PACKAGE BODY pkg_facturacion AS
         END IF;
     EXCEPTION
         WHEN OTHERS THEN
-            -- Sin ROLLBACK, igual que en prc_anular_factura.
-            raise_application_error(-20003, 'Error en pkg_facturacion.prc_procesar_factura: ' || SQLERRM);
+            -- Sin ROLLBACK, igual que en prc_anular_factura, y con los errores
+            -- de negocio propagados tal cual.
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(SQLCODE)), 5, '0'),
+                p_mensaje   => 'No se pudo procesar la factura',
+                p_detalle   => SQLERRM,
+                p_sentencia => dbms_utility.format_error_backtrace);
+            raise_application_error(-20003,
+                'No se pudo procesar la factura. Avisa al administrador.');
     END prc_procesar_factura;
 END pkg_facturacion;
 /

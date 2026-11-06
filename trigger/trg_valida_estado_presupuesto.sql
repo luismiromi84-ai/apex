@@ -13,7 +13,7 @@ begin
         raise_application_error(-20070,
             'No se puede pasar un presupuesto de ' || :old.estado
             || ' a ' || :new.estado
-            || '. Si es una correccion, hazlo con CLIENT_INFO = SYPEX_FORZAR_ESTADO.');
+            || '. Un presupuesto CANCELADO ya no se mueve, y uno FACTURADO solo vuelve a APROBADO (anulando la factura).');
     end if;
 end;
 /

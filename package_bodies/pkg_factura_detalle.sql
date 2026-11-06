@@ -131,7 +131,14 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
             IF SQLCODE BETWEEN -20999 AND -20000 THEN
                 RAISE;
             END IF;
-            raise_application_error(-20003, 'No se pudo guardar la línea: ' || SQLERRM);
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(SQLCODE)), 5, '0'),
+                p_mensaje   => 'No se pudo guardar la linea de la factura',
+                p_detalle   => SQLERRM,
+                p_sentencia => dbms_utility.format_error_backtrace);
+            raise_application_error(-20003,
+                'No se pudo guardar la línea. Avisa al administrador.');
     END guardar_detalle;
 
     --------------------------------------------------------------------------------
@@ -174,7 +181,20 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
         apex_application.g_print_success_message := 'El detalle de la factura se ha eliminado correctamente.';
     EXCEPTION
         WHEN OTHERS THEN
-            raise_application_error(-20002, SQLERRM);
+            -- Los errores de negocio (-20xxx) se propagan tal cual, con su
+            -- mensaje: antes se reetiquetaban como -20002 con 'ORA-20002: ...'
+            -- delante, y el usuario veia el error duplicado.
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(SQLCODE)), 5, '0'),
+                p_mensaje   => 'No se pudo eliminar la linea de la factura',
+                p_detalle   => SQLERRM,
+                p_sentencia => dbms_utility.format_error_backtrace);
+            raise_application_error(-20004,
+                'No se pudo eliminar la línea. Avisa al administrador.');
     END eliminar_detalle;
 
     --------------------------------------------------------------------------------

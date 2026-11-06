@@ -1,0 +1,73 @@
+=============================================================
+Repaso de mensajes al usuario
+2026-11-06
+=============================================================
+
+1. LO QUE SE ENCONTRO
+-------------------------------------------------------------
+La auditoria de los 47 raise_application_error de los packages encontro tres
+problemas reales y varios de forma:
+
+a) Errores de negocio reetiquetados. Seis manejadores WHEN OTHERS se tragaban
+   el codigo/mensaje original:
+
+     FACTURADO -> CANCELADO (trigger -20070) con la app daba:
+       Error en pkg_presupuestos.prc_cancelar_presupuesto: ORA-20070: ...
+     cancelar una factura (trigger) daba:
+       Error en pkg_facturacion.prc_anular_factura: ORA-20070: ...
+     borrar una linea de una factura PAGADA daba:
+       ORA-20002: ORA-20002: No se pueden eliminar lineas ...   (duplicado)
+
+   El usuario perdia el motivo y veia el nombre del package.
+
+b) Los triggers de transiciones terminaban con:
+     «Si es una correccion, hazlo con CLIENT_INFO = SYPEX_FORZAR_ESTADO.»
+   Es una escotilla de operacion, no algo que se le diga a quien factura.
+
+c) Los errores inesperados mostraban «No se pudo guardar la linea: ORA-06502:
+   ...» : util para el tecnico, ruido para el usuario.
+
+2. LO QUE SE CAMBIO
+-------------------------------------------------------------
+- En 4 bodies (pkg_facturacion, pkg_presupuestos, pkg_presupuesto_detalle,
+  pkg_factura_detalle), 8 manejadores ahora:
+     if sqlcode between -20999 and -20000 then raise; end if;
+     prc_log_error(... p_detalle => SQLERRM, p_sentencia => backtrace);
+     raise_application_error(-20xxx, '<mensaje limpio>. Avisa al administrador.');
+  Es decir: el error de negocio llega intacto y el inesperado deja el detalle
+  en SYN_ERROR_LOG (el monitoreo del 2026-11-06) con un mensaje presentable.
+- Los dos triggers de estados: el mensaje explica la regla y ya no menciona
+  CLIENT_INFO. La escotilla sigue funcionando (se probo).
+
+3. ANTES Y DESPUES (medido)
+-------------------------------------------------------------
+  presupuesto FACTURADO -> cancelar:
+    antes: Error en pkg_presupuestos.prc_cancelar_presupuesto: ORA-20070: ...
+    ahora: No se puede pasar un presupuesto de FACTURADO a CANCELADO. Un
+           presupuesto CANCELADO ya no se mueve, y uno FACTURADO solo vuelve a
+           APROBADO (anulando la factura).
+
+  factura PAGADA -> borrar linea:
+    antes: ORA-20002: ORA-20002: No se pueden eliminar lineas ...
+    ahora: No se pueden eliminar lineas de una factura en estado PAGADA: es un
+           documento cerrado.
+
+4. VERIFICACION
+-------------------------------------------------------------
+deploy/diagnostico/20261106_mensajes_verificacion.sql -> FALLAS=0 (7 casos):
+  C1 SQLERRM solo aparece como detalle del log, nunca en un mensaje
+  C2 ningun trigger menciona CLIENT_INFO
+  C3 cancelar un FACTURADO da -20070 limpio
+  C4 borrar una linea de una PAGADA da -20002 una sola vez y explicando el motivo
+  C5 la escotilla SYPEX_FORZAR_ESTADO sigue funcionando (y se revierte)
+  C6 los 4 bodies dejan el detalle en el log
+  C7 0 objetos INVALID
+
+Reejecutadas despues del cambio, todas FALLAS=0: documentos cerrados (24 casos),
+gasto real, propiedad de documentos, reportes, cambio de clave, purga de logs,
+monitoreo de errores y folios 5/8.
+
+5. NOTA
+-------------------------------------------------------------
+La migracion 20261106_mensajes_errores.sql se genero concatenando los archivos
+canonicos (script aparte), no copiando a mano: 57 KB, 4 bodies y 2 triggers.

@@ -91,7 +91,14 @@ create or replace PACKAGE BODY pkg_presupuestos AS
             IF SQLCODE BETWEEN -20999 AND -20000 THEN
                 RAISE;
             END IF;
-            RAISE_APPLICATION_ERROR(-20001, 'Error al procesar el presupuesto: ' || SQLERRM);
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(SQLCODE)), 5, '0'),
+                p_mensaje   => 'No se pudo guardar el presupuesto',
+                p_detalle   => SQLERRM,
+                p_sentencia => dbms_utility.format_error_backtrace);
+            RAISE_APPLICATION_ERROR(-20001,
+                'No se pudo guardar el presupuesto. Avisa al administrador.');
     END;
     ---------------------------------------------------------------------
     -- PROCEDIMIENTO: Procesar Presupuesto (Desde la vista de detalles / botón APEX)
@@ -134,7 +141,17 @@ create or replace PACKAGE BODY pkg_presupuestos AS
 
     EXCEPTION
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20003, 'Error al procesar el presupuesto: ' || SQLERRM);
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(SQLCODE)), 5, '0'),
+                p_mensaje   => 'No se pudo procesar el presupuesto',
+                p_detalle   => SQLERRM,
+                p_sentencia => dbms_utility.format_error_backtrace);
+            RAISE_APPLICATION_ERROR(-20003,
+                'No se pudo procesar el presupuesto. Avisa al administrador.');
     END prc_procesar_presupuesto;
 
     ----------------------------------------------------------------------------
@@ -162,7 +179,17 @@ create or replace PACKAGE BODY pkg_presupuestos AS
 
     EXCEPTION
         WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20002, 'Error al cancelar el presupuesto: ' || SQLERRM);
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(SQLCODE)), 5, '0'),
+                p_mensaje   => 'No se pudo cancelar el presupuesto',
+                p_detalle   => SQLERRM,
+                p_sentencia => dbms_utility.format_error_backtrace);
+            RAISE_APPLICATION_ERROR(-20002,
+                'No se pudo cancelar el presupuesto. Avisa al administrador.');
     END prc_cancelar_presupuesto;
 
 END pkg_presupuestos;

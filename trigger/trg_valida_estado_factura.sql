@@ -13,7 +13,7 @@ begin
         raise_application_error(-20070,
             'No se puede pasar una factura de ' || :old.estado
             || ' a ' || :new.estado
-            || '. Si es una correccion, hazlo con CLIENT_INFO = SYPEX_FORZAR_ESTADO.');
+            || '. Una factura ANULADA ya no se mueve, y una PAGADA solo puede pasar a ANULADA.');
     end if;
 end;
 /
