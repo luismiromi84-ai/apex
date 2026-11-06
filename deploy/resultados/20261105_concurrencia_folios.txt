@@ -1,0 +1,56 @@
+PRUEBA DE CONCURRENCIA DE FOLIOS
+================================
+Fecha: 2026-11-05
+Script: deploy/diagnostico/20261105_concurrencia_folios.py
+Base:   Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS
+
+Que se prueba
+-------------
+El folio se calcula en la pagina con max(folio)+1 por empresa, no en la base.
+Si dos usuarios guardan a la vez, los dos pueden calcular el mismo numero. Lo
+que hay que demostrar es que eso NO produce un duplicado y que el usuario
+recibe un mensaje entendible.
+
+Se usan dos conexiones reales en paralelo (hilos), no una simulacion.
+
+Resultado (ejecucion del 2026-11-05)
+------------------------------------
+1) Dos sesiones que calculan el MISMO folio
+   las dos calculan max(folio)+1 = 1046
+   sesion A: OK
+   sesion B: FALLO (ORA-00001)
+   [OK] entro exactamente una de las dos
+   [OK] la que perdio fallo con ORA-00001 (unico), no con otra cosa
+   [OK] filas con el folio 1046: 1
+
+   O sea: la segunda sesion se queda esperando el bloqueo de la primera y, en
+   cuanto la primera confirma, la base la rechaza. Nunca hay dos filas.
+
+2) El package traduce el choque
+   [OK] ORA-20021: El folio 1046 ya existe para esta empresa. Elige otro numero.
+
+   Es el mismo mensaje que ya estaba documentado en
+   deploy/resultados/20261104_folio_unico.txt.
+
+3) Dos folios DISTINTOS calculados a la vez
+   sesion A con folio 1046: OK
+   sesion B con folio 1047: OK
+   [OK] entraron las dos
+
+   El caso normal no se estorba: solo choca el que repite numero.
+
+Verificacion de que no queda basura
+-----------------------------------
+El script crea una secuencia temporal (SEQ_PRUEBA_FOLIO), inserta presupuestos
+marcados con la observacion 'prueba de concurrencia', limpia al final de cada
+bloque y borra la secuencia. Se comprobo despues de ejecutarlo: 0 filas con esa
+observacion y la secuencia ya no existe.
+
+Lo que esto NO cubre
+---------------------
+- No arregla el problema de fondo: el folio se sigue calculando en la pagina.
+  Lo correcto a futuro es una secuencia por empresa o un calculo en la base, para
+  que el usuario no vea un error por una carrera. Hoy el error es limpio y no
+  corrompe nada, que es lo minimo exigible.
+- No prueba concurrencia de totales (los triggers). El riesgo ahi es menor
+  porque cada transaccion bloquea su propia cabecera.
