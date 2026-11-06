@@ -32,20 +32,43 @@
 
     /* ---------------- encabezado ---------------- */
     .spx-cabecera {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center; justify-content: flex-start;
       gap: 24px; padding: 18px 6%;
       border-bottom: 1px solid #e6ebf3;
       background: #ffffff;
       position: relative; z-index: 5;
     }
-    .spx-marca { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .spx-marca img { height: 46px; width: auto; display: block; }
-    .spx-marca-texto { display: flex; flex-direction: column; line-height: 1; }
-    .spx-marca-nombre { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; color: var(--spx-azul-oscuro); }
-    .spx-marca-tag { font-size: 9px; font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; color: var(--spx-gris); margin-top: 5px; }
-    .spx-marca-lema { font-size: 11px; font-style: italic; color: var(--spx-naranja); margin-top: 3px; }
+    /* La marca ES el lockup: el PNG ya trae «Synpex», «SISTEMA DE GESTIÓN» y
+       «Tu gestión, más simple», así que no se repite como texto al lado. */
+    .spx-marca {
+      display: flex; align-items: center; text-decoration: none;
+      animation: spxMarcaFlota 7s ease-in-out infinite;
+      will-change: transform;
+    }
+    .spx-marca img {
+      display: block; height: 88px; width: auto;
+      filter: drop-shadow(0 10px 18px rgba(11, 42, 91, 0.18))
+              drop-shadow(0 2px 4px rgba(11, 42, 91, 0.14));
+      transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.3, 1), filter 0.45s ease;
+    }
+    .spx-marca:hover img, .spx-marca:focus-visible img {
+      transform: perspective(900px) rotateY(-7deg) rotateX(3deg) scale(1.04);
+      filter: drop-shadow(0 18px 30px rgba(11, 114, 196, 0.32))
+              drop-shadow(0 4px 6px rgba(11, 42, 91, 0.20));
+    }
+    @keyframes spxMarcaFlota {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-5px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .spx-marca { animation: none; }
+      .spx-marca img { transition: none; }
+    }
 
-    .spx-menu { display: flex; align-items: center; gap: 34px; }
+    .spx-menu {
+      display: flex; align-items: center; gap: 34px;
+      padding-left: 34px; border-left: 1px solid #e6ebf3;
+    }
     .spx-menu a {
       color: var(--spx-texto); text-decoration: none; font-size: 15px; font-weight: 500;
       padding: 6px 2px; border-bottom: 2px solid transparent;
@@ -54,6 +77,7 @@
 
     .spx-boton-ingresar {
       display: inline-flex; align-items: center; gap: 8px;
+      margin-left: auto;
       background: var(--spx-azul); color: #ffffff !important;
       text-decoration: none; font-weight: 600; font-size: 15px;
       padding: 11px 26px; border-radius: 26px;
@@ -65,7 +89,7 @@
 
     /* ---------------- portada ---------------- */
     .spx-hero {
-      display: grid; grid-template-columns: 1fr 1.05fr;
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
       align-items: center; gap: 40px;
       padding: 64px 6% 76px;
       position: relative;
@@ -73,7 +97,7 @@
         radial-gradient(1100px 520px at 108% -10%, rgba(11,114,196,.10), transparent 62%),
         linear-gradient(180deg, #ffffff 0%, #f7fafd 100%);
     }
-    .spx-hero-texto { max-width: 560px; }
+    .spx-hero-texto { max-width: 560px; min-width: 0; }
     .spx-hero-titulo {
       margin: 0 0 18px; font-size: 58px; line-height: 1.03;
       font-weight: 800; letter-spacing: -1.6px; color: var(--spx-azul-oscuro);
@@ -99,10 +123,20 @@
     .spx-flecha { font-size: 20px; line-height: 1; }
 
     /* ---------------- monitor con panel (CSS, sin captura) ---------------- */
-    .spx-monitor { position: relative; }
+    .spx-monitor {
+      position: relative;
+      min-width: 0;
+      /* profundidad suave, como el monitor de tu diseño; el pie va dentro para que
+         no se desalinee (era el defecto de aplicarlo solo al marco) */
+      transform: perspective(1800px) rotateY(-6deg) rotateX(1.5deg);
+      transform-origin: center right;
+    }
     .spx-monitor-marco {
       background: #dfe6ef; border-radius: 16px; padding: 12px 12px 0;
       box-shadow: 0 30px 60px -25px rgba(11, 42, 91, .45);
+    }
+    @media (max-width: 1080px) {
+      .spx-monitor { transform: none; }
     }
     .spx-pantalla {
       background: #ffffff; border-radius: 8px; overflow: hidden;
@@ -170,7 +204,7 @@
 
     /* ---------------- adaptable ---------------- */
     @media (max-width: 1080px) {
-      .spx-hero { grid-template-columns: 1fr; padding-top: 44px; }
+      .spx-hero { grid-template-columns: minmax(0, 1fr); padding-top: 44px; }
       .spx-hero-titulo { font-size: 44px; }
       .spx-menu { display: none; }
       .spx-beneficios { grid-template-columns: 1fr; gap: 18px; }
@@ -178,22 +212,18 @@
     @media (max-width: 640px) {
       .spx-hero-titulo { font-size: 34px; letter-spacing: -1px; }
       .spx-hero-bajada { font-size: 16px; }
-      .spx-pantalla { grid-template-columns: 1fr; }
+      .spx-pantalla { grid-template-columns: minmax(0, 1fr); }
+      .spx-tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .spx-pantalla-menu { display: none; }
       .spx-cabecera { padding: 14px 5%; }
-      .spx-marca img { height: 38px; }
+      .spx-marca img { height: 60px; }
     }
   </style>
 
   <!-- ======================= encabezado ======================= -->
   <header class="spx-cabecera">
     <a class="spx-marca" href="f?p=&APP_ID.:15:&APP_SESSION.">
-      <img src="#APP_IMAGES#logo_synpex.png" alt="Synpex">
-      <span class="spx-marca-texto">
-        <span class="spx-marca-nombre">Synpex</span>
-        <span class="spx-marca-tag">Sistema de gestión</span>
-        <span class="spx-marca-lema">Tu gestión, más simple</span>
-      </span>
+      <img src="#APP_IMAGES#logo_synpex.png" alt="Synpex — Sistema de gestión">
     </a>
 
     <nav class="spx-menu">

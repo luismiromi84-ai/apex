@@ -1,6 +1,6 @@
 == HTTP ==
   [OK   ] la raiz de la app sirve la portada (HTTP 200)
-  [OK   ] la pagina 15 responde 200 (20,092 bytes)
+  [OK   ] la pagina 15 responde 200 (21,012 bytes)
   [OK   ] la portada trae spx-portada
   [OK   ] la portada trae spx-hero
   [OK   ] la portada trae spx-monitor
