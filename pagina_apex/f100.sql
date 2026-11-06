@@ -12193,8 +12193,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'Z'
 ,p_column_label=>'Editar'
 ,p_column_link=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:9:P9_ID_FACTURA:#ID_FACTURA#'
-,p_column_linktext=>'<span class="fa fa-edit" aria-hidden="true"></span>'
-,p_column_link_attr=>'class="t-Button t-Button--small t-Button--noLabel t-Button--icon t-Button--ghost"'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Editar'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -15915,6 +15914,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>'STATIC:USD;USD,VES;VES,MXN;MXN'
 ,p_cSize=>10
+,p_begin_on_new_line=>'N'
 ,p_colspan=>2
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
