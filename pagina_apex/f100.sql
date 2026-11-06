@@ -10989,6 +10989,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS'
+,p_query_where=>'id_presupuesto = :P7_ID_PRESUPUESTO and id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1''))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
@@ -11614,7 +11615,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Valida rol: editar presupuestos'
 ,p_static_id=>'valida-rol-editar-presupuestos'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
 'end if;'))
 ,p_process_clob_language=>'PLSQL'
@@ -12705,6 +12706,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'FACTURAS'
+,p_query_where=>'id_factura = :P9_ID_FACTURA and id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1''))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
@@ -14102,7 +14104,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Valida rol: editar facturacion'
 ,p_static_id=>'valida-rol-editar-facturacion'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
 'end if;'))
 ,p_process_clob_language=>'PLSQL'

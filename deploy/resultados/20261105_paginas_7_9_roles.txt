@@ -1,0 +1,126 @@
+=============================================================
+ORA-20003 al pulsar «Editar» con un usuario de solo lectura
+2026-11-05 (sesion de la noche)
+=============================================================
+
+1. LO QUE REPORTÓ EL DUEÑO
+-------------------------------------------------------------
+Con `consulta.demo` (rol CONSULTA, empresa 1), al pulsar «Editar»:
+
+    ORA-20003: No tiene permisos para esta pagina.
+    ... debug id "4038"
+
+2. CAUSA (medida, no supuesta)
+-------------------------------------------------------------
+El debug id 4038 está en APEX_WORKSPACE_ACTIVITY_LOG:
+
+    page 9 · 03:02:55 · CONSULTA.DEMO · WWV_FLOW_SECURITY / FINAL_EXCEPTION_HANDLER
+    APEX - ORA-20003: No tiene permisos para esta pagina.
+    ORA-06512: en "APEX_260100.WWV_FLOW_ERROR..."
+
+Y los dos intentos anteriores del mismo usuario:
+
+    03:02:03  page 9  CONSULTA.DEMO  ORA-20003  (debug id 4037)
+    02:41:26  page 9  CONSULTA.DEMO  ORA-20003  (debug id 4036)
+
+El mismo problema lo tenía `auditor.demo` (también CONSULTA):
+
+    03:15:40  page 7  AUDITOR.DEMO   ORA-20003  (debug id 4040)
+    03:15:35  page 9  AUDITOR.DEMO   ORA-20003  (debug id 4039)
+
+O sea: no era el editor de presupuestos, era **la lista de Facturación** (página 8 →
+página 9), y también pasaba en Presupuestos (página 5 → 7).
+
+El enlace «Editar» de cada lista apunta a la página con la guarda de ESCRITURA:
+
+    page 5 → page 7   guarda valida-rol-editar-presupuestos
+                      fn_tiene_rol('ADMIN,GERENCIA,VENTAS,PRUEBA')          → CONSULTA fuera
+    page 8 → page 9   guarda valida-rol-editar-facturacion
+                      fn_tiene_rol('ADMIN,GERENCIA,FACTURACION,PRUEBA')     → CONSULTA fuera
+
+Un CONSULTA nunca llegaba a ver el documento: la guarda corta en BEFORE_HEADER.
+
+3. POR QUÉ ERA INCOHERENTE
+-------------------------------------------------------------
+Las páginas 6 y 10 (editor de LÍNEA, las que abre «Nueva Línea») sí dejan entrar al
+CONSULTA y ya están preparadas para el modo consulta:
+
+  - botones Guardar / Crear / Eliminar con condición `fn_tiene_rol(...)` (medido en
+    APEX_APPLICATION_PAGE_BUTTONS);
+  - los procesos de guardado vuelven a comprobar el rol DENTRO del cuerpo
+    (`raise_application_error(-20003, 'No tiene permisos para esta accion.')`);
+  - la región de formulario filtra por la empresa del usuario.
+
+Las 7 y 9 eran la excepción: se apoyaban solo en la guarda.
+
+4. SEGUNDO HALLAZGO: FUGA DE LECTURA ENTRE EMPRESAS EN 7 Y 9
+-------------------------------------------------------------
+La guarda por rol NO protege entre empresas. `mx.demo` es ADMIN (empresa 2), así que
+pasaba la guarda y, con un id de la empresa 1 en la URL, leía la cabecera:
+
+    page 7 region 'Gestión de Presupuestos'  p_query_table=>'PRESUPUESTOS'
+                                             p_query_where  → NO EXISTÍA
+    page 9 region 'Gestión de Facturas'      p_query_table=>'FACTURAS'
+                                             p_query_where  → NO EXISTÍA
+
+Las de las páginas 6 y 10 sí lo tenían desde el 2026-11-05 (la sesión que cerró la fuga
+de lectura), pero estas dos quedaron fuera.
+
+5. ARREGLO (4 líneas en pagina_apex/f100.sql)
+-------------------------------------------------------------
+  a) guarda de la página 7:
+       'ADMIN,GERENCIA,VENTAS,PRUEBA'  →  'ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'
+  b) guarda de la página 9:
+       'ADMIN,GERENCIA,FACTURACION,PRUEBA' → 'ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'
+  c) región de la página 7: p_query_where
+       id_presupuesto = :P7_ID_PRESUPUESTO and id_empresa in (
+         select u.id_empresa from usuario u
+          where upper(u.username) = upper(:APP_USER) and u.estado in ('ACTIVO','A','1'))
+  d) región de la página 9: p_query_where
+       id_factura = :P9_ID_FACTURA and id_empresa in ( ... igual ... )
+
+La escritura sigue cerrada por tres capas independientes:
+  1. los botones Guardar/Cancelar no se pintan (condición por rol);
+  2. los procesos de guardado comprueban el rol en el cuerpo;
+  3. los packages comprueban propiedad de documento y estado cerrado.
+
+6. VERIFICACIÓN
+-------------------------------------------------------------
+Importación: 70 sentencias, 3,4 s (delete + create de la app 100).
+
+  deploy/diagnostico/20261105_paginas_7_9_verificacion.sql   → FALLAS=0
+      C1/C2  las guardas de 7 y 9 dejan entrar al CONSULTA
+      C3/C4  las listas de roles son exactamente las esperadas
+      C5/C6  las regiones de 7 y 9 filtran por empresa
+      C7/C8  con el WHERE real: consulta.demo ve su presupuesto/factura (1 fila),
+             mx.demo ve 0
+      C9     botones Guardar/Cancelar condicionados y procesos con -20003
+      C10    0 objetos INVALID
+
+  deploy/diagnostico/20261105_portada_verificacion.py          → FALLAS=0
+      (17 páginas, 10 guardas de rol, 7 de propiedad, menú, portada, 0 inválidos)
+
+  deploy/diagnostico/20261105_documentos_cerrados_verificacion.sql → FALLAS=0 (24 casos)
+  deploy/diagnostico/20261105_propiedad_documentos_verificacion.sql → FALLAS=0
+
+7. LO QUE ESTA VERIFICACIÓN NO ALCANZA
+-------------------------------------------------------------
+Las páginas 6, 7, 9 y 10 son **cuadros de diálogo** (modal). Pedirlas por HTTP como
+página normal devuelve 400 con este error real (leído en APEX_WORKSPACE_ACTIVITY_LOG):
+
+    APEX - La pagina 7 de cuadro de dialogo de la aplicacion 100 no se puede presentar
+    correctamente. Asegurese de que la plantilla de pagina ... es del tipo "Pagina de
+    dialogo"
+
+Es el comportamiento normal de APEX, no un fallo (las páginas 6 y 10, sin tocar, hacen
+lo mismo). Además todas las páginas 5–12 tienen acceso «Arguments Must Have Checksum»:
+una URL armada a mano da «Violación de la protección del estado de la sesión» porque le
+falta el `cs=`/`p_dialog_cs` que APEX añade a los enlaces reales.
+
+Consecuencia práctica: **el render del diálogo solo se puede probar con un clic real o
+generando el enlace desde APEX**. Se intentó por HTTP con login programático (funciona:
+se entra y se leen páginas 5, 8, 11 y 12) pero las modales no. No se deja script de eso
+en el repo porque daba falsos «OK»: en la página de error no está el botón Guardar.
+
+Ojo también: reimportar el export **borra y recrea la app**, así que invalida las
+sesiones y los diálogos abiertos del que esté probando. Pasó durante esta sesión.
