@@ -370,16 +370,6 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_current_type=>'TARGET_PAGE'
 );
 wwv_flow_imp_shared.create_list_item(
- p_id=>wwv_flow_imp.id(13039578563825150)
-,p_list_item_display_sequence=>60
-,p_list_item_link_text=>'Inicio'
-,p_static_id=>'inicio'
-,p_list_item_link_target=>'f?p=&APP_ID.:15:&APP_SESSION.::&DEBUG.:::'
-,p_list_item_icon=>'fa-file-o'
-,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
-,p_list_item_current_for_pages=>'15'
-);
-wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(23607896982365977)
 ,p_list_item_display_sequence=>50
 ,p_list_item_link_text=>'Panel general'
@@ -3498,13 +3488,6 @@ wwv_flow_imp_shared.create_menu_option(
 ,p_static_id=>'home'
 ,p_link=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
 ,p_page_id=>1
-);
-wwv_flow_imp_shared.create_menu_option(
- p_id=>wwv_flow_imp.id(13040542878825122)
-,p_short_name=>'Inicio'
-,p_static_id=>'inicio'
-,p_link=>'f?p=&APP_ID.:15:&APP_SESSION.::&DEBUG.:::'
-,p_page_id=>15
 );
 wwv_flow_imp_shared.create_menu_option(
  p_id=>wwv_flow_imp.id(23608707238366012)
@@ -12759,7 +12742,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Guardar'
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and fn_factura_editable(:P9_ID_FACTURA)'
 ,p_button_condition2=>'PLSQL'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-floppy-o'

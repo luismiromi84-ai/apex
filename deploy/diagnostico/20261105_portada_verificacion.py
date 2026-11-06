@@ -136,6 +136,10 @@ with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as c
               uno("""select count(*) from apex_application_items
                      where application_id = 100
                        and upper(item_name) = 'F_DEBE_CAMBIAR_CLAVE'""") == 1)
+    comprobar("la portada no sale en el menu de navegacion",
+              uno("""select count(*) from apex_application_list_entries
+                     where application_id = 100
+                       and entry_target like '%:15:%'""") == 0)
     comprobar("cero objetos invalidos",
               uno("select count(*) from user_objects where status = 'INVALID'") == 0)
 

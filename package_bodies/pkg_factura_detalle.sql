@@ -49,8 +49,10 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 raise_application_error(-20001, 'La factura especificada no existe.');
         END;
 
-        IF v_estado_factura = 'FACTURADO' THEN
-            raise_application_error(-20002, 'No se pueden modificar ni agregar líneas a una factura que ya se encuentra en estado FACTURADO.');
+        IF UPPER(v_estado_factura) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+            raise_application_error(-20002,
+                'No se pueden modificar ni agregar líneas a una factura en estado '
+                || UPPER(v_estado_factura) || ': es un documento cerrado.');
         END IF;
 
         IF v_tasa_cambio <= 0 THEN v_tasa_cambio := 1; END IF;
@@ -78,8 +80,8 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
 
         -- 3. DECISIÓN: SI TIENE ID_DETALLE EDITA (UPDATE), SI NO, CREA NUEVO (INSERT)
         IF p_id_detalle IS NOT NULL AND p_id_detalle > 0 THEN
-            UPDATE facturas_det
-               SET id_producto          = v_id_producto_num,
+            UPDATE facturas_det SET
+                   id_producto          = v_id_producto_num,
                    codigo_producto      = SUBSTR(p_codigo_producto, 1, 50),
                    descripcion          = SUBSTR(p_descripcion, 1, 500),
                    cantidad             = v_cantidad,
@@ -123,7 +125,13 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
 
     EXCEPTION
         WHEN OTHERS THEN
-            raise_application_error(-20003, 'DEBUG ERROR: ' || SQLERRM);
+            -- Los errores de negocio (-20xxx) se propagan tal cual, con su
+            -- mensaje: envolverlos en 'DEBUG ERROR' le enseñaba jerga al usuario
+            -- y le ocultaba el motivo real.
+            IF SQLCODE BETWEEN -20999 AND -20000 THEN
+                RAISE;
+            END IF;
+            raise_application_error(-20003, 'No se pudo guardar la línea: ' || SQLERRM);
     END guardar_detalle;
 
     --------------------------------------------------------------------------------
@@ -145,8 +153,10 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 raise_application_error(-20001, 'La factura especificada no existe.');
         END;
 
-        IF v_estado_factura = 'FACTURADO' THEN
-            raise_application_error(-20002, 'No se pueden eliminar líneas de una factura que ya se encuentra en estado FACTURADO.');
+        IF UPPER(v_estado_factura) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+            raise_application_error(-20002,
+                'No se pueden eliminar líneas de una factura en estado '
+                || UPPER(v_estado_factura) || ': es un documento cerrado.');
         END IF;
 
         IF p_id_detalle IS NULL THEN
@@ -183,7 +193,22 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
     ) IS
         v_factor number := nvl(p_factor, 1);
         v_tasa   number := nvl(p_tasa_cambio, 1);
+        v_estado facturas.estado%type;
     BEGIN
+        -- Un documento cerrado no se reconstruye.
+        BEGIN
+            SELECT estado INTO v_estado FROM facturas WHERE id_factura = p_id_factura;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                raise_application_error(-20001, 'La factura especificada no existe.');
+        END;
+
+        IF UPPER(v_estado) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+            raise_application_error(-20002,
+                'No se puede reemplazar el detalle de una factura en estado '
+                || UPPER(v_estado) || ': es un documento cerrado.');
+        END IF;
+
         DELETE FROM facturas_det WHERE id_factura = p_id_factura;
 
         INSERT INTO facturas_det (

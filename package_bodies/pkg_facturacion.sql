@@ -71,7 +71,23 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_cod_moneda        IN VARCHAR2,
         p_tipo_cambio       IN NUMBER
     ) IS
+        v_folio  facturas.folio_factura%type;
+        v_estado facturas.estado%type;
     BEGIN
+        -- Un documento cerrado no se edita: PAGADA y ANULADA son estados finales.
+        -- Para corregirlo hay que anular la factura y emitir otra.
+        IF NOT fn_factura_editable(p_id_factura) THEN
+            SELECT folio_factura, UPPER(estado)
+              INTO v_folio, v_estado
+              FROM facturas
+             WHERE id_factura = p_id_factura;
+
+            raise_application_error(-20024,
+                'La factura ' || v_folio || ' está ' || v_estado
+                || ': no se puede modificar un documento cerrado. '
+                || 'Anúlala y emite otra.');
+        END IF;
+
         UPDATE facturas SET
             id_empresa         = p_id_empresa,
             folio_factura      = p_folio_factura,
@@ -377,16 +393,16 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_id_factura     NUMBER := fn_clean_num(TO_CHAR(p_id_factura));
         v_id_presupuesto NUMBER := fn_clean_num(TO_CHAR(p_id_presupuesto));
     BEGIN
-        UPDATE facturas
-           SET estado             = 'ANULADA',
+        UPDATE facturas SET
+               estado             = 'ANULADA',
                observaciones      = observaciones || ' [ANULADA EL ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI') || ']',
                MODIFICADO_POR     = NVL(p_usuario, v('APP_USER')),
                fecha_modificacion = SYSDATE
          WHERE id_factura         = v_id_factura;
 
         IF v_id_presupuesto IS NOT NULL AND v_id_presupuesto > 0 THEN
-            UPDATE presupuestos
-               SET estado             = 'APROBADO',
+            UPDATE presupuestos SET
+                   estado             = 'APROBADO',
                    fecha_modificacion = SYSDATE,
                    MODIFICADO_POR     = NVL(p_usuario, v('APP_USER'))
              WHERE id_presupuesto     = v_id_presupuesto;
@@ -416,8 +432,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
             raise_application_error(-20002, 'Error: El ID de la factura es nulo o inválido.');
         END IF;
 
-        UPDATE facturas
-           SET estado             = 'TIMBRADA',
+        UPDATE facturas SET
+               estado             = 'TIMBRADA',
                fecha_modificacion = SYSDATE,
                MODIFICADO_POR     = NVL(p_usuario, v('APP_USER'))
          WHERE id_factura         = v_id_factura;
@@ -437,8 +453,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
         END; -- <--- CORREGIDO: Era END IF;, debe ser END;
 
         IF v_id_presupuesto IS NOT NULL AND v_id_presupuesto > 0 THEN
-            UPDATE presupuestos
-               SET estado             = 'FACTURADO',
+            UPDATE presupuestos SET
+                   estado             = 'FACTURADO',
                    fecha_modificacion = SYSDATE,
                    MODIFICADO_POR     = NVL(p_usuario, v('APP_USER'))
              WHERE id_presupuesto     = v_id_presupuesto;

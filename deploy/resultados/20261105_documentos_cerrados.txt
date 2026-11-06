@@ -1,0 +1,46 @@
+20261105_documentos_cerrados_verificacion.sql: 2 sentencias
+FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0 de 14 casos
+ORA-06512: at line 221
+--- inicio de la sentencia ---
+
+declare
+    v_fallas    number := 0;
+    v_casos     number := 0;
+
+    v_pagada    facturas.id_factura%type;
+    v_anulada   facturas.id_factura%type;
+    v_pendiente facturas.id_factura%type;
+
+    v_facturas_antes number;
+== HTTP ==
+  [OK   ] la raiz de la app sirve la portada (HTTP 200)
+  [OK   ] la pagina 15 responde 200 (21,014 bytes)
+  [OK   ] la portada trae spx-portada
+  [OK   ] la portada trae spx-hero
+  [OK   ] la portada trae spx-monitor
+  [OK   ] la portada trae spx-beneficio
+  [OK   ] la portada trae Gestiona tu negocio
+  [OK   ] la portada trae Control administrativo
+  [OK   ] la portada trae /synpex/home
+  [OK   ] sin comentario de instrucciones a la vista
+  [OK   ] sin la cabecera de la region (New)
+  [OK   ] sin el usuario de APEX a la vista
+  [OK   ] sin enlaces a la pagina 17 (no existe)
+  [OK   ] pagina 2 (registro) sigue igual (HTTP 200)
+  [OK   ] pagina 14 (recuperar clave) sigue igual (HTTP 200)
+  [OK   ] pagina 9999 (login) sigue igual (HTTP 200)
+  [OK   ] pagina 1 (home privada) sigue igual (HTTP 302)
+
+== base de datos ==
+  [OK   ] la app tiene 17 paginas
+  [OK   ] la region tiene tipo de plugin que resuelve ('Static Content', 'STATIC_TEXT')
+  [OK   ] la pagina 15 es publica (Unrestricted)
+  [OK   ] la pagina 15 usa la plantilla Blank (Blank)
+  [OK   ] siguen las 10 guardas de rol
+  [OK   ] siguen las 7 guardas de propiedad de documento
+  [OK   ] sigue la guarda del cambio de clave (pagina 0)
+  [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
+  [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] cero objetos invalidos
+
+RESULTADO: FALLAS=0
