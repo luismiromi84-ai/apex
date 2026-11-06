@@ -15906,13 +15906,18 @@ wwv_flow_imp_page.create_page_button(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(23600000000000002)
 ,p_name=>'P13_ID_EMPRESA'
-,p_source_data_type=>'NUMBER'
+,p_data_type=>'NUMBER'
 ,p_is_required=>true
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
-,p_item_source_plug_id=>wwv_flow_imp.id(23600000000000001)
+,p_item_default_type=>'SQL_QUERY'
+,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select min(u.id_empresa)',
+'  from usuario u',
+' where upper(u.username) = upper(:APP_USER)',
+'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
+' having count(*) = 1'))
 ,p_prompt=>'Empresa'
-,p_source=>'ID_EMPRESA'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_named_lov=>'EMPRESA'
@@ -15925,13 +15930,19 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(23600000000000003)
 ,p_name=>'P13_MONEDA'
-,p_source_data_type=>'VARCHAR2'
 ,p_is_required=>true
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
-,p_item_source_plug_id=>wwv_flow_imp.id(23600000000000001)
+,p_item_default_type=>'SQL_QUERY'
+,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select nvl(max(p.moneda_local), ''USD'')',
+'  from usuario u',
+'  join empresas e on e.id_empresa = u.id_empresa',
+'  left join paises p on p.cod_pais = e.cod_pais',
+' where upper(u.username) = upper(:APP_USER)',
+'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
+' having count(*) = 1'))
 ,p_prompt=>'Moneda'
-,p_source=>'COD_MONEDA'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>'STATIC:USD;USD,VES;VES,MXN;MXN'
