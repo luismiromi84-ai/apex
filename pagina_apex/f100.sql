@@ -17147,7 +17147,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'display_as', 'NATIVE',
-  'storage_type', 'APEX_APPLICATION_TEMP_FILES')).to_clob
+  'storage_type', 'PER_REQUEST')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000089)
@@ -17285,16 +17285,32 @@ wwv_flow_imp_page.create_page_process(
 '    exception',
 '        when no_data_found then',
 '            begin',
+'                -- El valor del item cambia segun el tipo de almacenamiento:',
+'                --   APEX_APPLICATION_TEMP_FILES -> "id/nombre.jpg"',
+'                --   PER_REQUEST                 -> el nombre, a veces el id',
+'                --   BLOB                        -> el nombre',
+'                -- Se prueba el id de delante, el nombre de detras y, si en la',
+'                -- sesion hay un solo temporal, ese (es el que acaba de subir).',
 '                select blob_content, mime_type, filename, name',
 '                  into v_blob, v_mime, v_name, v_temp',
 '                  from apex_application_temp_files',
-'                 where filename = v_val;',
+'                 where name = regexp_substr(v_val, ''^[^/]+'')',
+'                    or filename = v_val',
+'                    or filename = regexp_substr(v_val, ''[^/]+$'');',
 '            exception',
-'                when no_data_found then',
-'                    select count(*) into v_n from apex_application_temp_files;',
-'                    raise_application_error(-20041, ''El archivo no llego al servidor (recibi "'' ||',
-'                        substr(v_val, 1, 80) || ''"; temporales en la sesion: '' || v_n ||',
-'                        ''). Vuelve a elegirlo y pulsa Subir logo; si pesa mas de 2 MB no se sube.'');',
+'                when no_data_found or too_many_rows then',
+'                    begin',
+'                        select blob_content, mime_type, filename, name',
+'                          into v_blob, v_mime, v_name, v_temp',
+'                          from apex_application_temp_files',
+'                         where rownum = 1;',
+'                    exception',
+'                        when no_data_found then',
+'                            select count(*) into v_n from apex_application_temp_files;',
+'                            raise_application_error(-20041, ''El archivo no llego al servidor (recibi "'' ||',
+'                                substr(v_val, 1, 80) || ''"; temporales en la sesion: '' || v_n ||',
+'                                ''). Vuelve a elegirlo y pulsa Subir logo; si pesa mas de 2 MB no se sube.'');',
+'                    end;',
 '            end;',
 '    end;',
 '',
