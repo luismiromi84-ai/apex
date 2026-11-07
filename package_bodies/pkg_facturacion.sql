@@ -25,7 +25,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_observaciones     IN VARCHAR2,
         p_cod_moneda        IN VARCHAR2,
         p_tipo_cambio       IN NUMBER,
-        p_usuario           IN VARCHAR2
+        p_usuario           IN VARCHAR2,
+        p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC'
     ) IS
     BEGIN
         INSERT INTO facturas (
@@ -33,7 +34,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
             rfc_receptor, uuid_fiscal, uso_cfdi, forma_pago, metodo_pago, 
             condicion_pago, creado_por,
             fecha_emision, fecha_vencimiento, estado, subtotal, monto_impuesto, 
-            monto_total, observaciones, cod_moneda, tipo_cambio
+            monto_total, observaciones, cod_moneda, tipo_cambio, tipo_documento
         ) VALUES (
             p_id_empresa, p_folio_factura, p_id_cliente, p_id_presupuesto, p_rfc_emisor,
             p_rfc_receptor, p_uuid_fiscal, p_uso_cfdi, p_forma_pago, p_metodo_pago,
@@ -41,7 +42,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
             CASE WHEN p_fecha_emision IS NOT NULL THEN TO_DATE(p_fecha_emision, 'DD/MM/YYYY') ELSE SYSDATE END,
             CASE WHEN p_fecha_vencimiento IS NOT NULL THEN TO_DATE(p_fecha_vencimiento, 'DD/MM/YYYY') ELSE NULL END,
             NVL(p_estado, 'PENDIENTE'), p_subtotal, p_monto_impuesto,
-            p_monto_total, p_observaciones, NVL(p_cod_moneda, 'USD'), p_tipo_cambio
+            p_monto_total, p_observaciones, NVL(p_cod_moneda, 'USD'), p_tipo_cambio,
+            NVL(UPPER(TRIM(p_tipo_documento)), 'FAC')
         ) RETURN id_factura INTO p_id_factura;
     END prc_insertar;
 
@@ -69,7 +71,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_monto_total       IN NUMBER,
         p_observaciones     IN VARCHAR2,
         p_cod_moneda        IN VARCHAR2,
-        p_tipo_cambio       IN NUMBER
+        p_tipo_cambio       IN NUMBER,
+        p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC'
     ) IS
         v_folio  facturas.folio_factura%type;
         v_estado facturas.estado%type;
@@ -91,6 +94,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
         UPDATE facturas SET
             id_empresa         = p_id_empresa,
             folio_factura      = p_folio_factura,
+            tipo_documento     = NVL(UPPER(TRIM(p_tipo_documento)), 'FAC'),
             id_cliente         = p_id_cliente,
             id_presupuesto     = p_id_presupuesto,
             rfc_emisor         = p_rfc_emisor,
@@ -282,9 +286,12 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_observaciones      IN VARCHAR2,
         p_cod_moneda         IN VARCHAR2,
         p_tipo_cambio        IN NUMBER,       
-        p_usuario            IN VARCHAR2
+        p_usuario            IN VARCHAR2,
+        p_tipo_documento     IN VARCHAR2 DEFAULT 'FAC'
     ) AS
         v_tipo_cambio    NUMBER;
+        v_tipo_doc       VARCHAR2(10) := NVL(UPPER(TRIM(p_tipo_documento)), 'FAC');
+        v_folio          VARCHAR2(50);
         v_subtotal       NUMBER;
         v_monto_impuesto NUMBER;
         v_monto_total    NUMBER;
@@ -362,14 +369,18 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 p_monto_total       => v_monto_total,
                 p_observaciones     => p_observaciones,
                 p_cod_moneda        => p_cod_moneda,
-                p_tipo_cambio       => v_tipo_cambio
+                p_tipo_cambio       => v_tipo_cambio,
+                p_tipo_documento    => v_tipo_doc
             );
         ELSE
             p_id_factura := NULL;
+            -- El folio lo asigna el contador de la empresa por tipo de documento
+            -- (FAC / NC / ND): el que trae la pagina es solo vista previa.
+            v_folio := fn_asignar_folio(v_id_empresa, v_tipo_doc);
             prc_insertar(
                 p_id_factura        => p_id_factura,
                 p_id_empresa        => v_id_empresa,
-                p_folio_factura     => p_folio_factura,
+                p_folio_factura     => v_folio,
                 p_id_cliente        => p_id_cliente,
                 p_id_presupuesto    => p_id_presupuesto,
                 p_rfc_emisor        => p_rfc_emisor,
@@ -388,14 +399,15 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 p_observaciones     => p_observaciones,
                 p_cod_moneda        => p_cod_moneda,
                 p_tipo_cambio       => v_tipo_cambio,
-                p_usuario           => p_usuario
+                p_usuario           => p_usuario,
+                p_tipo_documento    => v_tipo_doc
             );
         END IF;
 
     EXCEPTION
         WHEN DUP_VAL_ON_INDEX THEN
             RAISE_APPLICATION_ERROR(-20022,
-                'El folio ' || p_folio_factura || ' ya existe para esta empresa. Elige otro numero.');
+                'El folio ' || nvl(v_folio, p_folio_factura) || ' ya existe para esta empresa. Elige otro numero.');
     END prc_guardar_factura;
 
 --------------------------------------------------------------------------------

@@ -7426,6 +7426,48 @@ begin
 null;
 end;
 /
+-- Proceso de aplicacion: corre en TODAS las paginas (punto "On Load: Before Header").
+-- La pagina global (0) trae el proceso equivalente, pero medido el 2026-11-07 no se
+-- ejecuta: con la bandera DEBE_CAMBIAR_CLAVE = 'S' el usuario entraba directo a Home
+-- y su CSS tampoco se emitia. Un proceso de aplicacion no depende de la pagina 0.
+begin
+wwv_flow_imp_shared.create_flow_process(
+ p_id=>wwv_flow_imp.id(430000000000000210)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Cambio de clave obligatorio'
+,p_static_id=>'cambio-clave-obligatorio'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_pagina number := nv(''APP_PAGE_ID'');',
+'    v_flag   varchar2(1) := ''N'';',
+'begin',
+'    -- La bandera se lee de la tabla y no del item de aplicacion.',
+'    if v_pagina in (14, 9999) then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select nvl(debe_cambiar_clave, ''N'')',
+'          into v_flag',
+'          from usuario',
+'         where upper(username) = upper(:APP_USER);',
+'    exception',
+'        when others then',
+'            v_flag := ''N'';',
+'    end;',
+'',
+'    if v_flag = ''S'' then',
+'        apex_util.redirect_url(''f?p='' || v(''APP_ID'') || '':14:'' || v(''APP_SESSION'') || ''::'' || v(''DEBUG''));',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+);
+end;
+/
+
 prompt --application/pages/page_00000
 begin
 wwv_flow_imp_page.create_page(
@@ -7576,25 +7618,6 @@ wwv_flow_imp_page.create_page(
 '}'))
 ,p_protection_level=>'D'
 ,p_page_component_map=>'14'
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(43000000000000054)
-,p_process_sequence=>10
-,p_process_point=>'BEFORE_HEADER'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Cambio de clave obligatorio'
-,p_static_id=>'cambio-clave-obligatorio'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'declare',
-'    v_pagina number := nv(''APP_PAGE_ID'');',
-'begin',
-'    if nvl(v(''F_DEBE_CAMBIAR_CLAVE''), ''N'') = ''S''',
-'       and v_pagina not in (14, 9999) then',
-'        apex_util.redirect_url(''f?p='' || v(''APP_ID'') || '':14:'' || v(''APP_SESSION'') || ''::'' || v(''DEBUG''));',
-'    end if;',
-'end;'))
-,p_process_clob_language=>'PLSQL'
-,p_internal_uid=>43000000000000054
 );
 end;
 /
@@ -8841,26 +8864,6 @@ wwv_flow_imp_page.create_page_button(
 ,p_database_action=>'INSERT'
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(10561819955198328)
-,p_button_sequence=>50
-,p_button_plug_id=>wwv_flow_imp.id(10560480882198323)
-,p_button_name=>'DELETE'
-,p_static_id=>'delete'
-,p_show_as_disabled=>false
-,p_button_action=>'SUBMIT'
-,p_button_template_options=>'#DEFAULT#:t-Button--danger:t-Button--iconLeft:t-Button--hoverIconSpin'
-,p_button_template_id=>2084305881903810008
-,p_button_image_alt=>'Eliminar'
-,p_button_position=>'CHANGE'
-,p_button_execute_validations=>'N'
-,p_confirm_message=>'&APP_TEXT$DELETE_MSG!RAW.'
-,p_confirm_style=>'danger'
-,p_button_condition=>'P4_USUARIO_ID'
-,p_button_condition_type=>'ITEM_IS_NOT_NULL'
-,p_icon_css_classes=>'fa-trash-o'
-,p_database_action=>'DELETE'
-);
-wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000064)
 ,p_button_sequence=>90
 ,p_button_plug_id=>wwv_flow_imp.id(10560480882198323)
@@ -9242,17 +9245,18 @@ wwv_flow_imp_page.create_page_process(
 '    v_mia number;',
 '    v_obj number;',
 'begin',
+unistr('    -- Auditoria: un usuario NO se borra. Se desactiva (Estado = INACTIVO)'),
+unistr('    -- desde este mismo formulario, y la fila queda para el historial.'),
 '    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
 '      into v_mia from dual;',
 '    select (select id_empresa from usuario where usuario_id = fn_clean_num(:P4_USUARIO_ID))',
 '      into v_obj from dual;',
 '',
 '    if v_mia is null or nvl(v_obj, -1) <> v_mia then',
-unistr('        raise_application_error(-20003, ''Solo puede eliminar usuarios de su propia empresa.'');'),
+unistr('        raise_application_error(-20003, ''Solo puede administrar usuarios de su propia empresa.'');'),
 '    end if;',
 '',
-'DELETE FROM wksp_sypexws.usuario',
-' WHERE usuario_id = fn_clean_num(:P4_USUARIO_ID);',
+unistr('    raise_application_error(-20005, ''Los usuarios no se eliminan: por auditoria la cuenta se conserva. Pon el estado en INACTIVO y guarda.'');'),
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
@@ -9375,12 +9379,19 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '    });',
 '',
 unistr('    // Selecci\00F3n de fila con checkbox, igual que en Facturaci\00F3n (p\00E1gina 8)'),
+'    function spxProcesar(estado) {',
+'        var $b = $("[data-otel-label=\"BTN_PROCESAR\"]");',
+'        var habilitado = (estado || "").toUpperCase() === "PENDIENTE";',
+'        $b.prop("disabled", !habilitado);',
+unistr('        $b.attr("title", habilitado ? "" : "Solo se puede procesar un presupuesto PENDIENTE");'),
+'    }',
 '    $(document).on("change", ".js-select-invoice", function() {',
 '        var presupuestoId = this.checked ? this.getAttribute("data-id") : "";',
 '        if (this.checked) {',
 '            $(".js-select-invoice").not(this).prop("checked", false);',
 '        }',
 '        apex.item("P5_ID_PRESUPUESTO").setValue(presupuestoId, null, true);',
+'        spxProcesar(this.checked ? this.getAttribute("data-estado") : null);',
 '        apex.region("R12950647600514910").refresh();',
 '        apex.region("R12541094704283236").refresh();',
 '    });',
@@ -9391,6 +9402,23 @@ unistr('    // Selecci\00F3n de fila con checkbox, igual que en Facturaci\00F3n 
 '    });',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Insignias de estado: la pagina global (0) no emite su CSS, asi que cada pagina */',
+'/* que las usa lleva su copia (medido el 2026-11-07). */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'.status-PENDIENTE { color: #b45309; background-color: #fffbeb; } .status-PENDIENTE .status-dot { background-color: #f59e0b; }',
+'.status-ENVIADO { color: #1d4ed8; background-color: #eff6ff; } .status-ENVIADO .status-dot { background-color: #3b82f6; }',
+'.status-APROBADO { color: #15803d; background-color: #f0fdf4; } .status-APROBADO .status-dot { background-color: #22c55e; }',
+'.status-RECHAZADO { color: #b91c1c; background-color: #fef2f2; } .status-RECHAZADO .status-dot { background-color: #ef4444; }',
+'.status-CANCELADO { color: #475569; background-color: #f1f5f9; } .status-CANCELADO .status-dot { background-color: #94a3b8; }',
+'.status-FACTURADO { color: #6d28d9; background-color: #f5f3ff; } .status-FACTURADO .status-dot { background-color: #8b5cf6; }',
+'.status-ACTIVO { color: #15803d; background-color: #f0fdf4; } .status-ACTIVO .status-dot { background-color: #22c55e; }',
+'.status-INACTIVO { color: #b91c1c; background-color: #fef2f2; } .status-INACTIVO .status-dot { background-color: #ef4444; }',
+'.status-BLOQUEADO { color: #991b1b; background-color: #fee2e2; } .status-BLOQUEADO .status-dot { background-color: #dc2626; }',
+'/* Barra del cuadro de dialogo: la pinta el navegador en ESTA pagina, no el modal. */',
+'.ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; padding: 12px 18px !important; }',
+'.ui-dialog-titlebar .ui-dialog-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; }',
+'.ui-dialog-titlebar-close { color: #ffffff !important; }',
 unistr('/* Aplicaci\00F3n del efecto 3D con sombra m\00E1s intensa a la tarjeta */'),
 '.t-Region.card-3d {',
 '  background-color: #ffffff !important;',
@@ -9639,6 +9667,7 @@ wwv_flow_imp_page.create_page_plug(
 'SELECT p.id_presupuesto AS seleccionar,',
 '       p.id_presupuesto AS editar,',
 '       p.id_presupuesto AS print_link,',
+'       p.id_presupuesto AS gastos_link,',
 '       p.folio,',
 '       c.razon_social,',
 '       c.rif,',
@@ -9768,6 +9797,18 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(430000000000000200)
+,p_db_column_name=>'GASTOS_LINK'
+,p_display_order=>125
+,p_column_identifier=>'N'
+,p_column_label=>'Gastos'
+,p_column_link=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.:16:P16_ID_PRESUPUESTO:#GASTOS_LINK#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-money"></span> Gastos'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(32950647600515004)
 ,p_db_column_name=>'RAZON_SOCIAL'
 ,p_display_order=>40
@@ -9793,7 +9834,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>10
 ,p_column_identifier=>'A'
 ,p_column_label=>'Seleccionar'
-,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#SELECCIONAR#" aria-label="Seleccionar presupuesto #SELECCIONAR#"></label>'
+,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#SELECCIONAR#" data-estado="#ESTADO#" aria-label="Seleccionar presupuesto #SELECCIONAR#"></label>'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -9828,7 +9869,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'primary'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'SELECCIONAR:EDITAR:FOLIO:RAZON_SOCIAL:RIF:FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:SUBTOTAL:IMPUESTO_IVA:TOTAL:ESTADO:PRINT_LINK'
+,p_report_columns=>'SELECCIONAR:EDITAR:FOLIO:RAZON_SOCIAL:RIF:FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:SUBTOTAL:IMPUESTO_IVA:TOTAL:ESTADO:GASTOS_LINK:PRINT_LINK'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(12541094704283236)
@@ -9960,26 +10001,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_prn_page_header_alignment=>'CENTER'
 ,p_prn_page_footer_alignment=>'CENTER'
 ,p_prn_border_color=>'#666666'
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(43000000000000086)
-,p_button_sequence=>30
-,p_button_plug_id=>wwv_flow_imp.id(12950647600514910)
-,p_button_name=>'BTN_GASTOS'
-,p_static_id=>'btn-gastos'
-,p_show_as_disabled=>false
-,p_button_action=>'REDIRECT_PAGE'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
-,p_button_template_id=>2084305881903810008
-,p_button_is_hot=>'N'
-,p_button_image_alt=>'Gastos'
-,p_button_redirect_url=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.:16:P16_ID_PRESUPUESTO:&P5_ID_PRESUPUESTO.'
-,p_warn_on_unsaved_changes=>null
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P5_ID_PRESUPUESTO is not null'
-,p_button_condition2=>'PLSQL'
-,p_button_condition_type=>'EXPRESSION'
-,p_icon_css_classes=>'fa-money'
-,p_grid_new_row=>'N'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(14386874783113307)
@@ -11427,6 +11448,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Folio'
 ,p_source=>'FOLIO'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_read_only_when_type=>'ALWAYS'
 ,p_cSize=>30
 ,p_cMaxlength=>20
 ,p_begin_on_new_line=>'N'
@@ -11613,7 +11635,7 @@ wwv_flow_imp_page.create_page_computation(
 ,p_static_id=>'p7-folio'
 ,p_computation_point=>'BEFORE_HEADER'
 ,p_computation_type=>'QUERY'
-,p_computation=>'SELECT NVL(MAX(folio), 0) + 1 FROM presupuestos WHERE id_empresa = :P7_ID_EMPRESA'
+,p_computation=>'SELECT fn_siguiente_folio(:P7_ID_EMPRESA, ''PRESUPUESTO'') FROM dual'
 ,p_compute_when=>'P7_ID_PRESUPUESTO'
 ,p_compute_when_type=>'ITEM_IS_NULL'
 );
@@ -11644,13 +11666,12 @@ wwv_flow_imp_page.create_page_da_action(
   'items_to_submit', 'P7_ID_EMPRESA',
   'plsql_function_body', wwv_flow_string.join(wwv_flow_t_varchar2(
     'DECLARE',
-    '   v_folio NUMBER;',
+    '   v_folio VARCHAR2(50);',
     'BEGIN',
-    '   SELECT NVL(MAX(folio), 0) + 1',
-    '     INTO v_folio',
-    '     FROM presupuestos',
-    '    WHERE id_empresa = :P7_ID_EMPRESA;',
-    '   RETURN v_folio;',
+unistr('   -- Vista previa: NO mueve el contador; el folio real lo asigna'),
+'   -- fn_asignar_folio dentro del package al guardar.',
+'   v_folio := fn_siguiente_folio(:P7_ID_EMPRESA, ''PRESUPUESTO'');',
+'   RETURN v_folio;',
     'EXCEPTION',
     '   WHEN OTHERS THEN',
     '      RETURN 1;',
@@ -11714,7 +11735,7 @@ wwv_flow_imp_page.create_page_da_action(
     '              WHERE moneda_origen = UPPER(:P7_COD_MONEDA)',
     '                AND moneda_destino = ''VES''',
     '                AND tipo_tasa = ''REAL''',
-    '                AND fecha_vigencia < TRUNC(TO_DATE(:P7_FECHA_EMISION, ''DD/MM/YYYY'')) + 1',
+    '                AND fecha_vigencia < TRUNC(NVL(TO_DATE(:P7_FECHA_EMISION, ''DD/MM/YYYY''), SYSDATE)) + 1',
     '         )',
     '       END',
     '  FROM dual')),
@@ -11792,14 +11813,14 @@ wwv_flow_imp_page.create_page_process(
 '    p_usuario           => :APP_USER',
 ');',
 '',
-unistr('-- 2. Si el ID de la p\00E1gina 7 sigue nulo, lo rescatamos de la base de datos'),
-'IF :P7_ID_PRESUPUESTO IS NULL THEN',
+unistr('-- 2. El folio real lo asigno el contador de la empresa: se refresca el item'),
+unistr('--    para no dejar en pantalla la vista previa (el IN OUT devuelve el id).'),
+'IF :P7_ID_PRESUPUESTO IS NOT NULL THEN',
 '    BEGIN',
-'        SELECT MAX(id_presupuesto)',
-'        INTO :P7_ID_PRESUPUESTO',
-unistr('        FROM presupuestos -- Aseg\00FArate de que este sea el nombre real de tu tabla'),
-'        WHERE id_empresa = :P7_ID_EMPRESA',
-'          AND folio = :P7_FOLIO;',
+'        SELECT folio',
+'          INTO :P7_FOLIO',
+'          FROM presupuestos',
+'         WHERE id_presupuesto = :P7_ID_PRESUPUESTO;',
 '    EXCEPTION',
 '        WHEN OTHERS THEN',
 '            NULL;',
@@ -11891,6 +11912,22 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '    });',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'.status-PENDIENTE { color: #b45309; background-color: #fffbeb; } .status-PENDIENTE .status-dot { background-color: #f59e0b; }',
+'.status-ENVIADO { color: #1d4ed8; background-color: #eff6ff; } .status-ENVIADO .status-dot { background-color: #3b82f6; }',
+'.status-APROBADO { color: #15803d; background-color: #f0fdf4; } .status-APROBADO .status-dot { background-color: #22c55e; }',
+'.status-RECHAZADO { color: #b91c1c; background-color: #fef2f2; } .status-RECHAZADO .status-dot { background-color: #ef4444; }',
+'.status-CANCELADO { color: #475569; background-color: #f1f5f9; } .status-CANCELADO .status-dot { background-color: #94a3b8; }',
+'.status-FACTURADO { color: #6d28d9; background-color: #f5f3ff; } .status-FACTURADO .status-dot { background-color: #8b5cf6; }',
+'.status-ACTIVO { color: #15803d; background-color: #f0fdf4; } .status-ACTIVO .status-dot { background-color: #22c55e; }',
+'.status-INACTIVO { color: #b91c1c; background-color: #fef2f2; } .status-INACTIVO .status-dot { background-color: #ef4444; }',
+'.status-BLOQUEADO { color: #991b1b; background-color: #fee2e2; } .status-BLOQUEADO .status-dot { background-color: #dc2626; }',
+'/* Barra del cuadro de dialogo: la pinta el navegador en ESTA pagina, no el modal. */',
+'.ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; padding: 12px 18px !important; }',
+'.ui-dialog-titlebar .ui-dialog-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; }',
+'.ui-dialog-titlebar-close { color: #ffffff !important; }',
 unistr('/* Aplicaci\00F3n del efecto 3D con sombra m\00E1s intensa a la tarjeta */'),
 '.t-Region.card-3d {',
 '  background-color: #ffffff !important;',
@@ -13598,7 +13635,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_item_source_plug_id=>wwv_flow_imp.id(32589573944518258)
-,p_prompt=>unistr('N\00B0 de Control')
+,p_prompt=>unistr('UUID Fiscal (CFDI)')
 ,p_source=>'UUID_FISCAL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -14058,7 +14095,7 @@ wwv_flow_imp_page.create_page_da_action(
     '              WHERE moneda_origen = UPPER(:P9_COD_MONEDA)',
     '                AND moneda_destino = ''VES''',
     '                AND tipo_tasa = ''REAL''',
-    '                AND fecha_vigencia < TRUNC(TO_DATE(:P9_FECHA_EMISION, ''DD/MM/YYYY'')) + 1',
+    '                AND fecha_vigencia < TRUNC(NVL(TO_DATE(:P9_FECHA_EMISION, ''DD/MM/YYYY''), SYSDATE)) + 1',
     '         )',
     '       END',
     '  FROM dual')),
@@ -14090,11 +14127,10 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_elements=>'P9_FOLIO_FACTURA'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'escape_special_characters', 'Y',
-  'items_to_submit', 'P9_ID_EMPRESA',
+  'items_to_submit', 'P9_ID_EMPRESA,P9_TIPO_DOCUMENTO',
   'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
-    'SELECT ''F-'' || (NVL(MAX(TO_NUMBER(REGEXP_SUBSTR(folio_factura, ''[0-9]+$''))), 0) + 1)',
-    'FROM facturas',
-    'WHERE id_empresa = :P9_ID_EMPRESA')),
+unistr('    -- Vista previa: el folio real lo asigna fn_asignar_folio al guardar.'),
+'    SELECT fn_siguiente_folio(:P9_ID_EMPRESA, NVL(:P9_TIPO_DOCUMENTO, ''FAC'')) FROM dual')),
   'suppress_change_event', 'N',
   'type', 'SQL_STATEMENT')).to_clob
 ,p_wait_for_result=>'Y'
@@ -14291,8 +14327,18 @@ unistr('        raise_application_error(-20013, ''El total debe ser igual al sub
 '        p_observaciones     => :P9_OBSERVACIONES,',
 '        p_cod_moneda        => :P9_COD_MONEDA,',
 '        p_tipo_cambio       => v_tipo_cambio,',
-'        p_usuario           => v_usuario',
+'        p_usuario           => v_usuario,',
+'        p_tipo_documento    => :P9_TIPO_DOCUMENTO',
 '    );',
+'',
+unistr('    -- El folio real lo asigno el contador de la empresa (FAC/NC/ND): se'),
+unistr('    -- refresca el item para no dejar en pantalla la vista previa.'),
+'    begin',
+'        select folio_factura into :P9_FOLIO_FACTURA',
+'          from facturas where id_factura = :P9_ID_FACTURA;',
+'    exception',
+'        when others then null;',
+'    end;',
 '',
 '    apex_application.g_print_success_message := ''Factura Guardada Exitosamente.'';',
 'END;'))
@@ -14456,7 +14502,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>unistr('Detalle de facturaci\00F3n')
 ,p_static_id=>'detalle-de-presupuesto'
 ,p_region_css_classes=>'invoice-line-card card-3d'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Region--hideHeader'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>20
 ,p_plug_item_display_point=>'ABOVE'
@@ -17147,7 +17193,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'display_as', 'NATIVE',
-  'storage_type', 'PER_REQUEST')).to_clob
+  'storage_type', 'APEX_APPLICATION_TEMP_FILES')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000089)

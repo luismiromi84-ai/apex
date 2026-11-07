@@ -111,4 +111,7 @@ def main():
     print(f"{usuario} pagina {pagina}: HTTP {codigo}, {len(cuerpo):,} bytes -> {archivo}")
 
 
-main()
+# Se expone entrar() para otros diagnosticos (probar_subida_logo.py). Con la
+# guarda, importar este archivo ya no dispara una peticion.
+if __name__ == "__main__":
+    main()

@@ -59,7 +59,10 @@ create or replace PACKAGE BODY pkg_presupuestos AS
                    modificado_por    = p_usuario
              WHERE id_presupuesto    = p_id_presupuesto;
         ELSE
-            -- Inserción (Incluye CREADO_POR y opcionalmente MODIFICADO_POR)
+            -- Insercion (Incluye CREADO_POR y opcionalmente MODIFICADO_POR)
+            -- El folio lo asigna el contador de la empresa: el que traiga la
+            -- pagina es solo una vista previa y puede haber cambiado si otro
+            -- usuario guardo antes.
             INSERT INTO presupuestos (
                 id_empresa,
                 id_cliente,
@@ -75,7 +78,7 @@ create or replace PACKAGE BODY pkg_presupuestos AS
             ) VALUES (
                 p_id_empresa,
                 p_id_cliente,
-                p_folio,
+                fn_asignar_folio(p_id_empresa, 'PRESUPUESTO'),
                 p_cod_moneda,
                 p_fecha_vencimiento,
                 p_fecha_emision,
@@ -115,21 +118,25 @@ create or replace PACKAGE BODY pkg_presupuestos AS
         p_nuevas_obs        OUT    VARCHAR2
     ) IS
         v_estado_actual     VARCHAR2(50);
+        v_folio             presupuestos.folio%type;
     BEGIN
         -- Consultamos el estado actual para definir la transición de estado lógica
-        SELECT estado 
-          INTO v_estado_actual 
+        SELECT folio, estado 
+          INTO v_folio, v_estado_actual 
           FROM presupuestos 
          WHERE id_presupuesto = p_id_presupuesto;
 
-        -- Definimos la regla de negocio para el procesamiento:
-        -- Si está PENDIENTE, al procesarlo pasa a ENVIADO (puedes ajustarlo según tu flujo: APROBADO, etc.)
-        IF v_estado_actual IN ('PENDIENTE', 'APROBADO') THEN
-            p_nuevo_estado := 'ENVIADO';
-        ELSE
-            -- Si ya se encuentra en otro estado, puedes mantenerlo o avanzar según convenga
-            p_nuevo_estado := v_estado_actual; 
+        -- Regla de negocio: solo un presupuesto PENDIENTE se procesa (pasa a
+        -- ENVIADO). Antes APROBADO tambien volvia a ENVIADO, que es un retroceso,
+        -- y en cualquier otro estado reescribia el mismo estado dejando una nota
+        -- "[Procesado por ...]" en observaciones sin haber hecho nada.
+        IF v_estado_actual <> 'PENDIENTE' THEN
+            raise_application_error(-20025,
+                'El presupuesto ' || v_folio || ' está ' || v_estado_actual
+                || ': solo se puede procesar uno PENDIENTE.');
         END IF;
+
+        p_nuevo_estado := 'ENVIADO';
 
         -- Actualizamos el estado, la auditoría de modificación y agregamos una nota opcional en observaciones
         UPDATE presupuestos SET

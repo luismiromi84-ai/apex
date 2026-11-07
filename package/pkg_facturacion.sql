@@ -21,7 +21,8 @@ create or replace PACKAGE pkg_facturacion AS
         p_observaciones     IN VARCHAR2,
         p_cod_moneda        IN VARCHAR2,
         p_tipo_cambio       IN NUMBER,
-        p_usuario           IN VARCHAR2
+        p_usuario           IN VARCHAR2,
+        p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC'
     );
 
     PROCEDURE prc_actualizar (
@@ -45,7 +46,8 @@ create or replace PACKAGE pkg_facturacion AS
         p_monto_total       IN NUMBER,
         p_observaciones     IN VARCHAR2,
         p_cod_moneda        IN VARCHAR2,
-        p_tipo_cambio       IN NUMBER
+        p_tipo_cambio       IN NUMBER,
+        p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC'
     );
 
     PROCEDURE prc_procesar_presupuesto_factura (
@@ -85,7 +87,8 @@ create or replace PACKAGE pkg_facturacion AS
         p_observaciones      IN VARCHAR2,
         p_cod_moneda         IN VARCHAR2,
         p_tipo_cambio        IN NUMBER,
-        p_usuario            IN VARCHAR2
+        p_usuario            IN VARCHAR2,
+        p_tipo_documento     IN VARCHAR2 DEFAULT 'FAC'
     );
 
     PROCEDURE prc_anular_factura (
