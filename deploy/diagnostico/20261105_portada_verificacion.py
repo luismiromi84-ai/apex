@@ -134,9 +134,9 @@ with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as c
                      where application_id = 100
                        and (process_source like '%fn_presupuesto_propio%'
                             or process_source like '%fn_factura_propio%')""") == 7)
-    comprobar("sigue la guarda del cambio de clave (pagina 0)",
-              uno("""select count(*) from apex_application_page_proc
-                     where application_id = 100 and page_id = 0
+    comprobar("sigue la guarda del cambio de clave (proceso de aplicacion)",
+              uno("""select count(*) from apex_application_processes
+                     where application_id = 100
                        and upper(process_name) like 'CAMBIO%CLAVE%'""") == 1)
     comprobar("sigue el item F_DEBE_CAMBIAR_CLAVE",
               uno("""select count(*) from apex_application_items

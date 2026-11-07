@@ -3197,46 +3197,6 @@ wwv_flow_imp_shared.create_flow_item(
 );
 end;
 /
-prompt --application/shared_components/logic/application_items/f_id_empresa
-begin
-wwv_flow_imp_shared.create_flow_item(
- p_id=>wwv_flow_imp.id(10339346630596414)
-,p_name=>'F_ID_EMPRESA'
-,p_protection_level=>'I'
-,p_version_scn=>'SH256:AIOeqWR0iBIkqY2lSzfW7XYA6E1TThlS2ztpP6y88Tc'
-);
-end;
-/
-prompt --application/shared_components/logic/application_items/f_id_rol
-begin
-wwv_flow_imp_shared.create_flow_item(
- p_id=>wwv_flow_imp.id(10339729196599134)
-,p_name=>'F_ID_ROL'
-,p_protection_level=>'I'
-,p_version_scn=>'SH256:-xPZotJZp2Tu_Sr1AncTlR8FE8e74x9j-4FSf4i0tfo'
-);
-end;
-/
-prompt --application/shared_components/logic/application_items/f_nombre_empresa
-begin
-wwv_flow_imp_shared.create_flow_item(
- p_id=>wwv_flow_imp.id(10339518012597891)
-,p_name=>'F_NOMBRE_EMPRESA'
-,p_protection_level=>'I'
-,p_version_scn=>'SH256:7TzVKDjPg62t65-bp7M_XtrW0PvR28xEctkH4TBjSgE'
-);
-end;
-/
-prompt --application/shared_components/logic/application_items/f_nombre_rol
-begin
-wwv_flow_imp_shared.create_flow_item(
- p_id=>wwv_flow_imp.id(10339900379600301)
-,p_name=>'F_NOMBRE_ROL'
-,p_protection_level=>'I'
-,p_version_scn=>'SH256:fGoFXIaMfH0jsjerfUKk5xKr-AEEofxnnsoqDxk47r8'
-);
-end;
-/
 prompt --application/shared_components/logic/application_settings
 begin
 null;
