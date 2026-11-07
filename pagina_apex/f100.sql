@@ -8625,6 +8625,26 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-image'
 ,p_grid_new_row=>'N'
 );
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000160)
+,p_button_sequence=>25
+,p_button_plug_id=>wwv_flow_imp.id(10564941614198500)
+,p_button_name=>'BTN_FISCAL'
+,p_static_id=>'btn-datos-fiscales'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Datos fiscales'
+,p_button_redirect_url=>'f?p=&APP_ID.:18:&SESSION.::&DEBUG.:18::'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-file-text-o'
+,p_grid_new_row=>'N'
+);
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(10570004842198544)
 ,p_name=>'Edit Report - Dialog Closed'
@@ -17419,6 +17439,399 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000000093)
 ,p_internal_uid=>43000000000000097
+);
+end;
+/
+
+prompt --application/pages/page_00018
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>18
+,p_name=>'Datos Fiscales'
+,p_alias=>'DATOS-FISCALES'
+,p_step_title=>'Datos Fiscales'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000121)
+,p_plug_name=>'Datos fiscales'
+,p_static_id=>'datos-fiscales'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000130)
+,p_name=>'P18_ID_EMPRESA'
+,p_data_type=>'NUMBER'
+,p_is_required=>true
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Empresa'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_named_lov=>'EMPRESA'
+,p_cSize=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'case_sensitive', 'N',
+  'display_as', 'DIALOG',
+  'fetch_on_search', 'N',
+  'height', '250')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000131)
+,p_name=>'P18_DIRECCION_FISCAL'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Direccion fiscal'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>60
+,p_cMaxlength=>300
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000132)
+,p_name=>'P18_TELEFONO'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Telefono'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>60
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000133)
+,p_name=>'P18_EMAIL'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Correo electronico'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_cMaxlength=>120
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000134)
+,p_name=>'P18_NRO_PROVIDENCIA'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Providencia SENIAT'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>60
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000136)
+,p_name=>'P18_CONTROL_DESDE'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Control desde'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>20
+,p_cMaxlength=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000137)
+,p_name=>'P18_CONTROL_HASTA'
+,p_item_sequence=>80
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Control hasta'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>20
+,p_cMaxlength=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000138)
+,p_name=>'P18_IMPRENTA_NOMBRE'
+,p_item_sequence=>90
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Imprenta: nombre'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_cMaxlength=>150
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000139)
+,p_name=>'P18_IMPRENTA_RIF'
+,p_item_sequence=>100
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Imprenta: RIF'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>20
+,p_cMaxlength=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000140)
+,p_name=>'P18_IMPRENTA_DIRECCION'
+,p_item_sequence=>110
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Imprenta: direccion'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>60
+,p_cMaxlength=>300
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000141)
+,p_name=>'P18_IMPRENTA_TELEFONO'
+,p_item_sequence=>120
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Imprenta: telefono'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>60
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000142)
+,p_name=>'P18_IMPRENTA_EMAIL'
+,p_item_sequence=>130
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Imprenta: correo'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_cMaxlength=>120
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000135)
+,p_name=>'P18_PROV_FECHA'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Fecha de la providencia'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>20
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'display_as', 'POPUP',
+  'format_mask', 'DD/MM/YYYY')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000150)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_button_name=>'BTN_GUARDAR_FISCAL'
+,p_static_id=>'btn-guardar-fiscal'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') and :P18_ID_EMPRESA is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-save'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000151)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_button_name=>'BTN_VOLVER_FISCAL'
+,p_static_id=>'btn-volver-fiscal'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver'
+,p_button_redirect_url=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3::'
+,p_warn_on_unsaved_changes=>null
+,p_icon_css_classes=>'fa-undo'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000152)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: datos fiscales'
+,p_static_id=>'valida-rol-datos-fiscales'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000152
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000156)
+,p_process_sequence=>5
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Carga datos fiscales'
+,p_static_id=>'carga-datos-fiscales'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_empresa number;',
+'    v_fila    empresa_fiscal%rowtype;',
+'    v_hay     boolean := false;',
+'begin',
+'    if :P18_ID_EMPRESA is null then',
+'        begin',
+'            select min(u.id_empresa)',
+'              into v_empresa',
+'              from usuario u',
+'             where upper(u.username) = upper(:APP_USER)',
+'               and u.estado in (''ACTIVO'', ''A'', ''1'')',
+'             having count(*) = 1;',
+'        exception',
+'            when no_data_found then v_empresa := null;',
+'        end;',
+'        apex_util.set_session_state(''P18_ID_EMPRESA'', v_empresa);',
+'    else',
+'        v_empresa := fn_clean_num(:P18_ID_EMPRESA);',
+'    end if;',
+'',
+'    if v_empresa is null then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select * into v_fila from empresa_fiscal where id_empresa = v_empresa;',
+'        v_hay := true;',
+'    exception',
+'        when no_data_found then v_hay := false;',
+'    end;',
+'',
+'    if v_hay then',
+'        apex_util.set_session_state(''P18_DIRECCION_FISCAL'', v_fila.direccion_fiscal);',
+'        apex_util.set_session_state(''P18_TELEFONO'', v_fila.telefono);',
+'        apex_util.set_session_state(''P18_EMAIL'', v_fila.email);',
+'        apex_util.set_session_state(''P18_NRO_PROVIDENCIA'', v_fila.nro_providencia);',
+'        apex_util.set_session_state(''P18_PROV_FECHA'', to_char(v_fila.prov_fecha, ''DD/MM/YYYY''));',
+'        apex_util.set_session_state(''P18_CONTROL_DESDE'', v_fila.control_desde);',
+'        apex_util.set_session_state(''P18_CONTROL_HASTA'', v_fila.control_hasta);',
+'        apex_util.set_session_state(''P18_IMPRENTA_NOMBRE'', v_fila.imprenta_nombre);',
+'        apex_util.set_session_state(''P18_IMPRENTA_RIF'', v_fila.imprenta_rif);',
+'        apex_util.set_session_state(''P18_IMPRENTA_DIRECCION'', v_fila.imprenta_direccion);',
+'        apex_util.set_session_state(''P18_IMPRENTA_TELEFONO'', v_fila.imprenta_telefono);',
+'        apex_util.set_session_state(''P18_IMPRENTA_EMAIL'', v_fila.imprenta_email);',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000156
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000153)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar datos fiscales'
+,p_static_id=>'guardar-datos-fiscales'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_empresa number := fn_clean_num(:P18_ID_EMPRESA);',
+'    v_fecha   date;',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    if v_empresa is null or v_empresa = 0 then',
+'        raise_application_error(-20070, ''Elige la empresa.'');',
+'    end if;',
+'',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_empresa) then',
+'        raise_application_error(-20003, ''Solo puede editar los datos fiscales de su propia empresa.'');',
+'    end if;',
+'',
+'    if :P18_PROV_FECHA is not null then',
+'        v_fecha := to_date(:P18_PROV_FECHA, ''DD/MM/YYYY'');',
+'    end if;',
+'',
+'    merge into empresa_fiscal t',
+'    using (select v_empresa as id_empresa from dual) s',
+'       on (t.id_empresa = s.id_empresa)',
+'     when matched then update set',
+'              t.direccion_fiscal   = :P18_DIRECCION_FISCAL,',
+'              t.telefono           = :P18_TELEFONO,',
+'              t.email              = :P18_EMAIL,',
+'              t.nro_providencia    = :P18_NRO_PROVIDENCIA,',
+'              t.prov_fecha         = v_fecha,',
+'              t.control_desde      = :P18_CONTROL_DESDE,',
+'              t.control_hasta      = :P18_CONTROL_HASTA,',
+'              t.imprenta_nombre    = :P18_IMPRENTA_NOMBRE,',
+'              t.imprenta_rif       = :P18_IMPRENTA_RIF,',
+'              t.imprenta_direccion = :P18_IMPRENTA_DIRECCION,',
+'              t.imprenta_telefono  = :P18_IMPRENTA_TELEFONO,',
+'              t.imprenta_email     = :P18_IMPRENTA_EMAIL',
+'     when not matched then insert',
+'          (id_empresa, direccion_fiscal, telefono, email, nro_providencia, prov_fecha,',
+'           control_desde, control_hasta, imprenta_nombre, imprenta_rif,',
+'           imprenta_direccion, imprenta_telefono, imprenta_email)',
+'          values',
+'          (v_empresa, :P18_DIRECCION_FISCAL, :P18_TELEFONO, :P18_EMAIL,',
+'           :P18_NRO_PROVIDENCIA, v_fecha, :P18_CONTROL_DESDE, :P18_CONTROL_HASTA,',
+'           :P18_IMPRENTA_NOMBRE, :P18_IMPRENTA_RIF, :P18_IMPRENTA_DIRECCION,',
+'           :P18_IMPRENTA_TELEFONO, :P18_IMPRENTA_EMAIL);',
+'',
+'    apex_application.g_print_success_message := ''Datos fiscales guardados.'';',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000150)
+,p_internal_uid=>43000000000000153
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000154)
+,p_name=>'CAMBIA_EMPRESA_FISCAL'
+,p_static_id=>'cambia-empresa-fiscal'
+,p_event_sequence=>10
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P18_ID_EMPRESA'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000155)
+,p_event_id=>wwv_flow_imp.id(43000000000000154)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-javascript-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'apex.submit({request:"CAMBIA_EMPRESA", showWait:true});')).to_clob
 );
 end;
 /
