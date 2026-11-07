@@ -8,6 +8,9 @@
 --      b) si no, se calcula con el parámetro USD_MXN (pesos por dólar);
 --      c) si no hay ninguna, se registra y se omite (el job no falla).
 -- 3. Crea JOB_ACTUALIZA_TASAS_BCV: diario 18:00 America/Caracas, 3 intentos.
+--    OJO (2026-11-07): el repeat_interval NO admite BYTIMEZONE en esta version
+--    (ORA-27412). La hora de Caracas se ancla con el start_date, que si lleva
+--    la zona. La definicion canonica vive en deploy/install_jobs.sql.
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS;
@@ -162,7 +165,7 @@ begin
         job_type        => 'STORED_PROCEDURE',
         job_action      => 'PRC_JOB_TASAS_BCV',
         start_date      => systimestamp at time zone 'America/Caracas',
-        repeat_interval => 'FREQ=DAILY;BYHOUR=18;BYMINUTE=0;BYSECOND=0;BYTIMEZONE=America/Caracas',
+        repeat_interval => 'FREQ=DAILY;BYHOUR=18;BYMINUTE=0;BYSECOND=0',
         enabled         => false,
         comments        => 'Tasas BCV (USD, EUR, MXN) diarias a las 18:00 de Caracas, 3 intentos'
     );

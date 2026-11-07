@@ -10,15 +10,16 @@ set serveroutput on size unlimited
 whenever sqlerror exit sql.sqlcode rollback
 
 prompt ============================================================
-prompt 1/6 Secuencias
+prompt 1/8 Secuencias
 prompt ============================================================
 @@../sequencia/seq_producto_servicio.sql
 @@../sequencia/seq_forma_pago.sql
 @@../sequencia/seq_condicion_pago.sql
 
 prompt ============================================================
-prompt 2/6 Tablas, constraints, índices y triggers de totales
+prompt 2/8 Tablas, constraints, índices y triggers de totales
 prompt ============================================================
+@@../tabla/paises.sql
 @@../tabla/empresas.sql
 @@../tabla/syn_roles.sql
 @@../tabla/usuario.sql
@@ -35,12 +36,16 @@ prompt ============================================================
 @@../tabla/presupuestos_det.sql
 @@../tabla/FACTURAS.sql
 @@../tabla/empresa_fiscal.sql
+@@../tabla/empresa_logo.sql
 @@../tabla/FACTURAS_DET.sql
 @@../tabla/gasto_real.sql
+@@../tabla/folio_contador.sql
+@@../tabla/syn_parametros.sql
+@@../tabla/log_tasas_bcv.sql
 @@../tabla/syn_reset_password_log.sql
 
 prompt ============================================================
-prompt 3/6 Funciones
+prompt 3/8 Funciones y vistas
 prompt ============================================================
 prompt    Requiere, como ADMIN, antes de este bloque:
 prompt      grant execute on sys.dbms_crypto to <esquema>;
@@ -61,14 +66,20 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_factura_editable.sql
 @@../funciones/fn_presupuesto_editable.sql
 @@../funciones/fn_transicion_estado_valida.sql
-@@../funciones/fn_empresas_del_usuario.sql  
+@@../funciones/fn_empresas_del_usuario.sql
+-- Folio atomico por empresa (lo llaman pkg_presupuestos y pkg_facturacion).
+@@../funciones/fn_asignar_folio.sql
+@@../funciones/fn_siguiente_folio.sql
 
 -- Monitoreo de errores: el procedimiento va antes porque fn_error_handler lo llama.
 @@../procedimientos/prc_log_error.sql
 @@../funciones/fn_error_handler.sql
 
+-- Vistas (dependen de tablas y del paquete de gasto real, pero no del body).
+@@../vistas/v_presupuesto_real.sql
+
 prompt ============================================================
-prompt 4/6 Especificaciones de packages
+prompt 4/8 Especificaciones de packages
 prompt ============================================================
 @@../package/pkg_usuario.sql
 @@../package/pkg_presupuestos.sql
@@ -81,15 +92,29 @@ prompt ============================================================
 @@../package/pkg_reportes_factura.sql
 
 prompt ============================================================
-prompt 5/6 Procedimientos
+prompt 5/8 Triggers de estado
+prompt ============================================================
+prompt    Van despues de fn_transicion_estado_valida (bloque 3).
+@@../trigger/trg_valida_estado_presupuesto.sql
+@@../trigger/trg_valida_estado_factura.sql
+
+prompt ============================================================
+prompt 6/8 Procedimientos
 prompt ============================================================
 @@../procedimientos/prc_post_login.sql
 @@../procedimientos/prc_actualizar_tasas_diarias.sql
+@@../procedimientos/prc_job_tasas_bcv.sql
 @@../procedimientos/prc_log_reset_password.sql
 @@../procedimientos/prc_purgar_logs.sql
 
 prompt ============================================================
-prompt 6/6 Verificación
+prompt 7/8 Jobs y datos mínimos
+prompt ============================================================
+@@install_jobs.sql
+@@install_datos.sql
+
+prompt ============================================================
+prompt 8/8 Verificación
 prompt ============================================================
 @@verify.sql
 
