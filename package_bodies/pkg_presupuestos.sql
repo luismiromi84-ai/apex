@@ -18,12 +18,17 @@ create or replace PACKAGE BODY pkg_presupuestos AS
     ) IS
         v_folio  presupuestos.folio%type;
         v_estado presupuestos.estado%type;
+        v_tasa   number;
     BEGIN
     -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
     if apex_application.g_user is not null
        and not fn_usuario_empresa_valida(apex_application.g_user, p_id_empresa) then
         raise_application_error(-20003, 'No tiene acceso a la empresa indicada.');
     end if;
+
+        -- La tasa es obligatoria y se guarda en bolivares por unidad de la moneda
+        -- del documento. Sin ella los montos en bolivares salen mal.
+        v_tasa := fn_validar_tasa_documento(p_cod_moneda, p_fecha_emision, p_tipo_cambio);
 
         -- Un documento cerrado no se edita: CANCELADO y FACTURADO son finales.
         IF p_id_presupuesto IS NOT NULL
@@ -48,7 +53,7 @@ create or replace PACKAGE BODY pkg_presupuestos AS
                    cod_moneda        = p_cod_moneda,
                    fecha_vencimiento = p_fecha_vencimiento,
                    fecha_emision     = p_fecha_emision,
-                   tipo_cambio       = p_tipo_cambio,
+                   tipo_cambio       = v_tasa,
                    estado            = p_estado,
                    observaciones     = p_observaciones,
                    modificado_por    = p_usuario
@@ -74,7 +79,7 @@ create or replace PACKAGE BODY pkg_presupuestos AS
                 p_cod_moneda,
                 p_fecha_vencimiento,
                 p_fecha_emision,
-                p_tipo_cambio,
+                v_tasa,
                 p_estado,
                 p_observaciones,
                 p_usuario,

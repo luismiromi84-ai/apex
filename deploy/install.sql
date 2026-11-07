@@ -51,6 +51,8 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_password_es_legado.sql
 @@../funciones/fn_autenticar_usuario.sql
 @@../funciones/fn_clean_num.sql
+@@../funciones/fn_tasa_ves.sql
+@@../funciones/fn_validar_tasa_documento.sql
 @@../funciones/fn_tasa_cambio.sql
 @@../funciones/fn_tiene_rol.sql
 @@../funciones/fn_usuario_empresa_valida.sql

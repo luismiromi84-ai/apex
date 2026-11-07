@@ -14,6 +14,11 @@
 --   * Numero valido -> su valor.
 --   * Cualquier otra cosa -> NULL. NO se recorta ni se convierte a 0.
 --
+-- Cambio del 2026-11-06: la mascara de TO_NUMBER tenia 4 decimales y las tasas
+-- de cambio tienen 6 (MXN->VES 47,910741). Una tasa de 6 decimales devolvia
+-- NULL, y en `prc_guardar_factura` eso terminaba en ORA-01400 al insertar
+-- `TIPO_CAMBIO`. Ahora la mascara admite 10 decimales.
+--
 -- Ojo: los llamadores que hacian nvl(fn_clean_num(x), 0) siguen dando cero; los
 -- que no, ahora reciben NULL y fallan de forma visible.
 -- =============================================================================
@@ -57,7 +62,7 @@ BEGIN
         l_limpio := SUBSTR(l_limpio, 2);
     END IF;
 
-    RETURN TO_NUMBER(l_limpio, 'FM999999999999999999.9999', 'NLS_NUMERIC_CHARACTERS=''.,''');
+    RETURN TO_NUMBER(l_limpio, 'FM999999999999999999.9999999999', 'NLS_NUMERIC_CHARACTERS=''.,''');
 
 EXCEPTION
     WHEN OTHERS THEN

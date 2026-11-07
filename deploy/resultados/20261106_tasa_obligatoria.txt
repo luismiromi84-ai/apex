@@ -1,0 +1,123 @@
+=======================================================================
+Tasa obligatoria en presupuestos y facturas
+Evidencia de ejecucion - 2026-11-06/07
+Entorno: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS
+Ejecutor: python deploy/conexion/importar_export.py
+=======================================================================
+
+Tasas vigentes (TIPO_CAMBIO, tipo_tasa = REAL), medidas al ejecutar:
+
+    USD -> VES   896,1225
+    MXN -> VES    47,910741
+    VES            1
+
+1. LO QUE ESTABA MAL
+---------------------
+* pkg_facturacion.prc_guardar_factura hacia `if v_tipo_cambio <= 0 then
+  v_tipo_cambio := 1`, o sea se inventaba la tasa. De ahi los 29 presupuestos y
+  23 facturas en USD con tipo_cambio = 1 que hubo que recalcular el 2026-11-06.
+* pkg_presupuestos.prc_guardar_presupuesto la guardaba tal cual. Con una tasa
+  nula el usuario veia "No se pudo guardar el presupuesto. Avisa al
+  administrador." (la columna es NOT NULL), y con una tasa 0 o 1 la guardaba.
+* prc_guardar_factura ademas pasaba la tasa por fn_clean_num(TO_CHAR(tasa)) y la
+  mascara de TO_NUMBER solo admitia 4 decimales: una tasa de 6 (47,910741)
+  volvia NULL y el INSERT moria con ORA-01400 en TIPO_CAMBIO.
+
+2. RED - la verificacion antes del arreglo (9 fallas)
+-----------------------------------------------------
+$ python deploy/conexion/importar_export.py deploy/diagnostico/20261106_tasa_obligatoria_verificacion.sql
+
+20261106_tasa_obligatoria_verificacion.sql: 2 sentencias
+FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=9
+  | T1: fallo con -20001 (No se pudo guardar el presupuesto. Avisa al administrador.)
+  | T2: acepto un presupuesto en MXN con tasa 0
+  | T3: acepto un presupuesto en USD con tipo_cambio 1
+  | T5: acepto un presupuesto en MXN con la tasa tres veces la del dia
+  | T6: no dejo guardar en bolivares sin tasa: -20001
+  | T7: acepto una factura en MXN sin tipo de cambio
+  | T8: acepto una factura en USD con tipo_cambio 1
+  | T9: no dejo guardar con la tasa del dia: -1400 ORA-01400 cannot insert NULL
+        into FACTURAS.TIPO_CAMBIO
+  | T12: fn_clean_num(47.910741) devolvio NULL
+
+(T1 y T6 no son "acepto": son el mensaje generico de antes. Los dos tienen que
+dar -20061 con el detalle, que es lo que se buscaba.)
+
+3. EL ARREGLO
+-------------
+fn_validar_tasa_documento(p_moneda, p_fecha, p_tasa) RETURN NUMBER
+  * VES/BS            -> devuelve 1
+  * sin tasa          -> -20061, diciendo cual es la del dia si la tabla la tiene
+  * tasa = 1 en $     -> -20061 (el error historico)
+  * fuera de 0,5x..2x -> -20061 (atrapa la tasa de otra moneda)
+  * si la tabla no tiene tasa para esa fecha, solo se exige > 0
+
+pkg_presupuestos.prc_guardar_presupuesto y
+pkg_facturacion.prc_guardar_factura   -> llaman a la funcion antes de escribir.
+  * prc_guardar_factura ya no se inventa la tasa y ya no pasa la tasa por
+    fn_clean_num.
+  * Editar sin tocar la tasa conserva la del documento y despues se valida.
+
+fn_clean_num: la mascara de TO_NUMBER pasa de 4 a 10 decimales.
+FACTURAS.TIPO_CAMBIO: NUMBER(12,4) -> NUMBER(14,6), como PRESUPUESTOS.TIPO_CAMBIO
+(va a 14 y no a 12 porque Oracle no deja subir la escala sin subir la precision:
+ORA-01440).
+
+Los documentos ya guardados no se tocan: la validacion es al guardar.
+
+4. GREEN - la misma verificacion despues del arreglo (0 fallas)
+--------------------------------------------------------------
+$ python deploy/conexion/importar_export.py deploy/migrations/20261106_tasa_obligatoria_documentos.sql
+
+20261106_tasa_obligatoria_documentos.sql: 7 sentencias
+ejecutadas OK: 7 en 2.4s
+
+$ python deploy/conexion/importar_export.py deploy/diagnostico/20261106_tasa_obligatoria_verificacion.sql
+
+20261106_tasa_obligatoria_verificacion.sql: 2 sentencias
+FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+
+(El codigo de salida es 1 a proposito: el script termina con raise_application_error
+para que el resultado se lea como error y no como salida muda. FALLAS=0 es el
+aprobado.)
+
+Los 12 casos (T1..T12) en verde:
+  T1   presupuesto MXN sin tasa                -> -20061
+  T2   presupuesto MXN con tasa 0              -> -20061
+  T3   presupuesto USD con tasa 1              -> -20061
+  T4   presupuesto MXN con la tasa del dia     -> guarda, tasa intacta
+  T5   presupuesto MXN con la tasa x3          -> -20061
+  T6   presupuesto VES sin tasa                -> guarda con 1
+  T7   factura MXN sin tasa                    -> -20061
+  T8   factura USD con tasa 1                  -> -20061
+  T9   factura MXN con la tasa del dia         -> guarda 47,910741 (6 decimales)
+  T10  factura VES sin tasa                    -> guarda con 1
+  T11  presupuesto USD con la tasa del dia     -> guarda
+  T12  fn_clean_num conserva 6 decimales       -> 47,910741
+
+5. ESTADO DESPUES
+-----------------
+    objetos invalidos:                 0
+    FACTURAS.TIPO_CAMBIO:              NUMBER(14,6)
+    fn_validar_tasa_documento:         VALID
+    PKG_PRESUPUESTOS / PKG_FACTURACION: VALID
+
+Suite completa de deploy/diagnostico/*.sql:
+
+    20261104_auth_propia_verificacion.sql                FALLAS=0
+    20261104_folio_5_8_verificacion.sql                  OK (consulta)
+    20261105_cambio_clave_verificacion.sql               FALLAS=0
+    20261105_documentos_cerrados_verificacion.sql        FALLAS=0
+    20261105_gasto_real_verificacion.sql                 FALLAS=0
+    20261105_paginas_7_9_verificacion.sql                FALLAS=0
+    20261105_propiedad_documentos_verificacion.sql       FALLAS=0
+    20261105_purgar_logs_verificacion.sql                FALLAS=0
+    20261105_reportes_verificacion.sql                   FALLAS=0
+    20261106_mensajes_verificacion.sql                   FALLAS=0
+    20261106_monitoreo_errores_verificacion.sql          FALLAS=0
+    20261106_tasa_obligatoria_verificacion.sql           FALLAS=0
+
+Los tres 20261102_semana2_*.sql no son verificaciones: son inventarios de la
+semana 2 escritos para SQL Workshop (no llevan `alter session`), asi que bajo el
+runner fallan por ORA-00942 y no forman parte de la suite.
+=======================================================================

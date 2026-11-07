@@ -290,6 +290,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_monto_total    NUMBER;
         v_id_empresa     NUMBER := NVL(p_id_empresa, 1);
         v_existe         NUMBER := 0;
+        v_fecha          DATE;
     BEGIN
     -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
     if apex_application.g_user is not null
@@ -297,21 +298,36 @@ create or replace PACKAGE BODY pkg_facturacion AS
         raise_application_error(-20003, 'No tiene acceso a la empresa indicada.');
     end if;
 
-        v_tipo_cambio    := fn_clean_num(TO_CHAR(p_tipo_cambio));
+        -- La tasa llega ya como numero: no se pasa por fn_clean_num (TO_CHAR + el
+        -- validador de texto anulaba las tasas de 6 decimales, como 47,910741, y
+        -- el INSERT moria con ORA-01400 en TIPO_CAMBIO).
+        v_tipo_cambio    := p_tipo_cambio;
         v_subtotal       := fn_clean_num(TO_CHAR(p_subtotal));
         v_monto_impuesto := fn_clean_num(TO_CHAR(p_monto_impuesto));
         v_monto_total    := fn_clean_num(TO_CHAR(p_monto_total));
 
-        IF v_tipo_cambio <= 0 AND p_id_factura IS NOT NULL AND p_id_factura > 0 THEN
-            SELECT NVL(MAX(tipo_cambio), 1)
+        -- Editar sin tocar la tasa conserva la que ya tenia el documento; una
+        -- tasa nueva (o una alta) se valida en fn_validar_tasa_documento.
+        IF (v_tipo_cambio IS NULL OR v_tipo_cambio <= 0)
+           AND p_id_factura IS NOT NULL AND p_id_factura > 0 THEN
+            SELECT MAX(tipo_cambio)
               INTO v_tipo_cambio
               FROM facturas 
              WHERE id_factura = p_id_factura;
         END IF;
 
-        IF v_tipo_cambio <= 0 THEN
-            v_tipo_cambio := 1;
+        BEGIN
+            v_fecha := TO_DATE(p_fecha_emision, 'DD/MM/YYYY');
+        EXCEPTION
+            WHEN OTHERS THEN
+                v_fecha := SYSDATE;
+        END;
+
+        IF v_fecha IS NULL THEN
+            v_fecha := SYSDATE;
         END IF;
+
+        v_tipo_cambio := fn_validar_tasa_documento(p_cod_moneda, v_fecha, v_tipo_cambio);
 
         IF v_id_empresa <= 0 THEN
             v_id_empresa := 1;

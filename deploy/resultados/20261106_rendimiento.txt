@@ -1,0 +1,74 @@
+﻿==============================================================================
+RENDIMIENTO DE LAS PANTALLAS - Synpex (app 100)
+==============================================================================
+Fecha del servidor: 07/11/2026 01:08
+Repeticiones por consulta: 7 (la primera es de calentamiento)
+
+--- Volumen de datos ---
+  PRESUPUESTOS                52 filas
+  PRESUPUESTOS_DET           103 filas
+  FACTURAS                    46 filas
+  FACTURAS_DET                92 filas
+  CLIENTES                    18 filas
+  USUARIO                     14 filas
+  SYN_LOGIN_LOG              170 filas
+  SYN_ERROR_LOG               53 filas
+  GASTO_REAL                   0 filas
+
+--- Regiones de datos (leidas de APEX y ejecutadas tal cual) ---
+  pag  region                             tipo               mediana      max  filas
+    3  Gesti├│n de Usuarios                NATIVE_IR            30.2ms    31.1ms     14
+    3  Ultimos errores                    NATIVE_SQL_REPORT     29.4ms    33.5ms     20
+    3  ├Ültimos intentos                   NATIVE_SQL_REPORT     29.0ms    34.6ms     20
+    5  Lista de Presupuestos              NATIVE_IR            29.4ms    30.9ms     39
+    5  Detalle Presupuesto                NATIVE_IR            21.6ms    22.0ms      1
+    8  Lista de Facturas                  NATIVE_IR            28.7ms    29.2ms     20
+   13  Indicadores                        NATIVE_CARDS         44.0ms    45.6ms      5
+   13  Facturacion 6 meses                NATIVE_JET_CHART     28.7ms    30.8ms      6
+   13  Facturas por estado                NATIVE_JET_CHART     28.8ms    29.9ms      4
+   13  Presupuestos por estado            NATIVE_JET_CHART     29.8ms    31.5ms      6
+   13  Top clientes                       NATIVE_JET_CHART     30.4ms    34.0ms      5
+   13  Ultimos documentos                 NATIVE_CARDS         30.0ms    31.3ms      6
+   13  Tasa del dia                       NATIVE_CARDS          7.8ms    10.6ms      1
+
+--- Regiones de contenido dinamico (PL/SQL) ---
+  p5 Resumen Financiero                      8.6ms (2.4 KiB de HTML)
+  p8 Resumen Financiero                      7.7ms (1.5 KiB de HTML)
+
+--- Impresos (paginas 11 y 12) ---
+  factura 1201 (MX):     46.2ms,     5.2 KiB
+  factura 1001 (VE):     69.2ms,   248.6 KiB
+  presupuesto 1001:     96.8ms,   246.5 KiB
+
+--- Indices de las tablas de documentos ---
+  FACTURAS       IDX_FACTURAS_CLIENTE               ID_CLIENTE
+  FACTURAS       IDX_FACTURAS_EMPRESA               ID_EMPRESA
+  FACTURAS       IDX_FACTURAS_FECHA                 FECHA_EMISION
+  FACTURAS       IX_FACTURAS_CONDICION              CONDICION_PAGO
+  FACTURAS       SYS_C0036899                       ID_FACTURA
+  FACTURAS       UQ_FACTURAS_FOLIO                  ID_EMPRESA
+  FACTURAS       UQ_FACTURAS_FOLIO                  FOLIO_FACTURA
+  PRESUPUESTOS   IDX_PRESUPUESTOS_CLIENTE           ID_CLIENTE
+  PRESUPUESTOS   IDX_PRESUPUESTOS_EMPRESA           ID_EMPRESA
+  PRESUPUESTOS   PK_PRESUPUESTOS                    ID_PRESUPUESTO
+  PRESUPUESTOS   UQ_PRESUPUESTOS_FOLIO              ID_EMPRESA
+  PRESUPUESTOS   UQ_PRESUPUESTOS_FOLIO              FOLIO
+
+--- Veredicto ---
+  Region mas lenta de las medidas: p13 Indicadores con 44.0ms (5 filas).
+  Limite de esta prueba: 2000ms de mediana por region.
+  RESULTADO: FALLAS=0
+
+--- Como leer esto ---
+* El piso de ~30 ms que aparece en casi todas las consultas NO es el costo de la
+  consulta: es la latencia de ida y vuelta a la base en la nube (conexion thin
+  contra el ADB). La consulta en si tarda menos; lo que se mide es la ida y vuelta.
+  Se nota en "Tasa del dia", que es un solo SELECT y baja a 7-8 ms.
+* Los impresos son lo mas caro (69-97 ms) porque arman 246 KiB de HTML con el logo
+  incrustado como data URI; aun asi estan muy por debajo de 1 segundo.
+* Con este volumen (52 presupuestos / 46 facturas / 14 usuarios) no hay ningun
+  problema medible. Las dos tablas de documentos ya tienen indice por ID_EMPRESA
+  (IDX_PRESUPUESTOS_EMPRESA e IDX_FACTURAS_EMPRESA), que es el filtro de todos los
+  listados, asi que el crecimiento no empieza por ahi.
+* Lo que no mide esta prueba: el tiempo de render de APEX (regiones, graficos JET y
+  JavaScript). Eso necesita navegador.
