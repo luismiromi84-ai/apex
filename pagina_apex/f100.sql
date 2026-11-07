@@ -17134,7 +17134,7 @@ wwv_flow_imp_page.create_page(
 ,p_autocomplete_on_off=>'OFF'
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
-,p_protection_level=>'C'
+,p_protection_level=>'U'
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -17167,23 +17167,94 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>20
-,p_plug_item_display_point=>'ABOVE'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="spx-logo-carga">',
+'  <input type="file" id="spx-logo-file" accept="image/png,image/jpeg">',
+'  <p class="u-color-50" style="margin-top:8px;font-size:12px">PNG o JPG, maximo 2 MB. La imagen se reduce antes de enviarse.</p>',
+'</div>',
+'<script>',
+'(function(){',
+'  function dibujar(img, tope, calidad, listo){',
+'    var w = img.width, h = img.height;',
+'    if(w > tope || h > tope){ var k = Math.min(tope / w, tope / h); w = Math.round(w * k); h = Math.round(h * k); }',
+'    var lienzo = document.createElement("canvas");',
+'    lienzo.width = w; lienzo.height = h;',
+'    lienzo.getContext("2d").drawImage(img, 0, 0, w, h);',
+'    listo(calidad ? lienzo.toDataURL("image/jpeg", calidad) : lienzo.toDataURL("image/png"));',
+'  }',
+'  function reducir(archivo, listo){',
+'    var lector = new FileReader();',
+'    lector.onload = function(){',
+'      var img = new Image();',
+'      img.onload = function(){',
+'        var tope = 400;',
+'        function intento(){',
+'          dibujar(img, tope, null, function(url){',
+'            if(url.length <= 31000){ listo(url); return; }',
+'            dibujar(img, tope, 0.85, function(jpg){',
+'              if(jpg.length <= 31000 || tope <= 120){ listo(jpg); return; }',
+'              tope = Math.round(tope * 0.7);',
+'              intento();',
+'            });',
+'          });',
+'        }',
+'        intento();',
+'      };',
+'      img.src = lector.result;',
+'    };',
+'    lector.readAsDataURL(archivo);',
+'  }',
+'  document.addEventListener("click", function(e){',
+'    var boton = e.target && e.target.closest ? e.target.closest("button") : null;',
+'    if(!boton || !/Subir logo/i.test(boton.innerText || "")){ return; }',
+'    e.preventDefault();',
+'    var input = document.getElementById("spx-logo-file");',
+'    var f = input && input.files && input.files[0];',
+'    if(!f){ alert("Elige un archivo PNG o JPG."); return; }',
+'    if(f.size > 2097152){ alert("El archivo pasa de 2 MB."); return; }',
+'    if(!apex.item("P17_ID_EMPRESA").getValue()){ alert("Elige la empresa."); return; }',
+'    boton.disabled = true;',
+'    reducir(f, function(url){',
+'      var coma = url.indexOf(",");',
+'      apex.item("P17_IMAGEN_B64").setValue(url.substring(coma + 1));',
+'      apex.item("P17_MIME").setValue(url.substring(5, url.indexOf(";")));',
+'      apex.item("P17_NOMBRE_ARCHIVO").setValue(f.name);',
+'      apex.submit({request:"BTN_SUBIR_LOGO", showWait:true});',
+'    });',
+'  }, true);',
+'})();',
+'</script>')),p_plug_item_display_point=>'ABOVE'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000090)
-,p_name=>'P17_ARCHIVO'
-,p_is_required=>true
-,p_item_sequence=>20
+ p_id=>wwv_flow_imp.id(43000000000000110)
+,p_name=>'P17_IMAGEN_B64'
+,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000088)
-,p_prompt=>'Archivo (PNG o JPEG, maximo 2 MB)'
 ,p_source_type=>'ALWAYS_NULL'
-,p_display_as=>'NATIVE_FILE'
-,p_cSize=>30
-,p_field_template=>1610598304472262251
-,p_item_template_options=>'#DEFAULT#'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_cMaxlength=>32767
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'display_as', 'NATIVE',
-  'storage_type', 'APEX_APPLICATION_TEMP_FILES')).to_clob
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000111)
+,p_name=>'P17_MIME'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000088)
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000112)
+,p_name=>'P17_NOMBRE_ARCHIVO'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000088)
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000089)
@@ -17297,67 +17368,30 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'subir-logo-empresa'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
+'    v_b64  clob := :P17_IMAGEN_B64;',
 '    v_blob blob;',
-'    v_mime varchar2(200);',
-'    v_name varchar2(255);',
-'    v_temp varchar2(400);',
-'    v_val  varchar2(400);',
-'    v_n    number;',
 'begin',
 '    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 '    end if;',
 '',
-'    v_val := :P17_ARCHIVO;',
-'    if v_val is null then',
-'        raise_application_error(-20040, ''No se recibio ningun archivo. Elige la imagen otra vez y pulsa Subir logo.'');',
+'    if v_b64 is null then',
+'        raise_application_error(-20040, ''No se recibio ninguna imagen. Elige el archivo otra vez y pulsa Subir logo.'');',
 '    end if;',
 '',
-'    begin',
-'        select blob_content, mime_type, filename, name',
-'          into v_blob, v_mime, v_name, v_temp',
-'          from apex_application_temp_files',
-'         where name = v_val;',
-'    exception',
-'        when no_data_found then',
-'            begin',
-'                -- El valor del item cambia segun el tipo de almacenamiento:',
-'                --   APEX_APPLICATION_TEMP_FILES -> "id/nombre.jpg"',
-'                --   PER_REQUEST                 -> el nombre, a veces el id',
-'                --   BLOB                        -> el nombre',
-'                -- Se prueba el id de delante, el nombre de detras y, si en la',
-'                -- sesion hay un solo temporal, ese (es el que acaba de subir).',
-'                select blob_content, mime_type, filename, name',
-'                  into v_blob, v_mime, v_name, v_temp',
-'                  from apex_application_temp_files',
-'                 where name = regexp_substr(v_val, ''^[^/]+'')',
-'                    or filename = v_val',
-'                    or filename = regexp_substr(v_val, ''[^/]+$'');',
-'            exception',
-'                when no_data_found or too_many_rows then',
-'                    begin',
-'                        select blob_content, mime_type, filename, name',
-'                          into v_blob, v_mime, v_name, v_temp',
-'                          from apex_application_temp_files',
-'                         where rownum = 1;',
-'                    exception',
-'                        when no_data_found then',
-'                            select count(*) into v_n from apex_application_temp_files;',
-'                            raise_application_error(-20041, ''El archivo no llego al servidor (recibi "'' ||',
-'                                substr(v_val, 1, 80) || ''"; temporales en la sesion: '' || v_n ||',
-'                                ''). Vuelve a elegirlo y pulsa Subir logo; si pesa mas de 2 MB no se sube.'');',
-'                    end;',
-'            end;',
-'    end;',
+'    if not fn_usuario_empresa_valida(:APP_USER, fn_clean_num(:P17_ID_EMPRESA)) then',
+'        raise_application_error(-20003, ''Solo puede cargar el logo de su propia empresa.'');',
+'    end if;',
+'',
+'    dbms_lob.createtemporary(v_blob, true);',
+'    dbms_lob.append(v_blob, utl_encode.base64_decode(utl_raw.cast_to_raw(v_b64)));',
 '',
 '    pkg_empresa_logo.prc_guardar_logo(',
 '        p_id_empresa => fn_clean_num(:P17_ID_EMPRESA),',
 '        p_imagen     => v_blob,',
-'        p_nombre     => v_name,',
-'        p_mime       => v_mime,',
+'        p_nombre     => :P17_NOMBRE_ARCHIVO,',
+'        p_mime       => :P17_MIME,',
 '        p_usuario    => :APP_USER);',
-'',
-'    delete from apex_application_temp_files where name = v_temp;',
 '',
 '    apex_application.g_print_success_message := ''Logo guardado.'';',
 'end;'))
