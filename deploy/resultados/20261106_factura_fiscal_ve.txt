@@ -1,0 +1,102 @@
+Evidencia: factura fiscal venezolana (forma libre) - 2026-11-06
+===============================================================
+Plantilla del cliente: libreria/factura-ejemplo-prefactura.pdf
+  (leida con PyMuPDF: el agente no puede abrir PDF como imagen; se convirtio la pagina a PNG en
+   deploy/resultados/20261106_factura_ejemplo_cliente.png para comparar el diseno)
+
+Que se hizo:
+  1. Tabla EMPRESA_FISCAL (1:1 con EMPRESAS): direccion, telefono, email del emisor, providencia
+     SENIAT con fecha y rango de numeracion, y datos de la imprenta. Columna FACTURAS.NRO_CONTROL.
+     Migracion: deploy/migrations/20261106_factura_fiscal_ve.sql (11 sentencias, 4.1 s)
+     DDL canonico: tabla/empresa_fiscal.sql + NRO_CONTROL en tabla/FACTURAS.sql + deploy/install.sql
+  2. pkg_reportes_factura: fn_imprimir_factura reparte por pais. Venezuela -> fn_imprimir_factura_ve
+     (forma libre) y el resto -> fn_imprimir_factura_generica (el de siempre).
+     La forma libre imprime: emisor con RIF/direccion/telefono/email, FACTURA Nro y Nro CONTROL con
+     fecha, datos fiscales del cliente, lineas con alicuota, y TOTALES POR ALICUOTA
+     (subtotal, descuento, base imponible, IVA) mas el TOTAL en bolivares; pie con la leyenda legal
+     y la imprenta/providencia.
+  3. Formato numerico venezolano solo en la factura fiscal: punto de miles y coma decimal.
+     fn_num_ve usa NLS_NUMERIC_CHARACTERS=',.' (decimal coma). El impreso generico sigue en '.,'.
+
+Trampa medida: al escribir fn_num_ve se puso 'NLS_NUMERIC_CHARACTERS=',,'' (coma y coma), que
+compila pero falla en ejecucion con ORA-06502; y antes, sin comillas, el cuerpo entero se rompia con
+PLS-00103 en una linea muy posterior. El par correcto para Venezuela es ',.' (decimal coma,
+miles punto).
+
+Captura: deploy/resultados/20261106_factura_fiscal_ve.png (factura 1001, USD 313,20 x 48,19).
+== datos fiscales cargados ==
+  [OK   ] empresa 1 tiene fila en empresa_fiscal
+  [OK   ] direccion, telefono y email del emisor
+  [OK   ] providencia y rango de control (01/01060 / 00-000001..00-010000)
+  [OK   ] datos de la imprenta
+  [OK   ] todas las facturas tienen numero de control (0)
+  [OK   ] el numero de control no se repite dentro de la empresa (0)
+== la empresa de Venezuela imprime forma libre ==
+  [OK   ] el documento trae ┬½fe-emisor┬╗
+  [OK   ] el documento trae ┬½fe-cliente┬╗
+  [OK   ] el documento trae ┬½fe-lineas┬╗
+  [OK   ] el documento trae ┬½fe-totales┬╗
+  [OK   ] el documento trae ┬½fe-leyenda┬╗
+  [OK   ] el documento trae ┬½fe-imprenta┬╗
+  [OK   ] el documento trae ┬½N&ordm; CONTROL┬╗
+  [OK   ] el documento trae ┬½R.I.F.┬╗
+  [OK   ] el documento trae ┬½Base imponible┬╗
+  [OK   ] el documento trae ┬½Providencia SENIAT┬╗
+  [OK   ] el documento trae ┬½Imprenta┬╗
+  [OK   ] el documento trae ┬½SIN TACHADURA┬╗
+  [OK   ] el numero de control de la factura sale impreso
+== los totales en bolivares cuadran ==
+  [OK   ] el TOTAL en Bs. aparece en el documento
+  [OK   ] TOTAL impreso = lineas x tasa (15093.11 vs 15093.11; factura 1001, tasa 48.19)
+  [OK   ] hay al menos un grupo de alicuota (1)
+  [OK   ] suma de (base + IVA) de los grupos = TOTAL (15093.11)
+== las empresas de Mexico siguen con el documento generico ==
+  [OK   ] no usa la forma libre
+  [OK   ] mantiene su total en su moneda (factura 1201)
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+
+RESULTADO: FALLAS=0
+
+== Regresion: portada y app ==
+== HTTP ==
+  [OK   ] la raiz de la app sirve la portada (HTTP 200)
+  [OK   ] la pagina 15 responde 200 (27,826 bytes)
+  [OK   ] la portada trae spx-portada
+  [OK   ] la portada trae spx-hero
+  [OK   ] la portada trae spx-servicios
+  [OK   ] la portada trae spx-servicio
+  [OK   ] la portada trae spx-indicadores
+  [OK   ] la portada trae spx-pie
+  [OK   ] la portada trae wa.me/528111198920
+  [OK   ] la portada trae Presupuestos, facturaci├│n y clientes
+  [OK   ] la portada trae la seccion spx-inicio
+  [OK   ] la portada trae la seccion spx-servicios
+  [OK   ] la portada trae la seccion spx-nosotros
+  [OK   ] la portada trae la seccion spx-contacto
+  [OK   ] sin comentario de instrucciones a la vista
+  [OK   ] sin la cabecera de la region (New)
+  [OK   ] sin el usuario de APEX a la vista
+  [OK   ] sin enlaces a la pagina 17 (no existe)
+  [OK   ] pagina 2 (registro) sigue igual (HTTP 200)
+  [OK   ] pagina 14 (recuperar clave) sigue igual (HTTP 200)
+  [OK   ] pagina 9999 (login) sigue igual (HTTP 200)
+  [OK   ] pagina 1 (home privada) sigue igual (HTTP 302)
+
+== base de datos ==
+  [OK   ] la app tiene 19 paginas
+  [OK   ] la region tiene tipo de plugin que resuelve ('Static Content', 'STATIC_TEXT')
+  [OK   ] la pagina 15 es publica (Unrestricted)
+  [OK   ] la pagina 15 usa la plantilla Blank (Blank)
+  [OK   ] siguen las 12 guardas de rol
+  [OK   ] siguen las 7 guardas de propiedad de documento
+  [OK   ] sigue la guarda del cambio de clave (pagina 0)
+  [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
+  [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] el Panel General no avisa de cambios sin guardar
+  [OK   ] la lista de Presupuestos selecciona con checkbox, como Facturacion
+  [OK   ] la tarjeta de totales de Presupuestos usa el mismo formato
+  [OK   ] cero objetos invalidos en WKSP_SYPEXWS
+
+RESULTADO: FALLAS=0

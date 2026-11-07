@@ -22,6 +22,11 @@ ojdbc.properties
 # Volcado de datos reales de la base (incluye hashes de contraseña): nunca versionar
 datos_origen.sql
 
+# Material de referencia del cliente en video: pesa ~350 MB y hay archivos de
+# 141 MB, que GitHub rechaza (limite 100 MB por archivo). Se guarda fuera del
+# repo; si algun dia se versiona, va a almacenamiento externo, no a Git.
+videos de modulos de otro sistema/
+
 # Scratch de trabajo del agente (ledgers, briefs): no es entregable
 .superpowers/
 

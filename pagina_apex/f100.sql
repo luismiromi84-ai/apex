@@ -8382,6 +8382,15 @@ unistr('/* Colores seg\00FAn el estado */'),
 '}',
 '.status-INACTIVO .status-dot, .status-Inactivo .status-dot {',
 '    background-color: #ef4444;',
+'}',
+'',
+'/* Cuenta bloqueada por intentos fallidos */',
+'.status-BLOQUEADO {',
+'    color: #991b1b;',
+'    background-color: #fee2e2;',
+'}',
+'.status-BLOQUEADO .status-dot {',
+'    background-color: #dc2626;',
 '}'))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
@@ -8397,8 +8406,33 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>10
 ,p_plug_item_display_point=>'ABOVE'
-,p_query_type=>'TABLE'
-,p_query_table=>'USUARIO'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select u.usuario_id,',
+'       u.username,',
+'       u.email,',
+'       u.estado,',
+'       u.fecha_creacion,',
+'       e.nombre_empresa as empresa,',
+'       r.codigo_rol as rol,',
+'       case',
+'         when u.bloqueado_hasta > sysdate then ''BLOQUEADO''',
+'         when upper(nvl(u.estado, ''#'')) = ''PENDIENTE'' then ''PENDIENTE''',
+'         when upper(nvl(u.estado, ''#'')) in (''ACTIVO'', ''A'', ''1'') then',
+'              ''ACTIVO'' || case when nvl(u.debe_cambiar_clave, ''N'') = ''S''',
+'                                then '' (CLAVE POR CAMBIAR)'' end',
+'         else ''INACTIVO''',
+'       end as situacion,',
+'       case',
+'         when u.bloqueado_hasta > sysdate then ''BLOQUEADO''',
+'         when upper(nvl(u.estado, ''#'')) = ''PENDIENTE'' then ''PENDIENTE''',
+'         when upper(nvl(u.estado, ''#'')) in (''ACTIVO'', ''A'', ''1'') then ''ACTIVO''',
+'         else ''INACTIVO''',
+'       end as situacion_clase',
+'  from usuario u',
+'  left join empresas e on e.id_empresa = u.id_empresa',
+'  left join syn_roles r on r.id_rol = u.rol_id',
+' order by lower(u.username)'))
 ,p_include_rowid_column=>false
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_prn_content_disposition=>'ATTACHMENT'
@@ -8486,37 +8520,49 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(13416310107455101)
-,p_db_column_name=>'ID_EMPRESA'
-,p_display_order=>16
-,p_column_identifier=>'I'
-,p_column_label=>'Id Empresa'
-,p_column_type=>'NUMBER'
-,p_heading_alignment=>'RIGHT'
-,p_column_alignment=>'RIGHT'
+ p_id=>wwv_flow_imp.id(43000000000000102)
+,p_db_column_name=>'SITUACION'
+,p_display_order=>7
+,p_column_identifier=>'G'
+,p_column_label=>unistr('Situaci\00F3n')
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="status-badge status-#SITUACION_CLASE#">',
+'    <span class="status-dot"></span>',
+'    #SITUACION#',
+'</span>'))
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(10567650508198533)
-,p_db_column_name=>'PASSWORD_HASH'
-,p_display_order=>4
-,p_column_identifier=>'D'
-,p_column_label=>'Password Hash'
+ p_id=>wwv_flow_imp.id(43000000000000103)
+,p_db_column_name=>'SITUACION_CLASE'
+,p_display_order=>8
+,p_column_identifier=>'H'
+,p_column_label=>'Situacion Clase'
 ,p_column_type=>'STRING'
 ,p_display_text_as=>'HIDDEN_ESCAPE_SC'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(13416310107455101)
+,p_db_column_name=>'EMPRESA'
+,p_display_order=>16
+,p_column_identifier=>'I'
+,p_column_label=>'Empresa'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(13416436667455102)
-,p_db_column_name=>'ROL_ID'
+,p_db_column_name=>'ROL'
 ,p_display_order=>26
 ,p_column_identifier=>'J'
-,p_column_label=>'Rol Id'
-,p_column_type=>'NUMBER'
-,p_heading_alignment=>'RIGHT'
-,p_column_alignment=>'RIGHT'
+,p_column_label=>'Rol'
+,p_column_type=>'STRING'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
@@ -8552,7 +8598,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'primary'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'USUARIO_ID:USERNAME:EMAIL:PASSWORD_HASH:ESTADO:FECHA_CREACION'
+,p_report_columns=>'USUARIO_ID:USERNAME:EMAIL:EMPRESA:ROL:ESTADO:SITUACION:FECHA_CREACION'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(10569657589198543)
@@ -8632,6 +8678,25 @@ wwv_flow_imp_page.create_page_plug(
 '       e.peticion',
 '  from syn_error_log e',
 ' order by e.id_error desc',
+' fetch first 20 rows only'))
+,p_plug_source_type=>'NATIVE_SQL_REPORT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000101)
+,p_plug_name=>unistr('\00DAltimos intentos')
+,p_static_id=>'ultimos-intentos'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select to_char(l.fecha, ''DD/MM/YYYY HH24:MI'') as fecha,',
+'       l.usuario_intentado,',
+'       l.resultado,',
+'       l.ip',
+'  from syn_login_log l',
+' order by l.id desc',
 ' fetch first 20 rows only'))
 ,p_plug_source_type=>'NATIVE_SQL_REPORT'
 );
@@ -9332,7 +9397,9 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT d.descripcion,',
+'SELECT d.id_detalle,',
+'       d.id_presupuesto,',
+'       d.descripcion,',
 '       d.cantidad,',
 '       d.precio_unitario,',
 '       d.porcentaje_descuento  AS descuento_pct,',
@@ -9361,6 +9428,30 @@ wwv_flow_imp_page.create_worksheet(
 ,p_download_formats=>'CSV:HTML:XLSX:PDF'
 ,p_enable_mail_download=>'Y'
 ,p_internal_uid=>12950647600514911
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000104)
+,p_db_column_name=>'ID_DETALLE'
+,p_display_order=>0
+,p_is_primary_key=>'Y'
+,p_column_identifier=>'X'
+,p_column_label=>'Editar'
+,p_column_link=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.:6:P6_ID_DETALLE,P6_ID_PRESUPUESTO:#ID_DETALLE#,#ID_PRESUPUESTO#'
+,p_column_linktext=>'<span class="fa fa-pencil" aria-hidden="true"></span> Editar'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000105)
+,p_db_column_name=>'ID_PRESUPUESTO'
+,p_display_order=>5
+,p_column_identifier=>'Y'
+,p_column_label=>'Id Presupuesto'
+,p_column_type=>'NUMBER'
+,p_display_text_as=>'HIDDEN_ESCAPE_SC'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(12950647600515102)
@@ -9467,7 +9558,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'primary'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'DESCRIPCION:CANTIDAD:PRECIO_UNITARIO:DESCUENTO_PCT:MONTO_DESCUENTO:IMPUESTO_PCT:MONTO_IMPUESTO:SUBTOTAL_LINEA:MONTO_TOTAL_LINEA'
+,p_report_columns=>'ID_DETALLE:DESCRIPCION:CANTIDAD:PRECIO_UNITARIO:DESCUENTO_PCT:MONTO_DESCUENTO:IMPUESTO_PCT:MONTO_IMPUESTO:SUBTOTAL_LINEA:MONTO_TOTAL_LINEA'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(11950647600514906)
@@ -9739,15 +9830,11 @@ wwv_flow_imp_page.create_page_plug(
 '            <strong style="color: #333333; font-size: 14px;">'' || TO_CHAR(v_subtotal_bruto, ''FM999G999G999G990D00'') || ''</strong>',
 '        </div>'';',
 '',
-'    IF v_total_descuento > 0 THEN',
-'        v_html := v_html || ''',
+'    v_html := v_html || ''',
 '        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">',
 '            <span style="color: #c5221f; font-size: 13px;">Descuento Total ('' || v_moneda || ''):</span>',
 '            <strong style="color: #c5221f; font-size: 14px;">-'' || TO_CHAR(v_total_descuento, ''FM999G999G999G990D00'') || ''</strong>',
-'        </div>'';',
-'    END IF;',
-'',
-'    v_html := v_html || ''',
+'        </div>',
 '        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">',
 '            <span style="color: #606060; font-size: 13px;">Subtotal Neto ('' || v_moneda || ''):</span>',
 '            <strong style="color: #333333; font-size: 14px;">'' || TO_CHAR(v_subtotal_neto, ''FM999G999G999G990D00'') || ''</strong>',
@@ -9759,27 +9846,19 @@ wwv_flow_imp_page.create_page_plug(
 '        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background-color: #40a6d4ff; color: #ffffff; font-weight: bold; font-size: 15px; border-radius: 6px; margin-top: 10px;">',
 '            <span>Total ('' || v_moneda || ''):</span>',
 '            <span>'' || TO_CHAR(v_total, ''FM999G999G999G990D00'') || ''</span>',
-'        </div>'';',
-'',
-'    IF UPPER(v_moneda) NOT IN (''VES'', ''BS'') THEN',
-'        v_html := v_html || ''',
+'        </div>',
 '        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0 0; color: #137333; font-size: 13px;">',
 '            <span>Total equivalente (VES):</span>',
 '            <strong>'' || TO_CHAR(v_total * v_tasa, ''FM999G999G999G990D00'') || ''</strong>',
-'        </div>'';',
-'    END IF;',
-'',
-'    IF v_gasto_real > 0 THEN',
-'        v_html := v_html || ''',
+'        </div>',
 '        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0 0; border-top: 1px solid #f0f0f0; margin-top: 8px;">',
 '            <span style="color: #606060; font-size: 13px;">Gasto real:</span>',
 '            <strong style="color: #333333; font-size: 14px;">'' || TO_CHAR(v_gasto_real, ''FM999G999G999G990D00'') || ''</strong>',
 '        </div>',
 '        <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 0 0;">',
-'            <span style="color: #606060; font-size: 13px;">Desviación:</span>',
+'            <span style="color: #606060; font-size: 13px;">Desviacion:</span>',
 '            <strong style="color: '' || v_color || ''; font-size: 14px;">'' || TO_CHAR(v_desviacion, ''FM999G999G999G990D00'') || ''</strong>',
 '        </div>'';',
-'    END IF;',
 '',
 '    v_html := v_html || ''',
 '    </div>'';',
@@ -11524,7 +11603,7 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_static_id=>'tipo-cambio'
 ,p_event_sequence=>20
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P7_FECHA_EMISION'
+,p_triggering_element=>'P7_FECHA_EMISION,P7_COD_MONEDA'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
@@ -11553,7 +11632,7 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_id=>wwv_flow_imp.id(14503532631406501)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
+,p_execute_on_page_init=>'Y'
 ,p_name=>'TIPO_CAMBIO'
 ,p_static_id=>'tipo-cambio'
 ,p_action=>'NATIVE_SET_VALUE'
@@ -11561,10 +11640,22 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_elements=>'P7_TIPO_CAMBIO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'escape_special_characters', 'Y',
-  'items_to_submit', 'P7_COD_MONEDA,P7_FECHA_EMISION',
-  'plsql_expression', 'fn_tasa_cambio(:P7_FECHA_EMISION, :P7_COD_MONEDA)',
+  'items_to_submit', 'P7_FECHA_EMISION,P7_COD_MONEDA',
+  'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'SELECT CASE',
+    '         WHEN UPPER(:P7_COD_MONEDA) IN (''VES'', ''BS'') THEN 1',
+    '         ELSE (',
+    '             SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
+    '               FROM tipo_cambio',
+    '              WHERE moneda_origen = UPPER(:P7_COD_MONEDA)',
+    '                AND moneda_destino = ''VES''',
+    '                AND tipo_tasa = ''REAL''',
+    '                AND fecha_vigencia < TRUNC(TO_DATE(:P7_FECHA_EMISION, ''DD/MM/YYYY'')) + 1',
+    '         )',
+    '       END',
+    '  FROM dual')),
   'suppress_change_event', 'N',
-  'type', 'PLSQL_EXPRESSION')).to_clob
+  'type', 'SQL_STATEMENT')).to_clob
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_process(
@@ -15597,7 +15688,18 @@ wwv_flow_imp_page.create_page_plug(
 '                                                WHERE moneda_origen = :P13_MONEDA AND moneda_destino = ''VES'' AND tipo_tasa = ''REAL'')',
 '                         AND ROWNUM = 1), ''sin datos'')',
 '       END',
-'  FROM dual'))
+'  FROM dual',
+'UNION ALL',
+'SELECT ''Errores registrados hoy'',',
+'       TO_CHAR(COUNT(*)) || CASE WHEN COUNT(*) = 0',
+'                                THEN ''  -  sin errores''',
+'                                ELSE ''  -  ultimo a las '' || TO_CHAR(MAX(e.fecha), ''HH24:MI'')',
+'                           END',
+'  FROM syn_error_log e',
+' WHERE TRUNC(e.fecha) = TRUNC(SYSDATE)',
+'   AND EXISTS (SELECT 1 FROM usuario u',
+'                WHERE UPPER(u.username) = UPPER(e.usuario)',
+'                  AND u.id_empresa = NVL(:P13_ID_EMPRESA, 1))'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_CARDS'
 ,p_plug_query_num_rows_type=>'SCROLL'
@@ -15985,7 +16087,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Moneda'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC:USD;USD,VES;VES,MXN;MXN'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT p.moneda_local AS display_value,',
+'       p.moneda_local AS return_value',
+'  FROM paises p',
+' WHERE p.activo = ''S''',
+'   AND p.cod_pais = (SELECT cod_pais FROM empresas WHERE id_empresa = :P13_ID_EMPRESA)',
+'UNION',
+'SELECT ''USD'', ''USD'' FROM dual',
+'ORDER BY 1'))
+,p_lov_cascade_parent_items=>'P13_ID_EMPRESA'
 ,p_cSize=>10
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>2
@@ -17089,15 +17200,39 @@ wwv_flow_imp_page.create_page_process(
 '    v_blob blob;',
 '    v_mime varchar2(200);',
 '    v_name varchar2(255);',
+'    v_temp varchar2(400);',
+'    v_val  varchar2(400);',
+'    v_n    number;',
 'begin',
 '    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 '    end if;',
 '',
-'    select blob_content, mime_type, filename',
-'      into v_blob, v_mime, v_name',
-'      from apex_application_temp_files',
-'     where name = :P17_ARCHIVO;',
+'    v_val := :P17_ARCHIVO;',
+'    if v_val is null then',
+'        raise_application_error(-20040, ''No se recibio ningun archivo. Elige la imagen otra vez y pulsa Subir logo.'');',
+'    end if;',
+'',
+'    begin',
+'        select blob_content, mime_type, filename, name',
+'          into v_blob, v_mime, v_name, v_temp',
+'          from apex_application_temp_files',
+'         where name = v_val;',
+'    exception',
+'        when no_data_found then',
+'            begin',
+'                select blob_content, mime_type, filename, name',
+'                  into v_blob, v_mime, v_name, v_temp',
+'                  from apex_application_temp_files',
+'                 where filename = v_val;',
+'            exception',
+'                when no_data_found then',
+'                    select count(*) into v_n from apex_application_temp_files;',
+'                    raise_application_error(-20041, ''El archivo no llego al servidor (recibi "'' ||',
+'                        substr(v_val, 1, 80) || ''"; temporales en la sesion: '' || v_n ||',
+'                        ''). Vuelve a elegirlo y pulsa Subir logo; si pesa mas de 2 MB no se sube.'');',
+'            end;',
+'    end;',
 '',
 '    pkg_empresa_logo.prc_guardar_logo(',
 '        p_id_empresa => fn_clean_num(:P17_ID_EMPRESA),',
@@ -17106,7 +17241,7 @@ wwv_flow_imp_page.create_page_process(
 '        p_mime       => v_mime,',
 '        p_usuario    => :APP_USER);',
 '',
-'    delete from apex_application_temp_files where name = :P17_ARCHIVO;',
+'    delete from apex_application_temp_files where name = v_temp;',
 '',
 '    apex_application.g_print_success_message := ''Logo guardado.'';',
 'end;'))

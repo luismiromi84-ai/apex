@@ -1,0 +1,102 @@
+Evidencia: recalculo de la tasa y totales del impreso (2026-11-06)
+==================================================================
+1) Recalculo historico: fn_tasa_ves + update de presupuestos.tipo_cambio, facturas.tipo_cambio y
+   de facturas_det (tasa_cambio_aplicada, subtotal_bs, total_bs).
+   Migracion: deploy/migrations/20261106_recalcular_tasa_cambio.sql  -> 6 sentencias, 3.3 s
+   Funcion canonica: funciones/fn_tasa_ves.sql
+2) Impreso de factura (paginas 11/12): los totales estaban mal etiquetados. Se mostraba siempre
+   «TOTAL USD» con el importe en la MONEDA DEL DOCUMENTO, y el total local se calculaba como
+   total * tipo_cambio (que para un documento en VES da el mismo numero en Bs).
+   Ahora: subtotal/descuento/IVA/TOTAL en la moneda del documento, mas TOTAL USD y TOTAL local
+   convertidos con fn_tasa_ves. Descuento sale SIEMPRE (0.00 incluido).
+
+Antes/despues medido con pkg_reportes_factura.fn_imprimir_factura:
+  factura 1001 (USD, 02/10/2026, tasa 48.19): TOTAL USD 313.20 | TOTAL BS 15,093.11
+  factura 1025 (VES, 06/10/2026, USD->VES 50.46): TOTAL VES 3,306.00 | TOTAL USD 65.52
+  factura 1201 (MXN, 02/10/2026, MXN->VES 2.65): TOTAL MXN 336.40 | TOTAL USD 18.50
+
+3) Subida del logo: el endpoint wwv_flow_file_mgr.upload_file devuelve HTTP 500 tambien fuera del
+   navegador (probado con sesion real y con p_context). El item recibe "id/archivo" pero no hay fila
+   en apex_application_temp_files, wwv_flow_files ni wwv_flow_temp_files. Es del servidor.
+== Diagnostico del recalculo ==
+== la funcion ==
+  [OK   ] fn_tasa_ves(VES) = 1 (1)
+  [OK   ] fn_tasa_ves(USD) = tasa de la tabla (894.8876 vs 894.8876)
+  [OK   ] fn_tasa_ves(MXN) = tasa de la tabla (48.136823 vs 48.136823)
+== ningun documento queda con la tasa en 1 ==
+  [OK   ] presupuestos: 0 documentos en moneda extranjera con tasa 1 (0)
+  [OK   ] facturas: 0 documentos en moneda extranjera con tasa 1 (0)
+== la tasa es la de la fecha de emision ==
+  [OK   ] presupuestos: la tasa coincide con la de su fecha (0)
+  [OK   ] facturas: la tasa coincide con la de su fecha (0)
+== montos en bolivares del detalle de factura ==
+  [OK   ] detalle de factura: tasa aplicada y montos en Bs cuadran (0)
+== los importes no se movieron ==
+  [OK   ] presupuestos: aritmetica de las lineas coherente (0)
+  [OK   ] facturas: aritmetica de las lineas coherente (0)
+  [OK   ] cabeceras de presupuesto = suma de sus lineas (67233.6 vs 67233.6)
+  [OK   ] cabeceras de factura = suma de sus lineas (50966.34 vs 50966.34)
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+
+RESULTADO: FALLAS=0
+
+== Totales del impreso, medidos ==
+--- factura 1001 en USD
+    Subtotal (sin impuestos, USD): = $ 270.00
+    Impuestos / IVA (USD): = $ 43.20
+    TOTAL USD: = $ 313.20
+    TOTAL BS: = Bs. 15,093.11
+--- factura 1025 en VES
+    Subtotal (sin impuestos, VES): = Bs. 2,850.00
+    Impuestos / IVA (VES): = Bs. 456.00
+    TOTAL VES: = Bs. 3,306.00
+    TOTAL USD: = 65.52
+--- factura 1201 en MXN
+    Subtotal (sin impuestos, MXN): = MXN $ 290.00
+    Impuestos / IVA (MXN): = MXN $ 46.40
+    TOTAL MXN: = MXN $ 336.40
+    TOTAL USD: = 18.50
+
+== Regresion: portada y app ==
+== HTTP ==
+  [OK   ] la raiz de la app sirve la portada (HTTP 200)
+  [OK   ] la pagina 15 responde 200 (27,822 bytes)
+  [OK   ] la portada trae spx-portada
+  [OK   ] la portada trae spx-hero
+  [OK   ] la portada trae spx-servicios
+  [OK   ] la portada trae spx-servicio
+  [OK   ] la portada trae spx-indicadores
+  [OK   ] la portada trae spx-pie
+  [OK   ] la portada trae wa.me/528111198920
+  [OK   ] la portada trae Presupuestos, facturaci├│n y clientes
+  [OK   ] la portada trae la seccion spx-inicio
+  [OK   ] la portada trae la seccion spx-servicios
+  [OK   ] la portada trae la seccion spx-nosotros
+  [OK   ] la portada trae la seccion spx-contacto
+  [OK   ] sin comentario de instrucciones a la vista
+  [OK   ] sin la cabecera de la region (New)
+  [OK   ] sin el usuario de APEX a la vista
+  [OK   ] sin enlaces a la pagina 17 (no existe)
+  [OK   ] pagina 2 (registro) sigue igual (HTTP 200)
+  [OK   ] pagina 14 (recuperar clave) sigue igual (HTTP 200)
+  [OK   ] pagina 9999 (login) sigue igual (HTTP 200)
+  [OK   ] pagina 1 (home privada) sigue igual (HTTP 302)
+
+== base de datos ==
+  [OK   ] la app tiene 19 paginas
+  [OK   ] la region tiene tipo de plugin que resuelve ('Static Content', 'STATIC_TEXT')
+  [OK   ] la pagina 15 es publica (Unrestricted)
+  [OK   ] la pagina 15 usa la plantilla Blank (Blank)
+  [OK   ] siguen las 12 guardas de rol
+  [OK   ] siguen las 7 guardas de propiedad de documento
+  [OK   ] sigue la guarda del cambio de clave (pagina 0)
+  [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
+  [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] el Panel General no avisa de cambios sin guardar
+  [OK   ] la lista de Presupuestos selecciona con checkbox, como Facturacion
+  [OK   ] la tarjeta de totales de Presupuestos usa el mismo formato
+  [OK   ] cero objetos invalidos en WKSP_SYPEXWS
+
+RESULTADO: FALLAS=0

@@ -2,6 +2,23 @@ create or replace PACKAGE BODY pkg_gasto_real AS
 
     -- ---------------------------------------------------------------------
     -- Alta / edicion
+    --
+    -- OJO CON LAS TASAS. `tipo_cambio` guarda BOLIVARES POR UNIDAD de la
+    -- moneda (USD->VES 896,12 · MXN->VES 47,91 · VES = 1), que es lo que usa
+    -- facturacion para los montos en Bs. NO es un factor a USD. Por eso el
+    -- equivalente en dolares es:
+    --
+    --     factor_usd     = tasa_moneda_a_ves / tasa_usd_a_ves
+    --     monto_base_usd = round(monto_origen * factor_usd, 2)
+    --
+    -- Hasta el 2026-11-05 aqui se hacia `monto * tasa`, asi que 100 Bs se
+    -- guardaban como 100 USD (1.000 veces su valor) y 100 MXN como 4.791,07
+    -- USD en vez de 5,35. Solo acertaba con gastos en dolares.
+    --
+    -- `tasa_real` guarda la tasa CONTRA EL BOLIVAR que se aplico (la forzada o
+    -- la de la tabla), igual que `presupuestos.tipo_cambio`, para que la
+    -- pantalla muestre el mismo numero que se tecleo. Para USD es Bs por dolar
+    -- y el factor es exactamente 1.
     -- ---------------------------------------------------------------------
     PROCEDURE prc_guardar_gasto (
         p_id_gasto        IN OUT NUMBER,
@@ -12,10 +29,13 @@ create or replace PACKAGE BODY pkg_gasto_real AS
         p_tasa_real       IN  NUMBER   DEFAULT NULL,
         p_usuario         IN  VARCHAR2 DEFAULT NULL
     ) IS
-        v_moneda varchar2(5);
-        v_tasa   number;
-        v_usd    number;
-        v_existe number;
+        v_moneda    varchar2(5);
+        v_tasa      number;   -- bolivares por unidad de la moneda del gasto
+        v_tasa_usd  number;   -- bolivares por dolar: el comun denominador
+        v_factor    number;   -- factor a USD
+        v_usd       number;
+        v_existe    number;
+        v_fecha     date;
     begin
         if p_id_presupuesto is null then
             raise_application_error(-20040, 'El gasto necesita un presupuesto.');
@@ -37,29 +57,51 @@ create or replace PACKAGE BODY pkg_gasto_real AS
         end if;
 
         v_moneda := upper(nvl(p_moneda_origen, 'USD'));
+        v_fecha  := nvl(p_fecha_gasto, sysdate);
 
         if v_moneda = 'USD' then
-            v_tasa := 1;
+            -- El dolar es la moneda base: el factor es 1 por definicion. La
+            -- tasa del dia se guarda solo como dato (Bs por dolar); una tasa
+            -- tecleada a mano no se usa, para no falsear el equivalente.
+            v_tasa   := nvl(fn_tasa_ves(v_fecha, 'USD'), 1);
+            v_factor := 1;
         else
-            v_tasa := nvl(p_tasa_real,
-                          fn_tasa_cambio(nvl(p_fecha_gasto, sysdate), v_moneda));
+            v_tasa := nvl(p_tasa_real, fn_tasa_ves(v_fecha, v_moneda));
+
+            if v_tasa is null then
+                raise_application_error(-20060,
+                    'No hay tasa de cambio para ' || v_moneda || ' al '
+                    || to_char(v_fecha, 'DD/MM/YYYY')
+                    || '. Registrala antes de guardar el gasto.');
+            end if;
+
+            v_tasa_usd := fn_tasa_ves(v_fecha, 'USD');
+
+            if v_tasa_usd is null or v_tasa_usd = 0 then
+                raise_application_error(-20060,
+                    'No hay tasa de cambio USD a bolivares al '
+                    || to_char(v_fecha, 'DD/MM/YYYY')
+                    || '. Sin ella no se puede calcular el equivalente en dolares.');
+            end if;
+
+            v_factor := v_tasa / v_tasa_usd;
         end if;
 
-        v_usd := round(p_monto_origen * nvl(v_tasa, 1), 2);
+        v_usd := round(p_monto_origen * v_factor, 2);
 
         if p_id_gasto is null then
             insert into gasto_real (id_presupuesto, fecha_gasto, monto_origen,
                                     moneda_origen, tasa_real, monto_base_usd)
-            values (p_id_presupuesto, nvl(p_fecha_gasto, sysdate), p_monto_origen,
-                    v_moneda, nvl(v_tasa, 1), v_usd)
+            values (p_id_presupuesto, v_fecha, p_monto_origen,
+                    v_moneda, v_tasa, v_usd)
             returning id_gasto into p_id_gasto;
         else
             update gasto_real set
                    id_presupuesto = p_id_presupuesto,
-                   fecha_gasto    = nvl(p_fecha_gasto, sysdate),
+                   fecha_gasto    = v_fecha,
                    monto_origen   = p_monto_origen,
                    moneda_origen  = v_moneda,
-                   tasa_real      = nvl(v_tasa, 1),
+                   tasa_real      = v_tasa,
                    monto_base_usd = v_usd
              where id_gasto = p_id_gasto;
 

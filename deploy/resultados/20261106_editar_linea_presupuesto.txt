@@ -1,0 +1,97 @@
+Evidencia: enlace «Editar» de una linea de presupuesto (pagina 5 -> pagina 6) - 2026-11-06
+==========================================================================================
+Antes: la pagina 6 (editor de linea, modal) solo se abria para CREAR («Nueva Linea»). No habia
+enlace para editar una linea existente: la lista «Detalle Presupuesto» no seleccionaba el id de la
+linea, asi que el formulario cargaba vacio.
+Ahora: la region «Detalle Presupuesto» (12950647600514910) trae d.id_detalle y d.id_presupuesto en su
+consulta y tiene una columna de accion «Editar» (primera columna) que abre la 6 pasando LOS DOS items.
+
+Aplicado con: python deploy/conexion/importar_export.py pagina_apex/f100.sql  (72 sentencias, 2.7 s)
+Verificacion: python deploy/diagnostico/20261106_editar_linea_presupuesto.py
+              (escrita antes del cambio; fallaba con 8 comprobaciones)
+
+Enlace que genera la columna:
+f?p=&APP_ID.:6:&SESSION.::&DEBUG.:6:P6_ID_DETALLE,P6_ID_PRESUPUESTO:#ID_DETALLE#,#ID_PRESUPUESTO#
+
+Trampa medida: una columna de IR con p_column_link NO admite p_available_clientside=>'N'. APEX lo
+rechaza con el check WWV_FLOW_WS_COL_AV_CLIENT_CK y el import entero revierte (probado: ORA-02290 en
+create_worksheet_column). La columna del enlace va sin ese atributo, igual que la «Editar» de la
+pagina 8 y la de la pagina 10.
+== la region de detalle trae los identificadores ==
+  [OK   ] el SELECT trae d.id_detalle en la lista
+  [OK   ] el SELECT trae d.id_presupuesto en la lista
+  [OK   ] sigue filtrando por la empresa del usuario
+== columna de accion ==
+  [OK   ] existe la columna ID_DETALLE
+  [OK   ] etiqueta ┬½Editar┬╗ (Editar)
+  [OK   ] abre la pagina 6 (f?p=&APP_ID.:6:&SESSION.::&DEBUG.:6:P6_ID_DETALLE,P6_ID_PRES...)
+  [OK   ] pasa P6_ID_DETALLE
+  [OK   ] pasa P6_ID_PRESUPUESTO
+  [OK   ] los valores son #ID_DETALLE# y #ID_PRESUPUESTO#
+  [OK   ] existe la columna auxiliar ID_PRESUPUESTO
+  [OK   ] ID_DETALLE es la primera columna visible (ID_DETALLE:DESCRIPCION:CANTIDAD:PRECIO_UNITARIO:DE...)
+  [OK   ] ID_PRESUPUESTO no se muestra
+== el formulario de la pagina 6 recibe esos dos items ==
+  [OK   ] P6_ID_DETALLE es item de la pagina 6
+  [OK   ] P6_ID_PRESUPUESTO es item de la pagina 6
+== comportamiento: los ids del enlace abren esa linea ==
+  [OK   ] la consulta guardada se ejecuta con el bind de la pagina (presupuesto 1001: 2 lineas)
+  [OK   ] cada fila trae los dos ids (presupuesto 1001, linea 1011)
+  [OK   ] esos ids abren exactamente una linea de ese presupuesto (1 filas, L├¡nea 1 del presupuesto 1001)
+  [OK   ] no se cruzan presupuestos distintos
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+  [OK   ] el boton ┬½Nueva Linea┬╗ sigue en la pagina 5 (1)
+
+RESULTADO: FALLAS=0
+
+== HTTP pagina 5 (sin presupuesto seleccionado) ==
+admin.demo pagina 5: HTTP 200, 133,021 bytes -> C:\Users\luism\AppData\Local\Temp\opencode\p5c.html
+violacion de checksum = 0
+region R12950647600514910 presente = 51
+columna ID_DETALLE en la configuracion del IR = 1
+nota: un presupuesto seleccionado por URL exige cs= (pagina 5 tiene «Arguments Must Have Checksum») y la 6 es modal,
+asi que el clic real del enlace solo lo puede verificar el dueno en el navegador.
+
+== Regresion: portada y app ==
+== HTTP ==
+  [OK   ] la raiz de la app sirve la portada (HTTP 200)
+  [OK   ] la pagina 15 responde 200 (27,826 bytes)
+  [OK   ] la portada trae spx-portada
+  [OK   ] la portada trae spx-hero
+  [OK   ] la portada trae spx-servicios
+  [OK   ] la portada trae spx-servicio
+  [OK   ] la portada trae spx-indicadores
+  [OK   ] la portada trae spx-pie
+  [OK   ] la portada trae wa.me/528111198920
+  [OK   ] la portada trae Presupuestos, facturaci├│n y clientes
+  [OK   ] la portada trae la seccion spx-inicio
+  [OK   ] la portada trae la seccion spx-servicios
+  [OK   ] la portada trae la seccion spx-nosotros
+  [OK   ] la portada trae la seccion spx-contacto
+  [OK   ] sin comentario de instrucciones a la vista
+  [OK   ] sin la cabecera de la region (New)
+  [OK   ] sin el usuario de APEX a la vista
+  [OK   ] sin enlaces a la pagina 17 (no existe)
+  [OK   ] pagina 2 (registro) sigue igual (HTTP 200)
+  [OK   ] pagina 14 (recuperar clave) sigue igual (HTTP 200)
+  [OK   ] pagina 9999 (login) sigue igual (HTTP 200)
+  [OK   ] pagina 1 (home privada) sigue igual (HTTP 302)
+
+== base de datos ==
+  [OK   ] la app tiene 19 paginas
+  [OK   ] la region tiene tipo de plugin que resuelve ('Static Content', 'STATIC_TEXT')
+  [OK   ] la pagina 15 es publica (Unrestricted)
+  [OK   ] la pagina 15 usa la plantilla Blank (Blank)
+  [OK   ] siguen las 12 guardas de rol
+  [OK   ] siguen las 7 guardas de propiedad de documento
+  [OK   ] sigue la guarda del cambio de clave (pagina 0)
+  [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
+  [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] el Panel General no avisa de cambios sin guardar
+  [OK   ] la lista de Presupuestos selecciona con checkbox, como Facturacion
+  [OK   ] la tarjeta de totales de Presupuestos usa el mismo formato
+  [OK   ] cero objetos invalidos en WKSP_SYPEXWS
+
+RESULTADO: FALLAS=0

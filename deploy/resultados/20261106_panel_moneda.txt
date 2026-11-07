@@ -1,0 +1,115 @@
+Evidencia: Panel General (13) - filtro de moneda por pais de la empresa (2026-11-06)
+=====================================================================================
+Antes: P13_MONEDA con lista fija STATIC:USD;USD,VES;VES,MXN;MXN -> una empresa venezolana veia
+MXN en el desplegable y, al elegirla, las tarjetas salian en cero.
+Ahora: misma regla que las paginas 5 y 8 (moneda local del pais de la empresa + USD), con
+P13_ID_EMPRESA como padre de la cascada. El defecto no se toco: ya era la moneda local del usuario.
+
+Aplicado con: python deploy/conexion/importar_export.py pagina_apex/f100.sql  (72 sentencias, 2.9 s)
+Verificacion: python deploy/diagnostico/20261106_panel_moneda.py  (escrita antes del cambio; fallaba
+              con 7 comprobaciones)
+HTTP:         python deploy/conexion/abrir_pagina.py <usuario> <clave> 13 ...
+== item P13_MONEDA ==
+  [OK   ] existe el item P13_MONEDA
+  [OK   ] la LOV ya no es una lista fija (SELECT p.moneda_local AS display_value,
+...)
+  [OK   ] consulta la moneda del pais de la empresa
+  [OK   ] depende de P13_ID_EMPRESA
+  [OK   ] agrega USD como el resto de la app
+  [OK   ] cascada desde P13_ID_EMPRESA (P13_ID_EMPRESA)
+== la LOV devuelve lo correcto por empresa ==
+  [OK   ] empresa 1 -> USD/VES (USD, VES)
+  [OK   ] empresa 2 -> MXN/USD (MXN, USD)
+== el defecto sigue siendo la moneda local del usuario ==
+  [OK   ] defecto de contabilidad.demo = moneda local (Empresa Principal: VES vs VES)
+  [OK   ] defecto de mx.demo = moneda local (Empresa M├®xico: MXN vs MXN)
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+
+RESULTADO: FALLAS=0
+== HTML de la pagina 13: opciones reales del select P13_MONEDA ==
+
+p13_cont :
+    <option value="USD">USD
+    <option value="VES" selected="selected" >VES
+
+p13_mx :
+    <option value="MXN" selected="selected" >MXN
+    <option value="USD">USD
+
+== Regresion: pagina 3 (mismo export) ==
+== estructura de la region ┬½Gestion de Usuarios┬╗ ==
+  [OK   ] la region sigue siendo Interactive Report (NATIVE_IR)
+  [OK   ] el origen es SQL, no TABLE (877 caracteres de fuente)
+== columna ┬½Situacion┬╗ ==
+  [OK   ] existe la columna SITUACION
+  [OK   ] etiqueta ┬½Situacion┬╗ (Situaci├│n)
+  [OK   ] tipo STRING (STRING)
+  [OK   ] el badge usa status-#SITUACION_CLASE# (<span class="status-badge status-#SITUACION_CLASE#">
+    <sp...)
+  [OK   ] orden 7 (entre Estado y Fecha) (7)
+  [OK   ] existe la columna auxiliar SITUACION_CLASE
+  [OK   ] SITUACION esta en el informe por defecto (USUARIO_ID:USERNAME:EMAIL:PASSWORD_HASH:ESTADO:SITUACION:FECHA_CREACION)
+  [OK   ] SITUACION_CLASE NO se muestra
+== region ┬½Ultimos intentos┬╗ ==
+  [OK   ] existe la region de intentos
+  [OK   ] es un report clasico (NATIVE_SQL_REPORT) (NATIVE_SQL_REPORT)
+  [OK   ] lee syn_login_log
+  [OK   ] limita a 20 filas
+  [OK   ] va debajo del IR y de los errores (30)
+== la consulta guardada se ejecuta ==
+  [OK   ] devuelve las dos columnas de situacion (10 columnas)
+  [OK   ] devuelve una fila por usuario (14 de 14)
+== comportamiento de la columna (transaccion con rollback) ==
+  [OK   ] bloqueado -> ┬½Bloqueado┬╗ / BLOQUEADO ('Bloqueado', 'BLOQUEADO')
+  [OK   ] pendiente -> ┬½Pendiente┬╗ / PENDIENTE ('Pendiente', 'PENDIENTE')
+  [OK   ] clave por cambiar -> sufijo y clase ACTIVO ('Activo (clave por cambiar)', 'ACTIVO')
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+  [OK   ] la guarda de rol de la pagina 3 sigue
+
+RESULTADO: FALLAS=0
+
+== Regresion: portada y app ==
+== HTTP ==
+  [OK   ] la raiz de la app sirve la portada (HTTP 200)
+  [OK   ] la pagina 15 responde 200 (27,824 bytes)
+  [OK   ] la portada trae spx-portada
+  [OK   ] la portada trae spx-hero
+  [OK   ] la portada trae spx-servicios
+  [OK   ] la portada trae spx-servicio
+  [OK   ] la portada trae spx-indicadores
+  [OK   ] la portada trae spx-pie
+  [OK   ] la portada trae wa.me/528111198920
+  [OK   ] la portada trae Presupuestos, facturaci├│n y clientes
+  [OK   ] la portada trae la seccion spx-inicio
+  [OK   ] la portada trae la seccion spx-servicios
+  [OK   ] la portada trae la seccion spx-nosotros
+  [OK   ] la portada trae la seccion spx-contacto
+  [OK   ] sin comentario de instrucciones a la vista
+  [OK   ] sin la cabecera de la region (New)
+  [OK   ] sin el usuario de APEX a la vista
+  [OK   ] sin enlaces a la pagina 17 (no existe)
+  [OK   ] pagina 2 (registro) sigue igual (HTTP 200)
+  [OK   ] pagina 14 (recuperar clave) sigue igual (HTTP 200)
+  [OK   ] pagina 9999 (login) sigue igual (HTTP 200)
+  [OK   ] pagina 1 (home privada) sigue igual (HTTP 302)
+
+== base de datos ==
+  [OK   ] la app tiene 19 paginas
+  [OK   ] la region tiene tipo de plugin que resuelve ('Static Content', 'STATIC_TEXT')
+  [OK   ] la pagina 15 es publica (Unrestricted)
+  [OK   ] la pagina 15 usa la plantilla Blank (Blank)
+  [OK   ] siguen las 12 guardas de rol
+  [OK   ] siguen las 7 guardas de propiedad de documento
+  [OK   ] sigue la guarda del cambio de clave (pagina 0)
+  [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
+  [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] el Panel General no avisa de cambios sin guardar
+  [OK   ] la lista de Presupuestos selecciona con checkbox, como Facturacion
+  [OK   ] la tarjeta de totales de Presupuestos usa el mismo formato
+  [OK   ] cero objetos invalidos en WKSP_SYPEXWS
+
+RESULTADO: FALLAS=0

@@ -1,0 +1,142 @@
+=======================================================================
+PKG_GASTO_REAL: conversion a dolares (factor contra el bolivar)
+Evidencia de ejecucion - 2026-11-06
+Entorno: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS
+Ejecutor: python deploy/conexion/importar_export.py
+=======================================================================
+
+Tasas vigentes en TIPO_CAMBIO (tipo_tasa = REAL), medidas antes del cambio:
+
+    USD -> VES   896,1225     (bolivares por dolar)
+    MXN -> VES    47,910741
+    EUR -> VES  1004,956578
+    VES           1
+
+1. EL BUG
+---------
+`prc_guardar_gasto` hacia `monto_base_usd = monto_origen * tasa`, pero la tasa
+de la tabla es BOLIVARES POR UNIDAD de la moneda, no un factor a USD. Solo
+acertaba con gastos en dolares.
+
+    100 Bs   -> 100,00 USD        (correcto: 0,11)
+    100 MXN  -> 4.791,07 USD      (correcto: 5,35)
+    100 USD  -> 100,00 USD        (correcto: 100,00)
+
+`GASTO_REAL` estaba vacia (0 filas), asi que no habia datos mal guardados.
+
+2. RED - la verificacion antes del arreglo (9 fallas)
+-----------------------------------------------------
+$ python deploy/conexion/importar_export.py deploy/diagnostico/20261105_gasto_real_verificacion.sql
+
+20261105_gasto_real_verificacion.sql: 2 sentencias
+FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=9
+  | G1: la tasa debe ser Bs por dolar (896.1225) y guardo 1
+  | G2: MXN 50 con tasa 95.821482 deben ser 5.35 USD y guardo 4791.07
+  | G3: 100 Bs deben ser .11 USD y guardo 100
+  | G3: los bolivares se siguen guardando como dolares: 100
+  | G4: MXN 100 a la tasa del dia deben ser 5.35 USD y guardo 4791.07
+  | G6: esperaba 260.81 y dio 9932.14
+  | G7: la vista dice gastado 9932.14
+  | G7: desviacion incoherente: -6800.14
+  | G12: el total no bajo al quitar el gasto en MXN
+
+Las fallas son las del factor (G11, la moneda sin tasa, ya estaba bien desde el
+2026-11-05: fn_tasa_cambio lanza -20060).
+
+3. EL ARREGLO
+-------------
+    factor_usd     = tasa_moneda_a_ves / tasa_usd_a_ves
+    monto_base_usd = round(monto_origen * factor_usd, 2)
+
+* USD: factor 1 por definicion; `tasa_real` guarda Bs por dolar (dato, no se
+  usa para convertir, para que una tasa tecleada a mano no falsee el dolar).
+* Resto: `tasa_real` guarda la tasa contra el bolivar aplicada (la forzada
+  p_tasa_real o la de la tabla), igual que `presupuestos.tipo_cambio` y
+  `facturas.tipo_cambio`; la pantalla muestra el mismo numero que se tecleo.
+* Sin tasa para la moneda, o sin tasa USD->VES: lanza -20060 con el detalle,
+  en vez de inventarse un 1.
+
+Solo cambia el body: la especificacion y la firma no se tocan.
+
+4. GREEN - la misma verificacion despues del arreglo (0 fallas)
+--------------------------------------------------------------
+$ python deploy/conexion/importar_export.py deploy/migrations/20261106_gasto_real_factor_usd.sql
+
+20261106_gasto_real_factor_usd.sql: 3 sentencias
+ejecutadas OK: 3 en 2.3s
+
+$ python deploy/conexion/importar_export.py deploy/diagnostico/20261105_gasto_real_verificacion.sql
+
+20261105_gasto_real_verificacion.sql: 2 sentencias
+FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+
+(El codigo de salida es 1 a proposito: el script termina con
+raise_application_error(-20100, 'RESULTADO: FALLAS=N') para que el resultado se
+lea como un error y no como una salida muda. FALLAS=0 es el aprobado.)
+
+Los 12 casos (G1..G12) en verde:
+  G1   USD 100 -> 100,00 USD y tasa_real = 896,1225 (Bs por dolar)
+  G2   MXN 50 con tasa forzada 95,821482 -> 5,35 USD, guarda la forzada
+  G3   VES 100 sin tasa -> 0,11 USD (antes 100)
+  G4   MXN 100 a la tabla -> 5,35 USD y tasa_real = 47,910741
+  G5   edicion a 250 USD: 4 gastos, no duplica
+  G6   total del presupuesto = 260,81 USD
+  G7   la vista y la desviacion cuadran con ese total
+  G8   monto 0 -> -20041
+  G9   presupuesto inexistente -> -20042
+  G10  presupuesto de otra empresa -> -20003
+  G11  GBP sin tasa -> -20060
+  G12  baja: el total baja al quitar el gasto en MXN
+
+5. ESTADO DESPUES
+-----------------
+$ python (consulta directa, WKSP_SYPEXWS)
+
+    fecha servidor:        07/11/2026 00:12
+    PKG_GASTO_REAL PACKAGE:       VALID (05/11/2026 15:03)
+    PKG_GASTO_REAL PACKAGE BODY:  VALID (07/11/2026 00:11)
+    objetos invalidos:      0
+    gasto_real filas:       0
+    quien usa fn_tasa_cambio: (ninguno)
+
+$ python deploy/diagnostico/20261106_resumen_p5.py
+
+    == estado general ==
+      [OK] 0 objetos invalidos (0)
+      [OK] siguen las 19 paginas (19)
+    RESULTADO: FALLAS=0
+
+`fn_tasa_cambio` queda sin uso. No se borra (esta en install.sql y
+verify_plain.sql), pero no debe usarse para tasas contra el bolivar: devuelve 1
+para USD y para VES, que es justo la confusion que produjo este bug.
+
+6. SIN REGRESIONES - la suite completa de verificaciones
+--------------------------------------------------------
+$ foreach (deploy/diagnostico/*.sql) python deploy/conexion/importar_export.py <archivo>
+
+    20261104_auth_propia_verificacion.sql                FALLAS=0
+    20261104_folio_5_8_verificacion.sql                  OK (consulta, sin RESULTADO)
+    20261105_cambio_clave_verificacion.sql               FALLAS=0
+    20261105_documentos_cerrados_verificacion.sql        FALLAS=0
+    20261105_gasto_real_verificacion.sql                 FALLAS=0
+    20261105_paginas_7_9_verificacion.sql                FALLAS=0
+    20261105_propiedad_documentos_verificacion.sql       FALLAS=0
+    20261105_purgar_logs_verificacion.sql                FALLAS=0
+    20261105_reportes_verificacion.sql                   FALLAS=0
+    20261106_mensajes_verificacion.sql                   FALLAS=0
+    20261106_monitoreo_errores_verificacion.sql          FALLAS=0
+
+(los 20261102_* son inventarios, imprimen filas y no tienen RESULTADO)
+
+7. REPO Y BASE COINCIDEN
+------------------------
+Comparado el body de `all_source` con `package_bodies/pkg_gasto_real.sql`
+quitando comentarios de linea y la cabecera `create or replace`: identicos en
+codigo. Las marcas del arreglo estan en la base:
+
+    v_factor := v_tasa / v_tasa_usd                         SI
+    v_tasa   := nvl(fn_tasa_ves(v_fecha, 'USD'), 1)         SI
+    v_tasa_usd := fn_tasa_ves(v_fecha, 'USD')               SI
+    v_usd := round(p_monto_origen * v_factor, 2)            SI
+    tasa_real = v_tasa                                      SI
+=======================================================================

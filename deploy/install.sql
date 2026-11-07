@@ -34,6 +34,7 @@ prompt ============================================================
 @@../tabla/presupuestos.sql
 @@../tabla/presupuestos_det.sql
 @@../tabla/FACTURAS.sql
+@@../tabla/empresa_fiscal.sql
 @@../tabla/FACTURAS_DET.sql
 @@../tabla/gasto_real.sql
 @@../tabla/syn_reset_password_log.sql

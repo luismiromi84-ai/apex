@@ -1,0 +1,84 @@
+Evidencia: pagina 3 - columna «Situacion» y region «Ultimos intentos» (2026-11-06)
+==================================================================================
+Aplicado con: python deploy/conexion/importar_export.py pagina_apex/f100.sql
+               (72 sentencias ejecutadas OK en 4.2 s)
+Verificacion: python deploy/diagnostico/20261106_pagina3_situacion.py
+               (escrita antes del cambio; fallaba con 6 comprobaciones)
+HTTP:         python deploy/conexion/abrir_pagina.py admin.demo 'Prueba#2026' 3 ...
+Regresion:    python deploy/diagnostico/20261105_portada_verificacion.py
+== estructura de la region ┬½Gestion de Usuarios┬╗ ==
+  [OK   ] la region sigue siendo Interactive Report (NATIVE_IR)
+  [OK   ] el origen es SQL, no TABLE (877 caracteres de fuente)
+== columna ┬½Situacion┬╗ ==
+  [OK   ] existe la columna SITUACION
+  [OK   ] etiqueta ┬½Situacion┬╗ (Situaci├│n)
+  [OK   ] tipo STRING (STRING)
+  [OK   ] el badge usa status-#SITUACION_CLASE# (<span class="status-badge status-#SITUACION_CLASE#">
+    <sp...)
+  [OK   ] orden 7 (entre Estado y Fecha) (7)
+  [OK   ] existe la columna auxiliar SITUACION_CLASE
+  [OK   ] SITUACION esta en el informe por defecto (USUARIO_ID:USERNAME:EMAIL:PASSWORD_HASH:ESTADO:SITUACION:FECHA_CREACION)
+  [OK   ] SITUACION_CLASE NO se muestra
+== region ┬½Ultimos intentos┬╗ ==
+  [OK   ] existe la region de intentos
+  [OK   ] es un report clasico (NATIVE_SQL_REPORT) (NATIVE_SQL_REPORT)
+  [OK   ] lee syn_login_log
+  [OK   ] limita a 20 filas
+  [OK   ] va debajo del IR y de los errores (30)
+== la consulta guardada se ejecuta ==
+  [OK   ] devuelve las dos columnas de situacion (10 columnas)
+  [OK   ] devuelve una fila por usuario (14 de 14)
+== comportamiento de la columna (transaccion con rollback) ==
+  [OK   ] bloqueado -> ┬½Bloqueado┬╗ / BLOQUEADO ('Bloqueado', 'BLOQUEADO')
+  [OK   ] pendiente -> ┬½Pendiente┬╗ / PENDIENTE ('Pendiente', 'PENDIENTE')
+  [OK   ] clave por cambiar -> sufijo y clase ACTIVO ('Activo (clave por cambiar)', 'ACTIVO')
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+  [OK   ] la guarda de rol de la pagina 3 sigue
+
+RESULTADO: FALLAS=0
+== HTTP ==
+admin.demo pagina 3: HTTP 200, 61,848 bytes -> C:\Users\luism\AppData\Local\Temp\opencode\p3.html
+
+== Regresion: portada y app ==
+== HTTP ==
+  [OK   ] la raiz de la app sirve la portada (HTTP 200)
+  [OK   ] la pagina 15 responde 200 (27,826 bytes)
+  [OK   ] la portada trae spx-portada
+  [OK   ] la portada trae spx-hero
+  [OK   ] la portada trae spx-servicios
+  [OK   ] la portada trae spx-servicio
+  [OK   ] la portada trae spx-indicadores
+  [OK   ] la portada trae spx-pie
+  [OK   ] la portada trae wa.me/528111198920
+  [OK   ] la portada trae Presupuestos, facturaci├│n y clientes
+  [OK   ] la portada trae la seccion spx-inicio
+  [OK   ] la portada trae la seccion spx-servicios
+  [OK   ] la portada trae la seccion spx-nosotros
+  [OK   ] la portada trae la seccion spx-contacto
+  [OK   ] sin comentario de instrucciones a la vista
+  [OK   ] sin la cabecera de la region (New)
+  [OK   ] sin el usuario de APEX a la vista
+  [OK   ] sin enlaces a la pagina 17 (no existe)
+  [OK   ] pagina 2 (registro) sigue igual (HTTP 200)
+  [OK   ] pagina 14 (recuperar clave) sigue igual (HTTP 200)
+  [OK   ] pagina 9999 (login) sigue igual (HTTP 200)
+  [OK   ] pagina 1 (home privada) sigue igual (HTTP 302)
+
+== base de datos ==
+  [OK   ] la app tiene 19 paginas
+  [OK   ] la region tiene tipo de plugin que resuelve ('Static Content', 'STATIC_TEXT')
+  [OK   ] la pagina 15 es publica (Unrestricted)
+  [OK   ] la pagina 15 usa la plantilla Blank (Blank)
+  [OK   ] siguen las 12 guardas de rol
+  [OK   ] siguen las 7 guardas de propiedad de documento
+  [OK   ] sigue la guarda del cambio de clave (pagina 0)
+  [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
+  [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] el Panel General no avisa de cambios sin guardar
+  [OK   ] la lista de Presupuestos selecciona con checkbox, como Facturacion
+  [OK   ] la tarjeta de totales de Presupuestos usa el mismo formato
+  [OK   ] cero objetos invalidos en WKSP_SYPEXWS
+
+RESULTADO: FALLAS=0

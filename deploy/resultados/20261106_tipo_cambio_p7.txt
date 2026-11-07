@@ -1,0 +1,111 @@
+Evidencia: tipo de cambio de la pagina 7 (Presupuestos), corregido el 2026-11-06
+================================================================================
+Sintoma: con un presupuesto en USD, «Tipo Cambio» salia 1.
+Causa: la accion dinamica usaba fn_tasa_cambio(fecha, moneda), escrita como factor A USD (devuelve
+1 para USD y para VES). Pero el sistema guarda TIPO_CAMBIO como BOLIVARES POR UNIDAD de la moneda del
+documento (tabla: USD->VES 894.8876, MXN->VES 48.136823, VES = 1) y asi lo usa FACTURACION, cuyo
+detalle hace subtotal_linea * tasa_cambio para los montos en Bs.
+
+Correccion: la accion de la pagina 7 es ahora la MISMA consulta SQL que la de la pagina 9
+(SQL_STATEMENT sobre tipo_cambio, moneda_destino='VES', tipo_tasa='REAL'), dispara con
+P7_FECHA_EMISION y P7_COD_MONEDA (antes solo con la fecha) y se ejecuta al cargar la pagina.
+
+Import: 72 sentencias, 3.0 s. En la base, la accion quedo con EXECUTE_ON_PAGE_INIT=Yes y type
+SQL_STATEMENT (leido de APEX_APPLICATION_PAGE_DA_ACTS).
+
+Pendiente relacionado (no tocado, espera decision): pkg_gasto_real multiplica el monto por
+fn_tasa_cambio, que tambien viene en bolivares por unidad. Hoy solo acierta con USD.
+== la accion dinamica de la pagina 7 ==
+  [OK   ] la pagina 7 usa la misma consulta que facturacion
+  [OK   ] no usa fn_tasa_cambio (devolvia 1 para USD)
+  [OK   ] el tipo de accion es SQL_STATEMENT
+  [OK   ] se ejecuta al cargar la pagina
+  [OK   ] dispara al cambiar la moneda
+== el SQL de la accion, ejecutado ==
+  [OK   ] encuentro el SQL de la accion en el export (466 caracteres)
+  [OK   ] VES -> 1 (1)
+  [OK   ] USD -> la tasa BCV de la tabla (894.8876 vs 894.8876)
+  [OK   ] MXN -> la tasa BCV de la tabla (48.136823 vs 48.136823)
+== montos en bolivares: multiplicar, no dividir ==
+  [OK   ] la tasa USD->VES es mayor que 1 (es bolivares por dolar) (894.8876)
+== datos historicos con la tasa mal ==
+  presupuestos en USD con tipo_cambio = 1: 29
+  facturas en USD con tipo_cambio = 1: 23
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+
+RESULTADO: FALLAS=0
+
+== Regresion: tarjeta de la pagina 5 ==
+== las ocho lineas estan siempre ==
+  [OK   ] linea ┬½Subtotal Bruto (┬╗
+  [OK   ] linea ┬½Descuento Total (┬╗
+  [OK   ] linea ┬½Subtotal Neto (┬╗
+  [OK   ] linea ┬½Impuestos / IVA┬╗
+  [OK   ] linea ┬½Total (┬╗
+  [OK   ] linea ┬½Total equivalente (VES)┬╗
+  [OK   ] linea ┬½Gasto real┬╗
+  [OK   ] linea ┬½Desviacion┬╗
+== nada queda condicionado ==
+  [OK   ] sin ┬½if v_total_descuento > 0┬╗
+  [OK   ] sin ┬½if v_gasto_real > 0┬╗
+  [OK   ] sin ┬½if upper(v_moneda)┬╗
+== el calculo sigue siendo el mismo que facturacion ==
+  [OK   ] suma las lineas para el total
+  [OK   ] la mascara es la de facturacion
+  [OK   ] no vuelve el formato de pesos
+  [OK   ] sigue trayendo el gasto real
+  [OK   ] sigue filtrando por el presupuesto elegido
+== el HTML real de la tarjeta ==
+  [OK   ] sin descuento: salen las ocho lineas (presupuesto 1001)
+  [OK   ] sin descuento: el descuento sale en cero, no desaparece
+  [OK   ] con descuento: las ocho lineas siguen saliendo
+  [OK   ] con descuento: muestra el importe
+== estado general ==
+  [OK   ] 0 objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+
+RESULTADO: FALLAS=0
+
+== Regresion: portada y app ==
+== HTTP ==
+  [OK   ] la raiz de la app sirve la portada (HTTP 200)
+  [OK   ] la pagina 15 responde 200 (27,824 bytes)
+  [OK   ] la portada trae spx-portada
+  [OK   ] la portada trae spx-hero
+  [OK   ] la portada trae spx-servicios
+  [OK   ] la portada trae spx-servicio
+  [OK   ] la portada trae spx-indicadores
+  [OK   ] la portada trae spx-pie
+  [OK   ] la portada trae wa.me/528111198920
+  [OK   ] la portada trae Presupuestos, facturaci├│n y clientes
+  [OK   ] la portada trae la seccion spx-inicio
+  [OK   ] la portada trae la seccion spx-servicios
+  [OK   ] la portada trae la seccion spx-nosotros
+  [OK   ] la portada trae la seccion spx-contacto
+  [OK   ] sin comentario de instrucciones a la vista
+  [OK   ] sin la cabecera de la region (New)
+  [OK   ] sin el usuario de APEX a la vista
+  [OK   ] sin enlaces a la pagina 17 (no existe)
+  [OK   ] pagina 2 (registro) sigue igual (HTTP 200)
+  [OK   ] pagina 14 (recuperar clave) sigue igual (HTTP 200)
+  [OK   ] pagina 9999 (login) sigue igual (HTTP 200)
+  [OK   ] pagina 1 (home privada) sigue igual (HTTP 302)
+
+== base de datos ==
+  [OK   ] la app tiene 19 paginas
+  [OK   ] la region tiene tipo de plugin que resuelve ('Static Content', 'STATIC_TEXT')
+  [OK   ] la pagina 15 es publica (Unrestricted)
+  [OK   ] la pagina 15 usa la plantilla Blank (Blank)
+  [OK   ] siguen las 12 guardas de rol
+  [OK   ] siguen las 7 guardas de propiedad de documento
+  [OK   ] sigue la guarda del cambio de clave (pagina 0)
+  [OK   ] sigue el item F_DEBE_CAMBIAR_CLAVE
+  [OK   ] la portada no sale en el menu de navegacion
+  [OK   ] el Panel General no avisa de cambios sin guardar
+  [OK   ] la lista de Presupuestos selecciona con checkbox, como Facturacion
+  [OK   ] la tarjeta de totales de Presupuestos usa el mismo formato
+  [OK   ] cero objetos invalidos en WKSP_SYPEXWS
+
+RESULTADO: FALLAS=0
