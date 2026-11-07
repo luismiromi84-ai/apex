@@ -1,0 +1,26 @@
+﻿== Procesos de la pagina 4 ==
+  [OK   ] crear-usuario: valida la empresa
+  [OK   ] crear-usuario: rechaza con -20003
+  [OK   ] update-usuario: valida la empresa
+  [OK   ] update-usuario: rechaza con -20003
+  [OK   ] eliminar-usuario: valida la empresa
+  [OK   ] eliminar-usuario: rechaza con -20003
+  [OK   ] desbloquear-usuario: valida la empresa
+  [OK   ] desbloquear-usuario: rechaza con -20003
+== Lista de usuarios (pagina 3) ==
+  [OK   ] la lista trae los de su empresa y los pendientes sin empresa
+  [OK   ] el filtro es por el usuario de la sesion
+== Filas que ve cada administrador en la lista ==
+  [OK   ] admin.demo ve 13 usuario(s) (13)
+  [OK   ] mx.demo ve 1 usuario(s) (1)
+== Comportamiento: borrar usuarios ==
+  [OK   ] mx.demo (empresa 2) NO puede borrar un usuario de la empresa 1
+  [OK   ] mx.demo SI puede borrar un usuario de su empresa
+  [OK   ] admin.demo SI puede borrar un usuario de su empresa
+  [OK   ] admin.demo (empresa 1) NO puede tocar la empresa 2
+  [OK   ] un usuario que no existe en USUARIO no puede tocar nada
+== Estado general ==
+  [OK   ] cero objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+
+RESULTADO: FALLAS=0

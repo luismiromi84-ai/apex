@@ -8435,6 +8435,9 @@ wwv_flow_imp_page.create_page_plug(
 '  from usuario u',
 '  left join empresas e on e.id_empresa = u.id_empresa',
 '  left join syn_roles r on r.id_rol = u.rol_id',
+' where u.id_empresa = (select x.id_empresa from usuario x',
+'                        where upper(x.username) = upper(:APP_USER))',
+'    or u.id_empresa is null',
 ' order by lower(u.username)'))
 ,p_include_rowid_column=>false
 ,p_plug_source_type=>'NATIVE_IR'
@@ -9155,6 +9158,17 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Crear Usuario'
 ,p_static_id=>'crear-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_mia number;',
+'begin',
+'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
+'      into v_mia from dual;',
+'',
+'    -- Cada administrador da de alta usuarios SOLO en su empresa.',
+'    if v_mia is null or fn_clean_num(:P4_ID_EMPRESA) <> v_mia then',
+'        raise_application_error(-20003, ''Solo puede crear usuarios en su propia empresa.'');',
+'    end if;',
+'',
 'INSERT INTO wksp_sypexws.usuario (',
 '    username,',
 '    email,',
@@ -9169,11 +9183,12 @@ wwv_flow_imp_page.create_page_process(
 '    :P4_EMAIL,',
 '    :P4_ESTADO,',
 '    :P4_ROL_ID,',
-'    :P4_ID_EMPRESA,',
+'    v_mia,',
 '    sypex_hash_password(:P4_PASSWORD),',
 '    SYSDATE,',
 '    ''S''',
-');'))
+');',
+'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(10562677901198330)
@@ -9187,10 +9202,28 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Desbloquear usuario'
 ,p_static_id=>'desbloquear-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_mia number;',
+'    v_obj number;',
+'begin',
+'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
+'      into v_mia from dual;',
+'    select (select id_empresa from usuario where usuario_id = fn_clean_num(:P4_USUARIO_ID))',
+'      into v_obj from dual;',
+'',
+'    -- Solo los usuarios de la propia empresa; un pendiente sin empresa se puede',
+'    -- activar, pero solo para la empresa del administrador.',
+'    if v_mia is null',
+'       or (v_obj is not null and v_obj <> v_mia)',
+'       or fn_clean_num(:P4_ID_EMPRESA) <> v_mia then',
+unistr('        raise_application_error(-20003, ''Solo puede administrar usuarios de su propia empresa.'');'),
+'    end if;',
+'',
 'update usuario',
 '   set reintentos_fallidos = 0,',
 '       bloqueado_hasta = null',
-' where usuario_id = fn_clean_num(:P4_USUARIO_ID);'))
+' where usuario_id = fn_clean_num(:P4_USUARIO_ID);',
+'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000000064)
@@ -9205,8 +9238,22 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Eliminar Usuario'
 ,p_static_id=>'eliminar-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_mia number;',
+'    v_obj number;',
+'begin',
+'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
+'      into v_mia from dual;',
+'    select (select id_empresa from usuario where usuario_id = fn_clean_num(:P4_USUARIO_ID))',
+'      into v_obj from dual;',
+'',
+'    if v_mia is null or nvl(v_obj, -1) <> v_mia then',
+unistr('        raise_application_error(-20003, ''Solo puede eliminar usuarios de su propia empresa.'');'),
+'    end if;',
+'',
 'DELETE FROM wksp_sypexws.usuario',
-' WHERE usuario_id = :P4_USUARIO_ID; -- Cambia P4_USUARIO_ID por el nombre exacto de la PK'))
+' WHERE usuario_id = fn_clean_num(:P4_USUARIO_ID);',
+'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(10561819955198328)
@@ -9234,12 +9281,25 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'update usuario'
 ,p_static_id=>'update-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_mia number;',
+'    v_obj number;',
+'begin',
+'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
+'      into v_mia from dual;',
+'    select (select id_empresa from usuario where usuario_id = fn_clean_num(:P4_USUARIO_ID))',
+'      into v_obj from dual;',
+'',
+'    if v_mia is null or nvl(v_obj, -1) <> v_mia then',
+unistr('        raise_application_error(-20003, ''Solo puede administrar usuarios de su propia empresa.'');'),
+'    end if;',
+'',
 'UPDATE wksp_sypexws.usuario',
 '   SET username            = :P4_USERNAME,',
 '       email               = :P4_EMAIL,',
 '       estado              = :P4_ESTADO,',
 '       rol_id              = :P4_ROL_ID,',
-'       id_empresa          = :P4_ID_EMPRESA,',
+'       id_empresa          = v_mia,',
 '       password_hash       = CASE',
 '                               WHEN :P4_PASSWORD IS NOT NULL THEN sypex_hash_password(:P4_PASSWORD)',
 '                               ELSE password_hash',
@@ -9256,7 +9316,8 @@ wwv_flow_imp_page.create_page_process(
 '                               WHEN :P4_PASSWORD IS NOT NULL THEN ''S''',
 '                               ELSE debe_cambiar_clave',
 '                             END',
-' WHERE usuario_id     = :P4_USUARIO_ID;'))
+' WHERE usuario_id     = fn_clean_num(:P4_USUARIO_ID);',
+'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(10562251657198329)
