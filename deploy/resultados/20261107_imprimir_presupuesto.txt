@@ -1,0 +1,94 @@
+﻿=======================================================================
+Impreso del presupuesto: los totales en la moneda del documento
+Evidencia de ejecucion - 2026-11-07
+Entorno: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), esquema WKSP_SYPEXWS
+=======================================================================
+
+1. EL BUG (reportado por el dueno con el PDF de su presupuesto)
+---------------------------------------------------------------
+`pkg_reportes_presupuesto` tenia el rotulo `TOTAL USD` FIJO y calculaba el
+"total local" como `total * tipo_cambio`. La tasa se guarda en BOLIVARES POR
+UNIDAD, asi que en un documento que NO esta en dolares las dos cosas salian mal.
+
+PDF real del presupuesto 1206 (Empresa Mexico, documento en MXN):
+
+    Subtotal (sin impuestos): $360.00
+    Impuestos / IVA:          $57.60
+    TOTAL USD:                $417.60      <- son 417,60 MXN
+    TOTAL MXN:                MXN $1,085.76 <- son Bs 1.085,76 (417,60 x 2,6)
+
+La factura 1206 ya estaba bien (371,20 MXN / 21,02 USD) porque su package se
+corrigio el 2026-11-06.
+
+2. RED - la verificacion antes del arreglo (3 fallas)
+-----------------------------------------------------
+$ python deploy/diagnostico/20261107_imprimir_presupuesto.py
+
+Presupuestos por moneda: {'MXN': 1009, 'USD': 1001, 'VES': 1006}
+
+== presupuesto 1009 (MXN) ==
+  [FALLA] total en la moneda del documento (TOTAL MXN)
+          ({'TOTAL USD': '278.40', 'TOTAL BS': '696.00'})
+  [OK   ] hay equivalente en USD
+  [FALLA] TOTAL USD = 16.82 (278.40)
+  [OK   ] hay total en la moneda local (TOTAL BS)
+  [OK   ] TOTAL BS = 696.00 (696.00)
+
+== presupuesto 1001 (USD) ==
+  (todo OK: ya estaba bien)
+
+== presupuesto 1006 (VES) ==
+  [OK   ] total en la moneda del documento (TOTAL BS)
+  [FALLA] TOTAL USD = 0.78 (696.00)
+  [OK   ] no se repite el total local cuando es la moneda del documento
+
+RESULTADO: FALLAS=3
+
+3. EL ARREGLO (solo el body de pkg_reportes_presupuesto)
+--------------------------------------------------------
+  * Se lee tambien `p.cod_moneda` y `p.fecha_emision`.
+  * factor_usd   = tasa_doc / tasa_usd      (1 si el documento esta en USD)
+  * factor_local = tasa_doc / tasa_local    (1 si el documento esta en la
+                                             moneda local del pais)
+    con `fn_tasa_ves(fecha, moneda)`, que devuelve bolivares por unidad.
+  * Total principal: "TOTAL <moneda del documento>".
+  * "TOTAL USD": solo si el documento no esta en dolares.
+  * "TOTAL <local>" (BS / MXN): solo si la moneda local no es la del documento.
+  * La columna por linea pasa a "Total <simbolo del documento>" y la extra
+    "Total <simbolo local>" usa factor_local.
+  * La etiqueta de la tasa dice la moneda del documento:
+    "Tipo de cambio: 2,6000 MXN" (antes decia USD o la local, mal).
+
+4. GREEN - la misma verificacion (0 fallas), con el 1206 incluido
+----------------------------------------------------------------
+$ python deploy/diagnostico/20261107_imprimir_presupuesto.py
+
+Presupuestos por moneda: {'MXN': 1009, 'USD': 1001, 'VES': 1006}
+
+== presupuesto 1009 (MXN, empresa VE) ==
+  TOTAL MXN 278.40 | TOTAL USD 16.82 | TOTAL BS 696.00
+
+== presupuesto 1206 (MXN, Empresa Mexico: el del PDF del dueno) ==
+  TOTAL MXN 417.60 | TOTAL USD 23.64        (ya no hay "TOTAL BS" falso)
+
+== presupuesto 1001 (USD, empresa VE) ==
+  TOTAL USD 730.80 | TOTAL BS 35,217.25     (sin cambios: ya estaba bien)
+
+== presupuesto 1006 (VES) ==
+  TOTAL BS 696.00 | TOTAL USD 0.78          (antes "TOTAL USD 696.00")
+
+RESULTADO: FALLAS=0
+
+5. REGRESION QUE SALIO EN LA SUITE (y no era de produccion)
+-----------------------------------------------------------
+`20261105_reportes_verificacion.sql` paso a FALLAS=2 (C4 y C5: "empresa MX no
+muestra RFC"). La causa NO era el documento: ese test copiaba el HTML a un
+VARCHAR2 de 12000 caracteres y, al cargar el logo de la empresa 2 (694 KB en un
+data URI), los rotulos e importes quedaban fuera del recorte. Se corrigio el test
+para quitar la etiqueta <img> entera antes de recortar. Vuelve a FALLAS=0.
+
+6. ESTADO DESPUES
+-----------------
+Suite de deploy/diagnostico/*.sql: 11 verificaciones con RESULTADO, todas en
+FALLAS=0. 0 objetos invalidos. 19 paginas.
+=======================================================================

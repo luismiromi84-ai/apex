@@ -49,9 +49,16 @@ declare
 
   -- Texto plano del HTML, util para buscar etiquetas.
   function texto (p_html in clob) return varchar2 is
+    v_limpio clob;
     v_salida varchar2(32767);
   begin
-    v_salida := dbms_lob.substr(p_html, 12000, 1);
+    -- Desde el 2026-11-07 la empresa 2 tiene logo y viaja como data URI (694 KB
+    -- en un solo atributo). Si se recorta el CLOB sin quitarlo, los rotulos y los
+    -- importes quedan fuera de los 12000 caracteres y las comprobaciones fallan
+    -- sin que el documento este mal. Se quita la etiqueta <img> entera: el base64
+    -- no contiene '>', asi que <img[^>]*> la abarca completa.
+    v_limpio := regexp_replace(p_html, '<img[^>]*>', '[logo]');
+    v_salida := dbms_lob.substr(v_limpio, 12000, 1);
     v_salida := regexp_replace(v_salida, '<[^>]+>', ' ');
     return regexp_replace(v_salida, '[[:space:]]+', ' ');
   end texto;

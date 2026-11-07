@@ -1,0 +1,12 @@
+﻿== WHERE de las regiones form ==
+  [OK   ] p6 (Detalle de Presupuesto): no califica la tabla (donde=id_detalle = :P6_ID_DETALLE and exists (select 1 from presup...)
+  [OK   ] p6: el WHERE es valido con alias (1 fila(s))
+  [OK   ] p10 (Detalle de facturaci├│n): no califica la tabla (donde=id_detalle = :P10_ID_DETALLE and exists (select 1 from factu...)
+  [OK   ] p10: el WHERE es valido con alias (1 fila(s))
+  [OK   ] p16 (Gasto real): no califica la tabla (donde=id_gasto = :P16_ID_GASTO and exists (select 1 from presupues...)
+  [OK   ] p16: el WHERE es valido con alias (0 fila(s))
+== Estado general ==
+  [OK   ] cero objetos invalidos (0)
+  [OK   ] siguen las 19 paginas (19)
+
+RESULTADO: FALLAS=0

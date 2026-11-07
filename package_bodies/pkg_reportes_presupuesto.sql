@@ -87,10 +87,21 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
         v_cliente_label   VARCHAR2(30);
         v_cod_pais        VARCHAR2(2);
         v_moneda_local    VARCHAR2(3);
+        v_moneda_doc      VARCHAR2(3);
+        v_fecha_doc       DATE;
         v_tasa_label      VARCHAR2(30) := 'Tipo de cambio';
         v_simbolo_local   VARCHAR2(10) := '';
+        v_simbolo_doc     VARCHAR2(10) := '';
         v_total_local_lbl VARCHAR2(30) := 'TOTAL';
+        v_total_doc_lbl   VARCHAR2(30) := 'TOTAL';
         v_mostrar_local   BOOLEAN      := FALSE;
+        v_mostrar_usd     BOOLEAN      := FALSE;
+        v_tasa_usd        NUMBER := 1;
+        v_tasa_local      NUMBER := 1;
+        v_factor_usd      NUMBER := 1;
+        v_factor_local    NUMBER := 1;
+        v_usd_total       NUMBER := 0;
+        v_local_total     NUMBER := 0;
 
         v_folio           VARCHAR2(50);
         v_fecha           VARCHAR2(50);
@@ -121,12 +132,12 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
                    p.estado, p.observaciones,
                    nvl(p.subtotal, 0), nvl(p.impuesto_iva, 0), nvl(p.total, 0),
                    nvl(e.tipo_ident_fiscal, 'RIF'), nvl(e.cod_pais, 'VE'),
-                   nvl(pa.moneda_local, 'USD')
+                   nvl(pa.moneda_local, 'USD'), p.cod_moneda, p.fecha_emision
               INTO v_id_empresa, v_empresa, v_ident_empresa, v_folio,
                    v_fecha, v_vencimiento, v_cliente, v_rif_cliente, v_tasa,
                    v_estado, v_observaciones,
                    v_subtotal, v_iva, v_total,
-                   v_ident_label, v_cod_pais, v_moneda_local
+                   v_ident_label, v_cod_pais, v_moneda_local, v_moneda_doc, v_fecha_doc
               FROM presupuestos p
               JOIN clientes c
                 ON c.id_cliente = p.id_cliente
@@ -154,23 +165,50 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
                                    'Identificaci&oacute;n fiscal');
         END IF;
 
+        -- 2 bis. Etiquetas y factores de conversion.
+        --   El total principal va en la MONEDA DEL DOCUMENTO (no siempre USD),
+        --   el equivalente en USD se calcula con fn_tasa_ves y el total en la
+        --   moneda local solo se muestra cuando no es la misma del documento.
+        --   La tasa se guarda en BOLIVARES POR UNIDAD (USD->VES 896,12 ·
+        --   MXN->VES 47,91 · VES = 1), asi que:
+        --       factor_usd   = tasa_doc / tasa_usd
+        --       factor_local = tasa_doc / tasa_local
+        v_moneda_doc := upper(nvl(v_moneda_doc, 'USD'));
+
+        v_simbolo_doc := CASE v_moneda_doc
+                              WHEN 'VES' THEN 'Bs.'
+                              WHEN 'MXN' THEN 'MXN $'
+                              WHEN 'USD' THEN '$'
+                              ELSE v_moneda_doc
+                         END;
+        v_total_doc_lbl := 'TOTAL ' || CASE WHEN v_moneda_doc = 'VES' THEN 'BS' ELSE v_moneda_doc END;
+
+        v_tasa_local := nvl(fn_tasa_ves(v_fecha_doc, v_moneda_local), 1);
+        v_tasa_usd   := nvl(fn_tasa_ves(v_fecha_doc, 'USD'), 1);
+
+        v_factor_usd   := CASE WHEN v_moneda_doc = 'USD' THEN 1
+                               ELSE nvl(v_tasa, 1) / v_tasa_usd END;
+        v_factor_local := CASE WHEN v_moneda_doc = v_moneda_local THEN 1
+                               ELSE nvl(v_tasa, 1) / v_tasa_local END;
+
+        v_usd_total   := round(v_total * v_factor_usd, 2);
+        v_local_total := round(v_total * v_factor_local, 2);
+
+        v_mostrar_usd   := (v_moneda_doc <> 'USD');
+        v_mostrar_local := (v_moneda_doc <> v_moneda_local);
+
         IF v_moneda_local = 'VES' THEN
             v_tasa_label      := 'Tasa BCV';
             v_simbolo_local   := 'Bs.';
             v_total_local_lbl := 'TOTAL BS';
-            v_mostrar_local   := TRUE;
-        ELSIF v_moneda_local = 'USD' THEN
-            v_tasa_label      := 'Tipo de cambio';
         ELSIF v_moneda_local = 'MXN' THEN
             v_tasa_label      := 'Tipo de cambio';
             v_simbolo_local   := 'MXN $';
             v_total_local_lbl := 'TOTAL MXN';
-            v_mostrar_local   := TRUE;
         ELSE
             v_tasa_label      := 'Tipo de cambio';
             v_simbolo_local   := v_moneda_local;
             v_total_local_lbl := 'TOTAL ' || v_moneda_local;
-            v_mostrar_local   := TRUE;
         END IF;
 
         -- 3. Cabecera del documento
@@ -210,7 +248,7 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
     <tr>
       <td><strong>Estado:</strong> ~' || sys.htf.escape_sc(v_estado) || q'~</td>
       <td><strong>~' || v_tasa_label || q'~:</strong> ~' || fn_num(nvl(v_tasa, 1), 'FM999,999,99990.0000')
-      || ' ' || CASE WHEN v_mostrar_local THEN v_moneda_local ELSE 'USD' END || q'~</td>
+      || ' ' || v_moneda_doc || q'~</td>
     </tr>
   </table>
 
@@ -223,7 +261,7 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
         <th class="text-right">Precio</th>
         <th class="text-right">Desc.</th>
         <th class="text-right">Impuesto</th>
-        <th class="text-right">Total</th>~';
+        <th class="text-right">Total ~' || v_simbolo_doc || q'~</th>~';
 
         IF v_mostrar_local THEN
             v_html := v_html || q'~
@@ -261,7 +299,7 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
             IF v_mostrar_local THEN
                 v_html := v_html
                     || '<td class="text-right" style="color: #005b96; font-weight: bold;">'
-                    || fn_num(r.monto_total_linea * nvl(v_tasa, 1), 'FM999,999,999,990.00')
+                    || fn_num(r.monto_total_linea * v_factor_local, 'FM999,999,999,990.00')
                     || '</td>';
             END IF;
 
@@ -303,16 +341,25 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
           <td class="text-right">$~' || fn_num(v_iva, 'FM999,999,990.00') || q'~</td>
         </tr>
         <tr style="border-top: 1px solid #ddd;">
-          <td><strong>TOTAL USD:</strong></td>
-          <td class="text-right"><strong>$~' || fn_num(v_total, 'FM999,999,990.00') || q'~</strong></td>
+          <td><strong>~' || v_total_doc_lbl || q'~:</strong></td>
+          <td class="text-right"><strong>~' || v_simbolo_doc || ' '
+          || fn_num(v_total, 'FM999,999,990.00') || q'~</strong></td>
         </tr>~';
+
+        IF v_mostrar_usd THEN
+            v_html := v_html || q'~
+        <tr>
+          <td><strong>TOTAL USD:</strong></td>
+          <td class="text-right"><strong>$~' || fn_num(v_usd_total, 'FM999,999,990.00') || q'~</strong></td>
+        </tr>~';
+        END IF;
 
         IF v_mostrar_local THEN
             v_html := v_html || q'~
         <tr style="border-top: 2px solid #005b96; background: #eef6fc;">
           <td><strong>~' || v_total_local_lbl || q'~:</strong></td>
           <td class="text-right" style="color: #005b96;"><strong>~' || v_simbolo_local || ' '
-          || fn_num(v_total * nvl(v_tasa, 1), 'FM999,999,999,990.00') || q'~</strong></td>
+          || fn_num(v_local_total, 'FM999,999,999,990.00') || q'~</strong></td>
         </tr>~';
         END IF;
 

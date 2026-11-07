@@ -10550,7 +10550,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS_DET'
-,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = presupuestos_det.id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'''
+,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'''
 ||', ''A'', ''1'')))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
@@ -14462,7 +14462,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'FACTURAS_DET'
-,p_query_where=>'id_detalle = :P10_ID_DETALLE and exists (select 1 from facturas f where f.id_factura = facturas_det.id_factura and f.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_query_where=>'id_detalle = :P10_ID_DETALLE and exists (select 1 from facturas f where f.id_factura = id_factura and f.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
@@ -16841,7 +16841,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'GASTO_REAL'
-,p_query_where=>'id_gasto = :P16_ID_GASTO and exists (select 1 from presupuestos p where p.id_presupuesto = gasto_real.id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_query_where=>'id_gasto = :P16_ID_GASTO and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
