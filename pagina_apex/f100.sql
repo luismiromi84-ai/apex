@@ -7419,7 +7419,7 @@ wwv_flow_imp_shared.create_flow_process(
 '    end;',
 '',
 '    if v_flag = ''S'' then',
-'        apex_util.redirect_url(''f?p='' || v(''APP_ID'') || '':14:'' || v(''APP_SESSION'') || ''::'' || v(''DEBUG''));',
+'        apex_util.redirect_url(apex_page.get_url(p_page => 14));',
 '    end if;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
@@ -11902,6 +11902,9 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '.status-CANCELADO { color: #475569; background-color: #f1f5f9; } .status-CANCELADO .status-dot { background-color: #94a3b8; }',
 '.status-FACTURADO { color: #6d28d9; background-color: #f5f3ff; } .status-FACTURADO .status-dot { background-color: #8b5cf6; }',
 '.status-ACTIVO { color: #15803d; background-color: #f0fdf4; } .status-ACTIVO .status-dot { background-color: #22c55e; }',
+'.status-TIMBRADA { color: #1d4ed8; background-color: #eff6ff; } .status-TIMBRADA .status-dot { background-color: #3b82f6; }',
+'.status-PAGADA { color: #15803d; background-color: #f0fdf4; } .status-PAGADA .status-dot { background-color: #22c55e; }',
+'.status-ANULADA { color: #475569; background-color: #f1f5f9; } .status-ANULADA .status-dot { background-color: #94a3b8; }',
 '.status-INACTIVO { color: #b91c1c; background-color: #fef2f2; } .status-INACTIVO .status-dot { background-color: #ef4444; }',
 '.status-BLOQUEADO { color: #991b1b; background-color: #fee2e2; } .status-BLOQUEADO .status-dot { background-color: #dc2626; }',
 '/* Barra del cuadro de dialogo: la pinta el navegador en ESTA pagina, no el modal. */',
@@ -12363,8 +12366,9 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'W'
 ,p_column_label=>'Estado'
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<span style="#ESTADO_CSS# padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 11px; display: inline-block;">',
-'  #ESTADO#',
+'<span class="status-badge status-#ESTADO#">',
+'    <span class="status-dot"></span>',
+'    #ESTADO#',
 '</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
@@ -16394,7 +16398,7 @@ unistr('    raise_application_error(-20012, ''La contrase\00F1a debe tener al me
 '            p_resultado => ''OK'');',
 '',
 '        apex_util.set_session_state(''F_DEBE_CAMBIAR_CLAVE'', ''N'');',
-'        apex_util.redirect_url(''f?p='' || v(''APP_ID'') || '':1:'' || v(''APP_SESSION'') || ''::'' || v(''DEBUG''));',
+'        apex_util.redirect_url(apex_page.get_url(p_page => 1));',
 '        return;',
 '    end if;',
 '',
@@ -16812,6 +16816,7 @@ wwv_flow_imp_page.create_page_plug(
 );
 wwv_flow_imp_page.create_worksheet(
  p_id=>wwv_flow_imp.id(43000000000000079)
+,p_no_data_found_message=>'Este presupuesto no tiene gastos registrados. Agrega el primero con el formulario de abajo.'
 ,p_pagination_type=>'ROWS_X_TO_Y'
 ,p_pagination_display_pos=>'BOTTOM_RIGHT'
 ,p_report_list_mode=>'TABS'
@@ -16958,7 +16963,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_DATE_PICKER_APEX'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-);
+
+,p_colspan=>6);
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000058)
 ,p_name=>'P16_MONTO_ORIGEN'
@@ -16974,7 +16980,9 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>20
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-);
+
+,p_colspan=>6
+,p_begin_on_new_line=>'N');
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000059)
 ,p_name=>'P16_MONEDA_ORIGEN'
@@ -16993,9 +17001,10 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
-);
+
+,p_colspan=>6);
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000060)
+ p_id=>wwv_flow_imp.id(43000000000000170)
 ,p_name=>'P16_TASA_REAL'
 ,p_source_data_type=>'NUMBER'
 ,p_item_sequence=>60
@@ -17008,24 +17017,13 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>16
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000063)
-,p_name=>'P16_MONTO_BASE_USD'
-,p_source_data_type=>'NUMBER'
-,p_item_sequence=>70
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
-,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
-,p_prompt=>'Equivalente USD'
-,p_source=>'MONTO_BASE_USD'
-,p_source_type=>'ALWAYS_NULL'
-,p_display_as=>'NATIVE_DISPLAY_ONLY'
-,p_field_template=>1610598304472262251
-,p_item_template_options=>'#DEFAULT#'
-);
+
+,p_colspan=>6
+,p_begin_on_new_line=>'N');
+
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000073)
-,p_button_sequence=>10
+,p_button_sequence=>100
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_button_name=>'BTN_GUARDAR_GASTO'
 ,p_static_id=>'btn-guardar-gasto'
@@ -17043,7 +17041,7 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000074)
-,p_button_sequence=>20
+,p_button_sequence=>110
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_button_name=>'BTN_ELIMINAR_GASTO'
 ,p_static_id=>'btn-eliminar-gasto'
@@ -17059,11 +17057,11 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-trash-o'
 ,p_grid_new_row=>'N'
-,p_grid_column=>6
+
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000075)
-,p_button_sequence=>30
+,p_button_sequence=>120
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_button_name=>'BTN_VOLVER_GASTO'
 ,p_static_id=>'btn-volver-gasto'
@@ -17076,7 +17074,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-undo'
 ,p_grid_new_row=>'N'
-,p_grid_column=>11
+
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000076)
