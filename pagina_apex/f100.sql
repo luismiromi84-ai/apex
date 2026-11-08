@@ -8300,6 +8300,18 @@ unistr('        raise_application_error(-20012, ''La contrase\00F1a debe tener a
 ,p_process_success_message=>unistr('Solicitud registrada. Un administrador debe activar la cuenta y asignarte empresa y rol antes de que puedas iniciar sesi\00F3n.')
 ,p_internal_uid=>9177463962212509
 );
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(43000000000000270)
+,p_validation_name=>unistr('Correo con formato v\00E1lido')
+,p_static_id=>'correo-formato-valido'
+,p_validation_sequence=>35
+,p_validation=>'REGEXP_LIKE(:P2_EMAIL, ''^[A-Za-z0-9._%%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'')'
+,p_validation2=>'PLSQL'
+,p_validation_type=>'EXPRESSION'
+,p_error_message=>unistr('El correo no tiene un formato v\00E1lido (ejemplo: nombre@dominio.com).')
+,p_associated_item=>wwv_flow_imp.id(9176872442212503)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
 end;
 /
 prompt --application/pages/page_00003
@@ -13620,11 +13632,11 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(18146733074167519)
 ,p_name=>'P9_MONTO_IMPUESTO'
 ,p_source_data_type=>'NUMBER'
-,p_is_required=>true
+
 ,p_item_sequence=>160
 ,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_item_source_plug_id=>wwv_flow_imp.id(32589573944518258)
-,p_prompt=>'Monto Impuesto'
+,p_prompt=>unistr('Monto Impuesto (del detalle)')
 ,p_format_mask=>'999G999G999G999G990D00'
 ,p_source=>'MONTO_IMPUESTO'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
@@ -13643,11 +13655,11 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(18146820778167520)
 ,p_name=>'P9_MONTO_TOTAL'
 ,p_source_data_type=>'NUMBER'
-,p_is_required=>true
+
 ,p_item_sequence=>170
 ,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_item_source_plug_id=>wwv_flow_imp.id(32589573944518258)
-,p_prompt=>'Monto Total'
+,p_prompt=>unistr('Monto Total (del detalle)')
 ,p_format_mask=>'999G999G999G999G990D00'
 ,p_source=>'MONTO_TOTAL'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
@@ -13728,7 +13740,7 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH',
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(32592935530518292)
@@ -14560,6 +14572,18 @@ unistr('            raise_application_error(-20012, ''No existe una tasa de camb
 '            :P9_MONTO_IMPUESTO := v_impuesto;',
 '            :P9_MONTO_TOTAL := v_total;',
 '        END IF;',
+'    END IF;',
+'',
+'    -- Factura NUEVA: los totales los pone el detalle (pagina 10), no el formulario.',
+'    -- Antes, lo que el usuario escribiera en Monto Total se comparaba con un',
+'    -- subtotal en 0 y saltaba -20013 al guardar la cabecera.',
+'    IF :P9_ID_FACTURA IS NULL THEN',
+'        v_subtotal := 0;',
+'        v_impuesto := 0;',
+'        v_total    := 0;',
+'        :P9_SUBTOTAL       := 0;',
+'        :P9_MONTO_IMPUESTO := 0;',
+'        :P9_MONTO_TOTAL    := 0;',
 '    END IF;',
 '',
 '    IF ABS(v_total - (v_subtotal + v_impuesto)) > 0.01 THEN',
@@ -16708,6 +16732,17 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_condition_type=>'EXPRESSION'
 ,p_branch_condition=>':P14_MODO_OBLIG = ''OK'''
 );
+wwv_flow_imp_page.create_page_branch(
+ p_id=>wwv_flow_imp.id(43000000000000250)
+,p_branch_name=>'Volver al login tras restablecer'
+,p_branch_action=>'f?p=&APP_ID.:9999:&SESSION.::&DEBUG.:14::&success_msg=#SUCCESS_MSG#'
+,p_branch_point=>'AFTER_PROCESSING'
+,p_branch_type=>'REDIRECT_URL'
+,p_branch_when_button_id=>wwv_flow_imp.id(43000000000000046)
+,p_branch_sequence=>20
+,p_branch_condition_type=>'EXPRESSION'
+,p_branch_condition=>':P14_MODO_OBLIG = ''CLAVE'''
+);
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000047)
 ,p_process_sequence=>10
@@ -16790,6 +16825,7 @@ unistr('        apex_application.g_print_success_message := ''Contrase\00F1a act
 '        p_ip        => owa_util.get_cgi_env(''REMOTE_ADDR''),',
 '        p_resultado => ''OK'');',
 '',
+'    apex_util.set_session_state(''P14_MODO_OBLIG'', ''CLAVE'');',
 unistr('    apex_application.g_print_success_message := ''Contrase\00F1a actualizada. Inicia sesi\00F3n con la nueva.'';'),
 'end;'))
 ,p_process_clob_language=>'PLSQL'
@@ -17189,6 +17225,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select g.id_gasto as editar,',
+'       g.id_presupuesto,',
 '       g.fecha_gasto,',
 '       g.monto_origen,',
 '       g.moneda_origen,',
@@ -17216,12 +17253,23 @@ wwv_flow_imp_page.create_worksheet(
 ,p_internal_uid=>43000000000000079
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000260)
+,p_db_column_name=>'ID_PRESUPUESTO'
+,p_display_order=>15
+,p_column_identifier=>'F'
+,p_column_label=>'Id Presupuesto'
+,p_column_type=>'NUMBER'
+,p_display_text_as=>'HIDDEN_ESCAPE_SC'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000000080)
 ,p_db_column_name=>'EDITAR'
 ,p_display_order=>10
 ,p_column_identifier=>'A'
 ,p_column_label=>'Editar'
-,p_column_link=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.:16:P16_ID_GASTO:#EDITAR#'
+,p_column_link=>'f?p=&APP_ID.:16:&SESSION.::&DEBUG.:16:P16_ID_GASTO,P16_ID_PRESUPUESTO:#EDITAR#,#ID_PRESUPUESTO#'
 ,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Editar'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
@@ -17296,18 +17344,17 @@ wwv_flow_imp_page.create_page_plug(
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
-,p_ajax_items_to_submit=>'P16_ID_GASTO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000055)
 ,p_name=>'P16_ID_GASTO'
 ,p_source_data_type=>'NUMBER'
+,p_is_primary_key=>true
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_prompt=>'Gasto'
 ,p_source=>'ID_GASTO'
-,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_item_template_options=>'#DEFAULT#'
 );
@@ -17321,7 +17368,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_prompt=>'Presupuesto'
 ,p_source=>'ID_PRESUPUESTO'
-,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_POPUP_LOV'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select p.folio || '' - '' || c.razon_social as display_value,',
@@ -17349,7 +17395,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_default_type=>'SQL_QUERY'
 ,p_prompt=>'Fecha del gasto'
 ,p_source=>'FECHA_GASTO'
-,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_DATE_PICKER_APEX'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
@@ -17365,7 +17410,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_prompt=>'Monto'
 ,p_source=>'MONTO_ORIGEN'
-,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>20
 ,p_field_template=>1610598304472262251
@@ -17384,7 +17428,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_default=>'USD'
 ,p_prompt=>'Moneda'
 ,p_source=>'MONEDA_ORIGEN'
-,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>'STATIC:USD;USD,VES;VES,MXN;MXN'
 ,p_cSize=>10
@@ -17402,7 +17445,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_prompt=>'Tasa (opcional)'
 ,p_source=>'TASA_REAL'
-,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>16
 ,p_field_template=>1610598304472262251
@@ -17465,6 +17507,46 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-undo'
 ,p_grid_new_row=>'N'
 
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000280)
+,p_process_sequence=>2
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Carga el gasto a editar'
+,p_static_id=>'carga-gasto'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_g gasto_real%rowtype;',
+'begin',
+'    -- La region es un formulario sobre GASTO_REAL, pero su fetch no rellena los',
+'    -- items (medido el 2026-11-08: solo llegaba la moneda). Se carga la fila a',
+'    -- mano, igual que en la pagina 18.',
+'    if fn_clean_num(:P16_ID_GASTO) is null then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select * into v_g',
+'          from gasto_real',
+'         where id_gasto = fn_clean_num(:P16_ID_GASTO)',
+'           and exists (select 1 from presupuestos p',
+'                        where p.id_presupuesto = gasto_real.id_presupuesto',
+'                          and p.id_empresa in (select u.id_empresa from usuario u',
+'                                                where upper(u.username) = upper(:APP_USER)',
+'                                                  and u.estado in (''ACTIVO'', ''A'', ''1'')));',
+'    exception',
+'        when no_data_found then return;',
+'    end;',
+'',
+unistr('    apex_util.set_session_state(''P16_ID_PRESUPUESTO'', v_g.id_presupuesto);'),
+unistr('    apex_util.set_session_state(''P16_FECHA_GASTO'', to_char(v_g.fecha_gasto, ''DD/MM/YYYY''));'),
+unistr('    apex_util.set_session_state(''P16_MONTO_ORIGEN'', v_g.monto_origen);'),
+unistr('    apex_util.set_session_state(''P16_MONEDA_ORIGEN'', v_g.moneda_origen);'),
+unistr('    apex_util.set_session_state(''P16_TASA_REAL'', v_g.tasa_real);'),
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000280
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000076)
