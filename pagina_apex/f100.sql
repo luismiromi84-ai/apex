@@ -16243,7 +16243,16 @@ wwv_flow_imp_page.create_page(
 ,p_page_is_public_y_n=>'Y'
 ,p_deep_linking=>'Y'
 ,p_rejoin_existing_sessions=>'Y'
-,p_page_component_map=>'16'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
+'input[type="password"]::-ms-reveal { display: none; }',
+'/* Oculta el logo y la cabecera que pinta la plantilla de login */',
+'.t-Login-header, .t-Login-logo { display: none !important; }',
+'/* Tarjeta compacta y centrada */',
+'.t-Login-container { max-width: 380px !important; margin: 0 auto !important; }',
+'.t-Login-region { overflow: hidden; padding: 24px !important; }',
+'/* El lockup de Synpex a un tamano razonable (sin esto sale a 700 px) */',
+'.synpex-login-img { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; }')),p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000041)
