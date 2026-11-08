@@ -8356,6 +8356,10 @@ unistr('/* Estilo del t\00EDtulo blanco */'),
 '    display: inline-block;',
 '}',
 '',
+'/* Logs: la fecha no se parte en dos lineas (desalineaba los resultados) */',
+'#R43000000000000092 td:first-child, #R43000000000000101 td:first-child { white-space: nowrap !important; }',
+'#R43000000000000092 th, #R43000000000000101 th { text-align: left !important; }',
+'#R43000000000000092 td, #R43000000000000101 td { text-align: left !important; }',
 unistr('/* Colores seg\00FAn el estado */'),
 '/* Estado Activo */',
 '.status-Activo, .status-ACTIVO {',
@@ -8715,7 +8719,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select to_char(l.fecha, ''DD/MM/YYYY HH24:MI'') as fecha,',
-'       l.usuario_intentado,',
+'       l.usuario_intentado as usuario,',
 '       l.resultado,',
 '       l.ip',
 '  from syn_login_log l',
@@ -9385,6 +9389,11 @@ unistr('    // Selecci\00F3n de fila con checkbox, igual que en Facturaci\00F3n 
 '        $b.prop("disabled", !habilitado);',
 unistr('        $b.attr("title", habilitado ? "" : "Solo se puede procesar un presupuesto PENDIENTE");'),
 '    }',
+'    function spxNuevaLinea(habilitado) {',
+'        var $b = $("[data-otel-label=\"BTN_NUEVO_DETALLE\"]");',
+'        $b.prop("disabled", !habilitado);',
+'        $b.attr("title", habilitado ? "" : "Selecciona un presupuesto de la lista");',
+'    }',
 '    $(document).on("change", ".js-select-invoice", function() {',
 '        var presupuestoId = this.checked ? this.getAttribute("data-id") : "";',
 '        if (this.checked) {',
@@ -9392,6 +9401,7 @@ unistr('        $b.attr("title", habilitado ? "" : "Solo se puede procesar un pr
 '        }',
 '        apex.item("P5_ID_PRESUPUESTO").setValue(presupuestoId, null, true);',
 '        spxProcesar(this.checked ? this.getAttribute("data-estado") : null);',
+'        spxNuevaLinea(this.checked);',
 '        apex.region("R12950647600514910").refresh();',
 '        apex.region("R12541094704283236").refresh();',
 '    });',
@@ -9400,6 +9410,7 @@ unistr('        $b.attr("title", habilitado ? "" : "Solo se puede procesar un pr
 '    $(".js-select-invoice").each(function() {',
 '        this.checked = this.getAttribute("data-id") === seleccionado;',
 '    });',
+'    spxNuevaLinea(!!seleccionado);',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: la pagina global (0) no emite su CSS, asi que cada pagina */',
@@ -9507,6 +9518,7 @@ wwv_flow_imp_page.create_page_plug(
 '                                                    WHERE upper(u.username) = upper(:APP_USER)',
 '                                                      AND u.estado IN (''ACTIVO'', ''A'', ''1'')))',
 ' ORDER BY d.id_detalle'))
+,p_ajax_items_to_submit=>'P5_ID_PRESUPUESTO'
 ,p_plug_source_type=>'NATIVE_IR'
 );
 wwv_flow_imp_page.create_worksheet(
@@ -11171,7 +11183,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Eliminar detalle'
 ,p_static_id=>'eliminar-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'if fn_clean_num(:P6_ID_PRESUPUESTO) is null then',
+'if nvl(fn_clean_num(:P6_ID_PRESUPUESTO), 0) = 0 then',
 '    raise_application_error(-20003, ''Selecciona un presupuesto en la lista antes de agregar la linea.'');',
 'end if;',
 'if not fn_presupuesto_propio(:P6_ID_PRESUPUESTO, :APP_USER) then',
@@ -11210,7 +11222,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Insert/Update del Detalle'
 ,p_static_id=>'insert-del-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'if fn_clean_num(:P6_ID_PRESUPUESTO) is null then',
+'if nvl(fn_clean_num(:P6_ID_PRESUPUESTO), 0) = 0 then',
 '    raise_application_error(-20003, ''Selecciona un presupuesto en la lista antes de agregar la linea.'');',
 'end if;',
 'if not fn_presupuesto_propio(:P6_ID_PRESUPUESTO, :APP_USER) then',
