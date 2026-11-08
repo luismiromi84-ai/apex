@@ -170,11 +170,18 @@ select object_type, count(*) as cantidad
 
 -- ============================================================
 -- 7. Funciones y procedimientos sueltos
---    Esperado: FN_AUTENTICAR_USUARIO, FN_CLEAN_NUM, FN_EMPRESAS_DEL_USUARIO,
---              FN_PASSWORD_ES_LEGADO, FN_TASA_CAMBIO, FN_TIENE_ROL,
---              FN_USUARIO_EMPRESA_VALIDA, FN_VERIFICAR_PASSWORD,
---              SYPEX_HASH_PASSWORD, PRC_ACTUALIZAR_TASAS_DIARIAS,
---              PRC_AUTH_REGISTRAR, PRC_LOG_RESET_PASSWORD, PRC_POST_LOGIN
+--    Esperado (2026-11-08): 18 funciones y 7 procedimientos.
+--    Funciones: FN_ASIGNAR_FOLIO, FN_AUTENTICAR_USUARIO, FN_CLEAN_NUM,
+--              FN_ERROR_HANDLER, FN_FACTURA_EDITABLE, FN_FACTURA_PROPIO,
+--              FN_PASSWORD_ES_LEGADO, FN_PRESUPUESTO_EDITABLE,
+--              FN_PRESUPUESTO_PROPIO, FN_SIGUIENTE_FOLIO, FN_TASA_CAMBIO,
+--              FN_TASA_VES, FN_TIENE_ROL, FN_TRANSICION_ESTADO_VALIDA,
+--              FN_USUARIO_EMPRESA_VALIDA, FN_VALIDAR_TASA_DOCUMENTO,
+--              FN_VERIFICAR_PASSWORD, SYPEX_HASH_PASSWORD
+--    Procedimientos: PRC_ACTUALIZAR_TASAS_DIARIAS, PRC_AUTH_REGISTRAR,
+--              PRC_JOB_TASAS_BCV, PRC_LOG_ERROR, PRC_LOG_RESET_PASSWORD,
+--              PRC_POST_LOGIN, PRC_PURGAR_LOGS
+--    (FN_EMPRESAS_DEL_USUARIO se elimino el 2026-11-08: no la usaba nadie.)
 --    (Requiere el grant sobre SYS.DBMS_CRYPTO; ver deploy/migrations/20261104_auth_propia.sql)
 -- ============================================================
 select object_type, object_name, status
