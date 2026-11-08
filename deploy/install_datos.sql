@@ -1,16 +1,21 @@
 -- =============================================================================
 -- deploy/install_datos.sql
 --
--- Datos MINIMOS sin los que la app no arranca: los roles de SYN_ROLES.
+-- Datos MINIMOS sin los que la app no arranca:
+--   1. los roles de SYN_ROLES
+--   2. una empresa (si no hay ninguna)
+--   3. un administrador inicial (si no hay ningun usuario)
 --
 -- Por que existe: medido el 2026-11-07, install.sql no sembraba SYN_ROLES y una
 -- instalacion limpia quedaba con la tabla vacia. fn_autenticar_usuario exige un
 -- rol y las guardas comparan por codigo_rol, asi que NADIE podia entrar.
--- (Los roles vivian solo en instalacion y migracion/datos_demo.sql, que es el
--- dataset de ejemplo y no se debe cargar en produccion.)
+-- Y aunque hubiera roles, sin EMPRESA ni USUARIO tampoco se puede entrar: la
+-- autenticacion exige empresa y rol. (Los datos vivian solo en
+-- instalacion y migracion/datos_demo.sql, que es el dataset de ejemplo y no se
+-- debe cargar en produccion.)
 --
--- Idempotente: MERGE por codigo_rol. No fija id_rol a proposito (la identidad
--- asigna el numero); el codigo es la clave real y es lo que usan las guardas.
+-- Idempotente: MERGE por codigo_rol, y las filas de empresa/usuario solo se
+-- crean si las tablas estan vacias. No fija id_rol (la identidad asigna).
 --
 -- OJO: el nombre va con unistr() donde lleva acento, porque el runner corrompe
 -- los literales acentuados. Y cada sentencia lleva su linea '/' porque
@@ -46,6 +51,43 @@ when not matched then
 commit;
 /
 
--- Constancia: los siete roles que deben quedar (no es una validacion).
+-- -----------------------------------------------------------------------------
+-- Empresa inicial: sin empresa no hay LOV, ni clientes, ni documentos. Solo se
+-- crea si EMPRESAS esta vacia (en una base ya en uso no toca nada).
+-- -----------------------------------------------------------------------------
+insert into empresas (nombre_empresa, cod_pais, tipo_ident_fiscal, estado)
+select 'Empresa Principal', 'VE', 'RIF', 'ACTIVO'
+  from dual
+ where not exists (select 1 from empresas);
+/
+commit;
+/
+
+-- -----------------------------------------------------------------------------
+-- Administrador inicial: sin usuario NADIE puede entrar. Clave temporal y
+-- DEBE_CAMBIAR_CLAVE='S' (el primer login obliga a cambiarla en la pagina 14).
+-- -----------------------------------------------------------------------------
+insert into usuario (username, email, password_hash, estado, id_empresa, rol_id, debe_cambiar_clave)
+select 'admin',
+       'admin@synpex.local',
+       sypex_hash_password('Sypex#2026'),
+       'ACTIVO',
+       (select min(id_empresa) from empresas),
+       (select id_rol from syn_roles where codigo_rol = 'ADMIN'),
+       'S'
+  from dual
+ where not exists (select 1 from usuario);
+/
+
+commit;
+/
+
+-- Constancia: los siete roles, la empresa y el usuario inicial.
 select codigo_rol, nombre_rol from syn_roles order by codigo_rol;
+/
+
+select id_empresa, nombre_empresa, cod_pais, tipo_ident_fiscal from empresas order by id_empresa;
+/
+
+select username, id_empresa, estado, debe_cambiar_clave from usuario order by usuario_id;
 /
