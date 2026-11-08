@@ -11029,12 +11029,10 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_static_id=>'new'
 ,p_event_sequence=>10
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P6_ID_IMPUESTO,P6_CANTIDAD,P6_PRECIO_UNITARIO,P6_PORCENTAGE_DESCUENTO,P6_MONTO_DESCUENTO'
+,p_triggering_element=>'P6_ID_IMPUESTO'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
-,p_display_when_type=>'ITEM_IS_NOT_NULL'
-,p_display_when_cond=>'P6_ID_IMPUESTO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(22585885879741118)
@@ -11044,6 +11042,106 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_name=>'PORCENTAGE_IMP_2'
 ,p_static_id=>'native-execute-plsql-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P6_PORCENTAGE_IMPUESTO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'calcularTotalesLinea();')).to_clob
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000220)
+,p_name=>'PORCENTAGE_IMP_2'
+,p_static_id=>'new_2'
+,p_event_sequence=>20
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P6_CANTIDAD'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000221)
+,p_event_id=>wwv_flow_imp.id(43000000000000220)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'PORCENTAGE_IMP_2_2'
+,p_static_id=>'native-execute-plsql-code_2'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P6_PORCENTAGE_IMPUESTO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'calcularTotalesLinea();')).to_clob
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000222)
+,p_name=>'PORCENTAGE_IMP_3'
+,p_static_id=>'new_3'
+,p_event_sequence=>25
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P6_PRECIO_UNITARIO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000223)
+,p_event_id=>wwv_flow_imp.id(43000000000000222)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'PORCENTAGE_IMP_2_3'
+,p_static_id=>'native-execute-plsql-code_3'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P6_PORCENTAGE_IMPUESTO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'calcularTotalesLinea();')).to_clob
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000224)
+,p_name=>'PORCENTAGE_IMP_4'
+,p_static_id=>'new_4'
+,p_event_sequence=>30
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P6_PORCENTAGE_DESCUENTO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000225)
+,p_event_id=>wwv_flow_imp.id(43000000000000224)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'PORCENTAGE_IMP_2_4'
+,p_static_id=>'native-execute-plsql-code_4'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P6_PORCENTAGE_IMPUESTO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'calcularTotalesLinea();')).to_clob
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000226)
+,p_name=>'PORCENTAGE_IMP_5'
+,p_static_id=>'new_5'
+,p_event_sequence=>35
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P6_MONTO_DESCUENTO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000227)
+,p_event_id=>wwv_flow_imp.id(43000000000000226)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'PORCENTAGE_IMP_2_5'
+,p_static_id=>'native-execute-plsql-code_5'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_affected_elements_type=>'ITEM'
 ,p_affected_elements=>'P6_PORCENTAGE_IMPUESTO'
@@ -11700,7 +11798,7 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_static_id=>'tipo-cambio'
 ,p_event_sequence=>20
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P7_FECHA_EMISION,P7_COD_MONEDA'
+,p_triggering_element=>'P7_FECHA_EMISION'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
@@ -11732,6 +11830,67 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'Y'
 ,p_name=>'TIPO_CAMBIO'
 ,p_static_id=>'tipo-cambio'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P7_TIPO_CAMBIO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'escape_special_characters', 'Y',
+  'items_to_submit', 'P7_FECHA_EMISION,P7_COD_MONEDA',
+  'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'SELECT CASE',
+    '         WHEN UPPER(:P7_COD_MONEDA) IN (''VES'', ''BS'') THEN 1',
+    '         ELSE (',
+    '             SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
+    '               FROM tipo_cambio',
+    '              WHERE moneda_origen = UPPER(:P7_COD_MONEDA)',
+    '                AND moneda_destino = ''VES''',
+    '                AND tipo_tasa = ''REAL''',
+    '                AND fecha_vigencia < TRUNC(NVL(TO_DATE(:P7_FECHA_EMISION, ''DD/MM/YYYY''), SYSDATE)) + 1',
+    '         )',
+    '       END',
+    '  FROM dual')),
+  'suppress_change_event', 'N',
+  'type', 'SQL_STATEMENT')).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000228)
+,p_name=>'TIPO_CAMBIO_2'
+,p_static_id=>'tipo-cambio_2'
+,p_event_sequence=>30
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P7_COD_MONEDA'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000229)
+,p_event_id=>wwv_flow_imp.id(43000000000000228)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'CALCULAR_FECH_VENC_2'
+,p_static_id=>'calcular-fech-vencimiento_2'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P7_FECHA_VENCIMIENTO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'escape_special_characters', 'N',
+  'items_to_submit', 'P7_FECHA_EMISION',
+  'plsql_expression', 'TO_char(TO_DATE(:P7_FECHA_EMISION, ''DD/MM/YYYY'')+7, ''DD/MM/YYYY'')',
+  'suppress_change_event', 'N',
+  'type', 'PLSQL_EXPRESSION')).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000230)
+,p_event_id=>wwv_flow_imp.id(43000000000000228)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'TIPO_CAMBIO_2'
+,p_static_id=>'tipo-cambio_2'
 ,p_action=>'NATIVE_SET_VALUE'
 ,p_affected_elements_type=>'ITEM'
 ,p_affected_elements=>'P7_TIPO_CAMBIO'
@@ -13587,7 +13746,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>2
-,p_read_only_when_type=>'ALWAYS'
+
 ,p_field_template=>1610598484065263269
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
@@ -14083,7 +14242,7 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_static_id=>'tipo-cambio'
 ,p_event_sequence=>20
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P9_FECHA_EMISION,P9_COD_MONEDA'
+,p_triggering_element=>'P9_FECHA_EMISION'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
@@ -14120,12 +14279,54 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000231)
+,p_name=>'TIPO_CAMBIO_2'
+,p_static_id=>'tipo-cambio_2'
+,p_event_sequence=>30
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P9_COD_MONEDA'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000232)
+,p_event_id=>wwv_flow_imp.id(43000000000000231)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'TIPO_CAMBIO_2'
+,p_static_id=>'tipo-cambio_2'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P9_TIPO_CAMBIO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'escape_special_characters', 'Y',
+  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA',
+  'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'SELECT CASE',
+    '         WHEN UPPER(:P9_COD_MONEDA) IN (''VES'', ''BS'') THEN 1',
+    '         ELSE (',
+    '             SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
+    '               FROM tipo_cambio',
+    '              WHERE moneda_origen = UPPER(:P9_COD_MONEDA)',
+    '                AND moneda_destino = ''VES''',
+    '                AND tipo_tasa = ''REAL''',
+    '                AND fecha_vigencia < TRUNC(NVL(TO_DATE(:P9_FECHA_EMISION, ''DD/MM/YYYY''), SYSDATE)) + 1',
+    '         )',
+    '       END',
+    '  FROM dual')),
+  'suppress_change_event', 'N',
+  'type', 'SQL_STATEMENT')).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(18564710010054501)
 ,p_name=>'TIPO_DOCUMENTO'
 ,p_static_id=>'tipo-documento'
 ,p_event_sequence=>50
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P9_TIPO_DOCUMENTO,P9_ID_EMPRESA'
+,p_triggering_element=>'P9_TIPO_DOCUMENTO'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
@@ -14138,6 +14339,40 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'Y'
 ,p_name=>'TIPO_DOCUMENTO'
 ,p_static_id=>'tipo-documento'
+,p_action=>'NATIVE_SET_VALUE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P9_FOLIO_FACTURA'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'escape_special_characters', 'Y',
+  'items_to_submit', 'P9_ID_EMPRESA,P9_TIPO_DOCUMENTO',
+  'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
+unistr('    -- Vista previa: el folio real lo asigna fn_asignar_folio al guardar.'),
+'    SELECT fn_siguiente_folio(:P9_ID_EMPRESA, NVL(:P9_TIPO_DOCUMENTO, ''FAC'')) FROM dual')),
+  'suppress_change_event', 'N',
+  'type', 'SQL_STATEMENT')).to_clob
+,p_wait_for_result=>'Y'
+,p_client_condition_type=>'NULL'
+,p_client_condition_element=>'P9_ID_FACTURA'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000233)
+,p_name=>'TIPO_DOCUMENTO_2'
+,p_static_id=>'tipo-documento_2'
+,p_event_sequence=>60
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P9_ID_EMPRESA'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000234)
+,p_event_id=>wwv_flow_imp.id(43000000000000233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'TIPO_DOCUMENTO_2'
+,p_static_id=>'tipo-documento_2'
 ,p_action=>'NATIVE_SET_VALUE'
 ,p_affected_elements_type=>'ITEM'
 ,p_affected_elements=>'P9_FOLIO_FACTURA'
