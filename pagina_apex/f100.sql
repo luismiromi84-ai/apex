@@ -8270,6 +8270,16 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'prc-registrar-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
+unistr('    if :P2_PASSWORD <> :P2_PASSWORD_CONFIRM then'),
+unistr('        raise_application_error(-20011, ''Las contrase\00F1as no coinciden.'');'),
+'    end if;',
+'',
+'    if length(:P2_PASSWORD) < 8',
+unistr('       or not regexp_like(:P2_PASSWORD, ''[[:alpha:]]'')'),
+unistr('       or not regexp_like(:P2_PASSWORD, ''[[:digit:]]'') then'),
+unistr('        raise_application_error(-20012, ''La contrase\00F1a debe tener al menos 8 caracteres y combinar letras y numeros.'');'),
+'    end if;',
+'',
 '    INSERT INTO usuario (',
 '        username,',
 '        email,',
