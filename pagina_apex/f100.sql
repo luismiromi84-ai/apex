@@ -16279,18 +16279,39 @@ unistr('<p class="synpex-nota">La contrase\00F1a debe tener al menos 8 caractere
 '  .synpex-volver a { color: #0284c7; text-decoration: none; }',
 '  .synpex-login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 0 10px 0; }',
 '  .synpex-nota { text-align: center; margin: 0 0 10px 0; font-family: Inter, system-ui, sans-serif; font-size: 12px; color: #64748b; }',
-'</style>'))
+'</style>',
+'<script>',
+'document.addEventListener("DOMContentLoaded", function(){',
+'  var m = document.getElementById("P14_MODO_OBLIG");',
+'  if(!m || m.value !== "S"){ return; }',
+'  ["P14_USERNAME", "P14_EMAIL"].forEach(function(id){',
+'    var el = document.getElementById(id);',
+'    if(el){ el.readOnly = true; el.style.background = "#f1f5f9"; }',
+'  });',
+'});',
+'</script>'))
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000180)
+,p_name=>'P14_MODO_OBLIG'
+,p_item_sequence=>5
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000042)
 ,p_name=>'P14_USERNAME'
-
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
 ,p_prompt=>'Usuario'
+,p_read_only_when_type=>'PLSQL_EXPRESSION'
+,p_read_only_when=>':P14_MODO_OBLIG = ''S'''
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -16308,6 +16329,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
 ,p_prompt=>unistr('Correo Electr\00F3nico')
+,p_read_only_when_type=>'PLSQL_EXPRESSION'
+,p_read_only_when=>':P14_MODO_OBLIG = ''S'''
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>40
@@ -16369,6 +16392,48 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_image_alt=>unistr('Restablecer Contrase\00F1a')
 );
 wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000181)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Modo cambio obligatorio'
+,p_static_id=>'modo-cambio-obligatorio'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_flag  varchar2(1);',
+'    v_email varchar2(120);',
+'    v_user  varchar2(100);',
+'begin',
+'    begin',
+'        select nvl(debe_cambiar_clave, ''N''), email, username',
+'          into v_flag, v_email, v_user',
+'          from usuario',
+'         where upper(username) = upper(v(''APP_USER''));',
+'    exception',
+'        when no_data_found then return;',
+'    end;',
+'',
+'    if v_flag = ''S'' then',
+'        apex_util.set_session_state(''P14_USERNAME'', v_user);',
+'        apex_util.set_session_state(''P14_EMAIL'', v_email);',
+'        apex_util.set_session_state(''P14_MODO_OBLIG'', ''S'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000181
+);
+wwv_flow_imp_page.create_page_branch(
+ p_id=>wwv_flow_imp.id(43000000000000182)
+,p_branch_name=>unistr('Ir al inicio tras cambiar la contrase\00F1a')
+,p_branch_action=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::&success_msg=#SUCCESS_MSG#'
+,p_branch_point=>'AFTER_PROCESSING'
+,p_branch_type=>'REDIRECT_URL'
+,p_branch_when_button_id=>wwv_flow_imp.id(43000000000000046)
+,p_branch_sequence=>10
+,p_branch_condition_type=>'EXPRESSION'
+,p_branch_condition=>':P14_MODO_OBLIG = ''OK'''
+);
+wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000047)
 ,p_process_sequence=>10
 ,p_process_point=>'AFTER_SUBMIT'
@@ -16422,7 +16487,8 @@ unistr('    raise_application_error(-20012, ''La contrase\00F1a debe tener al me
 '            p_resultado => ''OK'');',
 '',
 '        apex_util.set_session_state(''F_DEBE_CAMBIAR_CLAVE'', ''N'');',
-'        apex_util.redirect_url(apex_page.get_url(p_page => 1));',
+'        apex_util.set_session_state(''P14_MODO_OBLIG'', ''OK'');',
+unistr('        apex_application.g_print_success_message := ''Contrase\00F1a actualizada. Bienvenido.'';'),
 '        return;',
 '    end if;',
 '',
