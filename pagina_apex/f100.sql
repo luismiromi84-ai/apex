@@ -18483,6 +18483,28 @@ wwv_flow_imp_page.create_page_process(
 ,p_internal_uid=>9155934850584621
 );
 wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000240)
+,p_process_sequence=>15
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Aviso de intentos de conexion'
+,p_static_id=>'aviso-intentos-login'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_msg varchar2(400);',
+'begin',
+'    -- Corta el intento ANTES del proceso de login de APEX: asi el usuario ve el',
+'    -- contador de la app y no el freno interno de APEX.',
+'    v_msg := fn_login_aviso(:P9999_USERNAME, :P9999_PASSWORD);',
+'    if v_msg is not null then',
+'        raise_application_error(-20010, v_msg);',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_internal_uid=>43000000000000240
+);
+wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(9152650251584610)
 ,p_process_sequence=>20
 ,p_process_point=>'AFTER_SUBMIT'
