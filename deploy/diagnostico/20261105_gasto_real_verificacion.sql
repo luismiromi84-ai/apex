@@ -36,7 +36,7 @@ alter session set current_schema = WKSP_SYPEXWS;
 declare
   v_fallas   number := 0;
   v_lista    varchar2(3000) := '';
-  v_pre      number := 1045;        -- presupuesto de la empresa 1
+  v_pre      number;                 -- presupuesto de la empresa 1 (el primero que haya)
   v_pre2     number;                -- uno de la empresa 2
   v_g1       number;
   v_g2       number;
@@ -59,7 +59,12 @@ declare
   end falla;
 
 begin
+  select min(id_presupuesto) into v_pre  from presupuestos where id_empresa = 1;
   select min(id_presupuesto) into v_pre2 from presupuestos where id_empresa = 2;
+
+  if v_pre is null then
+    falla('G0', 'no hay presupuestos de la empresa 1: falta el fixture de prueba');
+  end if;
 
   if v_rusd is null or v_rmxn is null then
     falla('G0', 'faltan tasas en tipo_cambio (USD=' || v_rusd || ', MXN=' || v_rmxn || ')');
