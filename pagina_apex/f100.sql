@@ -16893,6 +16893,30 @@ wwv_flow_imp_page.create_page(
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Cabecera de region con el azul de la app: mismo estandar que la 3, la 5 y la 8 */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
+'    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
+'    border: none !important;',
+'    box-shadow: none !important;',
+'    padding: 16px 20px !important;',
+'}',
+'.t-Region-header * {',
+'    background: transparent !important;',
+'    box-shadow: none !important;',
+'    border: none !important;',
+'}',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title {',
+'    color: #ffffff !important;',
+'    font-weight: 600 !important;',
+'    font-size: 1.25rem !important;',
+'    letter-spacing: 0.5px !important;',
+'}',
+'/* Tarjetas suaves, como el resto de la app */',
+'.t-Region {',
+'    border-radius: 12px !important;',
+'    box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.25) !important;',
+'}'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -17260,14 +17284,41 @@ wwv_flow_imp_page.create_page(
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'U'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Cabecera de region con el azul de la app: mismo estandar que la 3, la 5 y la 8 */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
+'    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
+'    border: none !important;',
+'    box-shadow: none !important;',
+'    padding: 16px 20px !important;',
+'}',
+'.t-Region-header * {',
+'    background: transparent !important;',
+'    box-shadow: none !important;',
+'    border: none !important;',
+'}',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title {',
+'    color: #ffffff !important;',
+'    font-weight: 600 !important;',
+'    font-size: 1.25rem !important;',
+'    letter-spacing: 0.5px !important;',
+'}',
+'/* El logo de la empresa, centrado y sin desbordar la tarjeta */',
+'#R43000000000000087 .t-Region-body { text-align: center !important; }',
+'#R43000000000000087 img { max-width: 100% !important; height: auto !important; }',
+'/* Tarjetas suaves, como el resto de la app */',
+'.t-Region {',
+'    border-radius: 12px !important;',
+'    box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.25) !important;',
+'}'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000087)
 ,p_plug_name=>'Logo actual'
 ,p_static_id=>'logo-actual'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>3372714138756020509
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>10
 ,p_plug_item_display_point=>'ABOVE'
 ,p_function_body_language=>'PLSQL'
@@ -17560,15 +17611,48 @@ wwv_flow_imp_page.create_page(
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Cabecera de region con el azul de la app: mismo estandar que la 3, la 5 y la 8 */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
+'    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
+'    border: none !important;',
+'    box-shadow: none !important;',
+'    padding: 16px 20px !important;',
+'}',
+'.t-Region-header * {',
+'    background: transparent !important;',
+'    box-shadow: none !important;',
+'    border: none !important;',
+'}',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title {',
+'    color: #ffffff !important;',
+'    font-weight: 600 !important;',
+'    font-size: 1.25rem !important;',
+'    letter-spacing: 0.5px !important;',
+'}',
+'/* Tarjetas suaves, como el resto de la app */',
+'.t-Region {',
+'    border-radius: 12px !important;',
+'    box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.25) !important;',
+'}'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000121)
-,p_plug_name=>'Datos fiscales'
+,p_plug_name=>'Datos Fiscales'
 ,p_static_id=>'datos-fiscales'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000190)
+,p_plug_name=>'Datos de la Imprenta'
+,p_static_id=>'datos-imprenta'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
 ,p_plug_item_display_point=>'ABOVE'
 );
 wwv_flow_imp_page.create_page_item(
@@ -17591,13 +17675,14 @@ wwv_flow_imp_page.create_page_item(
   'display_as', 'DIALOG',
   'fetch_on_search', 'N',
   'height', '250')).to_clob
+,p_colspan=>6
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000131)
 ,p_name=>'P18_DIRECCION_FISCAL'
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Direccion fiscal'
+,p_prompt=>unistr('Direcci\00F3n fiscal')
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>60
@@ -17610,26 +17695,29 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P18_TELEFONO'
 ,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Telefono'
+,p_prompt=>unistr('Tel\00E9fono')
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
 ,p_cMaxlength=>60
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000133)
 ,p_name=>'P18_EMAIL'
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Correo electronico'
+,p_prompt=>unistr('Correo electr\00F3nico')
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>40
 ,p_cMaxlength=>120
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000134)
@@ -17643,6 +17731,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cMaxlength=>60
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000136)
@@ -17656,6 +17745,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cMaxlength=>30
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000137)
@@ -17669,39 +17759,44 @@ wwv_flow_imp_page.create_page_item(
 ,p_cMaxlength=>30
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000138)
 ,p_name=>'P18_IMPRENTA_NOMBRE'
 ,p_item_sequence=>90
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Imprenta: nombre'
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000190)
+,p_prompt=>'Nombre'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>40
 ,p_cMaxlength=>150
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000139)
 ,p_name=>'P18_IMPRENTA_RIF'
 ,p_item_sequence=>100
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Imprenta: RIF'
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000190)
+,p_prompt=>'RIF'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>20
 ,p_cMaxlength=>30
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000140)
 ,p_name=>'P18_IMPRENTA_DIRECCION'
 ,p_item_sequence=>110
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Imprenta: direccion'
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000190)
+,p_prompt=>unistr('Direcci\00F3n')
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>60
@@ -17713,27 +17808,30 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000141)
 ,p_name=>'P18_IMPRENTA_TELEFONO'
 ,p_item_sequence=>120
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Imprenta: telefono'
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000190)
+,p_prompt=>unistr('Tel\00E9fono')
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
 ,p_cMaxlength=>60
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000142)
 ,p_name=>'P18_IMPRENTA_EMAIL'
 ,p_item_sequence=>130
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
-,p_prompt=>'Imprenta: correo'
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000190)
+,p_prompt=>'Correo'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>40
 ,p_cMaxlength=>120
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000135)
@@ -17749,11 +17847,13 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'display_as', 'POPUP',
   'format_mask', 'DD/MM/YYYY')).to_clob
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000150)
-,p_button_sequence=>10
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000190)
 ,p_button_name=>'BTN_GUARDAR_FISCAL'
 ,p_static_id=>'btn-guardar-fiscal'
 ,p_show_as_disabled=>false
@@ -17770,8 +17870,8 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000151)
-,p_button_sequence=>20
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_button_sequence=>210
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000190)
 ,p_button_name=>'BTN_VOLVER_FISCAL'
 ,p_static_id=>'btn-volver-fiscal'
 ,p_show_as_disabled=>false
