@@ -9423,6 +9423,9 @@ unistr('        $b.attr("title", habilitado ? "" : "Solo se puede procesar un pr
 '        this.checked = this.getAttribute("data-id") === seleccionado;',
 '    });',
 '    spxNuevaLinea(!!seleccionado);',
+'    // El boton Procesar arranca apagado: solo se enciende con una fila PENDIENTE marcada',
+'    var $filaSel = $(".js-select-invoice:checked").first();',
+'    spxProcesar($filaSel.length ? $filaSel.attr("data-estado") : null);',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: la pagina global (0) no emite su CSS, asi que cada pagina */',
@@ -12091,6 +12094,12 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        setTimeout(autoHideSuccess, 100);',
 '    });',
 '',
+'    function spxProcesarFact(estado) {',
+'        var $b = $("[data-otel-label=\"BTN_PROCESAR\"]");',
+'        var ok = (estado || "").toUpperCase() === "PENDIENTE";',
+'        $b.prop("disabled", !ok);',
+'        $b.attr("title", ok ? "" : "Selecciona una factura PENDIENTE de la lista");',
+'    }',
 '    function spxNuevaLineaFact(habilitado) {',
 '        var $b = $("[data-otel-label=\"BTN_NUEVO_DETALLE\"]");',
 '        $b.prop("disabled", !habilitado);',
@@ -12103,6 +12112,7 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        }',
 '        apex.item("P8_ID_FACTURAS").setValue(invoiceId, null, true);',
 '        spxNuevaLineaFact(this.checked);',
+'        spxProcesarFact(this.checked ? this.getAttribute("data-estado") : null);',
 '        apex.region("R29979947211096273").refresh();',
 '        apex.region("R30554313608864005").refresh();',
 '    });',
@@ -12112,6 +12122,8 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        this.checked = this.getAttribute("data-id") === selectedInvoiceId;',
 '    });',
 '    spxNuevaLineaFact(!!selectedInvoiceId);',
+'    var $filaFact = $(".js-select-invoice:checked").first();',
+'    spxProcesarFact($filaFact.length ? $filaFact.attr("data-estado") : null);',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
@@ -12575,7 +12587,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>15
 ,p_column_identifier=>'Y'
 ,p_column_label=>'Seleccionar'
-,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
+,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" data-estado="#ESTADO#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
