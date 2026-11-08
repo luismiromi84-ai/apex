@@ -54,7 +54,11 @@ create or replace PACKAGE BODY pkg_presupuesto_detalle IS
         -- 1. Limpieza y conversión a NUMBER usando tu función fn_clean_num
         v_cantidad           := fn_clean_num(p_cantidad);
         v_precio_unitario    := fn_clean_num(p_precio_unitario);
-        v_id_impuesto_num    := fn_clean_num(p_id_impuesto);
+        -- OJO: fn_clean_num(NULL) devuelve 0, y el id 0 no existe en IMPUESTOS:
+        -- el INSERT moria con ORA-02291 (FK_PRESUP_DET_IMPUESTO) y el usuario solo
+        -- veia "No se pudo guardar la linea. Avisa al administrador." (2026-11-08).
+        -- Una linea sin impuesto es valida: el id se queda NULL.
+        v_id_impuesto_num    := nullif(fn_clean_num(p_id_impuesto), 0);
         v_pct_descuento      := fn_clean_num(p_porcentaje_descuento);
         v_monto_descuento    := fn_clean_num(p_monto_descuento);
         v_pct_impuesto       := fn_clean_num(p_porcentaje_impuesto);

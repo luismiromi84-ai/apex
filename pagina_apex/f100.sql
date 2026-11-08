@@ -10034,7 +10034,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Nueva Linea'
-,p_button_redirect_url=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.:6:P6_ID_PRESUPUESTO,P6_ID_DETALLE:,'
+,p_button_redirect_url=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.:6:P6_ID_PRESUPUESTO:&P5_ID_PRESUPUESTO.'
 ,p_warn_on_unsaved_changes=>null
 ,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
 ,p_button_condition2=>'PLSQL'
@@ -10427,53 +10427,54 @@ wwv_flow_imp_page.create_page(
 ,p_autocomplete_on_off=>'OFF'
 ,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'function calcularTotalesLinea() {',
+'    // Acepta 1234.56, 1.234,56 y 1,234.56: no depende del separador decimal.',
 '    var limpiarNumero = function(val) {',
-'        if (!val) return 0;',
-'        return parseFloat(String(val).replace(/,/g, '''')) || 0;',
+'        if (val === null || val === undefined || val === '''') { return 0; }',
+'        if (typeof val === ''number'') { return isNaN(val) ? 0 : val; }',
+'        var s = String(val).replace(/\s/g, '''');',
+'        var coma = s.lastIndexOf('','');',
+'        var punto = s.lastIndexOf(''.'');',
+'        if (coma > -1 && punto > -1) {',
+'            if (coma > punto) { s = s.replace(/\./g, '''').replace('','', ''.''); }',
+'            else { s = s.replace(/,/g, ''''); }',
+'        } else if (coma > -1) {',
+'            s = s.replace('','', ''.'');',
+'        }',
+'        var n = parseFloat(s);',
+'        return isNaN(n) ? 0 : n;',
 '    };',
 '',
 '    var cantidad = limpiarNumero($v(''P6_CANTIDAD''));',
 '    var precioUnitario = limpiarNumero($v(''P6_PRECIO_UNITARIO''));',
 '    var pctDescuento = limpiarNumero($v(''P6_PORCENTAGE_DESCUENTO''));',
 '    var montoDescuentoInput = limpiarNumero($v(''P6_MONTO_DESCUENTO''));',
-'    ',
 '    var pctImpuesto = 0;',
 '    var textoImpuesto = "";',
 '',
-'    // 1. Intentamos obtener el valor visual usando la API oficial de APEX para Popup LOV',
 '    try {',
 '        if (typeof apex.item(''P6_ID_IMPUESTO'').displayValue === ''function'') {',
 '            textoImpuesto = apex.item(''P6_ID_IMPUESTO'').displayValue();',
-'        } else if (apex.item(''P6_ID_IMPUESTO4'') || apex.item(''P6_ID_IMPUESTO'').node.value) {',
-unistr('            // Obtener el valor de visualizaci\00F3n mediante jQuery en los inputs generados por APEX'),
-'            textoImpuesto = $(''#P6_ID_IMPUESTO'').parent().find(''input[type="text"]'').val() || '''';',
 '        }',
 '    } catch (e) {',
-'        console.log("Error al leer displayValue:", e);',
+'        console.log("No se pudo leer el impuesto:", e);',
 '    }',
 '',
-unistr('    // 2. Si a\00FAn est\00E1 vac\00EDo, buscamos cualquier input de texto dentro del contenedor del Popup LOV'),
 '    if (!textoImpuesto) {',
 '        var $wrapper = $(''#P6_ID_IMPUESTO'').closest(''.apex-item-wrapper, .t-Form-inputContainer'');',
 '        textoImpuesto = $wrapper.find(''input[type="text"]'').val() || $wrapper.text() || '''';',
 '    }',
 '',
-unistr('    // 3. Fallback directo buscando el texto que contiene el s\00EDmbolo de porcentaje en el elemento'),
 '    if (!textoImpuesto || textoImpuesto.indexOf(''%'') === -1) {',
-'        // Lee el texto del span o etiqueta donde APEX muestra el valor seleccionado visualmente',
 '        $(''#P6_ID_IMPUESTO'').each(function() {',
 '            var displayVal = $(this).data(''displayValue'');',
-'            if (displayVal) textoImpuesto = displayVal;',
+'            if (displayVal) { textoImpuesto = displayVal; }',
 '        });',
 '    }',
 '',
-unistr('    // Extraemos autom\00E1ticamente el n\00FAmero dentro del par\00E9ntesis (ej. "(16%)" -> 16)'),
 '    var match = String(textoImpuesto).match(/\((\d+(?:\.\d+)?)\s*\%?\)/);',
 '    if (match) {',
 '        pctImpuesto = parseFloat(match[1]);',
 '    }',
-'',
-unistr('    console.log("Texto detectado del impuesto:", textoImpuesto, "| Porcentaje extra\00EDdo:", pctImpuesto);'),
 '',
 '    var subtotal = cantidad * precioUnitario;',
 '    var montoDescuento = 0;',
@@ -10495,19 +10496,24 @@ unistr('    console.log("Texto detectado del impuesto:", textoImpuesto, "| Porce
 '    var montoImpuesto = subtotalDesc * (pctImpuesto / 100);',
 '    var totalLinea = subtotalDesc + montoImpuesto;',
 '',
+'    // Se asigna un NUMERO, nunca una cadena con formato: APEX la formatea con el',
+'    // separador de la sesion. Con "0.00" fallaba: no se ha podido convertir ...',
+'    var redondear = function(n) { return Math.round((n + Number.EPSILON) * 100) / 100; };',
 '    var setVal = function(id, val) {',
-'        if (document.getElementById(id) && apex.item(id)) {',
-'            apex.item(id).setValue(val, null, true);',
+'        try {',
+'            if (document.getElementById(id) && apex.item(id)) {',
+'                apex.item(id).setValue(redondear(val), null, true);',
+'            }',
+'        } catch (e) {',
+'            console.log("No se pudo asignar " + id + ":", e);',
 '        }',
 '    };',
 '',
-unistr('    // Muestra el porcentaje din\00E1micamente en pantalla'),
 '    setVal(''P6_PORCENTAGE_IMPUESTO'', pctImpuesto);',
-'',
-'    setVal(''P6_SUBTOTAL_LINEA'', subtotalDesc.toFixed(2));',
-'    setVal(''P6_MONTO_DESCUENTO'', montoDescuento.toFixed(2));',
-'    setVal(''P6_MONTO_IMPUESTO'', montoImpuesto.toFixed(2));',
-'    setVal(''P6_MONTO_TOTAL_LINEA'', totalLinea.toFixed(2));',
+'    setVal(''P6_SUBTOTAL_LINEA'', subtotalDesc);',
+'    setVal(''P6_MONTO_DESCUENTO'', montoDescuento);',
+'    setVal(''P6_MONTO_IMPUESTO'', montoImpuesto);',
+'    setVal(''P6_MONTO_TOTAL_LINEA'', totalLinea);',
 '}'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 unistr('/* Cabecera uniforme en azul degradado sin sombras/recuadros extra\00F1os */'),
@@ -11067,6 +11073,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Eliminar detalle'
 ,p_static_id=>'eliminar-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if fn_clean_num(:P6_ID_PRESUPUESTO) is null then',
+'    raise_application_error(-20003, ''Selecciona un presupuesto en la lista antes de agregar la linea.'');',
+'end if;',
 'if not fn_presupuesto_propio(:P6_ID_PRESUPUESTO, :APP_USER) then',
 '    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
 'end if;',
@@ -11103,6 +11112,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Insert/Update del Detalle'
 ,p_static_id=>'insert-del-detalle'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if fn_clean_num(:P6_ID_PRESUPUESTO) is null then',
+'    raise_application_error(-20003, ''Selecciona un presupuesto en la lista antes de agregar la linea.'');',
+'end if;',
 'if not fn_presupuesto_propio(:P6_ID_PRESUPUESTO, :APP_USER) then',
 '    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
 'end if;',
@@ -11209,7 +11221,7 @@ wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(14428894790287801)
 ,p_plug_name=>unistr('Gesti\00F3n de Presupuestos')
 ,p_static_id=>unistr('gesti\00F3n-de-presupuestos')
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove:t-Region--hideHeader'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody:t-Form--labelsAbove'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>10
 ,p_plug_item_display_point=>'ABOVE'
@@ -17283,7 +17295,7 @@ wwv_flow_imp_page.create_page(
 ,p_autocomplete_on_off=>'OFF'
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
-,p_protection_level=>'U'
+,p_protection_level=>'C'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Cabecera de region con el azul de la app: mismo estandar que la 3, la 5 y la 8 */',
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
