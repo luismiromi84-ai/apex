@@ -31,16 +31,37 @@ PAGINAS = (3, 5, 8, 13)
 
 # Valores que la app pasaria en una sesion real (admin.demo, empresa 1).
 BINDS = {
-    "APP_USER": "'admin.demo'",
+    "APP_USER": "'prueba1'",
     "P13_ID_EMPRESA": "1",
     "P13_MONEDA": "'VES'",
-    "P5_ID_PRESUPUESTO": "1045",
+    "P5_ID_PRESUPUESTO": "null",
     "P5_ID_EMPRESA": "1",
     "P8_ID_EMPRESA": "1",
-    "P8_ID_FACTURAS": "1001",
-    "P5_ID_PRESUPUESTO_2": "1045",
+    "P8_ID_FACTURAS": "null",
+    "P5_ID_PRESUPUESTO_2": "null",
     "P4_ID_EMPRESA": "1",
 }
+
+
+def resolver_ids():
+    """Toma el primer presupuesto y la primera factura de la empresa 1.
+
+    Antes estaban fijos a 1045 y 1001 (dataset demo, purgado el 2026-11-08).
+    """
+    con = oracledb.connect(user=credenciales()["DB_USER"],
+                           password=credenciales()["DB_PASSWORD"],
+                           dsn=CONNECT_STRING)
+    cur = con.cursor()
+    cur.execute("alter session set current_schema = WKSP_SYPEXWS")
+    cur.execute("select min(id_presupuesto) from presupuestos where id_empresa = 1")
+    pres = cur.fetchone()[0]
+    cur.execute("select min(id_factura) from facturas where id_empresa = 1")
+    fact = cur.fetchone()[0]
+    con.close()
+    BINDS["P5_ID_PRESUPUESTO"] = str(pres)
+    BINDS["P5_ID_PRESUPUESTO_2"] = str(pres)
+    BINDS["P8_ID_FACTURAS"] = str(fact)
+    return pres, fact
 
 # Solo binds de APEX (items y de aplicacion). A proposito NO se toca cualquier
 # ":algo": las mascaras de fecha llevan ":MI" ('DD/MM/YYYY HH24:MI') y
@@ -82,6 +103,9 @@ def main():
     con = oracledb.connect(user=datos["DB_USER"], password=datos["DB_PASSWORD"], dsn=CONNECT_STRING)
     cur = con.cursor()
     cur.execute("alter session set current_schema = WKSP_SYPEXWS")
+
+    pres, fact = resolver_ids()
+    print(f"Documentos de prueba: presupuesto {pres}, factura {fact}")
 
     print("=" * 78)
     print("RENDIMIENTO DE LAS PANTALLAS - Synpex (app 100)")

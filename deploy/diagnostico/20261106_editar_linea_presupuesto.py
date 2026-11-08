@@ -116,7 +116,7 @@ presupuesto, detalle = cur.execute(
     " group by d.id_presupuesto having count(*) > 0 "
     " order by d.id_presupuesto fetch first 1 rows only").fetchone()
 
-cur.execute(fuente, {"P5_ID_PRESUPUESTO": presupuesto, "APP_USER": "luis"})
+cur.execute(fuente, {"P5_ID_PRESUPUESTO": presupuesto, "APP_USER": "prueba1"})
 cab = [c[0].lower() for c in cur.description]
 filas = cur.fetchall()
 comprobar("la consulta guardada se ejecuta con el bind de la pagina", len(filas) > 0,
@@ -153,7 +153,7 @@ invalidos = cur.execute("select count(*) from all_objects where owner = 'WKSP_SY
                         "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')").fetchone()[0]
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = cur.execute("select count(*) from apex_application_pages where application_id = 100").fetchone()[0]
-comprobar("siguen las 19 paginas", paginas == 19, f"({paginas})")
+comprobar("siguen las 20 paginas", paginas == 20, f"({paginas})")
 boton = cur.execute("select count(*) from apex_application_page_buttons "
                     "where application_id = 100 and page_id = 5 "
                     "and button_name = 'BTN_NUEVO_DETALLE'").fetchone()[0]

@@ -144,7 +144,7 @@ comprobar("ROL se muestra en el informe", "ROL" in columnas_rpt.split(":"))
 print("== la consulta devuelve nombres ==")
 
 if "from usuario" in fuente_norm:
-    cur.execute(fuente)
+    cur.execute(fuente.replace(':APP_USER', "'prueba1'"))
     cab = [c[0].lower() for c in cur.description]
     filas = cur.fetchall()
     if "empresa" in cab and "rol" in cab:
@@ -153,10 +153,10 @@ if "from usuario" in fuente_norm:
         comprobar("las filas traen nombre de empresa", all(f[i_e] is not None for f in filas),
                   f"({len(filas)} filas)")
         comprobar("las filas traen codigo de rol", all(f[i_r] is not None for f in filas))
-        comprobar("admin.demo sale con empresa y rol legibles",
-                  muestra.get("ADMIN.DEMO", (None, None))[0] is not None
-                  and str(muestra.get("ADMIN.DEMO", ("", ""))[1]).isupper(),
-                  str(muestra.get("ADMIN.DEMO")))
+        comprobar("prueba1 sale con empresa y rol legibles",
+                  muestra.get("PRUEBA1", (None, None))[0] is not None
+                  and str(muestra.get("PRUEBA1", ("", ""))[1]).isupper(),
+                  str(muestra.get("PRUEBA1")))
     else:
         comprobar("la consulta trae las columnas empresa y rol", False, str(cab))
 
@@ -184,12 +184,15 @@ print("== la consulta guardada se ejecuta ==")
 
 filas = []
 try:
-    cur.execute(fuente)
+    cur.execute(fuente.replace(':APP_USER', "'prueba1'"))
     cabeceras = [c[0].lower() for c in cur.description]
     filas = cur.fetchall()
     comprobar("devuelve las dos columnas de situacion", {"situacion", "situacion_clase"} <= set(cabeceras),
               f"({len(cabeceras)} columnas)")
-    total_usuarios = uno("select count(*) from wksp_sypexws.usuario")
+    total_usuarios = uno("""select count(*) from wksp_sypexws.usuario
+                                  where id_empresa = (select id_empresa from wksp_sypexws.usuario
+                                                        where upper(username) = 'PRUEBA1')
+                                     or id_empresa is null""")
     comprobar("devuelve una fila por usuario", len(filas) == total_usuarios,
               f"({len(filas)} de {total_usuarios})")
 except Exception as e:  # noqa: BLE001
@@ -206,14 +209,14 @@ if "situacion" in cabeceras:
     try:
         cur.execute("update wksp_sypexws.usuario set estado = 'ACTIVO', "
                     "bloqueado_hasta = sysdate + 1, debe_cambiar_clave = 'N' "
-                    "where upper(username) = upper(:u)", {"u": "luis"})
+                    "where upper(username) = upper(:u)", {"u": "prueba1"})
         cur.execute("update wksp_sypexws.usuario set estado = 'PENDIENTE', "
                     "bloqueado_hasta = null, debe_cambiar_clave = 'N' "
-                    "where upper(username) = upper(:u)", {"u": "ter"})
+                    "where upper(username) = upper(:u)", {"u": "prueba3"})
         cur.execute("update wksp_sypexws.usuario set estado = 'ACTIVO', "
                     "bloqueado_hasta = null, debe_cambiar_clave = 'S' "
-                    "where upper(username) = upper(:u)", {"u": "ana"})
-        cur.execute(fuente)
+                    "where upper(username) = upper(:u)", {"u": "admin"})
+        cur.execute(fuente.replace(':APP_USER', "'prueba1'"))
         cab2 = [c[0].lower() for c in cur.description]
         filas2 = cur.fetchall()
         j_sit, j_usu, j_cla = cab2.index("situacion"), cab2.index("username"), cab2.index("situacion_clase")
@@ -223,12 +226,12 @@ if "situacion" in cabeceras:
             return por_usuario.get(usuario.upper(), ("(no encontrado)", ""))
 
         comprobar("bloqueado -> «BLOQUEADO» / BLOQUEADO",
-              valor("luis")[0] == "BLOQUEADO" and valor("luis")[1] == "BLOQUEADO", str(valor("luis")))
+              valor("prueba1")[0] == "BLOQUEADO" and valor("prueba1")[1] == "BLOQUEADO", str(valor("prueba1")))
         comprobar("pendiente -> «PENDIENTE» / PENDIENTE",
-              valor("ter")[0] == "PENDIENTE" and valor("ter")[1] == "PENDIENTE", str(valor("ter")))
+              valor("prueba3")[0] == "PENDIENTE" and valor("prueba3")[1] == "PENDIENTE", str(valor("prueba3")))
         comprobar("clave por cambiar -> sufijo y clase ACTIVO",
-              valor("ana")[0] == "ACTIVO (CLAVE POR CAMBIAR)" and valor("ana")[1] == "ACTIVO",
-              str(valor("ana")))
+              valor("admin")[0] == "ACTIVO (CLAVE POR CAMBIAR)" and valor("admin")[1] == "ACTIVO",
+              str(valor("admin")))
     except Exception as e:  # noqa: BLE001
         print("  error en la prueba de comportamiento:", e)
         comprobar("prueba de comportamiento de las tres situaciones", False)
@@ -243,7 +246,7 @@ try:
                     "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW','TYPE','TYPE BODY')")
     comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
     paginas = uno("select count(*) from apex_application_pages where application_id = 100")
-    comprobar("siguen las 19 paginas", paginas == 19, f"({paginas})")
+    comprobar("siguen las 20 paginas", paginas == 20, f"({paginas})")
     guarda = uno("select count(*) from apex_application_page_proc "
                  "where application_id = 100 and page_id = 3 and static_id = 'valida-rol-admin'")
     comprobar("la guarda de rol de la pagina 3 sigue", guarda == 1)

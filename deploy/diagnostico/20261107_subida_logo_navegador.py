@@ -12,7 +12,11 @@
 # un dedo: DOM.setFileInputFiles + click.
 #
 # Uso (desde la raiz del repo):
-#   python deploy/diagnostico/20261107_subida_logo_navegador.py admin.demo "Prueba#2026" 1 libreria/variantes/lockup_600.png
+#   python deploy/diagnostico/20261107_subida_logo_navegador.py admin "Sypex#2026" 1 libreria/variantes/lockup_600.png
+#
+# OJO: el usuario NO debe tener el cambio de clave pendiente (DEBE_CAMBIAR_CLAVE='S'),
+# porque entonces el proceso de aplicacion lo manda a la pagina 14 y la 17 no carga.
+# Con el fixture de pruebas sirve `prueba1` / `Prueba#2026`.
 #
 # Requiere: websocket-client (pip install websocket-client) y Edge instalado.
 # Sale con codigo 0 si la pagina dice «Logo guardado», 1 si no.

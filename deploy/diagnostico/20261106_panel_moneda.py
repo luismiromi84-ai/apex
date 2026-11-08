@@ -98,7 +98,7 @@ usuario = cur.execute(
     "  from usuario u "
     "  join empresas e on e.id_empresa = u.id_empresa "
     "  left join paises p on p.cod_pais = e.cod_pais "
-    " where lower(u.username) in ('contabilidad.demo', 'mx.demo') "
+    " where lower(u.username) in ('prueba1', 'prueba2') "
     " order by u.username").fetchall()
 
 for nombre, empresa, moneda, defecto in usuario:
@@ -112,7 +112,7 @@ invalidos = cur.execute("select count(*) from all_objects where owner = 'WKSP_SY
                         "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')").fetchone()[0]
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = cur.execute("select count(*) from apex_application_pages where application_id = 100").fetchone()[0]
-comprobar("siguen las 19 paginas", paginas == 19, f"({paginas})")
+comprobar("siguen las 20 paginas", paginas == 20, f"({paginas})")
 
 conn.close()
 print()

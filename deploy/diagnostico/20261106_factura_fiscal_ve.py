@@ -136,7 +136,7 @@ invalidos = uno("select count(*) from all_objects where owner = 'WKSP_SYPEXWS' "
                 "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')")
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = uno("select count(*) from apex_application_pages where application_id = 100")
-comprobar("siguen las 19 paginas", paginas == 19, f"({paginas})")
+comprobar("siguen las 20 paginas", paginas == 20, f"({paginas})")
 
 conn.close()
 print()

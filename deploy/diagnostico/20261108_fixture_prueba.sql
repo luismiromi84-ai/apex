@@ -30,19 +30,43 @@ alter session set current_schema = WKSP_SYPEXWS;
 /
 
 -- -----------------------------------------------------------------------------
--- 1. Limpieza previa del rango (orden inverso a las FK)
+-- 1. Limpieza previa del rango (orden inverso a las FK). Cada borrado con su
+--    COMMIT: varias DML sobre tablas con identity en la misma transaccion dan
+--    ORA-12839/ORA-12860 en esta base (medido el 2026-11-08).
 -- -----------------------------------------------------------------------------
-delete from facturas_det      where id_detalle      between 900000 and 900999;
+delete from gasto_real where id_gasto between 900000 and 900999;
 /
-delete from facturas          where id_factura       between 900000 and 900999;
+commit;
 /
-delete from presupuestos_det  where id_detalle      between 900000 and 900999;
+
+delete from facturas_det where id_detalle between 900000 and 900999;
 /
-delete from presupuestos      where id_presupuesto  between 900000 and 900999;
+commit;
 /
+
+delete from facturas where id_factura between 900000 and 900999;
+/
+commit;
+/
+
+delete from presupuestos_det where id_detalle between 900000 and 900999;
+/
+commit;
+/
+
+delete from presupuestos where id_presupuesto between 900000 and 900999;
+/
+commit;
+/
+
 delete from producto_servicio where id_producto_servicio between 900000 and 900999;
 /
-delete from usuario           where usuario_id      between 900000 and 900999;
+commit;
+/
+
+delete from usuario where usuario_id between 900000 and 900999;
+/
+commit;
 /
 
 -- -----------------------------------------------------------------------------
@@ -55,6 +79,10 @@ values (900001, 'prueba1', 'prueba1@synpex.local', sypex_hash_password('Prueba#2
 insert into usuario (usuario_id, username, email, password_hash, estado, id_empresa, rol_id, debe_cambiar_clave)
 values (900002, 'prueba2', 'prueba2@synpex.local', sypex_hash_password('Prueba#2026'), 'ACTIVO', 2,
         (select id_rol from syn_roles where codigo_rol = 'ADMIN'), 'N');
+/
+insert into usuario (usuario_id, username, email, password_hash, estado, id_empresa, rol_id, debe_cambiar_clave)
+values (900003, 'prueba3', 'prueba3@synpex.local', sypex_hash_password('Prueba#2026'), 'ACTIVO', 1,
+        (select id_rol from syn_roles where codigo_rol = 'CONSULTA'), 'N');
 /
 
 -- -----------------------------------------------------------------------------
@@ -109,21 +137,21 @@ commit;
 
 -- 5. Facturas (una por estado) con su linea
 -- -----------------------------------------------------------------------------
-insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, cod_moneda, tipo_cambio,
+insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, nro_control, cod_moneda, tipo_cambio,
                       fecha_emision, subtotal, monto_impuesto, monto_total, estado, fecha_creacion)
-values (900011, 1, 1, 'FAC', 'T-900011', 'USD', 894.8876, trunc(sysdate), 200, 32, 232, 'PENDIENTE', systimestamp);
+values (900011, 1, 1, 'FAC', 'T-900011', '00-900011', 'USD', 894.8876, trunc(sysdate), 200, 32, 232, 'PENDIENTE', systimestamp);
 /
-insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, cod_moneda, tipo_cambio,
+insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, nro_control, cod_moneda, tipo_cambio,
                       fecha_emision, subtotal, monto_impuesto, monto_total, estado, fecha_creacion)
-values (900012, 1, 1, 'FAC', 'T-900012', 'USD', 894.8876, trunc(sysdate), 200, 32, 232, 'PAGADA', systimestamp);
+values (900012, 1, 1, 'FAC', 'T-900012', '00-900012', 'USD', 894.8876, trunc(sysdate), 200, 32, 232, 'PAGADA', systimestamp);
 /
-insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, cod_moneda, tipo_cambio,
+insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, nro_control, cod_moneda, tipo_cambio,
                       fecha_emision, subtotal, monto_impuesto, monto_total, estado, fecha_creacion)
-values (900013, 1, 1, 'FAC', 'T-900013', 'USD', 894.8876, trunc(sysdate), 200, 32, 232, 'ANULADA', systimestamp);
+values (900013, 1, 1, 'FAC', 'T-900013', '00-900013', 'USD', 894.8876, trunc(sysdate), 200, 32, 232, 'ANULADA', systimestamp);
 /
-insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, cod_moneda, tipo_cambio,
+insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura, nro_control, cod_moneda, tipo_cambio,
                       fecha_emision, subtotal, monto_impuesto, monto_total, estado, fecha_creacion)
-values (900031, 2, 201, 'FAC', 'T-900031', 'MXN', 48.136823, trunc(sysdate), 200, 32, 232, 'PENDIENTE', systimestamp);
+values (900031, 2, 201, 'FAC', 'T-900031', '00-900031', 'MXN', 48.136823, trunc(sysdate), 200, 32, 232, 'PENDIENTE', systimestamp);
 /
 
 insert into facturas_det (id_detalle, id_factura, num_linea, descripcion, cantidad, precio_unitario,

@@ -3,9 +3,9 @@
 Comprueba, contra la app importada:
   1. Los cuatro procesos de escritura de la pagina 4 llevan la guarda de empresa.
   2. La lista de usuarios (pagina 3) filtra por la empresa del usuario.
-  3. Comportamiento real: con mx.demo (empresa 2) no se puede tocar un usuario de la
+  3. Comportamiento real: con prueba2 (empresa 2) no se puede tocar un usuario de la
      empresa 1 (-20003), y con la propia empresa si. Todo con rollback.
-  4. Nada invalido y las 19 paginas siguen.
+  4. Nada invalido y las 20 paginas siguen.
 
 Uso:  python deploy/diagnostico/20261106_pagina4_empresa.py
 Sale con codigo 1 si algo falla.
@@ -60,17 +60,17 @@ def main():
               "el filtro es por el usuario de la sesion")
 
     print("== Filas que ve cada administrador en la lista ==")
-    for usuario, esperado in (("admin.demo", 13), ("mx.demo", 1)):
+    for usuario, esperado in (("prueba1", 3), ("prueba2", 1)):
         cur.execute(f"select count(*) from ({fuente})", {"APP_USER": usuario})
         n = cur.fetchone()[0]
         comprueba(n == esperado, f"{usuario} ve {esperado} usuario(s)", str(n))
 
     print("== Comportamiento: borrar usuarios ==")
-    cur.execute("select usuario_id from usuario where upper(username) = 'ADMIN.DEMO'")
+    cur.execute("select usuario_id from usuario where upper(username) = 'PRUEBA1'")
     id_admin = cur.fetchone()[0]
-    cur.execute("select usuario_id from usuario where upper(username) = 'MX.DEMO'")
+    cur.execute("select usuario_id from usuario where upper(username) = 'PRUEBA2'")
     id_mx = cur.fetchone()[0]
-    cur.execute("select usuario_id from usuario where upper(username) = 'VENTAS1.DEMO'")
+    cur.execute("select usuario_id from usuario where upper(username) = 'PRUEBA3'")
     id_emp1 = cur.fetchone()[0]
 
     cur.execute("select process_source from apex_application_page_proc where application_id = 100 "
@@ -89,14 +89,14 @@ def main():
         finally:
             con.rollback()
 
-    comprueba(intenta("mx.demo", id_emp1) == 20003,
-              "mx.demo (empresa 2) NO puede borrar un usuario de la empresa 1")
-    comprueba(intenta("mx.demo", id_mx) == 0,
-              "mx.demo SI puede borrar un usuario de su empresa")
-    comprueba(intenta("admin.demo", id_emp1) == 0,
-              "admin.demo SI puede borrar un usuario de su empresa")
-    comprueba(intenta("admin.demo", id_mx) == 20003,
-              "admin.demo (empresa 1) NO puede tocar la empresa 2")
+    comprueba(intenta("prueba2", id_emp1) == 20003,
+              "prueba2 (empresa 2) NO puede borrar un usuario de la empresa 1")
+    comprueba(intenta("prueba2", id_mx) == 20005,
+              "prueba2: la baja se rechaza (-20005, los usuarios no se eliminan)")
+    comprueba(intenta("prueba1", id_emp1) == 20005,
+              "prueba1: la baja se rechaza (-20005, los usuarios no se eliminan)")
+    comprueba(intenta("prueba1", id_mx) == 20003,
+              "prueba1 (empresa 1) NO puede tocar la empresa 2")
     comprueba(intenta("usuario.inventado", id_emp1) == 20003,
               "un usuario que no existe en USUARIO no puede tocar nada")
 
@@ -108,7 +108,7 @@ def main():
     comprueba(n == 0, "cero objetos invalidos", str(n))
     cur.execute("select count(*) from apex_application_pages where application_id = 100")
     n = cur.fetchone()[0]
-    comprueba(n == 19, "siguen las 19 paginas", str(n))
+    comprueba(n == 20, "siguen las 20 paginas", str(n))
 
     print(f"\nRESULTADO: FALLAS={fallas}")
     con.close()

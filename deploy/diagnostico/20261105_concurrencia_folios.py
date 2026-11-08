@@ -23,7 +23,9 @@ CS = ("(DESCRIPTION=(RETRY_COUNT=5)(RETRY_DELAY=2)"
       "(CONNECT_DATA=(SERVICE_NAME=GFD7E2575D251AE_SYPEXSQL_high.adb.oraclecloud.com))"
       "(SECURITY=(SSL_SERVER_DN_MATCH=YES)))")
 EMPRESA = 1
-CLIENTE = 1001
+# El cliente ya no es fijo: se toma el primero de la empresa (el dataset demo
+# se purgo el 2026-11-08).
+CLIENTE = None
 
 d = {}
 for l in open(os.path.join(REPO, ".env"), encoding="utf-8"):
@@ -45,6 +47,11 @@ def siguiente_folio(cur):
 
 
 def insertar(cur, folio):
+    global CLIENTE
+    if CLIENTE is None:
+        cur.execute("select min(id_cliente) from clientes where id_empresa = :e", [EMPRESA])
+        CLIENTE = cur.fetchone()[0]
+
     cur.execute("""insert into presupuestos
                      (id_presupuesto, id_empresa, folio, id_cliente, fecha_emision,
                       estado, cod_moneda, tipo_cambio, subtotal, impuesto_iva, total,
