@@ -16237,110 +16237,37 @@ wwv_flow_imp_page.create_page(
 ,p_name=>unistr('Recuperar Contrase\00F1a')
 ,p_alias=>'RECUPERAR-CONTRASENA'
 ,p_step_title=>unistr('Recuperar Contrase\00F1a')
-,p_warn_on_unsaved_changes=>'N'
-,p_first_item=>'AUTO_FIRST_ITEM'
 ,p_autocomplete_on_off=>'OFF'
-,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'/* Un solo ojo para ver la contrasena: oculta el nativo de Edge/IE */',
-'input[type="password"]::-ms-reveal { display: none; }'))
 ,p_step_template=>2102634289808461002
-,p_page_template_options=>'#DEFAULT#'
+,p_page_template_options=>'#DEFAULT#:t-PageBody--verticalMiddle'
 ,p_page_is_public_y_n=>'Y'
-
+,p_deep_linking=>'Y'
+,p_rejoin_existing_sessions=>'Y'
 ,p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000041)
 ,p_plug_name=>unistr('Recuperar contrase\00F1a')
 ,p_static_id=>unistr('recuperar-contrase\00F1a')
-,p_region_template_options=>'#DEFAULT#:t-Login-region--headerHidden js-removeLandmark'
+,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2675634334296186762
-,p_plug_display_sequence=>10
+,p_plug_display_sequence=>20
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_plug_header=>wwv_flow_string.join(wwv_flow_t_varchar2(
-unistr('<p class="spx-nota-acceso">Escribe tu usuario y tu correo, y la contrase\00F1a nueva. Si coinciden con una cuenta activa, la contrase\00F1a se actualiza al instante y se quita cualquier bloqueo por intentos fallidos. Con una clave temporal asignada por un ad')
-||'ministrador, basta con escribir la clave nueva.</p>',
-'<style>.spx-nota-acceso{font-family:Inter,system-ui,sans-serif;font-size:13px;line-height:1.45;color:#475569;background:#f1f5f9;border-left:3px solid #0284c7;border-radius:6px;padding:10px 12px;margin:0 0 14px 0;}</style>',
+'<div class="synpex-login-brand">',
+'  <img class="synpex-login-img" src="#APP_IMAGES#logo_synpex.png" alt="Synpex - Sistema de gestion"',
+'       onerror="this.onerror=null;this.src=&quot;#APP_FILES#logo_synpex.png&quot;;" />',
+'</div>',
 unistr('<p class="synpex-volver"><a href="f?p=&APP_ID.:9999:&APP_SESSION.">Volver al inicio de sesi\00F3n</a></p>'),
-'<style>.synpex-volver{text-align:center;margin:10px 0 0 0;font-family:Inter,system-ui,sans-serif;font-size:13px;}.synpex-volver a{color:#0284c7;text-decoration:none;}</style>'))
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(43000000000000046)
-,p_button_sequence=>10
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000041)
-,p_button_name=>'RESTABLECER'
-,p_static_id=>'btn-restablecer'
-,p_show_as_disabled=>false
-,p_button_action=>'SUBMIT'
-,p_button_template_options=>'#DEFAULT#'
-,p_button_template_id=>4073839297780169708
-,p_button_is_hot=>'Y'
-,p_button_image_alt=>unistr('Restablecer contrase\00F1a')
-,p_button_position=>'NEXT'
-,p_grid_new_row=>'Y'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000043)
-,p_name=>'P14_EMAIL'
-
-,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
-,p_prompt=>unistr('Correo Electr\00F3nico')
-,p_source_type=>'ALWAYS_NULL'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>40
-,p_field_template=>2320077351817916916
-,p_item_template_options=>'#DEFAULT#'
-
+'<style>',
+'  .synpex-volver { text-align: center; margin: -4px 0 12px 0; font-family: Inter, system-ui, sans-serif; font-size: 13px; }',
+'  .synpex-volver a { color: #0284c7; text-decoration: none; }',
+'  .synpex-login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 0 10px 0; }',
+'</style>'))
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N',
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000044)
-,p_name=>'P14_PASSWORD'
-
-,p_is_required=>true
-,p_item_sequence=>30
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
-,p_prompt=>unistr('Contrase\00F1a Nueva')
-,p_source_type=>'ALWAYS_NULL'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>40
-,p_field_template=>2320077351817916916
-,p_item_template_options=>'#DEFAULT#'
-
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N',
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'PASSWORD',
-  'trim_spaces', 'NONE')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(43000000000000045)
-,p_name=>'P14_PASSWORD_CONFIRM'
-
-,p_is_required=>true
-,p_item_sequence=>40
-,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
-,p_prompt=>unistr('Confirmar Contrase\00F1a')
-,p_source_type=>'ALWAYS_NULL'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>40
-,p_field_template=>2320077351817916916
-,p_item_template_options=>'#DEFAULT#'
-
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N',
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'PASSWORD',
-  'trim_spaces', 'NONE')).to_clob
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000042)
@@ -16351,16 +16278,80 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Usuario'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>40
+,p_cSize=>30
 ,p_field_template=>2320077351817916916
 ,p_item_template_options=>'#DEFAULT#'
-
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N',
   'disabled', 'N',
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000043)
+,p_name=>'P14_EMAIL'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_prompt=>unistr('Correo Electr\00F3nico')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_field_template=>2320077351817916916
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000044)
+,p_name=>'P14_PASSWORD'
+,p_is_required=>true
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_prompt=>unistr('Contrase\00F1a Nueva')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_field_template=>2320077351817916916
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'PASSWORD',
+  'trim_spaces', 'NONE')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000045)
+,p_name=>'P14_PASSWORD_CONFIRM'
+,p_is_required=>true
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_prompt=>unistr('Confirmar Contrase\00F1a')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_field_template=>2320077351817916916
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'PASSWORD',
+  'trim_spaces', 'NONE')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000046)
+,p_button_sequence=>50
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000041)
+,p_button_name=>'RESTABLECER'
+,p_static_id=>'btn-restablecer'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>unistr('Restablecer Contrase\00F1a')
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000047)
@@ -16440,6 +16431,7 @@ unistr('    apex_application.g_print_success_message := ''Contrase\00F1a actuali
 );
 end;
 /
+
 prompt --application/pages/page_00015
 begin
 wwv_flow_imp_page.create_page(
