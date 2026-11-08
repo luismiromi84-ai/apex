@@ -66,7 +66,6 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_factura_editable.sql
 @@../funciones/fn_presupuesto_editable.sql
 @@../funciones/fn_transicion_estado_valida.sql
-@@../funciones/fn_empresas_del_usuario.sql
 -- Folio atomico por empresa (lo llaman pkg_presupuestos y pkg_facturacion).
 @@../funciones/fn_asignar_folio.sql
 @@../funciones/fn_siguiente_folio.sql
