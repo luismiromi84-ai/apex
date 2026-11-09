@@ -415,6 +415,9 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
         v_total_bs   NUMBER := 0;
         v_logo       CLOB;
         v_pct_desc   NUMBER;
+    -- etiqueta del descuento: con el porcentaje solo si TODAS las lineas del
+    -- grupo comparten el mismo (antes se mostraba el promedio y no cuadraba)
+    v_lbl_desc   VARCHAR2(60);
     BEGIN
         IF p_id_factura IS NULL THEN
             RETURN fn_aviso('No se recibio el identificador de la factura.');
@@ -554,6 +557,8 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
         FOR g IN (SELECT nvl(i.porcentage, 0) AS alicuota,
                          SUM(d.cantidad * d.precio_unitario) AS bruto,
                          SUM(d.monto_descuento)              AS descuento,
+                         MIN(d.porcentaje_descuento)         AS pct_min,
+                         MAX(d.porcentaje_descuento)         AS pct_max,
                          SUM(d.subtotal_linea)               AS base,
                          SUM(d.monto_impuesto)               AS iva
                     FROM facturas_det d
@@ -561,7 +566,11 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
                    WHERE d.id_factura = p_id_factura
                    GROUP BY nvl(i.porcentage, 0)
                    ORDER BY 1 DESC) LOOP
-            v_pct_desc := CASE WHEN g.bruto > 0 THEN ROUND(g.descuento / g.bruto * 100) ELSE 0 END;
+            IF NVL(g.pct_min, 0) = NVL(g.pct_max, 0) THEN
+                v_lbl_desc := 'Descuento (' || fn_num_ve(NVL(g.pct_max, 0), 'FM990') || ' %)';
+            ELSE
+                v_lbl_desc := 'Descuento';
+            END IF;
 
             v_html := v_html || q'~
     <tr class="grupo"><td colspan="2">Al&iacute;cuota ~' || fn_num_ve(g.alicuota, 'FM990D0') || q'~ %</td></tr>
@@ -570,7 +579,7 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
       <td class="num">Bs. ~' || fn_num_ve(g.bruto * v_tasa, 'FM999G999G999G990D00') || q'~</td>
     </tr>
     <tr>
-      <td>Descuento (~' || fn_num_ve(v_pct_desc, 'FM990') || q'~ %)</td>
+      <td>~' || v_lbl_desc || q'~</td>
       <td class="num">Bs. ~' || fn_num_ve(g.descuento * v_tasa, 'FM999G999G999G990D00') || q'~</td>
     </tr>
     <tr>

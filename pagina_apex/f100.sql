@@ -10834,12 +10834,18 @@ wwv_flow_imp_page.create_page_item(
 ,p_source=>'ID_IMPUESTO'
 ,p_display_as=>'NATIVE_POPUP_LOV'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT NOMBRE_IMPUESTO  AS d, ',
-'       ID_IMPUESTO AS r',
-'FROM impuestos',
-'WHERE cod_pais = ''VE'' ',
-'  AND estado = ''ACTIVO''',
-'ORDER BY 1 DESC'))
+'SELECT i.cod_pais || '' - '' || i.nombre_impuesto AS d,',
+'       i.id_impuesto AS r',
+'  FROM impuestos i',
+' WHERE i.estado = ''ACTIVO''',
+'   -- Solo los impuestos del pais de la empresa del presupuesto',
+'   AND ( :P6_ID_PRESUPUESTO IS NULL',
+'         OR i.cod_pais = (SELECT e.cod_pais',
+'                            FROM empresas e',
+'                           WHERE e.id_empresa = (SELECT p.id_empresa',
+'                                                   FROM presupuestos p',
+'                                                  WHERE p.id_presupuesto = fn_clean_num(:P6_ID_PRESUPUESTO))) )',
+' ORDER BY i.porcentage DESC'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_value=>'-- Seleccione Impuesto --'
 ,p_cSize=>30
@@ -13001,7 +13007,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_source_type=>'QUERY'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30565692168864090)
@@ -13016,7 +13022,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_source_type=>'QUERY'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30565927153864092)
@@ -13031,7 +13037,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_source_type=>'QUERY'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(18025666854580872)
@@ -14793,11 +14799,15 @@ unistr('    // C\00E1lculos en Bol\00EDvares (VES)'),
 '    var subtotalBs = subtotalDesc * tipoCambio;',
 '    var totalBs = totalLinea * tipoCambio;',
 '',
+'    // Se usa la API de APEX: escribe el numero YA FORMATEADO (antes se volcaba',
+'    // el float crudo en el input y salia 205660.11375 en pantalla).',
 '    var setVal = function(id, val) {',
-'        var el = document.getElementById(id);',
-'        if (el) {',
-'            el.value = val;',
-'            jQuery(el).trigger(''validate'');',
+'        try {',
+'            if (apex.item(id)) {',
+'                apex.item(id).setValue(Math.round(val * 100) / 100, null, true);',
+'            }',
+'        } catch (e) {',
+'            console.log("No se pudo asignar " + id, e);',
 '        }',
 '    };',
 '',
@@ -15129,15 +15139,21 @@ wwv_flow_imp_page.create_page_item(
 ,p_source=>'ID_IMPUESTO'
 ,p_display_as=>'NATIVE_POPUP_LOV'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT cod_pais || '' - '' || nombre_impuesto || '' ('' || porcentage || ''%)'' AS display_value,',
-'       id_impuesto AS return_value',
-'  FROM impuestos',
-' WHERE cod_pais IN (''MX'', ''VE'')',
-'   AND estado = ''ACTIVO''',
-'   AND NVL(es_retencion, ''N'') = ''N''',
-'   AND (fecha_inicio IS NULL OR fecha_inicio <= TRUNC(SYSDATE))',
-'   AND (fecha_fin IS NULL OR fecha_fin >= TRUNC(SYSDATE))',
-' ORDER BY cod_pais, porcentage DESC;'))
+'SELECT i.cod_pais || '' - '' || i.nombre_impuesto AS display_value,',
+'       i.id_impuesto AS return_value',
+'  FROM impuestos i',
+' WHERE i.estado = ''ACTIVO''',
+'   AND NVL(i.es_retencion, ''N'') = ''N''',
+'   AND (i.fecha_inicio IS NULL OR i.fecha_inicio <= TRUNC(SYSDATE))',
+'   AND (i.fecha_fin IS NULL OR i.fecha_fin >= TRUNC(SYSDATE))',
+'   -- Solo los impuestos del pais de la empresa de la factura',
+'   AND ( :P10_ID_FACTURA IS NULL',
+'         OR i.cod_pais = (SELECT e.cod_pais',
+'                            FROM empresas e',
+'                           WHERE e.id_empresa = (SELECT f.id_empresa',
+'                                                   FROM facturas f',
+'                                                  WHERE f.id_factura = fn_clean_num(:P10_ID_FACTURA))) )',
+' ORDER BY i.porcentage DESC'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_value=>'-- Seleccione Impuesto --'
 ,p_cSize=>30
