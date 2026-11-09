@@ -269,31 +269,60 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
         p_id_factura_origen IN NUMBER,
         p_usuario           IN VARCHAR2
     ) IS
-        v_estado   facturas.estado%type;
-        v_lineas   number;
-        v_origen   number;
+        v_lista varchar2(4000);
     BEGIN
+        -- La logica (y los topes) viven en un solo sitio: se le pasa la lista
+        -- con TODAS las lineas del origen.
+        SELECT LISTAGG(d.id_detalle, ',') WITHIN GROUP (ORDER BY d.id_detalle)
+          INTO v_lista
+          FROM facturas_det d
+         WHERE d.id_factura = p_id_factura_origen;
+
+        copiar_lineas_de_factura(p_id_factura, p_id_factura_origen, v_lista, p_usuario);
+    END copiar_desde_factura;
+
+    -- ---------------------------------------------------------------------
+    -- Nota de credito: copiar SOLO las lineas marcadas de la factura origen
+    -- ---------------------------------------------------------------------
+    PROCEDURE copiar_lineas_de_factura (
+        p_id_factura        IN NUMBER,
+        p_id_factura_origen IN NUMBER,
+        p_id_detalles       IN VARCHAR2,
+        p_usuario           IN VARCHAR2
+    ) IS
+        v_tipo       facturas.tipo_documento%type;
+        v_estado     facturas.estado%type;
+        v_o_tipo     facturas.tipo_documento%type;
+        v_o_estado   facturas.estado%type;
+        v_o_total    number;
+        v_lineas     number;
+        v_pedidas    number;
+        v_halladas   number;
+        v_max        number;
+        v_cred       number;
+        v_cantidad   number;
+        v_prod       varchar2(200);
+        v_total_cred number;
+        v_total_nuevo number;
+    BEGIN
+        -- 1. La nota
         BEGIN
-            SELECT estado INTO v_estado FROM facturas WHERE id_factura = p_id_factura;
+            SELECT tipo_documento, estado INTO v_tipo, v_estado
+              FROM facturas WHERE id_factura = p_id_factura;
         EXCEPTION
             WHEN NO_DATA_FOUND THEN
-                raise_application_error(-20001, 'La nota no existe.');
+                raise_application_error(-20047, 'La nota no existe.');
         END;
+
+        IF NVL(UPPER(v_tipo), 'FAC') <> 'NC' THEN
+            raise_application_error(-20047,
+                'Solo una nota de credito puede traer lineas de la factura que acredita.');
+        END IF;
 
         IF UPPER(v_estado) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
             raise_application_error(-20002,
                 'No se puede modificar el detalle de una nota en estado '
                 || UPPER(v_estado) || ': es un documento cerrado.');
-        END IF;
-
-        IF p_id_factura_origen IS NULL THEN
-            raise_application_error(-20045,
-                'La nota no tiene factura de origen: elige la factura que acredita.');
-        END IF;
-
-        SELECT COUNT(*) INTO v_origen FROM facturas WHERE id_factura = p_id_factura_origen;
-        IF v_origen = 0 THEN
-            raise_application_error(-20045, 'La factura que acredita no existe.');
         END IF;
 
         SELECT COUNT(*) INTO v_lineas FROM facturas_det WHERE id_factura = p_id_factura;
@@ -303,16 +332,111 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 || ' linea(s): borralas antes de traer las de la factura.');
         END IF;
 
+        -- 2. La factura que acredita
+        IF p_id_factura_origen IS NULL THEN
+            raise_application_error(-20047,
+                'La nota no tiene factura de origen: elige la factura que acredita.');
+        END IF;
+
+        BEGIN
+            SELECT tipo_documento, estado, monto_total
+              INTO v_o_tipo, v_o_estado, v_o_total
+              FROM facturas WHERE id_factura = p_id_factura_origen;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                raise_application_error(-20047, 'La factura que acredita no existe.');
+        END;
+
+        IF NVL(UPPER(v_o_tipo), 'X') <> 'FAC' OR UPPER(v_o_estado) = 'ANULADA' THEN
+            raise_application_error(-20047,
+                'La factura que acredita no es una factura de venta vigente.');
+        END IF;
+
+        SELECT COUNT(*) INTO v_halladas FROM facturas_det WHERE id_factura = p_id_factura_origen;
+        IF v_halladas = 0 THEN
+            raise_application_error(-20047,
+                'La factura que acredita no tiene lineas: no hay nada que acreditar.');
+        END IF;
+
+        -- 3. La lista de lineas marcadas
+        IF p_id_detalles IS NULL OR TRIM(p_id_detalles) IS NULL THEN
+            raise_application_error(-20046, 'No has marcado ninguna linea para acreditar.');
+        END IF;
+
+        SELECT COUNT(DISTINCT TRIM(REGEXP_SUBSTR(p_id_detalles, '[^,]+', 1, LEVEL)))
+          INTO v_pedidas
+          FROM dual
+         CONNECT BY LEVEL <= REGEXP_COUNT(p_id_detalles, ',') + 1;
+
+        IF v_pedidas = 0 THEN
+            raise_application_error(-20046, 'No has marcado ninguna linea para acreditar.');
+        END IF;
+
+        SELECT COUNT(*) INTO v_halladas
+          FROM facturas_det d
+         WHERE d.id_factura = p_id_factura_origen
+           AND INSTR(',' || p_id_detalles || ',', ',' || d.id_detalle || ',') > 0;
+
+        IF v_halladas <> v_pedidas THEN
+            raise_application_error(-20047,
+                'Alguna de las lineas marcadas no es de la factura que acredita.');
+        END IF;
+
+        -- 4. Tope por linea: no acreditar mas cantidad de la facturada
+        FOR r IN (SELECT d.id_detalle, d.cantidad,
+                         NVL(d.codigo_producto, SUBSTR(d.descripcion, 1, 60)) AS producto,
+                         NVL((SELECT SUM(x.cantidad)
+                                FROM facturas_det x
+                                JOIN facturas f ON f.id_factura = x.id_factura
+                               WHERE x.id_detalle_origen = d.id_detalle
+                                 AND f.tipo_documento = 'NC'
+                                 AND f.estado <> 'ANULADA'
+                                 AND f.id_factura <> p_id_factura), 0) AS ya_acreditado
+                    FROM facturas_det d
+                   WHERE d.id_factura = p_id_factura_origen
+                     AND INSTR(',' || p_id_detalles || ',', ',' || d.id_detalle || ',') > 0)
+        LOOP
+            IF r.ya_acreditado + r.cantidad > r.cantidad + 0.0001 THEN
+                raise_application_error(-20048,
+                    'La linea ' || r.producto || ' ya tiene ' || r.ya_acreditado
+                    || ' acreditada(s) de ' || r.cantidad
+                    || ': no se puede acreditar mas de lo facturado.');
+            END IF;
+        END LOOP;
+
+        -- 5. Tope total: las notas de credito no pueden pasar la factura
+        SELECT NVL(SUM(d.monto_total_linea), 0) INTO v_total_nuevo
+          FROM facturas_det d
+         WHERE d.id_factura = p_id_factura_origen
+           AND INSTR(',' || p_id_detalles || ',', ',' || d.id_detalle || ',') > 0;
+
+        SELECT NVL(SUM(f.monto_total), 0) INTO v_total_cred
+          FROM facturas f
+         WHERE f.tipo_documento = 'NC'
+           AND f.estado <> 'ANULADA'
+           AND f.id_factura_origen = p_id_factura_origen
+           AND f.id_factura <> p_id_factura;
+
+        IF v_total_cred + v_total_nuevo > v_o_total + 0.01 THEN
+            raise_application_error(-20049,
+                'La nota deja el total acreditado en ' || TO_CHAR(v_total_cred + v_total_nuevo, 'FM999G999G990D00')
+                || ' y la factura que acredita vale ' || TO_CHAR(v_o_total, 'FM999G999G990D00')
+                || '. No se puede acreditar mas de lo facturado.');
+        END IF;
+
+        -- 6. Copia fiel de las lineas marcadas
+        SELECT NVL(MAX(num_linea), 0) INTO v_max FROM facturas_det WHERE id_factura = p_id_factura;
+
         INSERT INTO facturas_det (
             id_factura, num_linea, id_producto, codigo_producto, descripcion,
             cantidad, precio_unitario, porcentaje_descuento, monto_descuento,
             id_impuesto, porcentaje_impuesto, monto_impuesto, subtotal_linea,
             monto_total_linea, tasa_cambio_aplicada, subtotal_bs, total_bs,
-            creado_por
+            creado_por, id_detalle_origen
         )
         SELECT
             p_id_factura,
-            ROW_NUMBER() OVER (ORDER BY d.id_detalle),
+            v_max + ROW_NUMBER() OVER (ORDER BY d.id_detalle),
             d.id_producto,
             d.codigo_producto,
             d.descripcion,
@@ -328,10 +452,12 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
             d.tasa_cambio_aplicada,
             NVL(d.subtotal_bs, 0),
             NVL(d.total_bs, 0),
-            p_usuario
+            p_usuario,
+            d.id_detalle
           FROM facturas_det d
-         WHERE d.id_factura = p_id_factura_origen;
-    END copiar_desde_factura;
+         WHERE d.id_factura = p_id_factura_origen
+           AND INSTR(',' || p_id_detalles || ',', ',' || d.id_detalle || ',') > 0;
+    END copiar_lineas_de_factura;
 
 END pkg_factura_detalle;
 /

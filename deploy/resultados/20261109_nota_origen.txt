@@ -57,3 +57,31 @@ Nota: los tres casos nuevos siembran una tasa (USD→VES 2000 al 01/11, dentro d
 rollback) porque las tasas reales de la tabla (06/11 y 08/11) son casi iguales y no distinguirían
 «usa la referencia» de «usa la fecha del documento».
 
+Tarea 3 — `pkg_factura_detalle.copiar_lineas_de_factura`
+-------------------------------------------------------
+Verificación `deploy/diagnostico/20261109_copiar_lineas_nota.sql` (13 casos, en una transacción con
+rollback; cada caso limpia sus líneas porque el tope de cantidad es acumulativo).
+
+Antes:
+
+    PLS-00302: component 'COPIAR_LINEAS_DE_FACTURA' must be declared
+
+Aplicada `deploy/migrations/20261109_copiar_lineas_nota.sql`, **generada concatenando**
+`package/pkg_factura_detalle.sql` y `package_bodies/pkg_factura_detalle.sql` (spec antes del body):
+
+    20261109_copiar_lineas_nota.sql: 5 sentencias
+    ejecutadas OK: 5 en 1.3s
+    0 objetos inválidos
+
+Después:
+
+    20261109_copiar_lineas_nota.sql: 2 sentencias
+    FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+
+Casos que cubre: copia fiel (importes y alícuota) con `id_detalle_origen`, tope por cantidad
+(`-20048`), tope por total (`-20049`), lista vacía (`-20046`), nota con líneas (`-20045`), línea ajena
+(`-20047`), origen sin líneas, id repetido, dos líneas del mismo producto, `copiar_desde_factura`
+(caso «todas») reimplementada sobre la nueva, nota de débito rechazada, línea sin producto y alícuota
+cambiada en `IMPUESTOS` después de facturar.
+
+
