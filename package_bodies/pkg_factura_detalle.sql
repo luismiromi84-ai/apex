@@ -314,9 +314,12 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 raise_application_error(-20047, 'La nota no existe.');
         END;
 
-        IF NVL(UPPER(v_tipo), 'FAC') <> 'NC' THEN
+        -- La nota de credito y la de debito pueden traer lineas de su factura. La
+        -- de debito SUMA a la deuda, asi que los topes de 'no acreditar mas de lo
+        -- facturado' solo se aplican a la de credito.
+        IF NVL(UPPER(v_tipo), 'FAC') NOT IN ('NC', 'ND') THEN
             raise_application_error(-20047,
-                'Solo una nota de credito puede traer lineas de la factura que acredita.');
+                'Solo una nota de credito o de debito puede traer lineas de su factura.');
         END IF;
 
         IF UPPER(v_estado) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
@@ -382,7 +385,8 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 'Alguna de las lineas marcadas no es de la factura que acredita.');
         END IF;
 
-        -- 4. Tope por linea: no acreditar mas cantidad de la facturada
+        -- 4. Tope por linea: solo en la nota de credito (la de debito suma)
+        IF UPPER(v_tipo) = 'NC' THEN
         FOR r IN (SELECT d.id_detalle, d.cantidad,
                          NVL(d.codigo_producto, SUBSTR(d.descripcion, 1, 60)) AS producto,
                          NVL((SELECT SUM(x.cantidad)
@@ -403,8 +407,10 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                     || ': no se puede acreditar mas de lo facturado.');
             END IF;
         END LOOP;
+        END IF;
 
-        -- 5. Tope total: las notas de credito no pueden pasar la factura
+        -- 5. Tope total: solo la nota de credito no puede pasar la factura
+        IF UPPER(v_tipo) = 'NC' THEN
         SELECT NVL(SUM(d.monto_total_linea), 0) INTO v_total_nuevo
           FROM facturas_det d
          WHERE d.id_factura = p_id_factura_origen
@@ -422,6 +428,7 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 'La nota deja el total acreditado en ' || TO_CHAR(v_total_cred + v_total_nuevo, 'FM999G999G990D00')
                 || ' y la factura que acredita vale ' || TO_CHAR(v_o_total, 'FM999G999G990D00')
                 || '. No se puede acreditar mas de lo facturado.');
+        END IF;
         END IF;
 
         -- 6. Copia fiel de las lineas marcadas
