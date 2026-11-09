@@ -13683,9 +13683,12 @@ wwv_flow_imp_page.create_page_item(
 'SELECT ''Presupuesto: '' || p.folio || '' - '' || c.razon_social AS display_value,',
 '       p.id_presupuesto AS return_value',
 '  FROM presupuestos p',
-'  JOIN clientes c ON p.id_cliente = c.id_cliente',
-' WHERE p.estado = ''ENVIADO''',
-'   AND p.id_empresa = :P9_ID_EMPRESA',
+'  JOIN clientes c ON p.id_cliente = c.id_cliente AND c.id_empresa = p.id_empresa',
+' WHERE p.estado IN (''ENVIADO'', ''APROBADO'')',
+'   AND p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
+'                         WHERE upper(u.username) = upper(:APP_USER)',
+'                           AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND ( :P9_ID_EMPRESA IS NULL OR p.id_empresa = fn_clean_num(:P9_ID_EMPRESA) )',
 ' ORDER BY p.id_presupuesto DESC'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_value=>'-- Seleccione Presupuesto --'
@@ -17007,6 +17010,12 @@ wwv_flow_imp_page.create_page_plug(
 '',
 '    .spx-cabecera { display:flex; flex-wrap:wrap; align-items:center; gap:22px; row-gap:10px; padding:16px 6%; border-bottom:1px solid var(--borde); background:#fff; position:relative; z-index:20; }',
 '    .spx-marca img { display:block; height:76px; width:auto; filter:drop-shadow(0 8px 16px rgba(11,42,91,.16)); }',
+'@keyframes spxAparece {',
+'  0%, 100% { opacity: 1; }',
+'  45%, 55% { opacity: .15; }',
+'}',
+'.spx-marca img { animation: spxAparece 6s ease-in-out infinite; }',
+'@media (prefers-reduced-motion: reduce) { .spx-marca img { animation: none; } }',
 '    .spx-menu { display:flex; align-items:center; gap:30px; padding-left:28px; border-left:1px solid var(--borde); }',
 '    .spx-menu a { color:#1f2a3a; font-size:15px; font-weight:500; padding:6px 2px; border-bottom:2px solid transparent; }',
 '    .spx-menu a:hover, .spx-menu a:focus-visible { color:var(--azul); border-bottom-color:var(--azul); }',
