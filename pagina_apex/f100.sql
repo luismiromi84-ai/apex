@@ -12225,8 +12225,9 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '    function spxProcesarFact(estado, tipo) {',
 '        var $b = $("[data-otel-label=\"BTN_PROCESAR\"]");',
 '        var t = (tipo || "FAC").toUpperCase();',
-'        // Una nota de credito/debito no se timbra: solo se procesan facturas.',
-'        var ok = (estado || "").toUpperCase() === "PENDIENTE" && t === "FAC";',
+'        // Cualquier documento PENDIENTE se puede procesar: la nota tambien, porque',
+'        // al procesarla deja de estar pendiente y rebaja el saldo de su factura.',
+'        var ok = (estado || "").toUpperCase() === "PENDIENTE";',
 '        // El boton nombra el documento elegido: no es lo mismo una factura que una nota.',
 '        var etiqueta = "Procesar factura";',
 '        if (t === "NC") { etiqueta = "Procesar nota de cr\u00E9dito"; }',
@@ -18780,7 +18781,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_colspan=>6
-,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000361)

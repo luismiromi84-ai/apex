@@ -512,22 +512,9 @@ create or replace PACKAGE BODY pkg_facturacion AS
     ) IS
         v_id_factura     NUMBER := fn_clean_num(TO_CHAR(p_id_factura));
         v_id_presupuesto NUMBER;
-        v_tipo           facturas.tipo_documento%type;
     BEGIN
         IF v_id_factura IS NULL OR v_id_factura <= 0 THEN
             raise_application_error(-20002, 'Error: El ID de la factura es nulo o inválido.');
-        END IF;
-
-        -- Una nota de credito o debito NO se timbra: se emite y se imprime. El
-        -- timbrado es del CFDI mexicano; en Venezuela la nota solo corrige una
-        -- factura anterior y lleva la alicuota de esa factura.
-        SELECT tipo_documento INTO v_tipo FROM facturas WHERE id_factura = v_id_factura;
-        IF NVL(UPPER(v_tipo), 'FAC') <> 'FAC' THEN
-            raise_application_error(-20050,
-                'Una ' || CASE UPPER(v_tipo) WHEN 'NC' THEN 'nota de crédito'
-                                             WHEN 'ND' THEN 'nota de débito'
-                                             ELSE 'nota' END
-                || ' no se timbra: se emite y se imprime como documento que corrige su factura.');
         END IF;
 
         UPDATE facturas SET
