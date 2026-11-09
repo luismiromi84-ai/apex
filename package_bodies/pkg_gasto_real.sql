@@ -36,6 +36,7 @@ create or replace PACKAGE BODY pkg_gasto_real AS
         v_usd       number;
         v_existe    number;
         v_fecha     date;
+        v_estado    presupuestos.estado%type;
     begin
         if p_id_presupuesto is null then
             raise_application_error(-20040, 'El gasto necesita un presupuesto.');
@@ -45,11 +46,19 @@ create or replace PACKAGE BODY pkg_gasto_real AS
             raise_application_error(-20041, 'El monto del gasto debe ser mayor que cero.');
         end if;
 
-        select count(*) into v_existe
+        select count(*), max(estado) into v_existe, v_estado
           from presupuestos where id_presupuesto = p_id_presupuesto;
 
         if v_existe = 0 then
             raise_application_error(-20042, 'El presupuesto no existe.');
+        end if;
+
+        -- Un presupuesto FACTURADO o CANCELADO es un documento cerrado: no
+        -- admite gastos nuevos ni cambios en los que ya tiene.
+        if not fn_presupuesto_editable(p_id_presupuesto) then
+            raise_application_error(-20044,
+                'El presupuesto esta cerrado (' || v_estado
+                || '): no se pueden registrar gastos.');
         end if;
 
         if p_usuario is not null and not fn_presupuesto_propio(p_id_presupuesto, p_usuario) then
@@ -119,12 +128,22 @@ create or replace PACKAGE BODY pkg_gasto_real AS
         p_usuario  IN VARCHAR2 DEFAULT NULL
     ) IS
         v_presupuesto number;
+        v_estado      presupuestos.estado%type;
     begin
         select id_presupuesto into v_presupuesto
           from gasto_real where id_gasto = p_id_gasto;
 
         if p_usuario is not null and not fn_presupuesto_propio(v_presupuesto, p_usuario) then
             raise_application_error(-20003, 'No tiene permisos sobre este documento.');
+        end if;
+
+        select estado into v_estado
+          from presupuestos where id_presupuesto = v_presupuesto;
+
+        if not fn_presupuesto_editable(v_presupuesto) then
+            raise_application_error(-20044,
+                'El presupuesto esta cerrado (' || v_estado
+                || '): no se pueden borrar sus gastos.');
         end if;
 
         delete from gasto_real where id_gasto = p_id_gasto;

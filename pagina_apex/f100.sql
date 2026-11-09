@@ -12038,10 +12038,32 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'cancelar-prepuesto'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
+'    v_estado presupuestos.estado%type;',
+'    v_folio  presupuestos.folio%type;',
+'    v_fact   varchar2(400);',
 'BEGIN',
 'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
+'',
+'    select estado, folio into v_estado, v_folio',
+'      from presupuestos where id_presupuesto = :P7_ID_PRESUPUESTO;',
+'',
+'    if v_estado = ''CANCELADO'' then',
+'        raise_application_error(-20026, ''El presupuesto '' || v_folio || unistr('' ya est\00E1 cancelado.''));',
+'    end if;',
+'',
+'    if v_estado = ''FACTURADO'' then',
+'        select listagg(f.folio_factura || '' ('' || f.estado || '')'', '', '')',
+'                 within group (order by f.id_factura)',
+'          into v_fact',
+'          from facturas f where f.id_presupuesto = :P7_ID_PRESUPUESTO;',
+'        raise_application_error(-20026,',
+'            ''El presupuesto '' || v_folio || unistr('' est\00E1 facturado'')',
+'            || case when v_fact is not null then '' con la factura '' || v_fact else '''' end',
+'            || ''. Anula la factura primero para poder cancelar el presupuesto.'');',
+'    end if;',
+'',
 '    pkg_presupuestos.prc_cancelar_presupuesto (',
 '        :P7_ID_PRESUPUESTO,',
 '        :APP_USER,',
@@ -13519,7 +13541,7 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000320)
 ,p_name=>'P9_NRO_CONTROL'
 ,p_source_data_type=>'VARCHAR2'
-,p_item_sequence=>55
+,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_item_source_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_prompt=>unistr('N\00B0 de Control')
@@ -13529,8 +13551,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_when_type=>'SQL_EXPRESSION'
 ,p_cSize=>30
 ,p_cMaxlength=>30
-,p_begin_on_new_line=>'Y'
-,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_colspan=>3
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
@@ -13966,7 +13988,7 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(18146357507167515)
 ,p_name=>'P9_UUID_FISCAL'
 ,p_source_data_type=>'VARCHAR2'
-,p_item_sequence=>40
+,p_item_sequence=>41
 ,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_item_source_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_prompt=>unistr('UUID Fiscal (CFDI)')
@@ -17664,7 +17686,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Guardar'
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P16_ID_PRESUPUESTO is not null'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P16_ID_PRESUPUESTO is not null and fn_presupuesto_editable(fn_clean_num(:P16_ID_PRESUPUESTO))'
 ,p_button_condition2=>'PLSQL'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-floppy-o'
@@ -17683,7 +17705,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'N'
 ,p_button_image_alt=>'Eliminar'
 ,p_confirm_message=>'Se va a eliminar este gasto. Continua?'
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P16_ID_GASTO is not null'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P16_ID_GASTO is not null and fn_presupuesto_editable(fn_clean_num(:P16_ID_PRESUPUESTO))'
 ,p_button_condition2=>'PLSQL'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-trash-o'
@@ -17773,6 +17795,10 @@ wwv_flow_imp_page.create_page_process(
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
 '',
+'if not fn_presupuesto_editable(fn_clean_num(:P16_ID_PRESUPUESTO)) then',
+'    raise_application_error(-20044, ''El presupuesto esta cerrado: no se pueden registrar gastos.'');',
+'end if;',
+'',
 'pkg_gasto_real.prc_guardar_gasto(',
 '    p_id_gasto       => :P16_ID_GASTO,',
 '    p_id_presupuesto => fn_clean_num(:P16_ID_PRESUPUESTO),',
@@ -17799,6 +17825,10 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'end if;',
+'',
+'if not fn_presupuesto_editable(fn_clean_num(:P16_ID_PRESUPUESTO)) then',
+'    raise_application_error(-20044, ''El presupuesto esta cerrado: no se pueden borrar sus gastos.'');',
 'end if;',
 '',
 'pkg_gasto_real.prc_eliminar_gasto(',
