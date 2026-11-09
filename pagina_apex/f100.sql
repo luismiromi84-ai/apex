@@ -13254,7 +13254,7 @@ wwv_flow_imp_page.create_page(
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Nota de credito: casillas de las lineas de la factura que acredita.',
 '   El boton "Traer marcadas" envia la lista en el item oculto P9_LINEAS_SEL. */',
-'function spxLineasSelActualiza() {',
+'window.spxLineasSelActualiza = function () {',
 '    var ids = [];',
 '    document.querySelectorAll(".js-linea-sel:checked").forEach(function (c) {',
 '        ids.push(c.getAttribute("data-id"));',
@@ -13265,19 +13265,19 @@ wwv_flow_imp_page.create_page(
 '        return /Traer marcadas/i.test(x.innerText);',
 '    })[0];',
 '    if (b) { b.disabled = ids.length === 0; }',
-'}',
-'function spxMarcarTodas(ver) {',
+'};',
+'window.spxMarcarTodas = function (ver) {',
 '    document.querySelectorAll(".js-linea-sel").forEach(function (c) { c.checked = !!ver; });',
 '    var t = document.getElementById("spx-todas");',
 '    if (t) { t.checked = !!ver; }',
-'    spxLineasSelActualiza();',
-'}',
+'    window.spxLineasSelActualiza();',
+'};',
 'document.addEventListener("change", function (e) {',
 '    if (e.target && e.target.classList && e.target.classList.contains("js-linea-sel")) {',
-'        spxLineasSelActualiza();',
+'        window.spxLineasSelActualiza();',
 '    }',
 '});',
-'setTimeout(spxLineasSelActualiza, 800);'))
+'setTimeout(function () { window.spxLineasSelActualiza(); }, 800);'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 unistr('/* Cabecera uniforme en azul degradado sin sombras/recuadros extra\00F1os */'),
 '.t-DialogRegion-header,',
@@ -14721,6 +14721,9 @@ wwv_flow_imp_page.create_page_da_action(
 '    v_id number := fn_clean_num(:P9_ID_FACTURA_ORIGEN);',
 '    v_f facturas%rowtype;',
 'begin',
+'  -- Cinturon: esta accion es de apoyo (rellenar la cabecera). Si algo falla,',
+'  -- se ignora: nunca puede tumbar la pagina ni bloquear el guardado.',
+'  begin',
 '    -- Sin factura origen no hay nada que leer. Y si el id no existe, se sale',
 '    -- en silencio: esta accion no puede tumbar la pagina con ORA-01403.',
 '    if v_id is null or v_id = 0 then',
@@ -14751,6 +14754,9 @@ wwv_flow_imp_page.create_page_da_action(
 unistr('    :P9_OBSERVACIONES := ''Nota de cr\00E9dito de la factura '' || v_f.folio_factura'),
 '        || case when v_f.nro_control is not null then '', N. de Control '' || v_f.nro_control else '''' end',
 '        || '', del '' || to_char(v_f.fecha_emision, ''DD/MM/YYYY'');',
+'  exception',
+'    when others then null;',
+'  end;',
 'end;')))).to_clob
 ,p_wait_for_result=>'Y'
 );
