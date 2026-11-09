@@ -12222,13 +12222,13 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        setTimeout(autoHideSuccess, 100);',
 '    });',
 '',
-'    function spxProcesarFact(estado, tipo) {',
+'    function spxProcesarFact(estado, folio) {',
 '        var $b = $("[data-otel-label=\"BTN_PROCESAR\"]");',
-'        var t = (tipo || "FAC").toUpperCase();',
-'        // Cualquier documento PENDIENTE se puede procesar: la nota tambien, porque',
-'        // al procesarla deja de estar pendiente y rebaja el saldo de su factura.',
+'        // El tipo se deduce del FOLIO (NC-1, ND-1, F-1041): asi no hace falta',
+'        // traer una columna nueva al informe solo para el texto del boton.',
+'        var f = (folio || "").toUpperCase();',
+'        var t = f.indexOf("NC-") === 0 ? "NC" : (f.indexOf("ND-") === 0 ? "ND" : "FAC");',
 '        var ok = (estado || "").toUpperCase() === "PENDIENTE";',
-'        // El boton nombra el documento elegido: no es lo mismo una factura que una nota.',
 '        var etiqueta = "Procesar factura";',
 '        if (t === "NC") { etiqueta = "Procesar nota de cr\u00E9dito"; }',
 '        if (t === "ND") { etiqueta = "Procesar nota de d\u00E9bito"; }',
@@ -12248,7 +12248,7 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        }',
 '        apex.item("P8_ID_FACTURAS").setValue(invoiceId, null, true);',
 '        spxNuevaLineaFact(this.checked);',
-'        spxProcesarFact(this.checked ? this.getAttribute("data-estado") : null, this.checked ? this.getAttribute("data-tipo") : null);',
+'        spxProcesarFact(this.checked ? this.getAttribute("data-estado") : null, this.checked ? this.getAttribute("data-folio") : null);',
 '        apex.region("R29979947211096273").refresh();',
 '        apex.region("R30554313608864005").refresh();',
 '    });',
@@ -12259,7 +12259,7 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '    });',
 '    spxNuevaLineaFact(!!selectedInvoiceId);',
 '    var $filaFact = $(".js-select-invoice:checked").first();',
-'    spxProcesarFact($filaFact.length ? $filaFact.attr("data-estado") : null, $filaFact.length ? $filaFact.attr("data-tipo") : null);',
+'    spxProcesarFact($filaFact.length ? $filaFact.attr("data-estado") : null, $filaFact.length ? $filaFact.attr("data-folio") : null);',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
@@ -12724,7 +12724,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>15
 ,p_column_identifier=>'Y'
 ,p_column_label=>'Seleccionar'
-,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" data-estado="#ESTADO#" data-tipo="#TIPO_DOCUMENTO#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
+,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" data-estado="#ESTADO#" data-folio="#FOLIO#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
