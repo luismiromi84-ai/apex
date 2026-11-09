@@ -12864,13 +12864,13 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Nueva Linea'
-,p_button_redirect_url=>'f?p=&APP_ID.:10:&SESSION.::&DEBUG.:10:P10_ID_FACTURA:&P8_ID_FACTURAS.'
 ,p_warn_on_unsaved_changes=>null
 ,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
 ,p_button_condition2=>'PLSQL'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-plus'
 ,p_grid_new_row=>'Y'
+,p_button_redirect_url=>'f?p=&APP_ID.:10:&SESSION.::&DEBUG.:10:P10_ID_FACTURA:&P8_ID_FACTURAS.'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(23143782328112205)
@@ -14738,11 +14738,10 @@ unistr('    // C\00E1lculos en Bol\00EDvares (VES)'),
 '    setVal(''P10_MONTO_DESCUENTO'', montoDescuento.toFixed(2));',
 '    setVal(''P10_MONTO_IMPUESTO'', montoImpuesto.getText ? montoImpuesto.toFixed(2) : montoImpuesto.toFixed(2));',
 '    setVal(''P10_MONTO_TOTAL_LINEA'', totalLinea.toFixed(2));',
+'    setVal(''P10_TASA_CAMBIO_APLICADA'', tipoCambio);',
+'    setVal(''P10_SUBTOTAL_BS'', subtotalBs);',
+'    setVal(''P10_TOTAL_BS'', totalBs);',
 '    ',
-unistr('    // Asignar valores en Bol\00EDvares a los elementos de pantalla'),
-'    setVal(''P10_SUBTOTAL_BS'', subtotalBs.toFixed(2));',
-'    setVal(''P10_TOTAL_BS'', totalBs.toFixed(2));',
-'    setVal(''P10_TASA_CAMBIO_APLICADA'', tipoCambio.toFixed(4));',
 '}'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 unistr('/* Cabecera uniforme en azul degradado sin sombras/recuadros extra\00F1os */'),
@@ -14977,7 +14976,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(36140691284546642)
@@ -15016,7 +15015,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(36139961131546636)
@@ -15106,7 +15105,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(21950926045106206)
@@ -15189,7 +15188,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(21950846784106205)
@@ -15267,7 +15266,7 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(22584597956741105)
 ,p_name=>'P10_SUBTOTAL_BS'
 ,p_source_data_type=>'NUMBER'
-,p_is_required=>true
+
 ,p_item_sequence=>170
 ,p_item_plug_id=>wwv_flow_imp.id(36135701100546585)
 ,p_item_source_plug_id=>wwv_flow_imp.id(36135701100546585)
@@ -15277,7 +15276,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>30
 
-,p_read_only_when_type=>'ALWAYS'
 ,p_field_template=>1610598304472262251
 ,p_item_css_classes=>'text-end fw-bold fs-6'
 ,p_item_template_options=>'#DEFAULT#'
@@ -15315,7 +15313,7 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(22584707002741107)
 ,p_name=>'P10_TASA_CAMBIO_APLICADA'
 ,p_source_data_type=>'NUMBER'
-,p_is_required=>true
+
 ,p_item_sequence=>140
 ,p_item_plug_id=>wwv_flow_imp.id(36135701100546585)
 ,p_item_source_plug_id=>wwv_flow_imp.id(36135701100546585)
@@ -15326,7 +15324,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 
 
-,p_read_only_when_type=>'ALWAYS'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
@@ -15340,7 +15337,7 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(22584698683741106)
 ,p_name=>'P10_TOTAL_BS'
 ,p_source_data_type=>'NUMBER'
-,p_is_required=>true
+
 ,p_item_sequence=>200
 ,p_item_plug_id=>wwv_flow_imp.id(36135701100546585)
 ,p_item_source_plug_id=>wwv_flow_imp.id(36135701100546585)
@@ -15351,7 +15348,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 
 
-,p_read_only_when_type=>'ALWAYS'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
@@ -15471,6 +15467,13 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'cargar-tasa-factura'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
+'    -- El boton de la pagina 8 arma su URL al pintar la pagina, cuando el item',
+'    -- P8_ID_FACTURAS todavia esta vacio: si llega nulo, se toma del estado de',
+'    -- sesion (el refresco del IR ya lo envio).',
+'    IF :P10_ID_FACTURA IS NULL THEN',
+'        :P10_ID_FACTURA := :P8_ID_FACTURAS;',
+'    END IF;',
+'',
 '    IF :P10_ID_FACTURA IS NOT NULL THEN',
 '        SELECT NVL(NULLIF(tipo_cambio, 0), 1)',
 '          INTO :P10_TASA_CAMBIO_APLICADA',
