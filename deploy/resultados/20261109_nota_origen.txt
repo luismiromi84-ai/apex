@@ -1,0 +1,33 @@
+Nota de crédito desde su factura de origen — evidencia
+======================================================
+Plan: `docs/superpowers/plans/2026-11-09-nota-credito-desde-factura.md`
+Diseño: `docs/superpowers/specs/2026-11-09-nota-credito-desde-factura-design.md`
+Rama: `feat/nota-credito-desde-factura`
+
+Tarea 1 — columna `FACTURAS_DET.ID_DETALLE_ORIGEN`
+--------------------------------------------------
+Verificación `deploy/diagnostico/20261109_nota_origen_columna.sql` (C1 columna, C2 FK,
+C3 índice, C4 filas existentes en nulo, C5 0 inválidos).
+
+Antes:
+
+    20261109_nota_origen_columna.sql: 2 sentencias
+    FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=4
+      | C1: no existe la columna ID_DETALLE_ORIGEN
+      | C2: no existe la FK FK_FACT_DET_ORIGEN hacia FACTURAS_DET
+      | C3: no existe el indice IX_FACT_DET_ORIGEN
+      | C4: no se pudo consultar la columna: ORA-00904: "ID_DETALLE_ORIGEN": invalid identifier
+
+Aplicada la migración `deploy/migrations/20261109_nota_detalle_origen.sql` (idempotente; añade
+columna, FK `FK_FACT_DET_ORIGEN` e índice `IX_FACT_DET_ORIGEN`, y recompila el esquema):
+
+    20261109_nota_detalle_origen.sql: 9 sentencias
+    ejecutadas OK: 9 en 5.4s
+
+Después:
+
+    20261109_nota_origen_columna.sql: 2 sentencias
+    FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+
+(El runner sale con código 1 porque la verificación lanza `-20100` a propósito: el mensaje
+`RESULTADO: FALLAS=n` es el resultado. Es el patrón de todas las verificaciones del repo.)
