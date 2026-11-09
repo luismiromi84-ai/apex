@@ -31,3 +31,29 @@ Después:
 
 (El runner sale con código 1 porque la verificación lanza `-20100` a propósito: el mensaje
 `RESULTADO: FALLAS=n` es el resultado. Es el patrón de todas las verificaciones del repo.)
+
+Tarea 2 — `fn_validar_tasa_documento` con fecha de referencia
+------------------------------------------------------------
+Verificación `20261106_tasa_obligatoria_verificacion.sql` (los 12 casos previos + T13 la tasa
+sembrada para el 01/11 se acepta con `p_fecha_referencia`, T14 con referencia una tasa absurda sigue
+rechazándose, T15 sin referencia esa misma tasa se rechaza).
+
+Antes:
+
+    20261106_tasa_obligatoria_verificacion.sql: 2 sentencias
+    FALLO en la sentencia 2 (codigo 6550):
+    PLS-00306: wrong number or types of arguments in call to 'FN_VALIDAR_TASA_DOCUMENTO'
+
+(El bloque no compila: la llamada de 4 argumentos no existía. Es el ROJO de un cambio de firma.)
+
+Aplicada `deploy/migrations/20261109_tasa_fecha_referencia.sql` (4 sentencias, 1,9 s).
+
+Después:
+
+    20261106_tasa_obligatoria_verificacion.sql: 2 sentencias
+    FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+
+Nota: los tres casos nuevos siembran una tasa (USD→VES 2000 al 01/11, dentro de la transacción con
+rollback) porque las tasas reales de la tabla (06/11 y 08/11) son casi iguales y no distinguirían
+«usa la referencia» de «usa la fecha del documento».
+
