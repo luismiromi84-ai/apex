@@ -13454,6 +13454,24 @@ wwv_flow_imp_page.create_page_button(
 ,p_grid_column=>6
 );
 wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000350)
+,p_button_sequence=>245
+,p_button_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_button_name=>'BTN_TRAER'
+,p_static_id=>'btn-traer-lineas'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_position=>'CHANGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Traer lineas'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and fn_factura_editable(:P9_ID_FACTURA) and fn_nota_traible(fn_clean_num(:P9_ID_FACTURA))'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-download'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(18162756611230481)
 ,p_button_sequence=>250
 ,p_button_plug_id=>wwv_flow_imp.id(32589573944518258)
@@ -14872,6 +14890,31 @@ unistr('    apex_application.g_print_success_message := ''Se trajeron las lineas
 ,p_process_error_message=>'#SQLERRM#'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000000344)
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000352)
+,p_process_sequence=>46
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Traer todas las lineas'
+,p_static_id=>'traer-todas-las-lineas'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'    if not fn_factura_propio(:P9_ID_FACTURA, :APP_USER) then',
+'        raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'    end if;',
+'',
+'    pkg_factura_detalle.copiar_desde_factura(',
+'        p_id_factura        => fn_clean_num(:P9_ID_FACTURA),',
+'        p_id_factura_origen => fn_clean_num(:P9_ID_FACTURA_ORIGEN),',
+'        p_usuario           => :APP_USER);',
+'',
+unistr('    apex_application.g_print_success_message := ''Se trajeron todas las lineas de la factura.'';'),
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_error_message=>'#SQLERRM#'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000350)
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(18173805212230538)
