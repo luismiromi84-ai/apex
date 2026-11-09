@@ -18776,7 +18776,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Forma de emisión'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC:FORMA_LIBRE;Forma libre (imprenta autorizada),MAQUINA_FISCAL;Máquina fiscal'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select ''Forma libre (imprenta autorizada)'' as display_value, ''FORMA_LIBRE'' as return_value from dual',
+'union all',
+'select ''Máquina fiscal'', ''MAQUINA_FISCAL'' from dual'))
+,p_lov_display_null=>'NO'
 ,p_cSize=>30
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
