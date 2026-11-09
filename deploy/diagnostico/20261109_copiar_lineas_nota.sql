@@ -21,7 +21,7 @@
 --   C9  dos lineas del origen con el mismo producto se copian las dos, y el tope
 --       de cada una es independiente
 --   C10 copiar_desde_factura (todas) sigue copiando todas
---   C11 en una nota de debito -> -20047 (el selector es solo para NC)
+--   C11 una nota de DEBITO tambien copia (suma a la deuda, sin topes)
 --   C12 una linea del origen con id_producto nulo se copia igual
 --   C13 si cambia el porcentaje en IMPUESTOS despues de facturar, la linea
 --       copiada conserva el de la factura
@@ -97,18 +97,30 @@ declare
 
 begin
   -- ---------------------------------------------------------------- datos base
-  select id_factura into v_origen
-    from (select f.id_factura
-            from facturas f
-           where f.id_empresa = v_emp
-             and f.tipo_documento = 'FAC'
-             and f.estado <> 'ANULADA'
-             and (select count(*) from facturas_det d where d.id_factura = f.id_factura) >= 2
-           order by f.id_factura asc)
-   where rownum = 1;
+  -- Factura de prueba propia: las reales ya están consumidas por notas del dueño
+  -- y el tope de crédito saltaría (es correcto, pero no mide este código).
+  select min(id_cliente) into v_cli from clientes where id_empresa = v_emp;
+  v_moneda := 'VES';
+  v_tasa := 1;
 
-  select cod_moneda, tipo_cambio, id_cliente into v_moneda, v_tasa, v_cli
-    from facturas where id_factura = v_origen;
+  insert into facturas (id_empresa, folio_factura, id_cliente, fecha_emision, estado,
+                        cod_moneda, tipo_cambio, tipo_documento, creado_por,
+                        subtotal, monto_impuesto, monto_total)
+  values (v_emp, 'F-PRUEBA-' || to_char(systimestamp, 'HH24MISSFF3'), v_cli, sysdate,
+          'PENDIENTE', 'VES', 1, 'FAC', 'VERIFICACION', 0, 0, 0)
+  returning id_factura into v_origen;
+
+  insert into facturas_det (id_factura, num_linea, codigo_producto, descripcion, cantidad,
+                            precio_unitario, porcentaje_descuento, monto_descuento,
+                            porcentaje_impuesto, monto_impuesto, subtotal_linea,
+                            monto_total_linea, tasa_cambio_aplicada, creado_por)
+  values (v_origen, 1, 'SERV-004', 'linea de prueba uno', 20, 60, 0, 0, 16, 192, 1200, 1392, 1, 'VERIFICACION');
+
+  insert into facturas_det (id_factura, num_linea, codigo_producto, descripcion, cantidad,
+                            precio_unitario, porcentaje_descuento, monto_descuento,
+                            porcentaje_impuesto, monto_impuesto, subtotal_linea,
+                            monto_total_linea, tasa_cambio_aplicada, creado_por)
+  values (v_origen, 2, 'REP-002', 'linea de prueba dos', 30, 8.5, 0, 0, 16, 40.8, 255, 295.8, 1, 'VERIFICACION');
 
   select id_detalle into v_lin1
     from (select id_detalle from facturas_det where id_factura = v_origen
@@ -255,15 +267,14 @@ begin
   end if;
   limpiar(v_nota2);
 
-  -- C11: en una nota de debito no se copia
+  -- C11: la nota de debito tambien copia (suma a la deuda; sin topes)
   nueva_nota('ND', v_origen, v_nota3);
-  begin
-    pkg_factura_detalle.copiar_lineas_de_factura(v_nota3, v_origen, to_char(v_lin1), 'VERIFICACION');
-    falla('C11', 'acepto copiar lineas en una nota de debito');
-  exception
-    when others then
-      if sqlcode <> -20047 then falla('C11', 'esperaba -20047 y fue ' || sqlcode); end if;
-  end;
+  pkg_factura_detalle.copiar_lineas_de_factura(v_nota3, v_origen, to_char(v_lin1), 'VERIFICACION');
+  select count(*) into v_n from facturas_det where id_factura = v_nota3;
+  if v_n <> 1 then
+    falla('C11', 'la nota de debito quedo con ' || v_n || ' linea(s)');
+  end if;
+  limpiar(v_nota3);
 
   -- C12: linea del origen sin producto
   insert into facturas_det (id_factura, num_linea, descripcion, cantidad, precio_unitario,
