@@ -1,4 +1,4 @@
-﻿-- =============================================================================
+-- =============================================================================
 -- fn_validar_tasa_documento.sql
 --
 -- Valida y normaliza el tipo de cambio de un documento (presupuesto o factura)

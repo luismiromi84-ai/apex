@@ -297,7 +297,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_usuario            IN VARCHAR2,
         p_tipo_documento     IN VARCHAR2 DEFAULT 'FAC',
         p_nro_control        IN VARCHAR2 DEFAULT NULL,
-        p_id_factura_origen  IN NUMBER DEFAULT NULL
+        p_id_factura_origen  IN NUMBER DEFAULT NULL,
+        p_fecha_referencia   IN DATE DEFAULT NULL
     ) AS
         v_tipo_cambio    NUMBER;
         v_tipo_doc       VARCHAR2(10) := NVL(UPPER(TRIM(p_tipo_documento)), 'FAC');
@@ -344,7 +345,37 @@ create or replace PACKAGE BODY pkg_facturacion AS
             v_fecha := SYSDATE;
         END IF;
 
-        v_tipo_cambio := fn_validar_tasa_documento(p_cod_moneda, v_fecha, v_tipo_cambio);
+        v_tipo_cambio := fn_validar_tasa_documento(p_cod_moneda, v_fecha, v_tipo_cambio,
+                                                   p_fecha_referencia);
+
+        -- Tope de la nota de credito: la suma de las notas de credito no anuladas
+        -- de esa factura (sin contar esta) mas el total de esta no puede pasar el
+        -- total de la factura que acredita.
+        IF v_tipo_doc = 'NC' AND p_id_factura_origen IS NOT NULL THEN
+            DECLARE
+                v_origen_total NUMBER;
+                v_ya_credito   NUMBER;
+            BEGIN
+                SELECT monto_total INTO v_origen_total
+                  FROM facturas WHERE id_factura = p_id_factura_origen;
+
+                SELECT NVL(SUM(f.monto_total), 0) INTO v_ya_credito
+                  FROM facturas f
+                 WHERE f.tipo_documento = 'NC'
+                   AND f.estado <> 'ANULADA'
+                   AND f.id_factura_origen = p_id_factura_origen
+                   AND f.id_factura <> NVL(p_id_factura, 0);
+
+                IF v_ya_credito + v_monto_total > v_origen_total + 0.01 THEN
+                    raise_application_error(-20049,
+                        'La nota deja el total acreditado en '
+                        || TO_CHAR(v_ya_credito + v_monto_total, 'FM999G999G990D00')
+                        || ' y la factura que acredita vale '
+                        || TO_CHAR(v_origen_total, 'FM999G999G990D00')
+                        || '. No se puede acreditar mas de lo facturado.');
+                END IF;
+            END;
+        END IF;
 
         IF v_id_empresa <= 0 THEN
             v_id_empresa := 1;
