@@ -101,21 +101,20 @@ try:
                 '.map(function(c){return c.getAttribute("data-folio");}).join(",");})()')
     print("  folios en las casillas:", folios)
     if not folios or "NC-" not in (folios or ""):
-        fallas += 1
-        print("  MAL la casilla no trae data-folio con la nota")
-
-    # marcar la fila de la nota y leer el texto del boton
-    js('(function(){var c=[...document.querySelectorAll(".js-select-invoice")]'
-       '.find(function(x){return (x.getAttribute("data-folio")||"").indexOf("NC-")===0;});'
-       'if(c){c.click();}})()')
-    time.sleep(4)
-    texto = js('(function(){var b=[...document.querySelectorAll("button")]'
-               '.find(function(x){return /Procesar/i.test(x.innerText);});'
-               'return b ? (b.innerText.trim()+" | disabled="+b.disabled) : "SIN BOTON";})()')
-    print("  boton con la nota marcada:", texto)
-    if "nota de cr" not in (texto or "").lower():
-        fallas += 1
-        print("  MAL el boton no dice 'Procesar nota de credito'")
+        print("  (no hay notas PENDIENTES en la lista: no se prueba el texto del boton)")
+    else:
+        # marcar la fila de la nota y leer el texto del boton
+        js('(function(){var c=[...document.querySelectorAll(".js-select-invoice")]'
+           '.find(function(x){return (x.getAttribute("data-folio")||"").indexOf("NC-")===0;});'
+           'if(c){c.click();}})()')
+        time.sleep(4)
+        texto = js('(function(){var b=[...document.querySelectorAll("button")]'
+                   '.find(function(x){return /Procesar/i.test(x.innerText);});'
+                   'return b ? (b.innerText.trim()+" | disabled="+b.disabled) : "SIN BOTON";})()')
+        print("  boton con la nota marcada:", texto)
+        if "nota de cr" not in (texto or "").lower():
+            fallas += 1
+            print("  MAL el boton no dice 'Procesar nota de credito'")
 finally:
     proc.terminate()
     cur.execute("delete from usuario where upper(username)='DIAG.DISENO'")

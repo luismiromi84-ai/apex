@@ -12654,7 +12654,20 @@ wwv_flow_imp_page.create_page_plug(
 '       END AS estado_css,',
 '       f.creado_por,',
 '       f.estado,',
-'       f.uuid_fiscal',
+'       f.uuid_fiscal,',
+'       -- Lo que ya esta acreditado por notas de credito no anuladas, y el saldo.',
+'       (SELECT NVL(SUM(n.monto_total), 0)',
+'          FROM facturas n',
+'         WHERE n.id_factura_origen = f.id_factura',
+'           AND n.id_empresa = f.id_empresa',
+'           AND n.tipo_documento = ''NC''',
+'           AND n.estado <> ''ANULADA'') AS notas_credito,',
+'       f.monto_total - (SELECT NVL(SUM(n.monto_total), 0)',
+'                          FROM facturas n',
+'                         WHERE n.id_factura_origen = f.id_factura',
+'                           AND n.id_empresa = f.id_empresa',
+'                           AND n.tipo_documento = ''NC''',
+'                           AND n.estado <> ''ANULADA'') AS saldo',
 '  FROM facturas f',
 '  JOIN clientes c ',
 '    ON f.id_cliente = c.id_cliente ',
@@ -12743,6 +12756,28 @@ wwv_flow_imp_page.create_worksheet_column(
 '</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000370)
+,p_db_column_name=>'NOTAS_CREDITO'
+,p_display_order=>75
+,p_column_identifier=>'M'
+,p_column_label=>'Notas de crédito'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000371)
+,p_db_column_name=>'SALDO'
+,p_display_order=>85
+,p_column_identifier=>'N'
+,p_column_label=>'Saldo'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
