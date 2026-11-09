@@ -12222,11 +12222,17 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        setTimeout(autoHideSuccess, 100);',
 '    });',
 '',
-'    function spxProcesarFact(estado) {',
+'    function spxProcesarFact(estado, tipo) {',
 '        var $b = $("[data-otel-label=\"BTN_PROCESAR\"]");',
 '        var ok = (estado || "").toUpperCase() === "PENDIENTE";',
+'        // El boton nombra el documento elegido: no es lo mismo una factura que una nota.',
+'        var etiqueta = "Procesar factura";',
+'        var t = (tipo || "FAC").toUpperCase();',
+'        if (t === "NC") { etiqueta = "Procesar nota de cr\u00E9dito"; }',
+'        if (t === "ND") { etiqueta = "Procesar nota de d\u00E9bito"; }',
 '        $b.prop("disabled", !ok);',
-'        $b.attr("title", ok ? "" : "Selecciona una factura PENDIENTE de la lista");',
+'        $b.attr("title", ok ? "" : "Selecciona un documento PENDIENTE de la lista");',
+'        $b.find(".t-Button-label").text(ok ? etiqueta : "Procesar documento");',
 '    }',
 '    function spxNuevaLineaFact(habilitado) {',
 '        var $b = $("[data-otel-label=\"BTN_NUEVO_DETALLE\"]");',
@@ -12240,7 +12246,7 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        }',
 '        apex.item("P8_ID_FACTURAS").setValue(invoiceId, null, true);',
 '        spxNuevaLineaFact(this.checked);',
-'        spxProcesarFact(this.checked ? this.getAttribute("data-estado") : null);',
+'        spxProcesarFact(this.checked ? this.getAttribute("data-estado") : null, this.checked ? this.getAttribute("data-tipo") : null);',
 '        apex.region("R29979947211096273").refresh();',
 '        apex.region("R30554313608864005").refresh();',
 '    });',
@@ -12251,7 +12257,7 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '    });',
 '    spxNuevaLineaFact(!!selectedInvoiceId);',
 '    var $filaFact = $(".js-select-invoice:checked").first();',
-'    spxProcesarFact($filaFact.length ? $filaFact.attr("data-estado") : null);',
+'    spxProcesarFact($filaFact.length ? $filaFact.attr("data-estado") : null, $filaFact.length ? $filaFact.attr("data-tipo") : null);',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
@@ -12627,6 +12633,7 @@ wwv_flow_imp_page.create_page_plug(
 'SELECT f.id_factura AS detalle_link,',
 '       f.id_factura AS print_link,',
 '       f.id_factura,',
+'       f.tipo_documento,',
 '       c.razon_social,',
 '       f.rfc_receptor AS rif,',
 '       f.folio_factura AS folio,',
@@ -12715,7 +12722,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>15
 ,p_column_identifier=>'Y'
 ,p_column_label=>'Seleccionar'
-,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" data-estado="#ESTADO#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
+,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" data-estado="#ESTADO#" data-tipo="#TIPO_DOCUMENTO#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
