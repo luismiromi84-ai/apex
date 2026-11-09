@@ -14767,7 +14767,7 @@ wwv_flow_imp_page.create_page_da_action(
 '                                  else to_char(v_f.fecha_vencimiento, ''DD/MM/YYYY'') end;',
 '',
 '    -- Referencia que exige la providencia: factura, N. de control y fecha.',
-unistr('    :P9_OBSERVACIONES := ''Nota de cr\00E9dito de la factura '' || v_f.folio_factura'),
+unistr('    :P9_OBSERVACIONES := case when :P9_TIPO_DOCUMENTO = ''ND'' then ''Nota de d\00E9bito de la factura '' else ''Nota de cr\00E9dito de la factura '' end || v_f.folio_factura'),
 '        || case when v_f.nro_control is not null then '', N. de Control '' || v_f.nro_control else '''' end',
 '        || '', del '' || to_char(v_f.fecha_emision, ''DD/MM/YYYY'');',
 '  exception',
