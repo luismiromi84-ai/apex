@@ -1,0 +1,55 @@
+Faltaba una coma: PLS-00103 al guardar una factura en la pagina 9
+===============================================================
+Fecha: 2026-11-09 (reporte del dueño, guardando desde «Gestión de Facturación»)
+Mensaje en pantalla:
+
+    Se ha producido 1 error
+    línea 85, columna 9: PLS-00103: Se ha encontrado el símbolo "P_RFC_EMISOR" cuando se
+    esperaba uno de los siguientes: ... El símbolo "P_RFC_EMISOR" ha sido sustituido por ...
+
+
+1. Causa
+--------
+El cuerpo PL/SQL del proceso `Insert/update Facturacion` (página 9, secuencia 20, botón Guardar)
+tenía **una coma de menos** en la llamada al package:
+
+    p_id_presupuesto    => case when :P9_TIPO_DOCUMENTO in ('NC', 'ND') then null
+                                else fn_clean_num(:P9_ID_PRESUPUESTO) end      <-- faltaba ","
+    p_rfc_emisor        => :P9_RFC_EMISOR,
+
+De ahí el PLS-00103: al llegar a `p_rfc_emisor` el compilador seguía dentro del argumento
+anterior. La línea 85 que da el mensaje es la de su bloque, no la de la pantalla.
+
+Se originó al añadir, el 2026-11-09, el `case when ... in ('NC','ND')` para `p_id_presupuesto` y
+`p_id_factura_origen`: al sustituir `fn_clean_num(:P9_ID_PRESUPUESTO),` por el `case ... end` se
+perdió la coma final. Los procesos de página **no se compilan al importar la app**, así que el
+import pasó en verde y el error solo aparece al pulsar Guardar.
+
+2. Arreglo
+----------
+`pagina_apex/f100.sql` (proceso «Insert/update Facturacion»):
+    '                                    else fn_clean_num(:P9_ID_PRESUPUESTO) end,'
+Importado con `deploy/conexion/importar_export.py`: 71 sentencias en 4,3 s.
+
+3. Verificación
+---------------
+a) Compilación de los 43 procesos PL/SQL de la app (binds sustituidos por una variable local,
+   creando un procedimiento temporal y mirando ALL_ERRORS):
+        procesos PL/SQL: 43
+        resultado: 0 proceso(s) con errores de sintaxis
+   Antes del arreglo, el de la página 9 daba exactamente el PLS-00103 de la captura.
+
+b) Guardado de punta a punta por la pantalla (navegador real, usuario temporal):
+        Nota de Crédito, empresa 1, cliente 2, moneda VES, fecha 09/11/2026, factura origen 16
+        -> el diálogo se cierra sin error
+        -> en la base: id 21, tipo_documento 'NC', folio 'NC-1', estado PENDIENTE,
+           id_factura_origen 16, cod_moneda VES, tipo_cambio 1, monto_total 0 (lo pone el detalle)
+   Después se borró la nota de prueba y el contador NC volvió a 0.
+
+4. Trampa de método (para no repetirla)
+---------------------------------------
+Desde el 2026-11-09 hay un barrido reutilizable descrito en este archivo: compilar los procesos de
+página antes de dar por buena una importación. El código está en
+`deploy/diagnostico/20261109_compilar_procesos_pagina.py` (compila los 43 y sale 1 si alguno falla).
+**Los binds se sustituyen por una variable local (`v_bind`), no por `null`**: con `null` se rompen
+las asignaciones del tipo `:P9_SUBTOTAL := ...` y el barrido da falsos positivos.

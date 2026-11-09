@@ -1,0 +1,51 @@
+Pagina 7: valores por defecto en un presupuesto nuevo
+=====================================================
+Fecha: 2026-11-09
+Pedido del dueño: al crear un presupuesto, la página 7 abría con Empresa, Fecha y Moneda vacías;
+mientras no hubiera empresa, la lista de Moneda solo ofrecía USD. Pidió «empresa del usuario».
+
+Qué se puso (export `pagina_apex/f100.sql`, items de la página 7)
+-----------------------------------------------------------------
+Los tres con `p_item_default_type => 'SQL_QUERY'`, el mismo patrón que ya usaba el Panel General
+(página 13), incluido el `having count(*) = 1` para no elegir por su cuenta si algún día un usuario
+tuviera más de una empresa:
+
+1. `P7_ID_EMPRESA`
+       select min(u.id_empresa)
+         from usuario u
+        where upper(u.username) = upper(:APP_USER)
+          and u.estado in ('ACTIVO', 'A', '1')
+        having count(*) = 1
+
+2. `P7_FECHA_EMISION`
+       select sysdate from dual
+
+3. `P7_COD_MONEDA`
+       select nvl(max(p.moneda_local), 'USD')
+         from usuario u
+         join empresas e on e.id_empresa = u.id_empresa
+         left join paises p on p.cod_pais = e.cod_pais
+        where upper(u.username) = upper(:APP_USER)
+          and u.estado in ('ACTIVO', 'A', '1')
+        having count(*) = 1
+
+Importado con `deploy/conexion/importar_export.py`: 71 sentencias en 6,8 s.
+
+Verificación en navegador real (Edge headless por CDP, usuarios temporales ya borrados)
+--------------------------------------------------------------------------------------
+  Presupuesto NUEVO, usuario empresa 1 (VE)
+      emp=1    moneda=VES   fecha=09/11/2026   tasa=1
+      LOV de Moneda -> 200, values: USD, VES
+  Presupuesto NUEVO, usuario empresa 2 (MX)
+      emp=2    moneda=MXN   fecha=09/11/2026   tasa=48.136823
+  EDITAR un presupuesto existente (13, folio 1048)
+      emp=1  cliente=3  moneda=VES  fecha=07/11/2026  tasa=1  folio=1048
+      -> los defectos NO pisan los datos del documento
+
+Notas
+-----
+- El tipo de cambio ya se calcula al abrir el formulario (la acción `TIPO_CAMBIO` de la página 7
+  tiene `execute_on_page_init = Yes`); antes salía vacío porque no había ni fecha ni moneda.
+- `P7_ID_CLIENTE` sigue sin defecto: es obligatorio y lo elige la persona.
+- La lista de Moneda sigue dependiendo de la empresa (cascada), así que ahora trae VES+USD o MXN+USD
+  desde el primer momento en lugar de solo USD.

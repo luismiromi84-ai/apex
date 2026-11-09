@@ -1,0 +1,79 @@
+Nota de Credito: la lista traia PRESUPUESTO en vez de FACTURA
+=============================================================
+Fecha: 2026-11-09 ~17:11 (usuario LUIS)
+Reporte del dueño: creando una Nota de Crédito, el campo que sale es «Presupu...» y su lista trae
+presupuestos, no las facturas timbradas que la nota debe acreditar.
+
+
+1. Lo que se midió
+------------------
+`TIPO_DOCUMENTO` (la tabla de la que saca sus valores la combo «Tipo Documento» de la página 9)
+
+    CODIGO   DESCRIPCION                    ACTIVO
+    FAC      Factura de Venta               Y
+    NCR      Nota de Crédito                Y       <-- ojo
+    NDB      Nota de Débito                 Y       <-- ojo
+    NDG      Nota de Entrega / Guía         Y       <-- ojo
+
+Pero TODO el resto del sistema usa FAC / NC / ND:
+
+    CHECK  FACTURAS.CHK_FACTURA_TIPO          -> tipo_documento IN ('FAC','NC','ND')
+    CHECK  FOLIO_CONTADOR.CK_FOLIO_CONTADOR_TIPO -> ('PRESUPUESTO','FAC','NC','ND')
+    fn_asignar_folio / fn_siguiente_folio     -> 'NC' -> 'NC-1', 'ND' -> 'ND-1'
+    fn_nota_traible, pkg_factura_detalle, impresos y KPI del Panel -> comparan 'NC'/'ND'
+    proceso de guardado de la página 9        -> case when :P9_TIPO_DOCUMENTO in ('NC','ND') ...
+    acción `muestra-factura-o-presupuesto`    -> comparaba (t === "NC" || t === "ND")
+
+Consecuencia medida en el navegador (capturando el valor real del ítem al elegir la opción):
+al escoger «Nota de Crédito» el ítem recibía **"NCR"**, no "NC":
+    opcion elegida : Nota de Crédito
+    valor del item : "NCR"
+    estado         : presupuesto=visible  facturaOrigen=oculto
+La acción de intercambio corría, evaluaba `esNota = false` y dejaba el campo de presupuesto.
+Y al guardar, el INSERT habría fallado con ORA-02290 (CHK_FACTURA_TIPO), porque 'NCR' no está
+permitido. No había ninguna factura con NCR/NDB/NDG (imposible por el CHECK), así que no hubo
+datos que migrar.
+
+Cómo se había pasado por alto: la prueba del 2026-11-09 se hizo llamando al package con
+`p_tipo_documento => 'NC'`, no eligiendo la opción de la combo. El package estaba bien; la tabla
+de la combo, no.
+
+
+2. Arreglo
+----------
+a) `deploy/migrations/20261109_tipo_documento_codigos.sql` (8 sentencias, 0,6 s):
+      update tipo_documento set codigo = 'NC'  where codigo = 'NCR';
+      update tipo_documento set codigo = 'ND'  where codigo = 'NDB';
+      update tipo_documento set activo = 'N'   where codigo = 'NDG';   -- la app no tiene ese tipo
+      merge  de los tres códigos canónicos (por si la tabla está vacía)
+   No hay FK que apunte a TIPO_DOCUMENTO (comprobado en ALL_CONSTRAINTS), así que cambiar la PK
+   es seguro. La fila 'NDG' se deja con ACTIVO='N', no se borra.
+
+b) `pagina_apex/f100.sql`: la condición de la acción queda
+      var esNota = (["NC", "ND", "NCR", "NDB"].indexOf(t) >= 0);
+   para que no vuelva a romperse si alguien recarga la tabla con los códigos viejos.
+   Importado: 71 sentencias en 7,1 s.
+
+c) `deploy/install_datos.sql`: siembra los tres tipos de documento. Antes, una instalación limpia
+   dejaba `TIPO_DOCUMENTO` vacía (install.sql solo hace el DDL) y la combo de la página 9 salía
+   sin opciones.
+
+
+3. Verificación
+---------------
+Navegador real, eligiendo la opción de la lista como un usuario (clic sobre «Nota de Crédito»):
+
+    opciones de la lista : Factura de Venta | Nota de Crédito | Nota de Débito   (NDG ya no sale)
+    valor del item       : "NC"
+    estado               : presupuesto=oculto  facturaOrigen=visible
+
+Guardado de la nota, llamando al package dentro de una transacción revertida:
+
+    factura origen: 17 (F-1042, cliente 2, USD, tasa 896,1225)
+    nota creada   : id 20, tipo_documento 'NC', folio 'NC-2', estado PENDIENTE, origen 17
+    tras rollback : 0 filas  (no queda basura)
+
+Limpieza: el contador `FOLIO_CONTADOR` del tipo NC volvió a 0 (solo lo habían tocado las pruebas y
+no existe ninguna nota), y se borraron los usuarios temporales de prueba. Estado final:
+9 usuarios, 3 facturas (F-8, F-1041, F-1042), contadores FAC=1043 / NC=0 / ND=0 / PRESUPUESTO=1049
+para la empresa 1.

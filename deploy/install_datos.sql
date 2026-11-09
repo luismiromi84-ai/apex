@@ -82,6 +82,26 @@ select 'admin',
 commit;
 /
 
+-- Tipos de documento de la pagina 9. Sin estas filas la combo "Tipo Documento" sale vacia
+-- en una instalacion limpia (install.sql solo hace el DDL de TIPO_DOCUMENTO).
+-- Los codigos tienen que ser exactamente los del CHECK FACTURAS.CHK_FACTURA_TIPO.
+merge into tipo_documento d
+using (
+    select 'FAC' as codigo, 'Factura de Venta' as descripcion from dual
+    union all
+    select 'NC', to_char(unistr('Nota de Cr\00E9dito')) from dual
+    union all
+    select 'ND', to_char(unistr('Nota de D\00E9bito')) from dual
+) s
+on (d.codigo = s.codigo)
+when not matched then insert (codigo, descripcion, activo)
+                      values (s.codigo, s.descripcion, 'Y')
+when matched then update set descripcion = s.descripcion, activo = 'Y'
+/
+
+commit;
+/
+
 -- Constancia: los siete roles, la empresa y el usuario inicial.
 select codigo_rol, nombre_rol from syn_roles order by codigo_rol;
 /

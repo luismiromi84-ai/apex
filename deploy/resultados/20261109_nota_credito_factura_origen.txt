@@ -1,0 +1,91 @@
+Nota de crédito: "no hay factura para elegir" en la pagina 9
+============================================================
+Fecha: 2026-11-09
+Reporte del dueño: al crear una Nota de Crédito el campo que sale es "Presupu..." y su lista
+esta vacía, así que no hay factura que acreditar.
+Captura del reporte: la pantalla mostró Tipo Documento = Nota de Crédito, el campo "Presupu..."
+vacío y sin ningún campo "Factura origen".
+
+
+1. Qué se midió (antes del arreglo)
+-----------------------------------
+- En `APEX_APPLICATION_PAGE_ITEMS` los DOS items existen en la página 9:
+  `P9_ID_PRESUPUESTO` (seq 70) y `P9_ID_FACTURA_ORIGEN` (seq 71), ninguno con condición de servidor.
+- Las dos LOV son distintas y correctas: la de presupuesto filtra `estado IN ('ENVIADO','APROBADO')`;
+  la de factura origen filtra `tipo_documento='FAC' AND estado<>'ANULADA'`.
+- Ejecutadas tal como están guardadas en APEX:
+    * LOV "Factura origen" con APP_USER=admin (empresa 1): 2 filas
+        Factura: F-1042 - Servicios Automotrices del Centro S.R.L. - 919.20 USD
+        Factura: F-1041 - Servicios Automotrices del Centro S.R.L. - 1,658.22 USD
+    * LOV "Presupuesto" con APP_USER=admin: 0 filas
+      (los presupuestos existentes son 1047 FACTURADO y 1048 PENDIENTE; ninguno es
+       ENVIADO/APROBADO, así que la lista sale vacía: de ahí el "no hay factura para elegir").
+- La acción dinámica que intercambia los campos existe y está bien enganchada:
+  DA `TIPO_DOCUMENTO` (evento Change sobre P9_TIPO_DOCUMENTO), acción 20
+  `muestra-factura-o-presupuesto`, `execute_on_page_init = Yes`.
+
+2. Causa raíz (medida con navegador real, Edge headless por CDP)
+----------------------------------------------------------------
+El JavaScript de esa acción llamaba a `apex.item(...).show()` / `.hide()`, y en **APEX 26.1
+esos métodos no hacen nada**: no lanzan error, pero tampoco ocultan.
+
+Medido en el diálogo abierto (contenedor e input del item):
+    apex.item("P9_NRO_CONTROL").hide()
+      col_antes=true  col_despues=true
+      input_display_antes=block  input_display_despues=block
+      clase_col_igual=true  style_col=-     (sin error)
+    apex.item("P9_ID_PRESUPUESTO")._hide()  -> igual, sin efecto
+    apex.item("P9_ID_FACTURA_ORIGEN").element.style  -> TypeError (element es un objeto jQuery,
+      no el nodo DOM)
+
+Y al abrir la página con el código viejo, los DOS campos salían visibles:
+    P9_ID_PRESUPUESTO: visible=true
+    P9_ID_FACTURA_ORIGEN: visible=true
+O sea que la acción corría (o no) y el resultado era siempre el mismo: nada se ocultaba.
+El único sitio de la app que usaba show()/hide() era esta acción (grep en `pagina_apex/f100.sql`:
+4 apariciones de show/hide, solo una sobre items).
+
+3. Arreglo
+----------
+Se sustituyó el cuerpo de la acción por un intercambio que actúa sobre el **contenedor** del
+item (la columna de la rejilla), que es lo que sí se oculta:
+
+    var spxVer = function (id, ver) {
+        var el = document.getElementById(id);
+        if (!el) { return; }
+        var c = el.closest(".col") || el.closest(".t-Form-itemWrapper") || el.parentElement;
+        if (c) { c.style.display = ver ? "" : "none"; }
+    };
+    var t = apex.item("P9_TIPO_DOCUMENTO").getValue();
+    var esNota = (t === "NC" || t === "ND");
+    spxVer("P9_ID_FACTURA_ORIGEN", esNota);
+    spxVer("P9_ID_PRESUPUESTO", !esNota);
+
+Archivo: `pagina_apex/f100.sql` (acción `muestra-factura-o-presupuesto`, id 43000000000000341).
+Importado con `deploy/conexion/importar_export.py`: 71 sentencias en 9,3 s.
+
+4. Verificación (navegador real, después del import)
+----------------------------------------------------
+    al abrir el diálogo:      P9_ID_PRESUPUESTO visible=true   P9_ID_FACTURA_ORIGEN visible=false
+    tras elegir NC:           P9_ID_PRESUPUESTO visible=false  P9_ID_FACTURA_ORIGEN visible=true
+    etiquetas visibles:       "Factura origen" (ya no aparece "Presupuesto")
+
+Y el LOV abre con datos (captura `deploy/resultados/20261109_lov_factura_origen.png`,
+título "Factura que acredita"):
+    -- Seleccione Factura --
+    Factura: F-1042 - Servicios Automotrices del Centro S.R.L. - 919.20 USD
+    Factura: F-1041 - Servicios Automotrices del Centro S.R.L. - 1,658.22 USD
+
+5. Regla para el futuro
+-----------------------
+En APEX 26.1 **no se usa `apex.item(id).hide()/show()`** para ocultar un campo: es un no-op
+silencioso. Se oculta el contenedor: `el.closest(".col").style.display = "none"` (y se restaura
+con `""`). Si algún día se necesita ocultar un campo desde JS en otra página, ese es el patrón.
+
+
+6. Nota de limpieza
+-------------------
+La prueba se hizo con un usuario temporal (`diag.agent`, empresa 1, ADMIN) porque no se conocía
+la clave de `admin`. Al terminar se borró ese usuario y sus 14 filas de `SYN_LOGIN_LOG`.
+Además se devolvió a 0 el contador `REINTENTOS_FALLIDOS` de `admin` (la sonda hizo 1 intento
+fallido con una clave vieja). Estado final: 9 usuarios, todos ACTIVO y con 0 reintentos.

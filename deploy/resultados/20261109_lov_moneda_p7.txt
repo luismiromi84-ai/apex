@@ -1,0 +1,78 @@
+"Error: Forbidden" al abrir el LOV de Moneda en la pagina 7
+===========================================================
+Fecha: 2026-11-09 ~15:56 (usuario SARA, empresa 1)
+Reporte del dueño: al abrir la lista de Moneda en «Gestión de Presupuestos» (página 7) sale el
+banner «Se ha producido 1 error · Error: Forbidden» y la lista dice «No se ha encontrado ningún
+resultado».
+
+
+1. Qué es correcto (medido)
+---------------------------
+- El item `P7_COD_MONEDA` existe, es Popup LOV con la LOV compartida `MONEDA_PRESUPUESTO` y
+  cascada sobre `P7_ID_EMPRESA`. Su consulta:
+      SELECT p.moneda_local ... FROM paises p
+       WHERE p.activo='S' AND p.cod_pais = (SELECT cod_pais FROM empresas WHERE id_empresa=:P7_ID_EMPRESA)
+      UNION SELECT 'USD','USD' FROM dual
+- Ejecutada con empresa 1 devuelve **VES y USD**. Con empresa nula devuelve **solo USD**.
+- Ningún item de la página 7 está protegido (`ITEM_PROTECTION_LEVEL = Unrestricted`): no hay
+  problema de checksum de estado de sesión.
+
+2. Intentos de reproducción (navegador real, Edge headless por CDP)
+------------------------------------------------------------------
+Se usaron usuarios temporales con la misma empresa y roles distintos, y se capturó la respuesta
+real del AJAX (`wwv_flow.ajax`, request PLUGIN):
+
+  a) Presupuesto existente, usuario ADMIN (empresa 1), empresa=1, moneda=VES
+     -> [200] values: USD, VES                                   SIN error
+  b) Presupuesto NUEVO, usuario ADMIN (empresa 1), empresa vacía
+     -> [200] values: USD                                        SIN error
+  c) Presupuesto NUEVO, usuario VENTAS (empresa 1) — el mismo rol que SARA
+     -> [200] values: USD                                        SIN error
+  d) Recargar el iframe del diálogo (F5 dentro del modal) y pedir el LOV
+     -> [200] values: USD, VES                                   SIN error
+  e) Dos sesiones de la app en el mismo navegador (pestaña nueva con otro usuario) y pedir el LOV
+     desde la pestaña vieja
+     -> [200] {"error":"La sesión ha finalizado."}               (mensaje distinto: no es Forbidden)
+
+En ningún caso aparece «Forbidden».
+
+3. Lo que dicen los registros del momento del reporte (SARA, 15:56)
+-------------------------------------------------------------------
+`APEX_WORKSPACE_ACTIVITY_LOG` (página 7, usuario SARA):
+    15:56:20  página 7          (abre el diálogo)        0,11 s   0 errores
+    15:56:20  PLUGIN            (LOV)                    0,03 s   0 errores
+    15:56:22  página 7                                   0,04 s   0 errores
+    15:56:23  PLUGIN x3         (LOV, tres intentos)     0,02-0,03 s  0 errores
+    15:56:24  página 7                                   0,03 s   0 errores
+`SYN_ERROR_LOG`: nada en esa ventana (solo los tres intentos fallidos de login de 14:42, 14:50 y
+15:56:05, que son del propio dueño antes de entrar como SARA).
+
+O sea: **las peticiones que sí llegaron a APEX se contestaron bien y rápido**. «Forbidden» es el
+texto del estado HTTP 403, no un mensaje de la aplicación, y no dejó rastro en ninguno de los dos
+logs.
+
+4. Interpretación
+-----------------
+El 403 no lo produce la consulta ni la LOV: llega de una petición que no se sirvió como una vista
+normal de la página 7. Las dos causas que encajan con ese síntoma y con el historial de hoy:
+  - **Página o diálogo abiertos antes del reimport de la app** (hoy se reimportó a las ~15:00: el
+    ciclo `delete_application` + `create_application` cambia los checksums de página/diálogo y
+    cualquier AJAX de una página vieja se rechaza).
+  - **Sesión/pestaña duplicada** (se cambió de usuario varias veces en el mismo navegador).
+En la prueba (e) el síntoma fue «La sesión ha finalizado», que es el mensaje de APEX para una
+sesión muerta; el 403 se comporta igual pero sin JSON de por medio.
+
+5. Remedio y siguiente paso
+---------------------------
+- Cerrar el diálogo, **Ctrl+F5** en la página 5 y volver a entrar. Con la app ya reimportada, la
+  LOV devuelve VES y USD para la empresa 1 (verificado hoy).
+- Si vuelve a salir, anotar **la hora exacta** y el usuario: se cruza con
+  `APEX_WORKSPACE_ACTIVITY_LOG` y `SYN_ERROR_LOG`, que es lo que ha permitido descartar las otras
+  causas en esta sesión.
+
+6. Hallazgo colateral (real, de usabilidad)
+-------------------------------------------
+Una página 7 **nueva** abre con Empresa, Fecha y Moneda **vacías** (no hay defaults). Mientras no
+se elija empresa, la LOV de Moneda solo ofrece **USD**, lo que se ve como «lista vacía / rara».
+Propuesta: poner por defecto la empresa del usuario (como ya hace el Panel General, página 13),
+fecha = SYSDATE y moneda = la local del país de la empresa. No se ha tocado nada.

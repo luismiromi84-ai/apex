@@ -11524,6 +11524,15 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(14428894790287801)
 ,p_item_source_plug_id=>wwv_flow_imp.id(14428894790287801)
+,p_item_default_type=>'SQL_QUERY'
+,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select nvl(max(p.moneda_local), ''USD'')',
+'  from usuario u',
+'  join empresas e on e.id_empresa = u.id_empresa',
+'  left join paises p on p.cod_pais = e.cod_pais',
+' where upper(u.username) = upper(:APP_USER)',
+'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
+' having count(*) = 1'))
 ,p_prompt=>'Moneda'
 ,p_source=>'COD_MONEDA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -11620,6 +11629,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(14428894790287801)
 ,p_item_source_plug_id=>wwv_flow_imp.id(14428894790287801)
+,p_item_default_type=>'SQL_QUERY'
+,p_item_default=>'select sysdate from dual'
 ,p_prompt=>'Fecha Emision'
 ,p_format_mask=>'DD/MM/YYYY'
 ,p_source=>'FECHA_EMISION'
@@ -11731,6 +11742,13 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(14428894790287801)
 ,p_item_source_plug_id=>wwv_flow_imp.id(14428894790287801)
+,p_item_default_type=>'SQL_QUERY'
+,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select min(u.id_empresa)',
+'  from usuario u',
+' where upper(u.username) = upper(:APP_USER)',
+'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
+' having count(*) = 1'))
 ,p_prompt=>'Empresa'
 ,p_source=>'ID_EMPRESA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -14611,11 +14629,16 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
     'try {',
+    '    var spxVer = function (id, ver) {',
+    '        var el = document.getElementById(id);',
+    '        if (!el) { return; }',
+    '        var c = el.closest(".col") || el.closest(".t-Form-itemWrapper") || el.parentElement;',
+    '        if (c) { c.style.display = ver ? "" : "none"; }',
+    '    };',
     '    var t = apex.item("P9_TIPO_DOCUMENTO").getValue();',
-    '    var esNota = (t === "NC" || t === "ND");',
-    '    var fac = apex.item("P9_ID_FACTURA_ORIGEN");',
-    '    var pre = apex.item("P9_ID_PRESUPUESTO");',
-    '    if (esNota) { fac.show(); pre.hide(); } else { fac.hide(); pre.show(); }',
+    '    var esNota = (["NC", "ND", "NCR", "NDB"].indexOf(t) >= 0);',
+    '    spxVer("P9_ID_FACTURA_ORIGEN", esNota);',
+    '    spxVer("P9_ID_PRESUPUESTO", !esNota);',
     '} catch (e) {}')))).to_clob
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -14875,7 +14898,7 @@ unistr('        raise_application_error(-20013, ''El total debe ser igual al sub
 '        p_folio_factura     => :P9_FOLIO_FACTURA,',
 '        p_id_cliente        => fn_clean_num(:P9_ID_CLIENTE),',
 '        p_id_presupuesto    => case when :P9_TIPO_DOCUMENTO in (''NC'', ''ND'') then null',
-'                                    else fn_clean_num(:P9_ID_PRESUPUESTO) end',
+'                                    else fn_clean_num(:P9_ID_PRESUPUESTO) end,',
 '        p_rfc_emisor        => :P9_RFC_EMISOR,',
 '        p_rfc_receptor      => :P9_RFC_RECEPTOR,',
 '        p_uuid_fiscal       => :P9_UUID_FISCAL,',
