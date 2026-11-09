@@ -13340,6 +13340,24 @@ wwv_flow_imp_page.create_page_button(
 ,p_grid_column=>6
 );
 wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000350)
+,p_button_sequence=>245
+,p_button_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_button_name=>'BTN_TRAER'
+,p_static_id=>'btn-traer-lineas'
+,p_show_as_disabled=>false
+,p_button_action=>'SUBMIT'
+,p_button_position=>'CHANGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Traer lineas'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and fn_factura_editable(:P9_ID_FACTURA) and fn_nota_traible(fn_clean_num(:P9_ID_FACTURA))'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-download'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(18162756611230481)
 ,p_button_sequence=>250
 ,p_button_plug_id=>wwv_flow_imp.id(32589573944518258)
@@ -13730,6 +13748,50 @@ wwv_flow_imp_page.create_page_item(
   'number_alignment', 'left',
   'value_protected', 'Y',
   'virtual_keyboard', 'decimal')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000340)
+,p_name=>'P9_ID_FACTURA_ORIGEN'
+,p_source_data_type=>'NUMBER'
+,p_item_sequence=>71
+,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_item_source_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_prompt=>'Factura origen'
+,p_source=>'ID_FACTURA_ORIGEN'
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT ''Factura: '' || f.folio_factura || '' - '' || c.razon_social',
+'       || '' - '' || to_char(f.monto_total, ''FM999G999G990D00'') || '' '' || f.cod_moneda AS display_value,',
+'       f.id_factura AS return_value',
+'  FROM facturas f',
+'  JOIN clientes c ON f.id_cliente = c.id_cliente AND c.id_empresa = f.id_empresa',
+' WHERE f.tipo_documento = ''FAC''',
+'   AND f.estado <> ''ANULADA''',
+'   AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
+'                         WHERE upper(u.username) = upper(:APP_USER)',
+'                           AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND ( :P9_ID_EMPRESA IS NULL OR f.id_empresa = fn_clean_num(:P9_ID_EMPRESA) )',
+'   AND ( :P9_ID_FACTURA IS NULL OR f.id_factura <> fn_clean_num(:P9_ID_FACTURA) )',
+' ORDER BY f.id_factura DESC'))
+,p_lov_display_null=>'YES'
+,p_lov_null_value=>'-- Seleccione Factura --'
+,p_cSize=>30
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'case_sensitive', 'N',
+  'display_as', 'DIALOG',
+  'fetch_on_search', 'N',
+  'height', '250',
+  'initial_fetch', 'FIRST_ROWSET',
+  'manual_entry', 'N',
+  'match_type', 'CONTAINS',
+  'min_chars', '0',
+  'title', 'Factura que acredita',
+  'width', '400')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(32592153243518285)
@@ -14537,6 +14599,25 @@ unistr('    -- Vista previa: el folio real lo asigna fn_asignar_folio al guardar
 ,p_client_condition_type=>'NULL'
 ,p_client_condition_element=>'P9_ID_FACTURA'
 );
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000341)
+,p_event_id=>wwv_flow_imp.id(18564710010054501)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'Y'
+,p_name=>'Muestra factura o presupuesto'
+,p_static_id=>'muestra-factura-o-presupuesto'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'try {',
+    '    var t = apex.item("P9_TIPO_DOCUMENTO").getValue();',
+    '    var esNota = (t === "NC" || t === "ND");',
+    '    var fac = apex.item("P9_ID_FACTURA_ORIGEN");',
+    '    var pre = apex.item("P9_ID_PRESUPUESTO");',
+    '    if (esNota) { fac.show(); pre.hide(); } else { fac.hide(); pre.show(); }',
+    '} catch (e) {}')))).to_clob
+);
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(43000000000000233)
 ,p_name=>'TIPO_DOCUMENTO_2'
@@ -14570,6 +14651,40 @@ unistr('    -- Vista previa: el folio real lo asigna fn_asignar_folio al guardar
 ,p_wait_for_result=>'Y'
 ,p_client_condition_type=>'NULL'
 ,p_client_condition_element=>'P9_ID_FACTURA'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000351)
+,p_process_sequence=>45
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Traer lineas de la factura'
+,p_static_id=>'traer-lineas-factura'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    v_origen number;',
+'BEGIN',
+'    if not fn_factura_propio(:P9_ID_FACTURA, :APP_USER) then',
+'        raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
+'    end if;',
+'',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    select id_factura_origen into v_origen',
+'      from facturas where id_factura = fn_clean_num(:P9_ID_FACTURA);',
+'',
+'    pkg_factura_detalle.copiar_desde_factura(',
+'        p_id_factura        => fn_clean_num(:P9_ID_FACTURA),',
+'        p_id_factura_origen => v_origen,',
+'        p_usuario           => :APP_USER);',
+'',
+unistr('    apex_application.g_print_success_message := ''Se trajeron las lineas de la factura. Revisa la nota antes de guardar.'';'),
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_error_message=>'#SQLERRM#'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000350)
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(18173805212230538)
@@ -14664,6 +14779,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'show_success_messages', 'Y')).to_clob
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>'nvl(:REQUEST, ''#'') <> ''BTN_TRAER'''
+,p_process_when2=>'PLSQL'
+,p_process_when_type=>'EXPRESSION'
 ,p_internal_uid=>18173442618230537
 );
 wwv_flow_imp_page.create_page_process(
@@ -14756,7 +14874,8 @@ unistr('        raise_application_error(-20013, ''El total debe ser igual al sub
 '        p_id_empresa        => fn_clean_num(:P9_ID_EMPRESA),',
 '        p_folio_factura     => :P9_FOLIO_FACTURA,',
 '        p_id_cliente        => fn_clean_num(:P9_ID_CLIENTE),',
-'        p_id_presupuesto    => fn_clean_num(:P9_ID_PRESUPUESTO),',
+'        p_id_presupuesto    => case when :P9_TIPO_DOCUMENTO in (''NC'', ''ND'') then null',
+'                                    else fn_clean_num(:P9_ID_PRESUPUESTO) end',
 '        p_rfc_emisor        => :P9_RFC_EMISOR,',
 '        p_rfc_receptor      => :P9_RFC_RECEPTOR,',
 '        p_uuid_fiscal       => :P9_UUID_FISCAL,',
@@ -14775,7 +14894,9 @@ unistr('        raise_application_error(-20013, ''El total debe ser igual al sub
 '        p_tipo_cambio       => v_tipo_cambio,',
 '        p_usuario           => v_usuario,',
 '        p_tipo_documento    => :P9_TIPO_DOCUMENTO,',
-'        p_nro_control       => :P9_NRO_CONTROL',
+'        p_nro_control       => :P9_NRO_CONTROL,',
+'        p_id_factura_origen => case when :P9_TIPO_DOCUMENTO in (''NC'', ''ND'')',
+'                                    then fn_clean_num(:P9_ID_FACTURA_ORIGEN) end',
 '    );',
 '',
 unistr('    -- El folio real lo asigno el contador de la empresa (FAC/NC/ND): se'),

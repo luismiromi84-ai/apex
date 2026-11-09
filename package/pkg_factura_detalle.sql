@@ -36,5 +36,14 @@ create or replace PACKAGE pkg_factura_detalle IS
         p_usuario        IN VARCHAR2
     );
 
+    -- Copia TODAS las lineas de una factura a una nota de credito o debito
+    -- (nota completa). Para una nota parcial se agregan las lineas a mano.
+    -- Falla si la nota ya tiene lineas: no duplica.
+    PROCEDURE copiar_desde_factura (
+        p_id_factura        IN NUMBER,
+        p_id_factura_origen IN NUMBER,
+        p_usuario           IN VARCHAR2
+    );
+
 END pkg_factura_detalle;
 /

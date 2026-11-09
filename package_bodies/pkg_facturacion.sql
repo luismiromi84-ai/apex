@@ -27,7 +27,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_tipo_cambio       IN NUMBER,
         p_usuario           IN VARCHAR2,
         p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC',
-        p_nro_control       IN VARCHAR2 DEFAULT NULL
+        p_nro_control       IN VARCHAR2 DEFAULT NULL,
+        p_id_factura_origen IN NUMBER DEFAULT NULL
     ) IS
     BEGIN
         INSERT INTO facturas (
@@ -36,7 +37,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
             condicion_pago, creado_por,
             fecha_emision, fecha_vencimiento, estado, subtotal, monto_impuesto, 
             monto_total, observaciones, cod_moneda, tipo_cambio, tipo_documento,
-            nro_control
+            nro_control, id_factura_origen
         ) VALUES (
             p_id_empresa, p_folio_factura, p_id_cliente, p_id_presupuesto, p_rfc_emisor,
             p_rfc_receptor, p_uuid_fiscal, p_uso_cfdi, p_forma_pago, p_metodo_pago,
@@ -46,7 +47,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
             NVL(p_estado, 'PENDIENTE'), p_subtotal, p_monto_impuesto,
             p_monto_total, p_observaciones, NVL(p_cod_moneda, 'USD'), p_tipo_cambio,
             NVL(UPPER(TRIM(p_tipo_documento)), 'FAC'),
-            p_nro_control
+            p_nro_control, p_id_factura_origen
         ) RETURN id_factura INTO p_id_factura;
     END prc_insertar;
 
@@ -76,7 +77,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_cod_moneda        IN VARCHAR2,
         p_tipo_cambio       IN NUMBER,
         p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC',
-        p_nro_control       IN VARCHAR2 DEFAULT NULL
+        p_nro_control       IN VARCHAR2 DEFAULT NULL,
+        p_id_factura_origen IN NUMBER DEFAULT NULL
     ) IS
         v_folio  facturas.folio_factura%type;
         v_estado facturas.estado%type;
@@ -100,6 +102,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
             folio_factura      = p_folio_factura,
             tipo_documento     = NVL(UPPER(TRIM(p_tipo_documento)), 'FAC'),
             nro_control        = p_nro_control,
+            id_factura_origen  = p_id_factura_origen,
             id_cliente         = p_id_cliente,
             id_presupuesto     = p_id_presupuesto,
             rfc_emisor         = p_rfc_emisor,
@@ -293,7 +296,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_tipo_cambio        IN NUMBER,       
         p_usuario            IN VARCHAR2,
         p_tipo_documento     IN VARCHAR2 DEFAULT 'FAC',
-        p_nro_control        IN VARCHAR2 DEFAULT NULL
+        p_nro_control        IN VARCHAR2 DEFAULT NULL,
+        p_id_factura_origen  IN NUMBER DEFAULT NULL
     ) AS
         v_tipo_cambio    NUMBER;
         v_tipo_doc       VARCHAR2(10) := NVL(UPPER(TRIM(p_tipo_documento)), 'FAC');
@@ -377,7 +381,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 p_cod_moneda        => p_cod_moneda,
                 p_tipo_cambio       => v_tipo_cambio,
                 p_tipo_documento    => v_tipo_doc,
-                p_nro_control       => p_nro_control
+                p_nro_control       => p_nro_control,
+                p_id_factura_origen => p_id_factura_origen
             );
         ELSE
             p_id_factura := NULL;
@@ -408,7 +413,8 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 p_tipo_cambio       => v_tipo_cambio,
                 p_usuario           => p_usuario,
                 p_tipo_documento    => v_tipo_doc,
-                p_nro_control       => p_nro_control
+                p_nro_control       => p_nro_control,
+                p_id_factura_origen => p_id_factura_origen
             );
         END IF;
 

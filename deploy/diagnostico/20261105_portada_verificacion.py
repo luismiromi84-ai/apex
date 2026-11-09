@@ -129,11 +129,11 @@ with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as c
               uno("""select count(*) from apex_application_page_proc
                      where application_id = 100
                        and upper(process_name) like 'VALIDA ROL%'""") == 13)
-    comprobar("siguen las 7 guardas de propiedad de documento",
+    comprobar("siguen las 8 guardas de propiedad de documento",
               uno("""select count(*) from apex_application_page_proc
                      where application_id = 100
                        and (process_source like '%fn_presupuesto_propio%'
-                            or process_source like '%fn_factura_propio%')""") == 7)
+                            or process_source like '%fn_factura_propio%')""") == 8)
     comprobar("sigue la guarda del cambio de clave (proceso de aplicacion)",
               uno("""select count(*) from apex_application_processes
                      where application_id = 100

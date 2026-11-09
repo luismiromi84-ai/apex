@@ -261,5 +261,77 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
          WHERE pd.id_presupuesto = p_id_presupuesto;
     END reemplazar_desde_presupuesto;
 
+    -- ---------------------------------------------------------------------
+    -- Nota de credito/debito: traer todas las lineas de la factura original
+    -- ---------------------------------------------------------------------
+    PROCEDURE copiar_desde_factura (
+        p_id_factura        IN NUMBER,
+        p_id_factura_origen IN NUMBER,
+        p_usuario           IN VARCHAR2
+    ) IS
+        v_estado   facturas.estado%type;
+        v_lineas   number;
+        v_origen   number;
+    BEGIN
+        BEGIN
+            SELECT estado INTO v_estado FROM facturas WHERE id_factura = p_id_factura;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                raise_application_error(-20001, 'La nota no existe.');
+        END;
+
+        IF UPPER(v_estado) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+            raise_application_error(-20002,
+                'No se puede modificar el detalle de una nota en estado '
+                || UPPER(v_estado) || ': es un documento cerrado.');
+        END IF;
+
+        IF p_id_factura_origen IS NULL THEN
+            raise_application_error(-20045,
+                'La nota no tiene factura de origen: elige la factura que acredita.');
+        END IF;
+
+        SELECT COUNT(*) INTO v_origen FROM facturas WHERE id_factura = p_id_factura_origen;
+        IF v_origen = 0 THEN
+            raise_application_error(-20045, 'La factura que acredita no existe.');
+        END IF;
+
+        SELECT COUNT(*) INTO v_lineas FROM facturas_det WHERE id_factura = p_id_factura;
+        IF v_lineas > 0 THEN
+            raise_application_error(-20045,
+                'La nota ya tiene ' || v_lineas
+                || ' linea(s): borralas antes de traer las de la factura.');
+        END IF;
+
+        INSERT INTO facturas_det (
+            id_factura, num_linea, id_producto, codigo_producto, descripcion,
+            cantidad, precio_unitario, porcentaje_descuento, monto_descuento,
+            id_impuesto, porcentaje_impuesto, monto_impuesto, subtotal_linea,
+            monto_total_linea, tasa_cambio_aplicada, subtotal_bs, total_bs,
+            creado_por
+        )
+        SELECT
+            p_id_factura,
+            ROW_NUMBER() OVER (ORDER BY d.id_detalle),
+            d.id_producto,
+            d.codigo_producto,
+            d.descripcion,
+            d.cantidad,
+            d.precio_unitario,
+            NVL(d.porcentaje_descuento, 0),
+            NVL(d.monto_descuento, 0),
+            d.id_impuesto,
+            NVL(d.porcentaje_impuesto, 0),
+            NVL(d.monto_impuesto, 0),
+            NVL(d.subtotal_linea, 0),
+            NVL(d.monto_total_linea, 0),
+            d.tasa_cambio_aplicada,
+            NVL(d.subtotal_bs, 0),
+            NVL(d.total_bs, 0),
+            p_usuario
+          FROM facturas_det d
+         WHERE d.id_factura = p_id_factura_origen;
+    END copiar_desde_factura;
+
 END pkg_factura_detalle;
 /
