@@ -8166,6 +8166,16 @@ wwv_flow_imp_page.create_page(
 '',
 '/* El lockup de Synpex a un tamano razonable (sin esto sale a 700 px) */',
 '.synpex-login-img { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; }',
+'/* El logo flota y brilla, como en el login */',
+'@keyframes spxFlota {',
+'  0%, 100% { transform: translateY(0) scale(1); }',
+'  50%      { transform: translateY(-6px) scale(1.015); }',
+'}',
+'@keyframes spxBrillo {',
+'  0%, 100% { filter: drop-shadow(0 6px 10px rgba(11, 44, 101, 0.10)); }',
+'  50%      { filter: drop-shadow(0 12px 20px rgba(4, 149, 241, 0.25)); }',
+'}',
+'.synpex-login-img { animation: spxFlota 6s ease-in-out infinite, spxBrillo 6s ease-in-out infinite; will-change: transform; }',
 '/* Espaciado interno limpio */',
 '.t-Login-region {',
 '    overflow: hidden;',
@@ -13515,6 +13525,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>unistr('N\00B0 de Control')
 ,p_source=>'NRO_CONTROL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(u.id_empresa) from usuario u where upper(u.username) = upper(:APP_USER)))) = ''VE'''
+,p_display_when_type=>'SQL_EXPRESSION'
 ,p_cSize=>30
 ,p_cMaxlength=>30
 ,p_begin_on_new_line=>'Y'
@@ -13960,6 +13972,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>unistr('UUID Fiscal (CFDI)')
 ,p_source=>'UUID_FISCAL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(u.id_empresa) from usuario u where upper(u.username) = upper(:APP_USER)))) = ''MX'''
+,p_display_when_type=>'SQL_EXPRESSION'
 ,p_cSize=>30
 ,p_cMaxlength=>50
 ,p_begin_on_new_line=>'N'
@@ -16725,7 +16739,17 @@ wwv_flow_imp_page.create_page(
 '.t-Login-container { max-width: 380px !important; margin: 0 auto !important; }',
 '.t-Login-region { overflow: hidden; padding: 24px !important; }',
 '/* El lockup de Synpex a un tamano razonable (sin esto sale a 700 px) */',
-'.synpex-login-img { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; }')),p_page_component_map=>'16'
+'.synpex-login-img { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; }',
+'/* El logo flota y brilla, como en el login */',
+'@keyframes spxFlota {',
+'  0%, 100% { transform: translateY(0) scale(1); }',
+'  50%      { transform: translateY(-6px) scale(1.015); }',
+'}',
+'@keyframes spxBrillo {',
+'  0%, 100% { filter: drop-shadow(0 6px 10px rgba(11, 44, 101, 0.10)); }',
+'  50%      { filter: drop-shadow(0 12px 20px rgba(4, 149, 241, 0.25)); }',
+'}',
+'.synpex-login-img { animation: spxFlota 6s ease-in-out infinite, spxBrillo 6s ease-in-out infinite; will-change: transform; }')),p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000041)
@@ -18615,7 +18639,6 @@ wwv_flow_imp_page.create_page_plug(
 '    animation: spxFlota 6s ease-in-out infinite, spxBrillo 6s ease-in-out infinite;',
 '    will-change: transform;',
 '  }',
-'  @media (prefers-reduced-motion: reduce) { .synpex-login-img { animation: none; } }',
 '  .synpex-login-brand svg, .synpex-login-brand svg path { animation: none !important; }',
 '</style>'))
 ,p_plug_footer=>wwv_flow_string.join(wwv_flow_t_varchar2(
