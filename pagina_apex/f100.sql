@@ -13393,21 +13393,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_ajax_items_to_submit=>'P9_ID_FACTURA_ORIGEN'
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(43000000000000344)
-,p_button_sequence=>240
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000343)
-,p_button_name=>'BTN_TRAER_MARCADAS'
-,p_static_id=>'btn-traer-marcadas'
-,p_button_action=>'SUBMIT'
-,p_button_template_options=>'#DEFAULT#'
-,p_button_template_id=>4072363345357378016
-,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Traer marcadas'
-,p_button_position=>'EDIT'
-,p_button_condition_type=>'EXPRESSION'
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and :P9_TIPO_DOCUMENTO = ''NC'' and :P9_ID_FACTURA_ORIGEN is not null and not fn_nota_con_lineas(:P9_ID_FACTURA)'
-);
-wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(18161478696230476)
 ,p_button_sequence=>280
 ,p_button_plug_id=>wwv_flow_imp.id(32589573944518258)
@@ -14641,9 +14626,12 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_elements=>'P9_TIPO_CAMBIO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'escape_special_characters', 'Y',
-  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA',
+  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA,P9_TIPO_DOCUMENTO,P9_ID_FACTURA_ORIGEN',
   'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
     'SELECT CASE',
+    '         WHEN :P9_TIPO_DOCUMENTO IN (''NC'', ''ND'') AND :P9_ID_FACTURA_ORIGEN IS NOT NULL THEN',
+    '             (SELECT tipo_cambio FROM facturas',
+    '               WHERE id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN))',
     '         WHEN UPPER(:P9_COD_MONEDA) IN (''VES'', ''BS'') THEN 1',
     '         ELSE (',
     '             SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
@@ -14683,9 +14671,12 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_elements=>'P9_TIPO_CAMBIO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'escape_special_characters', 'Y',
-  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA',
+  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA,P9_TIPO_DOCUMENTO,P9_ID_FACTURA_ORIGEN',
   'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
     'SELECT CASE',
+    '         WHEN :P9_TIPO_DOCUMENTO IN (''NC'', ''ND'') AND :P9_ID_FACTURA_ORIGEN IS NOT NULL THEN',
+    '             (SELECT tipo_cambio FROM facturas',
+    '               WHERE id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN))',
     '         WHEN UPPER(:P9_COD_MONEDA) IN (''VES'', ''BS'') THEN 1',
     '         ELSE (',
     '             SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
@@ -14862,36 +14853,6 @@ unistr('    -- Vista previa: el folio real lo asigna fn_asignar_folio al guardar
 ,p_client_condition_element=>'P9_ID_FACTURA'
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(43000000000000351)
-,p_process_sequence=>45
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Traer lineas marcadas'
-,p_static_id=>'traer-lineas-marcadas'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'BEGIN',
-'    if not fn_factura_propio(:P9_ID_FACTURA, :APP_USER) then',
-'        raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
-'    end if;',
-'',
-'    if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
-'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
-'    end if;',
-'',
-'    pkg_factura_detalle.copiar_lineas_de_factura(',
-'        p_id_factura        => fn_clean_num(:P9_ID_FACTURA),',
-'        p_id_factura_origen => fn_clean_num(:P9_ID_FACTURA_ORIGEN),',
-'        p_id_detalles       => :P9_LINEAS_SEL,',
-'        p_usuario           => :APP_USER);',
-'',
-unistr('    apex_application.g_print_success_message := ''Se trajeron las lineas marcadas. Revisa la nota antes de guardar.'';'),
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_process_error_message=>'#SQLERRM#'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when_button_id=>wwv_flow_imp.id(43000000000000344)
-);
-wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000352)
 ,p_process_sequence=>46
 ,p_process_point=>'AFTER_SUBMIT'
@@ -15009,7 +14970,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'show_success_messages', 'Y')).to_clob
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'nvl(:REQUEST, ''#'') <> ''BTN_TRAER_MARCADAS'''
+,p_process_when=>'nvl(:REQUEST, ''#'') <> ''BTN_TRAER'''
 ,p_process_when2=>'PLSQL'
 ,p_process_when_type=>'EXPRESSION'
 ,p_internal_uid=>18173442618230537
@@ -15154,6 +15115,11 @@ unistr('        raise_application_error(-20013, ''El total debe ser igual al sub
 '        p_fecha_referencia  => v_fecha_ref',
 '    );',
 '',
+'    -- Si marco lineas de la factura que acredita, se copian al guardar.',
+'    if :P9_LINEAS_SEL is not null and :P9_TIPO_DOCUMENTO = ''NC'' and :P9_ID_FACTURA_ORIGEN is not null then',
+'        pkg_factura_detalle.copiar_lineas_de_factura(:P9_ID_FACTURA, fn_clean_num(:P9_ID_FACTURA_ORIGEN), :P9_LINEAS_SEL, v_usuario);',
+'    end if;',
+'',
 unistr('    -- El folio real lo asigno el contador de la empresa (FAC/NC/ND): se'),
 unistr('    -- refresca el item para no dejar en pantalla la vista previa.'),
 '    begin',
@@ -15168,8 +15134,7 @@ unistr('    -- refresca el item para no dejar en pantalla la vista previa.'),
 ,p_process_clob_language=>'PLSQL'
 ,p_process_error_message=>'Error al guardar la factura: #SQLERRM#'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'nvl(:REQUEST, ''#'') in (''BTN_GUARDAR'', ''BTN_TRAER_MARCADAS'')'
-,p_process_when_type=>'EXPRESSION'
+,p_process_when_button_id=>wwv_flow_imp.id(18162756611230481)
 ,p_internal_uid=>18173084107230536
 );
 wwv_flow_imp_page.create_page_process(

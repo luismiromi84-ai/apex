@@ -221,10 +221,10 @@ try:
            'return c ? "ok" : "no encontrada";})()' % primera_linea)
     time.sleep(1)
     nav.clic('(function(){var f=document.querySelector("iframe"); var d=f.contentDocument;'
-             'var b=[...d.querySelectorAll("button")].find(function(x){return /Traer marcadas/i.test(x.innerText);});'
+             'var b=[...d.querySelectorAll("button")].find(function(x){return /Guardar/i.test(x.innerText);});'
              'if(!b) return null; var fb=f.getBoundingClientRect(), r=b.getBoundingClientRect();'
              'return JSON.stringify({x:fb.left+r.left+r.width/2, y:fb.top+r.top+r.height/2});})()')
-    time.sleep(9)
+    time.sleep(10)
 
     creada = cur.execute("""select max(id_factura) from facturas
                              where tipo_documento = 'NC' and id_factura_origen = :o
