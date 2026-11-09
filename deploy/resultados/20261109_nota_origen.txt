@@ -118,5 +118,42 @@ Después:
 Y `20261109_compilar_procesos_pagina.py` en `FALLAS=0` (43 procesos). El barrido encontró un error
 real del primer intento (`tasa_cambio` no existe en `FACTURAS`: la columna es `TIPO_CAMBIO`).
 
+Tarea 5 — página 9: cabecera automática, líneas con casillas y botón
+-------------------------------------------------------------------
+Hecho en el export:
+- DA `CARGA_FACTURA_ORIGEN` sobre `P9_ID_FACTURA_ORIGEN`: un paso `Execute Server-side Code` con
+  `items_to_return` (empresa, cliente, moneda, **tasa de la factura**, RIF emisor y receptor,
+  condición y forma de pago, vencimiento y las observaciones con la referencia «Nota de crédito de la
+  factura F-…, N. de Control …, del dd/mm/yyyy») y un paso `Refresh` de la región de líneas.
+- Región `43000000000000343` «Líneas de la factura que acredita», contenido PL/SQL que pinta la tabla
+  con casillas (`.js-linea-sel`, `data-id`), y devuelve vacío si no es una nota con factura origen.
+- Botón `BTN_TRAER_MARCADAS` («Traer marcadas») que **guarda la cabecera y copia** en un solo gesto:
+  el proceso de guardado corre también con `:REQUEST = 'BTN_TRAER_MARCADAS'`.
+- Proceso `Traer lineas marcadas` con `copiar_lineas_de_factura(..., :P9_LINEAS_SEL, ...)`.
+- JS de página (`spxMarcarTodas`, `spxLineasSelActualiza`) que mantiene `P9_LINEAS_SEL` y apaga el
+  botón mientras no haya ninguna casilla marcada.
+- `P9_ID_FACTURA_ORIGEN` en solo lectura cuando `fn_nota_con_lineas(:P9_ID_FACTURA)`.
+- Retirados el botón `BTN_TRAER` y su proceso; la función `fn_nota_con_lineas` es nueva en `funciones/`.
+
+Verificación (`20261109_nota_origen_pagina9.py`, navegador real):
+
+    OK  C5 en FAC no aparece la region de lineas
+    OK  C1 la cabecera se llena con la factura (emp=1 cli=2 mon=USD tasa=894.8876 rfc=J-40987654-3)
+    OK  C1 las observaciones citan la factura (Nota de crédito de la factura F-1041, N. de Control ...)
+    OK  C2 la region de lineas aparece
+    MAL C3 la nota se crea con la linea marcada (no se creo la nota)
+
+**Pendiente (abierto):** el clic en «Traer marcadas» no llega a crear la nota en la prueba
+automatizada; en `SYN_ERROR_LOG` queda `No se ha encontrado ningún dato` (NO_DATA_FOUND). Sospechas
+medidas: la acción `Set Value` de `TIPO_DOCUMENTO` llama a `fn_siguiente_folio(null, ...)` cuando la
+empresa todavía está vacía y la función no contempla el nulo. **No se da por buena:** falta
+reproducir el clic a mano y cerrarlo.
+
+**Segundo pendiente:** la casilla de Tipo de Cambio se ve con la tasa **del día** (894,8876) porque la
+DA `TIPO_CAMBIO_2` (evento *change* de `P9_COD_MONEDA`) la reescribe después de que la cabecera ponga
+la de la factura (896,1225). Al guardar, el proceso vuelve a tomar la del origen, así que el dato
+guardado es el correcto; lo que no cuadra es lo que se ve en pantalla.
+
+
 
 

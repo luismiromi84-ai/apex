@@ -13251,6 +13251,33 @@ wwv_flow_imp_page.create_page(
 ,p_page_mode=>'MODAL'
 ,p_step_title=>unistr('Gesti\00F3n de Facturacion')
 ,p_autocomplete_on_off=>'OFF'
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Nota de credito: casillas de las lineas de la factura que acredita.',
+'   El boton "Traer marcadas" envia la lista en el item oculto P9_LINEAS_SEL. */',
+'function spxLineasSelActualiza() {',
+'    var ids = [];',
+'    document.querySelectorAll(".js-linea-sel:checked").forEach(function (c) {',
+'        ids.push(c.getAttribute("data-id"));',
+'    });',
+'    var it = apex.item("P9_LINEAS_SEL");',
+'    if (it) { it.setValue(ids.join(","), null, true); }',
+'    var b = [].slice.call(document.querySelectorAll("button")).filter(function (x) {',
+'        return /Traer marcadas/i.test(x.innerText);',
+'    })[0];',
+'    if (b) { b.disabled = ids.length === 0; }',
+'}',
+'function spxMarcarTodas(ver) {',
+'    document.querySelectorAll(".js-linea-sel").forEach(function (c) { c.checked = !!ver; });',
+'    var t = document.getElementById("spx-todas");',
+'    if (t) { t.checked = !!ver; }',
+'    spxLineasSelActualiza();',
+'}',
+'document.addEventListener("change", function (e) {',
+'    if (e.target && e.target.classList && e.target.classList.contains("js-linea-sel")) {',
+'        spxLineasSelActualiza();',
+'    }',
+'});',
+'setTimeout(spxLineasSelActualiza, 800);'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 unistr('/* Cabecera uniforme en azul degradado sin sombras/recuadros extra\00F1os */'),
 '.t-DialogRegion-header,',
@@ -13311,6 +13338,75 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source_type=>'NATIVE_FORM'
 ,p_ajax_items_to_submit=>'P9_ID_FACTURA'
 );
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000343)
+,p_plug_name=>'Líneas de la factura que acredita'
+,p_static_id=>'lineas-factura-origen'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_html clob;',
+'begin',
+'    -- Se renderiza siempre para que la accion dinamica pueda refrescarla.',
+'    -- Si no es una nota con factura origen no devuelve nada.',
+'    if :P9_TIPO_DOCUMENTO <> ''NC'' or :P9_ID_FACTURA_ORIGEN is null then',
+'        return null;',
+'    end if;',
+'',
+'    v_html := ''<table class="t-Report-report" style="width:100%">''',
+'              || ''<thead><tr>''',
+'              || ''<th style="width:34px"><input type="checkbox" id="spx-todas" title="Marcar todas" onclick="spxMarcarTodas(this.checked)"></th>''',
+'              || ''<th>#</th><th>Descripci&oacute;n</th><th style="text-align:right">Cant.</th>''',
+'              || ''<th style="text-align:right">Precio</th><th style="text-align:right">Total</th>''',
+'              || ''</tr></thead><tbody>'';',
+'',
+'    for r in (select d.id_detalle, d.num_linea, d.descripcion, d.cantidad,',
+'                     d.precio_unitario, d.monto_total_linea,',
+'                     nvl(d.codigo_producto, ''-'') as codigo',
+'                from facturas_det d',
+'               where d.id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN)',
+'               order by d.num_linea)',
+'    loop',
+'        v_html := v_html',
+'            || ''<tr>''',
+'            || ''<td><input type="checkbox" class="js-linea-sel" data-id="'' || to_char(r.id_detalle) || ''"></td>''',
+'            || ''<td>'' || to_char(r.num_linea) || ''</td>''',
+'            || ''<td>'' || sys.htf.escape_sc(r.codigo) || '' - ''',
+'            || sys.htf.escape_sc(r.descripcion) || ''</td>''',
+'            || ''<td style="text-align:right">'' || to_char(r.cantidad) || ''</td>''',
+'            || ''<td style="text-align:right">'' || to_char(r.precio_unitario, ''FM999G999G990D00'') || ''</td>''',
+'            || ''<td style="text-align:right">'' || to_char(r.monto_total_linea, ''FM999G999G990D00'') || ''</td>''',
+'            || ''</tr>'';',
+'    end loop;',
+'',
+'    v_html := v_html || ''</tbody></table>''',
+'              || ''<p style="margin:8px 0 0"><a href="javascript:spxMarcarTodas(true)">Marcar todas</a>''',
+'              || '' &middot; <a href="javascript:spxMarcarTodas(false)">Desmarcar</a></p>'';',
+'',
+'    return v_html;',
+'end;'))
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_function_body_language=>'PLSQL'
+,p_ajax_items_to_submit=>'P9_ID_FACTURA_ORIGEN'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000344)
+,p_button_sequence=>240
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000343)
+,p_button_name=>'BTN_TRAER_MARCADAS'
+,p_static_id=>'btn-traer-marcadas'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4072363345357378016
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Traer marcadas'
+,p_button_position=>'EDIT'
+,p_button_condition_type=>'EXPRESSION'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and :P9_TIPO_DOCUMENTO = ''NC'' and :P9_ID_FACTURA_ORIGEN is not null and not fn_nota_con_lineas(:P9_ID_FACTURA)'
+);
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(18161478696230476)
 ,p_button_sequence=>280
@@ -13356,24 +13452,6 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-trash-o'
 ,p_grid_new_row=>'N'
 ,p_grid_column=>6
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(43000000000000350)
-,p_button_sequence=>245
-,p_button_plug_id=>wwv_flow_imp.id(32589573944518258)
-,p_button_name=>'BTN_TRAER'
-,p_static_id=>'btn-traer-lineas'
-,p_show_as_disabled=>false
-,p_button_action=>'SUBMIT'
-,p_button_position=>'CHANGE'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
-,p_button_template_id=>2084305881903810008
-,p_button_image_alt=>'Traer lineas'
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and fn_factura_editable(:P9_ID_FACTURA) and fn_nota_traible(fn_clean_num(:P9_ID_FACTURA))'
-,p_button_condition2=>'PLSQL'
-,p_button_condition_type=>'EXPRESSION'
-,p_icon_css_classes=>'fa-download'
-,p_grid_new_row=>'N'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(18162756611230481)
@@ -13798,6 +13876,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
+,p_read_only_when_type=>'PLSQL_EXPRESSION'
+,p_read_only_when=>'fn_nota_con_lineas(:P9_ID_FACTURA)'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'case_sensitive', 'N',
@@ -13810,6 +13890,26 @@ wwv_flow_imp_page.create_page_item(
   'min_chars', '0',
   'title', 'Factura que acredita',
   'width', '400')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000341)
+,p_name=>'P9_LINEAS_SEL'
+,p_item_sequence=>72
+,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000342)
+,p_name=>'P9_CABECERA_JSON'
+,p_item_sequence=>73
+,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(32592153243518285)
@@ -14584,6 +14684,74 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000345)
+,p_name=>'CARGA_FACTURA_ORIGEN'
+,p_static_id=>'carga-factura-origen'
+,p_event_sequence=>55
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P9_ID_FACTURA_ORIGEN'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000346)
+,p_event_id=>wwv_flow_imp.id(43000000000000345)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'Lee la cabecera de la factura que acredita'
+,p_static_id=>'lee-cabecera-factura-origen'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P9_ID_EMPRESA,P9_ID_CLIENTE,P9_COD_MONEDA,P9_TIPO_CAMBIO,P9_RFC_EMISOR,P9_RFC_RECEPTOR,P9_CONDICION_PAGO,P9_FORMA_PAGO,P9_FECHA_VENCIMIENTO,P9_OBSERVACIONES',
+  'items_to_submit', 'P9_ID_FACTURA_ORIGEN',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_f facturas%rowtype;',
+'begin',
+'    if :P9_ID_FACTURA_ORIGEN is null then',
+'        return;',
+'    end if;',
+'',
+'    select * into v_f from facturas where id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN);',
+'',
+'    -- Correlacion: la nota hereda la empresa, el cliente, la moneda y la TASA',
+'    -- de la factura que acredita, no las del dia en que se emite la nota.',
+'    :P9_ID_EMPRESA     := to_char(v_f.id_empresa);',
+'    :P9_ID_CLIENTE     := to_char(v_f.id_cliente);',
+'    :P9_COD_MONEDA     := v_f.cod_moneda;',
+'    :P9_TIPO_CAMBIO    := to_char(v_f.tipo_cambio);',
+'    :P9_RFC_EMISOR     := v_f.rfc_emisor;',
+'    :P9_RFC_RECEPTOR   := v_f.rfc_receptor;',
+'    :P9_CONDICION_PAGO := to_char(v_f.condicion_pago);',
+'    :P9_FORMA_PAGO     := v_f.forma_pago;',
+'    :P9_FECHA_VENCIMIENTO := case when v_f.fecha_vencimiento is null then null',
+'                                  else to_char(v_f.fecha_vencimiento, ''DD/MM/YYYY'') end;',
+'',
+'    -- Referencia que exige la providencia: factura, N. de control y fecha.',
+unistr('    :P9_OBSERVACIONES := ''Nota de cr\00E9dito de la factura '' || v_f.folio_factura'),
+'        || case when v_f.nro_control is not null then '', N. de Control '' || v_f.nro_control else '''' end',
+'        || '', del '' || to_char(v_f.fecha_emision, ''DD/MM/YYYY'');',
+'end;')))).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000347)
+,p_event_id=>wwv_flow_imp.id(43000000000000345)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'Refresca las lineas de la factura'
+,p_static_id=>'refresca-lineas-factura-origen'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000000343)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(18564710010054501)
 ,p_name=>'TIPO_DOCUMENTO'
 ,p_static_id=>'tipo-documento'
@@ -14680,11 +14848,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sequence=>45
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Traer lineas de la factura'
-,p_static_id=>'traer-lineas-factura'
+,p_process_name=>'Traer lineas marcadas'
+,p_static_id=>'traer-lineas-marcadas'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    v_origen number;',
 'BEGIN',
 '    if not fn_factura_propio(:P9_ID_FACTURA, :APP_USER) then',
 '        raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
@@ -14694,20 +14860,18 @@ wwv_flow_imp_page.create_page_process(
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 '    end if;',
 '',
-'    select id_factura_origen into v_origen',
-'      from facturas where id_factura = fn_clean_num(:P9_ID_FACTURA);',
-'',
-'    pkg_factura_detalle.copiar_desde_factura(',
+'    pkg_factura_detalle.copiar_lineas_de_factura(',
 '        p_id_factura        => fn_clean_num(:P9_ID_FACTURA),',
-'        p_id_factura_origen => v_origen,',
+'        p_id_factura_origen => fn_clean_num(:P9_ID_FACTURA_ORIGEN),',
+'        p_id_detalles       => :P9_LINEAS_SEL,',
 '        p_usuario           => :APP_USER);',
 '',
-unistr('    apex_application.g_print_success_message := ''Se trajeron las lineas de la factura. Revisa la nota antes de guardar.'';'),
+unistr('    apex_application.g_print_success_message := ''Se trajeron las lineas marcadas. Revisa la nota antes de guardar.'';'),
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_process_error_message=>'#SQLERRM#'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when_button_id=>wwv_flow_imp.id(43000000000000350)
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000344)
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(18173805212230538)
@@ -14802,7 +14966,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'show_success_messages', 'Y')).to_clob
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'nvl(:REQUEST, ''#'') <> ''BTN_TRAER'''
+,p_process_when=>'nvl(:REQUEST, ''#'') <> ''BTN_TRAER_MARCADAS'''
 ,p_process_when2=>'PLSQL'
 ,p_process_when_type=>'EXPRESSION'
 ,p_internal_uid=>18173442618230537
@@ -14961,7 +15125,8 @@ unistr('    -- refresca el item para no dejar en pantalla la vista previa.'),
 ,p_process_clob_language=>'PLSQL'
 ,p_process_error_message=>'Error al guardar la factura: #SQLERRM#'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when_button_id=>wwv_flow_imp.id(18162756611230481)
+,p_process_when=>'nvl(:REQUEST, ''#'') in (''BTN_GUARDAR'', ''BTN_TRAER_MARCADAS'')'
+,p_process_when_type=>'EXPRESSION'
 ,p_internal_uid=>18173084107230536
 );
 wwv_flow_imp_page.create_page_process(
