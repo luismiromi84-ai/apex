@@ -13213,6 +13213,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'procesar-factura'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
+'    v_folio varchar2(50);',
+'    v_tipo  varchar2(10);',
+'    v_tit   varchar2(40);',
 'BEGIN',
 'if not fn_factura_propio(:P8_ID_FACTURAS, :APP_USER) then',
 '    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
@@ -13220,14 +13223,18 @@ wwv_flow_imp_page.create_page_process(
 'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
+'    select folio_factura, tipo_documento into v_folio, v_tipo',
+'      from facturas where id_factura = :P8_ID_FACTURAS;',
 '    pkg_facturacion. prc_procesar_factura (',
 '        :P8_ID_FACTURAS,',
 '        :APP_USER);',
 '',
-'    apex_application.g_print_success_message := ''La Factura Fue Timbrada  exitosamente.'';',
+unistr('    v_tit := case upper(nvl(v_tipo, ''FAC'')) when ''NC'' then ''La nota de cr\00E9dito '' when ''ND'' then ''La nota de d\00E9bito '' else ''La factura '' end;'),
+unistr('    apex_application.g_print_success_message := v_tit || v_folio || '' qued\00F3 procesada.'';'),
 '',
 'EXCEPTION',
 '    WHEN OTHERS THEN',
+'        if sqlcode between -20999 and -20000 then raise; end if;',
 '        raise_application_error(-20003, SQLERRM);',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
