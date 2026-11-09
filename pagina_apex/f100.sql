@@ -18768,6 +18768,36 @@ wwv_flow_imp_page.create_page_item(
 ,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000360)
+,p_name=>'P18_TIPO_EMISION'
+,p_item_sequence=>15
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Forma de emisión'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC:FORMA_LIBRE;Forma libre (imprenta autorizada),MAQUINA_FISCAL;Máquina fiscal'
+,p_cSize=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000361)
+,p_name=>'P18_NRO_REGISTRO_MAQUINA'
+,p_item_sequence=>16
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'N° de registro de la máquina fiscal'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>60
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000135)
 ,p_name=>'P18_PROV_FECHA'
 ,p_item_sequence=>60
@@ -18885,6 +18915,10 @@ wwv_flow_imp_page.create_page_process(
 '        apex_util.set_session_state(''P18_IMPRENTA_DIRECCION'', v_fila.imprenta_direccion);',
 '        apex_util.set_session_state(''P18_IMPRENTA_TELEFONO'', v_fila.imprenta_telefono);',
 '        apex_util.set_session_state(''P18_IMPRENTA_EMAIL'', v_fila.imprenta_email);',
+'        apex_util.set_session_state(''P18_TIPO_EMISION'', nvl(v_fila.tipo_emision, ''FORMA_LIBRE''));',
+'        apex_util.set_session_state(''P18_NRO_REGISTRO_MAQUINA'', v_fila.nro_registro_maquina);',
+'    else',
+'        apex_util.set_session_state(''P18_TIPO_EMISION'', ''FORMA_LIBRE'');',
 '    end if;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
@@ -18934,15 +18968,19 @@ wwv_flow_imp_page.create_page_process(
 '              t.imprenta_direccion = :P18_IMPRENTA_DIRECCION,',
 '              t.imprenta_telefono  = :P18_IMPRENTA_TELEFONO,',
 '              t.imprenta_email     = :P18_IMPRENTA_EMAIL',
+'              ,t.tipo_emision       = nvl(:P18_TIPO_EMISION, ''FORMA_LIBRE'')',
+'              ,t.nro_registro_maquina = :P18_NRO_REGISTRO_MAQUINA',
 '     when not matched then insert',
 '          (id_empresa, direccion_fiscal, telefono, email, nro_providencia, prov_fecha,',
 '           control_desde, control_hasta, imprenta_nombre, imprenta_rif,',
-'           imprenta_direccion, imprenta_telefono, imprenta_email)',
+'           imprenta_direccion, imprenta_telefono, imprenta_email,',
+'           tipo_emision, nro_registro_maquina)',
 '          values',
 '          (v_empresa, :P18_DIRECCION_FISCAL, :P18_TELEFONO, :P18_EMAIL,',
 '           :P18_NRO_PROVIDENCIA, v_fecha, :P18_CONTROL_DESDE, :P18_CONTROL_HASTA,',
 '           :P18_IMPRENTA_NOMBRE, :P18_IMPRENTA_RIF, :P18_IMPRENTA_DIRECCION,',
-'           :P18_IMPRENTA_TELEFONO, :P18_IMPRENTA_EMAIL);',
+'           :P18_IMPRENTA_TELEFONO, :P18_IMPRENTA_EMAIL,',
+'           nvl(:P18_TIPO_EMISION, ''FORMA_LIBRE''), :P18_NRO_REGISTRO_MAQUINA);',
 '',
 '    apex_application.g_print_success_message := ''Datos fiscales guardados.'';',
 'end;'))
