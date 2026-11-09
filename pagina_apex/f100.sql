@@ -12770,8 +12770,8 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_attributes=>'style="text-align: right; font-weight: bold; font-size: 16px;"'
 ,p_plug_template=>3372714138756020509
 ,p_plug_display_sequence=>50
-,p_plug_grid_column_span=>12
-,p_plug_display_column=>1
+,p_plug_grid_column_span=>4
+,p_plug_display_column=>9
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
