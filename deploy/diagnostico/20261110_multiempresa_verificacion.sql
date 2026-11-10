@@ -36,8 +36,23 @@
 --      sola fila con 'listagg' y se recoge en un VARCHAR2.
 --   4. En esta version SQLERRM no se puede usar como identificador dentro de
 --      una expresion en un manejador de excepcion (ORA-00984 'column not
---      allowed here'); solo funciona como argumento de un procedimiento. Aqui
---      no hace falta el texto del error, asi que no se usa.
+--      allowed here'); solo funciona como argumento de un procedimiento o
+--      asignado a una variable. Por eso el manejador de cada caso hace
+--      'v_error := sqlerrm' y concatena la variable despues.
+--
+--   5. Cada 'insert' de caso recorta su texto con 'substr(..., 1, 300)': si
+--      no, un detalle largo revienta con ORA-12899 en vez de reportarse.
+--
+--   6. El 'listagg' del bloque de cierre lleva 'on overflow truncate' Y un
+--      'substr' por fuera. Los dos hacen falta y no son redundantes:
+--        - sin 'on overflow truncate', la agregacion revienta con ORA-01489
+--          ANTES de llegar al substr y se pierde el 'RESULTADO: FALLAS=n';
+--        - con 'on overflow truncate' a secas, en esta version el recorte es
+--          al maximo de la propia lista (medido: 5857 caracteres con 20
+--          elementos de 290), NO al tamano de la variable destino, asi que el
+--          'INTO' de un VARCHAR2(2000) revienta con ORA-06502 y se pierde
+--          igual el 'RESULTADO: FALLAS=n'.
+--      Los 'listagg' internos de M3, M4 y M5 llevan los dos por lo mismo.
 --
 -- Casos (tarea 1: tabla, vista y siembra):
 --   M1  Existe USUARIO_EMPRESA con PK compuesta, indice por ID_EMPRESA y las
@@ -55,11 +70,14 @@ alter session set current_schema = WKSP_SYPEXWS;
 
 -- Por si una corrida anterior dejo la tabla (el DROP del bloque final la
 -- borra, pero una corrida interrumpida puede no llegar ahi).
+declare
+    v_existe number;
 begin
-    execute immediate 'drop table tmp_multi_fallas purge';
-exception
-    when others then
-        if sqlcode != -942 then raise; end if;
+    select count(*) into v_existe from all_tables
+     where owner = 'WKSP_SYPEXWS' and table_name = 'TMP_MULTI_FALLAS';
+    if v_existe > 0 then
+        execute immediate 'drop table tmp_multi_fallas purge';
+    end if;
 end;
 /
 
@@ -71,13 +89,13 @@ create table tmp_multi_fallas (caso varchar2(300));
 --    Solo consulta el diccionario, asi que no necesita que la tabla exista.
 -- -----------------------------------------------------------------------------
 insert into tmp_multi_fallas
-select 'M1: falta USUARIO_EMPRESA' from dual
+select substr('M1: falta USUARIO_EMPRESA', 1, 300) from dual
  where not exists (select 1 from all_tables
                     where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA');
 /
 
 insert into tmp_multi_fallas
-select 'M1: falta la PK PK_USUARIO_EMPRESA (usuario_id, id_empresa)' from dual
+select substr('M1: falta la PK PK_USUARIO_EMPRESA (usuario_id, id_empresa)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and (select count(*) from all_constraints c
@@ -90,7 +108,7 @@ select 'M1: falta la PK PK_USUARIO_EMPRESA (usuario_id, id_empresa)' from dual
 /
 
 insert into tmp_multi_fallas
-select 'M1: falta el indice IX_UE_EMPRESA (id_empresa)' from dual
+select substr('M1: falta el indice IX_UE_EMPRESA (id_empresa)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and not exists (select 1 from all_indexes
@@ -98,7 +116,7 @@ select 'M1: falta el indice IX_UE_EMPRESA (id_empresa)' from dual
 /
 
 insert into tmp_multi_fallas
-select 'M1: falta la FK de USUARIO_EMPRESA a USUARIO(USUARIO_ID)' from dual
+select substr('M1: falta la FK de USUARIO_EMPRESA a USUARIO(USUARIO_ID)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and not exists (select 1 from all_constraints c
@@ -115,7 +133,7 @@ select 'M1: falta la FK de USUARIO_EMPRESA a USUARIO(USUARIO_ID)' from dual
 /
 
 insert into tmp_multi_fallas
-select 'M1: falta la FK de USUARIO_EMPRESA a EMPRESAS(ID_EMPRESA)' from dual
+select substr('M1: falta la FK de USUARIO_EMPRESA a EMPRESAS(ID_EMPRESA)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and not exists (select 1 from all_constraints c
@@ -135,7 +153,7 @@ select 'M1: falta la FK de USUARIO_EMPRESA a EMPRESAS(ID_EMPRESA)' from dual
 -- M2: la vista existe y es VALID. Solo diccionario.
 -- -----------------------------------------------------------------------------
 insert into tmp_multi_fallas
-select 'M2: falta V_EMPRESAS_USUARIO o no esta VALID' from dual
+select substr('M2: falta V_EMPRESAS_USUARIO o no esta VALID', 1, 300) from dual
  where not exists (select 1 from all_objects
                     where owner = 'WKSP_SYPEXWS' and object_name = 'V_EMPRESAS_USUARIO'
                       and object_type = 'VIEW' and status = 'VALID');
@@ -148,11 +166,20 @@ select 'M2: falta V_EMPRESAS_USUARIO o no esta VALID' from dual
 --
 -- Cada consulta devuelve UNA fila con 'listagg' y se recoge en un VARCHAR2
 -- (trampa 3: 'bulk collect into' con tipo local no compila aqui).
+--
+-- OJO, Important 1 (revision del 2026-11-10): el manejador de cada caso
+-- REGISTRA un fallo, no lo calla. Los guardas 'v_tiene_tabla'/'v_tiene_vista'
+-- ya cubren el caso de que el objeto no exista, asi que lo unico que el
+-- manejador puede atrapar es un fallo real de la medicion (un 'listagg'
+-- interno que revienta, una vista INVALID en M4...). Si ahi se hiciera
+-- 'v_detalle := null', una medicion rota se convertiria en un PASS
+-- silencioso y este archivo dejaria de ser la reja de regresión.
 -- -----------------------------------------------------------------------------
 declare
     v_tiene_tabla number;
     v_tiene_vista number;
     v_detalle     varchar2(2000);
+    v_error       varchar2(300);
 begin
     select count(*) into v_tiene_tabla from all_tables
      where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA';
@@ -165,13 +192,13 @@ begin
     -- listas saldrian vacias en silencio.
     if v_tiene_tabla = 0 then
         insert into tmp_multi_fallas
-        values ('M3: no se puede medir, falta la tabla USUARIO_EMPRESA');
+        values (substr('M3: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
     else
         v_detalle := null;
         begin
             execute immediate
-                q'[select listagg(u.username || ' (empresa ' || u.id_empresa || ')', ' | ')
-                          within group (order by u.username)
+                q'[select substr(listagg(u.username || ' (empresa ' || u.id_empresa || ')', ' | '
+                              on overflow truncate) within group (order by u.username), 1, 2000)
                      from usuario u
                     where u.estado in ('ACTIVO','A','1')
                       and u.id_empresa is not null
@@ -181,11 +208,13 @@ begin
                 into v_detalle;
         exception
             when others then
-                v_detalle := null;
+                v_error := sqlerrm;
+                insert into tmp_multi_fallas
+                values (substr('M3: error al medir: ' || v_error, 1, 300));
         end;
         if v_detalle is not null then
             insert into tmp_multi_fallas
-            values ('M3: sin par en USUARIO_EMPRESA: ' || v_detalle);
+            values (substr('M3: sin par en USUARIO_EMPRESA: ' || v_detalle, 1, 300));
         end if;
     end if;
 
@@ -193,37 +222,39 @@ begin
     -- par en USUARIO_EMPRESA (hoy cubre las tres 'dotech', 3/4/5).
     if v_tiene_tabla = 0 then
         insert into tmp_multi_fallas
-        values ('M5: no se puede medir, falta la tabla USUARIO_EMPRESA');
+        values (substr('M5: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
     else
         v_detalle := null;
         begin
             execute immediate
-                q'[select listagg(e.id_empresa || ' (' || e.nombre_empresa || ')', ' | ')
-                          within group (order by e.id_empresa)
+                q'[select substr(listagg(e.id_empresa || ' (' || e.nombre_empresa || ')', ' | '
+                              on overflow truncate) within group (order by e.id_empresa), 1, 2000)
                      from empresas e
                     where not exists (select 1 from usuario_empresa ue
                                        where ue.id_empresa = e.id_empresa)]'
                 into v_detalle;
         exception
             when others then
-                v_detalle := null;
+                v_error := sqlerrm;
+                insert into tmp_multi_fallas
+                values (substr('M5: error al medir: ' || v_error, 1, 300));
         end;
         if v_detalle is not null then
             insert into tmp_multi_fallas
-            values ('M5: empresas sin ningun usuario asociado: ' || v_detalle);
+            values (substr('M5: empresas sin ningun usuario asociado: ' || v_detalle, 1, 300));
         end if;
     end if;
 
     -- M4: la vista devuelve MONEDA_LOCAL no nula para la empresa 1 (VE) y la 2 (MX).
     if v_tiene_vista = 0 then
         insert into tmp_multi_fallas
-        values ('M4: no se puede medir, falta la vista V_EMPRESAS_USUARIO');
+        values (substr('M4: no se puede medir, falta la vista V_EMPRESAS_USUARIO', 1, 300));
     else
         v_detalle := null;
         begin
             execute immediate
-                q'[select listagg(e.id_empresa || ' (' || e.cod_pais || ')', ' | ')
-                          within group (order by e.id_empresa)
+                q'[select substr(listagg(e.id_empresa || ' (' || e.cod_pais || ')', ' | '
+                              on overflow truncate) within group (order by e.id_empresa), 1, 2000)
                      from empresas e
                     where e.cod_pais in ('VE','MX')
                       and not exists (select 1 from v_empresas_usuario v
@@ -232,11 +263,13 @@ begin
                 into v_detalle;
         exception
             when others then
-                v_detalle := null;
+                v_error := sqlerrm;
+                insert into tmp_multi_fallas
+                values (substr('M4: error al medir: ' || v_error, 1, 300));
         end;
         if v_detalle is not null then
             insert into tmp_multi_fallas
-            values ('M4: la vista no devuelve MONEDA_LOCAL para: ' || v_detalle);
+            values (substr('M4: la vista no devuelve MONEDA_LOCAL para: ' || v_detalle, 1, 300));
         end if;
     end if;
 end;
@@ -247,7 +280,19 @@ declare
     v_lista  varchar2(2000);
 begin
     select count(*) into v_fallas from tmp_multi_fallas;
-    select listagg(caso, ' | ') within group (order by caso) into v_lista from tmp_multi_fallas;
+    -- 'on overflow truncate' es obligatorio: sin el, un listagg largo revienta con
+    -- ORA-01489 ANTES de llegar al substr, y se pierde el "FALLAS=n".
+    --
+    -- El 'substr' por FUERA tambien es obligatorio, y no es redundante: en esta
+    -- version 'on overflow truncate' recorta al maximo de la propia lista
+    -- (medido: 5857 caracteres con 20 elementos de 290), no al tamano de la
+    -- variable destino, asi que el 'INTO' de un VARCHAR2(2000) revienta con
+    -- ORA-06502 y se pierde el 'RESULTADO: FALLAS=n'. Con el substr de fuera,
+    -- el valor entra en la variable y el raise_application_error (que admite
+    -- 2048 bytes) ya recorta a 2000.
+    select substr(listagg(caso, ' | ' on overflow truncate) within group (order by caso), 1, 2000)
+      into v_lista
+      from tmp_multi_fallas;
     execute immediate 'drop table tmp_multi_fallas purge';
     raise_application_error(-20100, substr('RESULTADO: FALLAS=' || v_fallas || ' | ' || v_lista, 1, 2000));
 end;
