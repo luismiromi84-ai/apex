@@ -82,6 +82,25 @@ select 'admin',
 commit;
 /
 
+-- -----------------------------------------------------------------------------
+-- Asociacion del administrador inicial con su empresa. Desde el 2026-11-10 el
+-- permiso sale de USUARIO_EMPRESA, no de USUARIO.ID_EMPRESA: sin este par el
+-- usuario no tendria ninguna empresa y no podria entrar.
+-- -----------------------------------------------------------------------------
+insert into usuario_empresa (usuario_id, id_empresa)
+select u.usuario_id, u.id_empresa
+  from usuario u
+  join empresas e on e.id_empresa = u.id_empresa
+ where upper(u.username) = 'ADMIN'
+   and u.id_empresa is not null
+   and not exists (select 1 from usuario_empresa ue
+                    where ue.usuario_id = u.usuario_id
+                      and ue.id_empresa  = u.id_empresa);
+/
+
+commit;
+/
+
 -- Tipos de documento de la pagina 9. Sin estas filas la combo "Tipo Documento" sale vacia
 -- en una instalacion limpia (install.sql solo hace el DDL de TIPO_DOCUMENTO).
 -- Los codigos tienen que ser exactamente los del CHECK FACTURAS.CHK_FACTURA_TIPO.

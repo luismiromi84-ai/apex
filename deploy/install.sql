@@ -23,6 +23,7 @@ prompt ============================================================
 @@../tabla/empresas.sql
 @@../tabla/syn_roles.sql
 @@../tabla/usuario.sql
+@@../tabla/usuario_empresa.sql
 @@../tabla/syn_login_log.sql
 @@../tabla/syn_error_log.sql
 @@../tabla/clientes.sql
@@ -78,6 +79,7 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 
 -- Vistas (dependen de tablas y del paquete de gasto real, pero no del body).
 @@../vistas/v_presupuesto_real.sql
+@@../vistas/v_empresas_usuario.sql
 
 prompt ============================================================
 prompt 4/8 Especificaciones de packages
