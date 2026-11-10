@@ -77,6 +77,17 @@
 --   M5  Ninguna empresa queda huerfana: toda fila de EMPRESAS tiene al menos un
 --       par en USUARIO_EMPRESA (hoy cubre las tres 'dotech', 3/4/5). Si en el
 --       futuro una empresa se deja sin usuarios a proposito, este caso avisa.
+--
+-- Casos (tarea 2: guardas y login por asociacion):
+--   M6  Usuario de prueba con pares en DOS empresas: fn_usuario_empresa_valida
+--       devuelve true para las dos.
+--   M7  El mismo usuario contra una TERCERA empresa sin par: false.
+--   M8  Usuario inactivo con par: false; usuario/empresa nulos: false;
+--       empresa inexistente: false.
+--   M9  Usuario ACTIVO con rol y pares, pero USUARIO.ID_EMPRESA nulo:
+--       fn_autenticar_usuario con clave correcta devuelve true.
+--   M10 La consulta de prc_post_login (copiada con el usuario como literal)
+--       devuelve 1 fila para el usuario con pares y 0 para uno sin asociacion.
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS;
@@ -285,6 +296,153 @@ begin
             insert into tmp_multi_fallas
             values (substrb('M4: la vista no devuelve MONEDA_LOCAL para: ' || v_detalle, 1, 300));
         end if;
+    end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M6, M7, M8, M9 y M10: guardas y login por la tabla de asociacion.
+--
+-- Los usuarios de prueba se crean aqui (rango reservado 900000+), con clave
+-- 'Diag#2026', y se BORRAN al final del bloque (no dependen del fixture de la
+-- tarea anterior). Se usa SQL dinamico para los INSERT/DELETE porque USUARIO
+-- y USUARIO_EMPRESA son objetos que podrian no existir todavia en una base
+-- donde la tarea 1 todavia no se aplico.
+-- -----------------------------------------------------------------------------
+declare
+    v_existe      number;
+    v_error       varchar2(300);
+    v_resultado   varchar2(10);
+    v_cuenta      number;
+    v_hash        varchar2(512);
+    v_usuario_ok  varchar2(50) := 'DIAG_MULTI_01';
+    v_usuario_sin varchar2(50) := 'DIAG_MULTI_02';
+    v_empresa_a   number := 1;
+    v_empresa_b   number := 2;
+    v_empresa_c   number := 3;
+begin
+    select count(*) into v_existe from all_tables
+     where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA';
+    if v_existe = 0 then
+        insert into tmp_multi_fallas
+        values (substrb('M6-M10: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
+    else
+        begin
+            -- M9/M10: usuario ACTIVO, con rol, con pares, pero ID_EMPRESA nulo.
+            select sypex_hash_password('Diag#2026') into v_hash from dual;
+            execute immediate
+                q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                        rol_id, id_empresa, debe_cambiar_clave)
+                   values (900001, :u, 'diag.multi.01@synpex.local', :h, 'ACTIVO',
+                           (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'),
+                           null, 'N')]'
+                using v_usuario_ok, v_hash;
+
+            execute immediate
+                q'[insert into usuario_empresa (usuario_id, id_empresa)
+                   values (900001, :e1)]' using v_empresa_a;
+            execute immediate
+                q'[insert into usuario_empresa (usuario_id, id_empresa)
+                   values (900001, :e2)]' using v_empresa_b;
+
+            -- Usuario sin ninguna asociacion (para M10).
+            execute immediate
+                q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                        rol_id, id_empresa, debe_cambiar_clave)
+                   values (900002, :u, 'diag.multi.02@synpex.local', :h, 'ACTIVO',
+                           (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'),
+                           null, 'N')]'
+                using v_usuario_sin, v_hash;
+
+            -- M6: la guarda acepta las DOS empresas asociadas.
+            if case when fn_usuario_empresa_valida(v_usuario_ok, v_empresa_a) then 1 else 0 end = 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M6: fn_usuario_empresa_valida devolvio false para la empresa asociada 1', 1, 300));
+            end if;
+            if case when fn_usuario_empresa_valida(v_usuario_ok, v_empresa_b) then 1 else 0 end = 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M6: fn_usuario_empresa_valida devolvio false para la empresa asociada 2', 1, 300));
+            end if;
+
+            -- M7: una tercera empresa sin par NO debe validar.
+            if case when fn_usuario_empresa_valida(v_usuario_ok, v_empresa_c) then 1 else 0 end = 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M7: fn_usuario_empresa_valida devolvio true para una empresa sin asociacion', 1, 300));
+            end if;
+
+            -- M8: inactivo con par, nulos y empresa inexistente.
+            execute immediate
+                q'[update usuario set estado = 'INACTIVO' where usuario_id = 900001]';
+            if case when fn_usuario_empresa_valida(v_usuario_ok, v_empresa_a) then 1 else 0 end = 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M8: fn_usuario_empresa_valida devolvio true para un usuario inactivo', 1, 300));
+            end if;
+            execute immediate
+                q'[update usuario set estado = 'ACTIVO' where usuario_id = 900001]';
+            if case when fn_usuario_empresa_valida(null, v_empresa_a) then 1 else 0 end = 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M8: fn_usuario_empresa_valida devolvio true con usuario nulo', 1, 300));
+            end if;
+            if case when fn_usuario_empresa_valida(v_usuario_ok, null) then 1 else 0 end = 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M8: fn_usuario_empresa_valida devolvio true con empresa nula', 1, 300));
+            end if;
+            if case when fn_usuario_empresa_valida(v_usuario_ok, 999999) then 1 else 0 end = 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M8: fn_usuario_empresa_valida devolvio true para una empresa inexistente', 1, 300));
+            end if;
+
+            -- M9: usuario con ID_EMPRESA nulo pero con pares entra con la clave.
+            v_resultado := case when fn_autenticar_usuario(v_usuario_ok, 'Diag#2026')
+                                then 'TRUE' else 'FALSE' end;
+            if v_resultado <> 'TRUE' then
+                insert into tmp_multi_fallas
+                values (substrb('M9: fn_autenticar_usuario devolvio ' || v_resultado
+                                || ' para un usuario con ID_EMPRESA nulo y pares', 1, 300));
+            end if;
+
+            -- M10: la consulta de prc_post_login, con el usuario como literal.
+            execute immediate
+                q'[select count(*) from usuario u
+                    join syn_roles r on r.id_rol = u.rol_id
+                   where upper(u.username) = upper(:u)
+                     and u.estado in ('ACTIVO', 'A', '1')
+                     and exists (select 1 from usuario_empresa ue where ue.usuario_id = u.usuario_id)]'
+                into v_cuenta using v_usuario_ok;
+            if v_cuenta <> 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M10: la consulta de prc_post_login devolvio ' || v_cuenta
+                                || ' filas para un usuario con pares (se esperaba 1)', 1, 300));
+            end if;
+
+            execute immediate
+                q'[select count(*) from usuario u
+                    join syn_roles r on r.id_rol = u.rol_id
+                   where upper(u.username) = upper(:u)
+                     and u.estado in ('ACTIVO', 'A', '1')
+                     and exists (select 1 from usuario_empresa ue where ue.usuario_id = u.usuario_id)]'
+                into v_cuenta using v_usuario_sin;
+            if v_cuenta <> 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M10: la consulta de prc_post_login devolvio ' || v_cuenta
+                                || ' filas para un usuario sin asociacion (se esperaba 0)', 1, 300));
+            end if;
+        exception
+            when others then
+                v_error := sqlerrm;
+                insert into tmp_multi_fallas
+                values (substrb('M6-M10: error al medir: ' || v_error, 1, 300));
+        end;
+
+        -- Limpieza: primero las asociaciones, luego los usuarios.
+        begin
+            execute immediate q'[delete from usuario_empresa where usuario_id in (900001, 900002)]';
+        exception when others then null;
+        end;
+        begin
+            execute immediate q'[delete from usuario where usuario_id in (900001, 900002)]';
+        exception when others then null;
+        end;
     end if;
 end;
 /

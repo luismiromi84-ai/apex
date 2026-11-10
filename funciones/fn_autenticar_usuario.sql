@@ -76,7 +76,18 @@ begin
         return false;
     end if;
 
-    if v_empresa is null or v_rol is null then
+    -- Desde el 2026-11-10 la empresa se valida contra USUARIO_EMPRESA (tabla de
+    -- asociacion multiempresa): basta con al menos un par. La columna
+    -- USUARIO.ID_EMPRESA queda como 'empresa principal' y puede ser nula.
+    --
+    -- El 'exists' va dentro de un SELECT (no puede usarse como condicion
+    -- PL/SQL: PLS-00204).
+    select count(*)
+      into v_empresa
+      from usuario_empresa ue
+     where ue.usuario_id = v_id;
+
+    if v_rol is null or v_empresa = 0 then
         prc_auth_registrar(v_id, 'SIN_EMPRESA', v_usuario);
         apex_util.set_custom_auth_status(p_status => c_generico);
         return false;
