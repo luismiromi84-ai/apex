@@ -112,6 +112,15 @@
 --       lanza NO_DATA_FOUND (ORA-01403) cuando el usuario tiene DOS empresas:
 --       el 'having count(*) = 1' deja la consulta sin filas y, sin manejador,
 --       tumbaba la pagina entera (medido el 2026-11-10).
+--
+-- Casos (tarea 5: pagina 3 con la columna «Empresas»):
+--   M21 La consulta GUARDADA de la region «Gestion de Usuarios» (pagina 3)
+--       devuelve una columna EMPRESAS con las empresas COMPARTIDAS con el
+--       administrador que mira, separadas por ', ' y ordenadas por nombre.
+--       Ademas la columna EMPRESAS esta declarada en el informe por defecto.
+--   M22 Para un usuario que ademas tiene una empresa que el administrador NO
+--       tiene, esa tercera empresa NO aparece en EMPRESAS (no se filtra el
+--       nombre de la empresa de otro cliente: decision 13.6 del spec).
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS;
@@ -2329,6 +2338,12 @@ begin
 
         -- La lista de usuarios de DIAG_ADM: tiene que salir en la columna
         -- USERNAME. La consulta se envuelve y se cuenta por nombre.
+        --
+        -- OJO (tarea 5, 2026-11-10): la consulta guardada tiene DOS
+        -- apariciones de ':APP_USER' (el filtro F5 y el subselect de la
+        -- columna EMPRESAS). En SQL dinamico hay que pasar el valor UNA VEZ
+        -- POR APARICION: con un solo 'using' falla con ORA-01008 ('value for
+        -- bind variable placeholder 1 was not provided').
         v_codigo := 0;
         begin
             execute immediate
@@ -2336,7 +2351,7 @@ begin
                       from (]'
                 || v_texto
                 || q'[) t]'
-                into v_lista using 'DIAG_ADM';
+                into v_lista using 'DIAG_ADM', 'DIAG_ADM';
         exception
             when others then
                 v_codigo := sqlcode;
@@ -2431,6 +2446,342 @@ begin
     end;
 end;
 /
+
+-- =============================================================================
+-- TAREA 5: pagina 3 «Gestion de Usuarios» — columna «Empresas».
+--
+--   M21 La consulta GUARDADA de la region (APEX_APPLICATION_PAGE_REGIONS.
+--       REGION_SOURCE de la region 10564941614198500) trae una columna EMPRESAS
+--       con las empresas del usuario COMPARTIDAS con el administrador que
+--       mira, separadas por ', ' y ordenadas por nombre. Ademas la columna
+--       EMPRESAS esta declarada en la region y sale en el informe por defecto.
+--   M22 Para un usuario que ademas tiene una empresa que el administrador NO
+--       tiene, esa tercera NO aparece en EMPRESAS.
+--
+-- PATRON (R3 del ledger): se mide el TEXTO GUARDADO por APEX, no una copia
+-- escrita a mano: si el texto guardado y el que se espera divergen, el caso
+-- tiene que fallar. La consulta se envuelve en 'select ... from (<texto>) t'
+-- y se ejecuta con ':APP_USER' sustituido por el administrador de prueba.
+--
+-- SEMILLA (rango reservado 900000+):
+--   Empresas:  900040 'DIAG EMP P'   (compartida)
+--              900041 'DIAG EMP Q'   (compartida)
+--              900042 'DIAG EMP R'   (AJENA: solo del usuario, no del admin)
+--   Usuarios:  900040 DIAG_ADM3 -> pares en 900040 y 900041 (el administrador)
+--              900041 DIAG_U3   -> pares en 900040, 900041 y 900042
+--
+-- Por que 900040/900041 y no las empresas reales (1, 2, 3): los datos de
+-- prueba tienen que ser REPRODUCIBLES y no depender del estado de la base.
+-- Los nombres empiezan por 'DIAG EMP ' para que el orden alfabetico de
+-- M21 sea P, Q (y no dependa de acentos: 'Empresa Mexico' lleva 'M', que en
+-- la colacion del servidor puede ir antes o despues de 'Empresa Principal').
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Siembra de los datos de prueba de M21 y M22.
+-- -----------------------------------------------------------------------------
+declare
+    v_error varchar2(300);
+    v_hash  varchar2(512);
+begin
+    select sypex_hash_password('Diag#2026') into v_hash from dual;
+
+    -- Barrido de restos de una corrida anterior. Fila por fila (el DELETE
+    -- con 'in (...)' lo manda el servidor en paralelo y en esta base el
+    -- error de la FK sale enmascarado como ORA-12801 con un ORA-02292
+    -- FALSO: medido el 2026-11-11).
+    begin
+        execute immediate q'[delete from usuario_empresa where usuario_id = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where usuario_id = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where id_empresa = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where id_empresa = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where id_empresa = 900042]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900042]';
+        commit;
+    exception when others then null;
+    end;
+
+    begin
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal, rfc)
+               values (900040, 'DIAG EMP P', 'ACTIVO', 'VE', 'RIF', 'DIAG-P')]';
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal, rfc)
+               values (900041, 'DIAG EMP Q', 'ACTIVO', 'VE', 'RIF', 'DIAG-Q')]';
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal, rfc)
+               values (900042, 'DIAG EMP R', 'ACTIVO', 'VE', 'RIF', 'DIAG-R')]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M21-M22: no se pudieron crear las empresas de prueba: ' || v_error, 1, 300));
+    end;
+
+    begin
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900040, 'DIAG_ADM3', 'diag.adm3@synpex.local', :h, 'ACTIVO',
+                       (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 900040, 'N')]'
+            using v_hash;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900041, 'DIAG_U3', 'diag.u3@synpex.local', :h, 'ACTIVO',
+                       (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 900040, 'N')]'
+            using v_hash;
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M21-M22: no se pudieron crear los usuarios de prueba: ' || v_error, 1, 300));
+    end;
+
+    begin
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900040, 900040)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900040, 900041)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900041, 900040)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900041, 900041)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900041, 900042)]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M21-M22: no se pudieron crear las asociaciones de prueba: ' || v_error, 1, 300));
+    end;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M21 y M22: la columna «Empresas» de la lista de usuarios de la pagina 3.
+--
+-- Se ejecuta el TEXTO GUARDADO de la region con ':APP_USER' sustituido por
+-- el administrador de prueba (DIAG_ADM3, que tiene pares en 900040 y 900041)
+-- y se lee la columna EMPRESAS de la fila del usuario DIAG_U3 (que tiene
+-- pares en 900040, 900041 y 900042: la tercera es AJENA al administrador).
+--
+-- M21: EMPRESAS = 'DIAG EMP P, DIAG EMP Q' (las dos compartidas, por nombre).
+-- M22: 'DIAG EMP R' (la ajena) NO aparece.
+--
+-- Ademas se comprueba que la columna EMPRESAS esta DECLARADA en la region
+-- (apex_application_page_ir_col) y que sale en el INFORME POR DEFECTO
+-- (apex_application_page_ir_rpt.report_columns): sin declararla, la columna
+-- no se pinta aunque el SELECT la traiga.
+-- -----------------------------------------------------------------------------
+declare
+    v_error   varchar2(300);
+    v_texto   clob;
+    v_empresas varchar2(2000);
+    v_codigo  number;
+    v_columnas varchar2(300);
+    v_cuenta   number;
+begin
+    -- (a) La columna EMPRESAS esta declarada en la region.
+    begin
+        select count(*) into v_cuenta
+          from apex_application_page_ir_col
+         where application_id = 100
+           and region_id = 10564941614198500
+           and column_alias = 'EMPRESAS';
+        if v_cuenta <> 1 then
+            insert into tmp_multi_fallas
+            values (substrb('M21: la region «Gestion de Usuarios» no declara la columna EMPRESAS', 1, 300));
+        end if;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M21: error al leer las columnas de la region: ' || v_error, 1, 300));
+    end;
+
+    -- (b) Y sale en el informe por defecto.
+    --
+    -- OJO: 'split' no existe en PL/SQL (medido: ORA-00904), asi que el token
+    -- se busca con una regex que exige los DOS separadores. La columna
+    -- existente 'EMPRESA' (singular) no puede dar un falso positivo con
+    -- ':EMPRESAS:' porque la 'S' final es distinta.
+    begin
+        select report_columns into v_columnas
+          from apex_application_page_ir_rpt
+         where application_id = 100 and page_id = 3 and report_alias = 'primary';
+        if v_columnas is null or not regexp_like(v_columnas, '(^|:)EMPRESAS(:|$)') then
+            insert into tmp_multi_fallas
+            values (substrb('M21: EMPRESAS no esta en el informe por defecto: ' || v_columnas, 1, 300));
+        end if;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M21: error al leer el informe por defecto: ' || v_error, 1, 300));
+    end;
+
+    -- (c) Y el TEXTO GUARDADO devuelve las empresas compartidas.
+    begin
+        select region_source into v_texto
+          from apex_application_page_regions
+         where application_id = 100 and region_id = 10564941614198500;
+
+        v_codigo := 0;
+        v_empresas := null;
+        begin
+            -- OJO: la consulta guardada tiene DOS apariciones de ':APP_USER'
+            -- (el filtro F5 y el subselect de la columna EMPRESAS), asi que
+            -- el valor se pasa una vez POR APARICION (con uno solo falla con
+            -- ORA-01008).
+            execute immediate
+                q'[select t.empresas from (]'
+                || v_texto
+                || q'[) t where upper(t.username) = 'DIAG_U3']'
+                into v_empresas using 'DIAG_ADM3', 'DIAG_ADM3';
+        exception
+            when no_data_found then
+                v_codigo := 1;
+                v_empresas := null;
+            when others then
+                v_codigo := sqlcode;
+                v_empresas := null;
+        end;
+
+        if v_codigo <> 0 then
+            insert into tmp_multi_fallas
+            values (substrb('M21: no se pudo leer la columna EMPRESAS de la consulta guardada'
+                            || ' (codigo ' || v_codigo || ')', 1, 300));
+        else
+            -- M21: las dos empresas COMPARTIDAS, separadas por ', ' y por nombre.
+            if v_empresas <> 'DIAG EMP P, DIAG EMP Q' then
+                insert into tmp_multi_fallas
+                values (substrb('M21: EMPRESAS devolvio «' || v_empresas
+                                || '» (se esperaba «DIAG EMP P, DIAG EMP Q»)', 1, 300));
+            end if;
+
+            -- M22: la empresa AJENA al administrador NO aparece.
+            if v_empresas like '%DIAG EMP R%' then
+                insert into tmp_multi_fallas
+                values (substrb('M22: EMPRESAS incluye la empresa ajena al administrador: «'
+                                || v_empresas || '»', 1, 300));
+            end if;
+        end if;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M21-M22: error al medir: ' || v_error, 1, 300));
+    end;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- Limpieza de los datos de prueba de M21 y M22. Va SIEMPRE, aunque la
+-- medicion haya fallado: los datos de prueba no se quedan en la base.
+--
+-- MEDIDO (2026-11-11): los DELETE con 'in (...)' los manda el servidor en
+-- PARALELO, y en esta base el error de la FK sale enmascarado como
+-- ORA-12801 ('error signaled in parallel query server') con un ORA-02292
+-- ('child record found') que es FALSO: no hay ninguna fila hija. Por eso se
+-- borra fila por fila, que va en serie y no da el falso error.
+--
+-- OJO EL ORDEN: 'USUARIO.ID_EMPRESA' tiene su PROPIA FK a EMPRESAS
+-- (FK_USUARIO_EMPRESA), aparte de la de USUARIO_EMPRESA. Por eso los
+-- USUARIOS se borran ANTES que las EMPRESAS.
+-- -----------------------------------------------------------------------------
+begin
+    begin
+        execute immediate q'[delete from usuario_empresa where usuario_id = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where usuario_id = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where id_empresa = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where id_empresa = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where id_empresa = 900042]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900040]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900041]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900042]';
+        commit;
+    exception when others then null;
+    end;
+end;
+/
+
 declare
     v_fallas number;
     v_lista  varchar2(2000);

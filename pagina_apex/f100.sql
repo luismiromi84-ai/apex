@@ -8524,6 +8524,14 @@ wwv_flow_imp_page.create_page_plug(
 '       u.fecha_creacion,',
 '       e.nombre_empresa as empresa,',
 '       r.codigo_rol as rol,',
+'       (select listagg(e2.nombre_empresa, '', '') within group (order by e2.nombre_empresa)',
+'          from usuario_empresa ue2',
+'          join empresas e2 on e2.id_empresa = ue2.id_empresa',
+'         where ue2.usuario_id = u.usuario_id',
+'           and exists (select 1 from usuario_empresa mia',
+'                        join usuario a on a.usuario_id = mia.usuario_id',
+'                       where mia.id_empresa = ue2.id_empresa',
+'                         and upper(a.username) = upper(:APP_USER))) as empresas,',
 '       case',
 '         when u.bloqueado_hasta > sysdate then ''BLOQUEADO''',
 '         when upper(nvl(u.estado, ''#'')) = ''PENDIENTE'' then ''PENDIENTE''',
@@ -8683,6 +8691,16 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000403)
+,p_db_column_name=>'EMPRESAS'
+,p_display_order=>27
+,p_column_identifier=>'K'
+,p_column_label=>'Empresas'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(10566808651198528)
 ,p_db_column_name=>'USERNAME'
 ,p_display_order=>2
@@ -8714,7 +8732,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'primary'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'USUARIO_ID:USERNAME:EMAIL:EMPRESA:ROL:ESTADO:SITUACION:FECHA_CREACION'
+,p_report_columns=>'USUARIO_ID:USERNAME:EMAIL:EMPRESA:ROL:EMPRESAS:ESTADO:SITUACION:FECHA_CREACION'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(10569657589198543)
