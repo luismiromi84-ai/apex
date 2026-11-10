@@ -344,7 +344,7 @@ wwv_flow_imp_shared.create_list(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(18272401440108059)
-,p_list_item_display_sequence=>40
+,p_list_item_display_sequence=>20
 ,p_list_item_link_text=>unistr('Facturaci\00F3n')
 ,p_static_id=>'facturacion'
 ,p_list_item_link_target=>'f?p=&APP_ID.:8:&APP_SESSION.::&DEBUG.:::'
@@ -355,7 +355,7 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(10564521986198336)
-,p_list_item_display_sequence=>20
+,p_list_item_display_sequence=>30
 ,p_list_item_link_text=>unistr('Gesti\00F3n de Usuarios')
 ,p_static_id=>unistr('gesti\00F3n-de-usuarios')
 ,p_list_item_link_target=>'f?p=&APP_ID.:3:&APP_SESSION.::&DEBUG.:::'
@@ -366,7 +366,7 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(9156795883584624)
-,p_list_item_display_sequence=>10
+,p_list_item_display_sequence=>40
 ,p_list_item_link_text=>'Home'
 ,p_static_id=>'home'
 ,p_list_item_link_target=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
@@ -385,7 +385,7 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(43000000000000391)
-,p_list_item_display_sequence=>60
+,p_list_item_display_sequence=>10
 ,p_list_item_link_text=>unistr('Administraci\00F3n')
 ,p_static_id=>'administracion'
 ,p_list_item_link_target=>'f?p=&APP_ID.:19:&APP_SESSION.::&DEBUG.:::'
@@ -396,7 +396,7 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(11948716200514858)
-,p_list_item_display_sequence=>30
+,p_list_item_display_sequence=>60
 ,p_list_item_link_text=>'Presupuestos'
 ,p_static_id=>'presupuestos'
 ,p_list_item_link_target=>'f?p=&APP_ID.:5:&APP_SESSION.::&DEBUG.:::'
