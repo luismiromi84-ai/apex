@@ -126,11 +126,25 @@ begin
      where owner = 'WKSP_SYPEXWS' and table_name = 'TMP_MULTI_FALLAS';
     if v_existe > 0 then
         execute immediate 'drop table tmp_multi_fallas purge';
+    begin
+        execute immediate 'drop table tmp_multi_notas purge';
+    exception when others then null;
+    end;
+    end if;
+    select count(*) into v_existe from all_tables
+     where owner = 'WKSP_SYPEXWS' and table_name = 'TMP_MULTI_NOTAS';
+    if v_existe > 0 then
+        execute immediate 'drop table tmp_multi_notas purge';
     end if;
 end;
 /
 
 create table tmp_multi_fallas (caso varchar2(300));
+/
+-- Tabla de AVISOS que NO cuentan como falla: la 'deuda' conocida (la
+-- pagina 4 usa la empresa PRINCIPAL del administrador, que es la fase 3
+-- del spec). Se deja anotada sin romper el RESULTADO.
+create table tmp_multi_notas (caso varchar2(300));
 /
 
 -- -----------------------------------------------------------------------------
@@ -786,112 +800,6 @@ end;
 -- el valor no sobrevive a un cambio de sentencia).
 -- =============================================================================
 
--- -----------------------------------------------------------------------------
--- M14 (ampliado): ninguna consulta guardada por APEX sigue leyendo la columna
--- unica USUARIO.ID_EMPRESA.
---
--- Se buscan dos patrones, en minusculas, en:
---   - apex_application_page_regions.region_source   (la consulta de las regiones)
---   - apex_application_page_items                   (LOV, defecto y condiciones)
---   - apex_application_lovs.list_of_values_query    (las LOVs de la app)
---   - apex_application_page_proc.process_source     (los procesos de pagina)
--- Los patrones son:
---   'id_empresa from usuario'   -> el subselect viejo (F1)
---   'min(u.id_empresa)'          -> el defecto viejo (F2/F4)
---
--- El caso avisa POR CATEGORIA y con el numero de sitios que quedan, no uno por
--- sitio: si no, una fila por cada uno de los 27 sitios pendientes taparia el
--- mensaje 'RESULTADO: FALLAS=n' (limitado a 2000 bytes) y no dejaria ver los
--- demas casos de la verificacion.
--- -----------------------------------------------------------------------------
-declare
-    v_error   varchar2(300);
-    v_detalle clob;
-    v_n       number;
-    v_lista   varchar2(1000);
-
-    procedure avisar(p_categoria varchar2, p_n number, p_lista varchar2) is
-    begin
-        if p_n > 0 then
-            insert into tmp_multi_fallas
-            values (substrb('M14: ' || p_categoria || ': ' || p_n
-                            || ' sitio(s) siguen leyendo la columna unica del usuario'
-                            || ' -> ' || coalesce(p_lista, ''), 1, 300));
-        end if;
-    end;
-begin
-    -- 1) Regiones: la consulta guardada.
-    v_n := 0; v_lista := null;
-    for r in (select region_id, region_name, region_source
-                from apex_application_page_regions
-               where application_id = 100
-                 and region_source is not null) loop
-        v_detalle := lower(r.region_source);
-        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
-           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
-            v_n := v_n + 1;
-            v_lista := substrb(coalesce(v_lista, '') || r.region_name || '(reg ' || r.region_id || ') ', 1, 200);
-        end if;
-    end loop;
-    avisar('regiones', v_n, v_lista);
-
-    -- 2) Los items: LOV, defecto y condiciones.
-    v_n := 0; v_lista := null;
-    for it in (select item_id, item_name, lov_definition, item_default,
-                      condition_expression1, condition_expression2,
-                      read_only_condition_exp1, read_only_condition_exp2
-                 from apex_application_page_items
-                where application_id = 100) loop
-        v_detalle := lower(coalesce(it.lov_definition, '') || ' '
-                           || coalesce(it.item_default, '') || ' '
-                           || coalesce(it.condition_expression1, '') || ' '
-                           || coalesce(it.condition_expression2, '') || ' '
-                           || coalesce(it.read_only_condition_exp1, '') || ' '
-                           || coalesce(it.read_only_condition_exp2, ''));
-        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
-           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
-            v_n := v_n + 1;
-            v_lista := substrb(coalesce(v_lista, '') || it.item_name || '(item ' || it.item_id || ') ', 1, 200);
-        end if;
-    end loop;
-    avisar('items', v_n, v_lista);
-
-    -- 3) Las LOVs de la app.
-    v_n := 0; v_lista := null;
-    for l in (select list_of_values_name, list_of_values_query
-                from apex_application_lovs
-               where application_id = 100
-                 and list_of_values_query is not null) loop
-        v_detalle := lower(l.list_of_values_query);
-        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
-           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
-            v_n := v_n + 1;
-            v_lista := substrb(coalesce(v_lista, '') || l.list_of_values_name || ' ', 1, 200);
-        end if;
-    end loop;
-    avisar('LOVs', v_n, v_lista);
-
-    -- 4) Los procesos de pagina (INCLUIDA la pagina 19, que antes se excluia).
-    v_n := 0; v_lista := null;
-    for pr in (select page_id, process_id, process_name, process_source
-                  from apex_application_page_proc
-                 where application_id = 100
-                   and process_source is not null) loop
-        v_detalle := lower(pr.process_source);
-        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
-           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
-            v_n := v_n + 1;
-            v_lista := substrb(coalesce(v_lista, '') || 'p' || pr.page_id || ':' || pr.process_name || ' ', 1, 200);
-        end if;
-    end loop;
-    avisar('procesos de pagina', v_n, v_lista);
-exception
-    when others then
-        v_error := sqlerrm;
-        insert into tmp_multi_fallas
-        values (substrb('M14: error al medir: ' || v_error, 1, 300));
-end;
-/
 
 -- -----------------------------------------------------------------------------
 -- Siembra de los datos de prueba de M23, M24 y M25 (rango reservado 900000+).
@@ -1378,6 +1286,989 @@ begin
 end;
 /
 
+-- =============================================================================
+-- TAREA 4: filtros, defectos y condiciones por empresa (27 sitios del export).
+--
+-- Los 27 sitios se cambiaron para que lean la vista V_EMPRESAS_USUARIO (la
+-- tabla de asociacion USUARIO_EMPRESA) en vez de la columna unica
+-- USUARIO.ID_EMPRESA. Esta seccion lo COMPRUEBA:
+--
+--   M14 (AMPLIADO) Ninguna consulta guardada por APEX -regiones, p_query_where
+--       de las regiones de formulario, items, LOVs de la app y TAMBIEN los
+--       procesos de pagina, ya incluida la pagina 19- sigue leyendo la columna
+--       unica del usuario. Ademas, cada pagina de la tabla del brief tiene que
+--       leer la vista V_EMPRESAS_USUARIO (y la pagina 3, USUARIO_EMPRESA).
+--   M15 Las listas «Lista de Presupuestos» (5) y «Lista de Facturas» (8),
+--       ejecutadas con el TEXTO GUARDADO por APEX como un usuario de DOS
+--       empresas: devuelven documentos de las DOS y NINGUNO de una tercera.
+--   M16 Lo mismo con un usuario de UNA empresa: solo los suyos (regresion: un
+--       usuario de una sola empresa no debe perder nada).
+--   M17 Los defectos de empresa de P13_ID_EMPRESA, P7_ID_EMPRESA y
+--       P17_ID_EMPRESA: con un usuario de DOS empresas devuelven NULL (la app
+--       NO elige por su cuenta) y con uno de UNA devuelven esa empresa.
+--   M18 La tarjeta «Errores registrados hoy» del Panel con :P13_ID_EMPRESA de
+--       una empresa AJENA no cuenta los errores de otra empresa.
+--   M19 La lista de usuarios de la pagina 3, ejecutada como el administrador
+--       A: INCLUYE a un usuario que solo comparte empresa con A, EXCLUYE a uno
+--       de una empresa con la que A no comparte, e INCLUYE al PENDIENTE sin
+--       empresas.
+--   M20 No hay fuga: ninguna consulta guardada devuelve documentos de una
+--       empresa no asociada (se comprueba con los ids de una empresa sembrada
+--       para otro usuario).
+--
+-- PATRON DE SIEMBRA (el mismo de las tareas anteriores):
+--   - Rango reservado 900000+. Empresas de prueba: 900030 (compartida),
+--     900031 (compartida), 900032 (ajena). Usuarios: 900030 (pares en
+--     900030 y 900031), 900031 (par solo en 900030), 900032 (par solo en
+--     900032, el ajeno), 900033 (PENDIENTE, sin empresas), 900034 (el
+--     administrador A: par en 900030 y en 900031).
+--   - Documentos: un presupuesto y una factura en cada empresa de prueba
+--     (900030, 900031, 900032), con su cliente.
+--   - Todo se borra al final, con 'commit' entre bloques (trampa ORA-12839:
+--     varias DML sobre tablas con identity en la misma transaccion).
+--   - Las empresas de prueba son ACTIVO y de pais VE: el caso tiene que medir
+--     el filtro de EMPRESA, no el de estado.
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- M14 (ampliado): ninguna consulta guardada por APEX sigue leyendo la columna
+-- unica USUARIO.ID_EMPRESA.
+--
+-- Se buscan dos patrones, en minusculas, en:
+--   - apex_application_page_regions.region_source   (la consulta de las regiones)
+--   - apex_application_page_regions.where_clause    (el p_query_where de las
+--                            regiones de formulario: paginas 6, 7, 8, 9, 10 y 16)
+--   - apex_application_page_items                   (LOV, defecto y condiciones)
+--   - apex_application_lovs.list_of_values_query    (las LOVs de la app)
+--   - apex_application_page_proc.process_source     (los procesos de pagina)
+-- Los patrones son:
+--   'id_empresa from usuario'   -> el subselect viejo (F1)
+--   'min(u.id_empresa)'          -> el defecto viejo (F2/F3/F4)
+--
+-- El caso avisa POR CATEGORIA y con el numero de sitios que quedan, no uno por
+-- sitio: si no, una fila por cada uno de los 27 sitios pendientes taparia el
+-- mensaje 'RESULTADO: FALLAS=n' (limitado a 2000 bytes) y no dejaria ver los
+-- demas casos de la verificacion.
+--
+-- EXCEPCION DOCUMENTADA - LA PAGINA 4: sus cuatro procesos ('Crear Usuario',
+-- 'update usuario', 'Eliminar Usuario' y 'Desbloquear usuario') fuerzan
+-- 'id_empresa = v_mia', donde 'v_mia' es la empresa PRINCIPAL del
+-- administrador. Eso es la limitacion VIVA de la FASE 3 del spec (la pagina 4
+-- con seleccion multiple de empresas), que este plan NO hace: ver
+-- '.superpowers/sdd/2026-11-10-multiempresa-usuario-empresa/task-7-brief.md',
+-- seccion 'Lo que este plan NO hace'. No es un defecto de la tarea 4 y no
+-- puede hacer fallar la verificacion; pero se avisa aparte como DEUDA (en
+-- tmp_multi_notas, que NO se cuenta) para que no se pierda de vista.
+-- -----------------------------------------------------------------------------
+declare
+    v_error   varchar2(300);
+    v_detalle clob;
+    v_n       number;
+    v_lista   varchar2(1000);
+    v_i       number;
+    v_pagina  number;
+    v_esperado number;
+
+    procedure avisar(p_categoria varchar2, p_n number, p_lista varchar2) is
+    begin
+        if p_n > 0 then
+            insert into tmp_multi_fallas
+            values (substrb('M14: ' || p_categoria || ': ' || p_n
+                            || ' sitio(s) siguen leyendo la columna unica del usuario'
+                            || ' -> ' || coalesce(p_lista, ''), 1, 300));
+        end if;
+    end;
+begin
+    -- 1) Regiones: la consulta guardada (REGION_SOURCE).
+    v_n := 0; v_lista := null;
+    for r in (select region_id, region_name, region_source
+                from apex_application_page_regions
+               where application_id = 100
+                 and region_source is not null) loop
+        v_detalle := lower(r.region_source);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || r.region_name || '(reg ' || r.region_id || ') ', 1, 200);
+        end if;
+    end loop;
+    avisar('regiones', v_n, v_lista);
+
+    -- 2) Regiones de formulario: el p_query_where (WHERE_CLAUSE).
+    v_n := 0; v_lista := null;
+    for r in (select region_id, region_name, where_clause
+                from apex_application_page_regions
+               where application_id = 100
+                 and where_clause is not null) loop
+        v_detalle := lower(r.where_clause);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || r.region_name || '(reg ' || r.region_id || ') ', 1, 200);
+        end if;
+    end loop;
+    avisar('regiones de formulario (where_clause)', v_n, v_lista);
+
+    -- 3) Los items: LOV de item, defecto y condiciones.
+    v_n := 0; v_lista := null;
+    for it in (select item_id, item_name, lov_definition, item_default,
+                      condition_expression1, condition_expression2,
+                      read_only_condition_exp1, read_only_condition_exp2
+                 from apex_application_page_items
+                where application_id = 100) loop
+        v_detalle := lower(coalesce(it.lov_definition, '') || ' '
+                           || coalesce(it.item_default, '') || ' '
+                           || coalesce(it.condition_expression1, '') || ' '
+                           || coalesce(it.condition_expression2, '') || ' '
+                           || coalesce(it.read_only_condition_exp1, '') || ' '
+                           || coalesce(it.read_only_condition_exp2, ''));
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || it.item_name || '(item ' || it.item_id || ') ', 1, 200);
+        end if;
+    end loop;
+    avisar('items', v_n, v_lista);
+
+    -- 4) Las LOVs de la app.
+    v_n := 0; v_lista := null;
+    for l in (select list_of_values_name, list_of_values_query
+                from apex_application_lovs
+               where application_id = 100
+                 and list_of_values_query is not null) loop
+        v_detalle := lower(l.list_of_values_query);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || l.list_of_values_name || ' ', 1, 200);
+        end if;
+    end loop;
+    avisar('LOVs', v_n, v_lista);
+
+    -- 5) Los procesos de pagina, EXCLUIDA la pagina 4 (ver la excepcion
+    --    documentada arriba: es la fase 3 del spec, no la tarea 4).
+    v_n := 0; v_lista := null;
+    for pr in (select page_id, process_id, process_name, process_source
+                  from apex_application_page_proc
+                 where application_id = 100
+                   and page_id <> 4
+                   and process_source is not null) loop
+        v_detalle := lower(pr.process_source);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || 'p' || pr.page_id || ':' || pr.process_name || ' ', 1, 200);
+        end if;
+    end loop;
+    avisar('procesos de pagina', v_n, v_lista);
+
+    -- 6) DEUDA CONOCIDA (NO cuenta como falla): los procesos de la pagina 4.
+    --    Se dejan anotados en tmp_multi_notas para que no se pierdan de vista.
+    v_n := 0; v_lista := null;
+    for pr in (select page_id, process_name, process_source
+                  from apex_application_page_proc
+                 where application_id = 100
+                   and page_id = 4
+                   and process_source is not null) loop
+        v_detalle := lower(pr.process_source);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || pr.process_name || ' ', 1, 200);
+        end if;
+    end loop;
+    if v_n > 0 then
+        insert into tmp_multi_notas
+        values (substrb('M14-DEUDA (fase 3, no es falla): p4 usa la empresa principal en '
+                        || v_n || ' proceso(s): ' || v_lista, 1, 300));
+    end if;
+
+    -- 7) Cada pagina de la tabla del brief tiene que leer la VISTA. Se cuentan
+    --    los sitios que la leen (region_source + where_clause + items + LOVs +
+    --    procesos) y se compara con el numero esperado.
+    --
+    --    El numero esperado se calculo MEDIDO sobre la app ya cambiada (ver el
+    --    informe de la tarea 4):
+    --      p3  -> 0 sitios de la vista: su filtro (F5) lee USUARIO_EMPRESA
+    --              directamente, porque necesita saber con quien COMPARTE
+    --              empresa el administrador (no solo las suyas).
+    --      p5  -> 2 (las dos listas)
+    --      p6  -> 2 (el p_query_where y la LOV de impuestos)
+    --      p7  -> 3 (el p_query_where, el defecto de empresa y el de moneda)
+    --      p8  -> 2 (la lista y el p_query_where del detalle)
+    --      p9  -> 5 (el p_query_where, dos LOVs y dos condiciones de pais)
+    --      p10 -> 2 (el p_query_where y la LOV de impuestos)
+    --      p13 -> 2 (los dos defectos)
+    --      p16 -> 4 (la lista, el p_query_where, la LOV y el proceso)
+    --      p17 -> 1 (el defecto)
+    --      p18 -> 1 (el proceso)
+    --      p19 -> 2 (la lista y el proceso; los cambio la tarea 6)
+    --
+    --    MEDIDO (2026-11-10): un 'for ... in (select ... union all ... from dual)'
+    --    NO compila en PL/SQL (ORA-00928: SELECT keyword missing). Por eso la
+    --    tabla de (pagina, esperado) va como un CASE y se recorre con un indice.
+    v_lista := null;
+    for v_i in 1 .. 12 loop
+        v_pagina := case v_i when 1 then 3  when 2 then 5  when 3 then 6
+                           when 4 then 7  when 5 then 8  when 6 then 9
+                           when 7 then 10 when 8 then 13 when 9 then 16
+                           when 10 then 17 when 11 then 18 when 12 then 19 end;
+        v_esperado := case v_i when 1 then 0 when 2 then 2 when 3 then 2
+                             when 4 then 3 when 5 then 2 when 6 then 5
+                             when 7 then 2 when 8 then 2 when 9 then 4
+                             when 10 then 1 when 11 then 1 when 12 then 2 end;
+        v_n := 0;
+        for r in (select region_source, where_clause
+                    from apex_application_page_regions
+                   where application_id = 100 and page_id = v_pagina) loop
+            if r.region_source is not null then
+                v_detalle := lower(r.region_source);
+                v_n := v_n + regexp_count(v_detalle, 'v_empresas_usuario');
+            end if;
+            if r.where_clause is not null then
+                v_detalle := lower(r.where_clause);
+                v_n := v_n + regexp_count(v_detalle, 'v_empresas_usuario');
+            end if;
+        end loop;
+        for it in (select lov_definition, item_default, condition_expression1,
+                          condition_expression2, read_only_condition_exp1,
+                          read_only_condition_exp2
+                     from apex_application_page_items
+                    where application_id = 100 and page_id = v_pagina) loop
+            v_detalle := lower(coalesce(it.lov_definition, '') || ' '
+                               || coalesce(it.item_default, '') || ' '
+                               || coalesce(it.condition_expression1, '') || ' '
+                               || coalesce(it.condition_expression2, '') || ' '
+                               || coalesce(it.read_only_condition_exp1, '') || ' '
+                               || coalesce(it.read_only_condition_exp2, ''));
+            v_n := v_n + regexp_count(v_detalle, 'v_empresas_usuario');
+        end loop;
+        for pr in (select process_source from apex_application_page_proc
+                    where application_id = 100 and page_id = v_pagina
+                      and process_source is not null) loop
+            v_detalle := lower(pr.process_source);
+            v_n := v_n + regexp_count(v_detalle, 'v_empresas_usuario');
+        end loop;
+        if v_n <> v_esperado then
+            v_lista := substrb(coalesce(v_lista, '') || 'p' || v_pagina || '(' || v_n
+                               || '/' || v_esperado || ') ', 1, 200);
+        end if;
+    end loop;
+    if v_lista is not null then
+        insert into tmp_multi_fallas
+        values (substrb('M14: paginas que NO leen V_EMPRESAS_USUARIO como deben (menciones/esperado): '
+                        || v_lista, 1, 300));
+    end if;
+
+    -- 8) La pagina 3 (F5) tiene que leer USUARIO_EMPRESA: su filtro es
+    --    've los que comparten alguna empresa conmigo, mas los que no tienen
+    --    ninguna'. Si no lo lee, la lista de usuarios se vacia en silencio.
+    --    Se busca por REGION_ID (10564941614198500) y no por el static_id, que
+    --    lleva acento y depende de como el export codifique el unistr.
+    v_n := 0;
+    for r in (select region_source from apex_application_page_regions
+                where application_id = 100 and region_id = 10564941614198500) loop
+        v_detalle := lower(r.region_source);
+        v_n := v_n + regexp_count(v_detalle, 'usuario_empresa');
+    end loop;
+    if v_n = 0 then
+        insert into tmp_multi_fallas
+        values (substrb('M14: la lista de usuarios de la pagina 3 no lee USUARIO_EMPRESA (F5)', 1, 300));
+    end if;
+exception
+    when others then
+        v_error := sqlerrm;
+        insert into tmp_multi_fallas
+        values (substrb('M14: error al medir: ' || v_error, 1, 300));
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- Siembra de los datos de prueba de M15, M16, M17, M18, M19 y M20.
+--
+--   Empresas:  900030 (compartida por DIAG_M2 y DIAG_M1)
+--              900031 (compartida por DIAG_M2)
+--              900032 (AJENA: solo DIAG_M3)
+--   Usuarios:  900030 DIAG_M2   -> pares en 900030 y 900031 (DOS empresas)
+--              900031 DIAG_M1   -> par solo en 900030 (UNA empresa)
+--              900032 DIAG_M3   -> par solo en 900032 (la ajena)
+--              900033 DIAG_M0   -> PENDIENTE, SIN empresas
+--              900034 DIAG_ADM -> pares en 900030 y 900031 (el administrador A)
+--
+--   Documentos: un presupuesto y una factura por cada empresa de prueba
+--   (900030, 900031, 900032), con su cliente. Los ids se dan EXPLICITOS (las
+--   identities son BY DEFAULT, medido el 2026-11-10) para que el M20 pueda
+--   comprobar por id que el documento de la empresa ajena NO sale.
+--
+--   MEDIDO (2026-11-10): los INSERT con 'union all ... from dual' los manda
+--   el servidor en PARALELO y en esta base el error de la FK sale enmascarado
+--   como ORA-12801 ('error signaled in parallel query server P002'). Ademas,
+--   cada rama del UNION es un bind distinto: con un solo ':h' sale
+--   ORA-01008. Por eso aqui cada fila es un INSERT propio.
+-- -----------------------------------------------------------------------------
+declare
+    v_error varchar2(300);
+    v_hash  varchar2(512);
+begin
+    select sypex_hash_password('Diag#2026') into v_hash from dual;
+
+    -- Barrido de restos de una corrida anterior. Un 'commit' despues de
+    -- cada DELETE: en esta base, dos DML sobre tablas con identity en la
+    -- misma transaccion dan ORA-12839 (medido).
+    begin
+        execute immediate q'[delete from usuario_empresa
+                            where usuario_id in (900030, 900031, 900032, 900033, 900034)
+                               or id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id in (900030, 900031, 900032, 900033, 900034)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from gastos_real where id_presupuesto in
+                            (select id_presupuesto from presupuestos where id_empresa in (900030, 900031, 900032))]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from facturas where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from presupuestos where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from clientes where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+
+    -- Las tres empresas de prueba. ACTIVO y de pais VE: el caso tiene que
+    -- medir el filtro de EMPRESA, no el de estado.
+    begin
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal, rfc)
+               values (900030, 'DIAG EMP A', 'ACTIVO', 'VE', 'RIF', 'DIAG-A')]';
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal, rfc)
+               values (900031, 'DIAG EMP B', 'ACTIVO', 'VE', 'RIF', 'DIAG-B')]';
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal, rfc)
+               values (900032, 'DIAG EMP AJENA', 'ACTIVO', 'VE', 'RIF', 'DIAG-X')]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M15-M20: no se pudieron crear las empresas de prueba: ' || v_error, 1, 300));
+    end;
+
+    -- Los cinco usuarios de prueba.
+    begin
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900030, 'DIAG_M2', 'diag.m2@synpex.local', :h, 'ACTIVO',
+                      (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 900030, 'N')]'
+            using v_hash;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900031, 'DIAG_M1', 'diag.m1@synpex.local', :h, 'ACTIVO',
+                      (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 900030, 'N')]'
+            using v_hash;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900032, 'DIAG_M3', 'diag.m3@synpex.local', :h, 'ACTIVO',
+                      (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 900032, 'N')]'
+            using v_hash;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900033, 'DIAG_M0', 'diag.m0@synpex.local', :h, 'PENDIENTE',
+                      (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), null, 'N')]'
+            using v_hash;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900034, 'DIAG_ADM', 'diag.adm@synpex.local', :h, 'ACTIVO',
+                      (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 900030, 'N')]'
+            using v_hash;
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M15-M20: no se pudieron crear los usuarios de prueba: ' || v_error, 1, 300));
+    end;
+
+    -- Las asociaciones.
+    begin
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900030, 900030)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900030, 900031)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900031, 900030)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900032, 900032)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900034, 900030)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900034, 900031)]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M15-M20: no se pudieron crear las asociaciones de prueba: ' || v_error, 1, 300));
+    end;
+
+    -- Los clientes de prueba (uno por empresa).
+    begin
+        execute immediate
+            q'[insert into clientes (id_empresa, rif, razon_social, estado, cod_pais)
+               values (900030, 'DIAG-CLI-A', 'DIAG CLIENTE A', 'ACTIVO', 'VE')]';
+        execute immediate
+            q'[insert into clientes (id_empresa, rif, razon_social, estado, cod_pais)
+               values (900031, 'DIAG-CLI-B', 'DIAG CLIENTE B', 'ACTIVO', 'VE')]';
+        execute immediate
+            q'[insert into clientes (id_empresa, rif, razon_social, estado, cod_pais)
+               values (900032, 'DIAG-CLI-X', 'DIAG CLIENTE AJENO', 'ACTIVO', 'VE')]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M15-M20: no se pudieron crear los clientes de prueba: ' || v_error, 1, 300));
+    end;
+
+    -- Un presupuesto y una factura por cada empresa de prueba.
+    begin
+        execute immediate
+            q'[insert into presupuestos (id_presupuesto, id_empresa, folio, id_cliente, fecha_emision, estado,
+                                       subtotal, impuesto_iva, total, cod_moneda, tipo_cambio, creado_por)
+               values (900030, 900030, 900030,
+                      (select min(id_cliente) from clientes where id_empresa = 900030),
+                      sysdate, 'PENDIENTE', 100, 16, 116, 'USD', 1, 'DIAG_M2')]';
+        execute immediate
+            q'[insert into presupuestos (id_presupuesto, id_empresa, folio, id_cliente, fecha_emision, estado,
+                                       subtotal, impuesto_iva, total, cod_moneda, tipo_cambio, creado_por)
+               values (900031, 900031, 900031,
+                      (select min(id_cliente) from clientes where id_empresa = 900031),
+                      sysdate, 'PENDIENTE', 200, 32, 232, 'USD', 1, 'DIAG_M2')]';
+        execute immediate
+            q'[insert into presupuestos (id_presupuesto, id_empresa, folio, id_cliente, fecha_emision, estado,
+                                       subtotal, impuesto_iva, total, cod_moneda, tipo_cambio, creado_por)
+               values (900032, 900032, 900032,
+                      (select min(id_cliente) from clientes where id_empresa = 900032),
+                      sysdate, 'PENDIENTE', 300, 48, 348, 'USD', 1, 'DIAG_M3')]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M15-M20: no se pudieron crear los presupuestos de prueba: ' || v_error, 1, 300));
+    end;
+
+    begin
+        execute immediate
+            q'[insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura,
+                                     cod_moneda, tipo_cambio, fecha_emision, subtotal,
+                                     monto_impuesto, monto_total, estado, creado_por)
+               values (900030, 900030,
+                      (select min(id_cliente) from clientes where id_empresa = 900030),
+                      'FAC', 'F-900030', 'USD', 1, sysdate, 100, 16, 116, 'PENDIENTE', 'DIAG_M2')]';
+        execute immediate
+            q'[insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura,
+                                     cod_moneda, tipo_cambio, fecha_emision, subtotal,
+                                     monto_impuesto, monto_total, estado, creado_por)
+               values (900031, 900031,
+                      (select min(id_cliente) from clientes where id_empresa = 900031),
+                      'FAC', 'F-900031', 'USD', 1, sysdate, 200, 32, 232, 'PENDIENTE', 'DIAG_M2')]';
+        execute immediate
+            q'[insert into facturas (id_factura, id_empresa, id_cliente, tipo_documento, folio_factura,
+                                     cod_moneda, tipo_cambio, fecha_emision, subtotal,
+                                     monto_impuesto, monto_total, estado, creado_por)
+               values (900032, 900032,
+                      (select min(id_cliente) from clientes where id_empresa = 900032),
+                      'FAC', 'F-900032', 'USD', 1, sysdate, 300, 48, 348, 'PENDIENTE', 'DIAG_M3')]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M15-M20: no se pudieron crear las facturas de prueba: ' || v_error, 1, 300));
+    end;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M15, M16 y M20: se ejecutan los TEXTOS GUARDADOS de las listas de las
+-- paginas 5 y 8 con cada usuario de prueba y se cuentan los documentos que
+-- devuelven.
+--
+-- Se mide el texto guardado (APEX_APPLICATION_PAGE_REGIONS.REGION_SOURCE), no
+-- una copia a mano: si el texto guardado y el que se espera divergen, el
+-- caso tiene que fallar. La consulta se envuelve en 'select count(*) from
+-- (...)' para poder contarla, y se ejecuta con ':APP_USER' sustituido.
+--
+--   DIAG_M2 (2 empresas: 900030 y 900031)  -> 2 presupuestos y 2 facturas
+--                                              (los de 900030 y 900031), y
+--                                              NINGUNO de 900032.
+--   DIAG_M1 (1 empresa: 900030)             -> 1 presupuesto y 1 factura.
+--   DIAG_M3 (1 empresa: 900032)             -> 1 presupuesto y 1 factura.
+-- -----------------------------------------------------------------------------
+declare
+    v_error  varchar2(300);
+    v_cuenta number;
+    v_ids    varchar2(2000);
+
+    -- Cuenta las filas que devuelve el texto guardado de la region indicada
+    -- para un usuario dado. Si la consulta no se puede ejecutar, devuelve -1
+    -- para que el caso lo reporte como fallo.
+    function contar_region(p_region_id number, p_usuario varchar2) return number is
+        v_txt varchar2(32000);
+        v_cnt number;
+    begin
+        select region_source into v_txt
+          from apex_application_page_regions
+         where application_id = 100 and region_id = p_region_id;
+        v_txt := rtrim(rtrim(v_txt), ';');
+        execute immediate 'select count(*) from (' || v_txt || ')' into v_cnt using p_usuario;
+        return v_cnt;
+    exception
+        when others then
+            return -1;
+    end contar_region;
+
+    -- Devuelve la lista de ids de presupuesto que devuelve el texto
+    -- guardado. Se usa para el M20 (comprobar que no sale el documento de la
+    -- empresa ajena).
+    function ids_region(p_region_id number, p_usuario varchar2) return varchar2 is
+        v_txt varchar2(32000);
+        v_lis varchar2(2000);
+    begin
+        select region_source into v_txt
+          from apex_application_page_regions
+         where application_id = 100 and region_id = p_region_id;
+        v_txt := rtrim(rtrim(v_txt), ';');
+        execute immediate
+            q'[select listagg(to_char(t.id_presupuesto), '|') within group (order by t.id_presupuesto)
+                  from (]'
+            || v_txt
+            || q'[) t]'
+            into v_lis using p_usuario;
+        return v_lis;
+    exception
+        when others then
+            return 'ERROR';
+    end ids_region;
+begin
+    -- M15: el usuario de DOS empresas ve las DOS.
+    v_cuenta := contar_region(11950647600514906, 'DIAG_M2');   -- Lista de Presupuestos
+    if v_cuenta <> 2 then
+        insert into tmp_multi_fallas
+        values (substrb('M15: «Lista de Presupuestos» devolvio ' || v_cuenta
+                        || ' presupuestos para un usuario de 2 empresas (se esperaba 2)', 1, 300));
+    end if;
+    v_cuenta := contar_region(29963866505095675, 'DIAG_M2');   -- Lista de Facturas
+    if v_cuenta <> 2 then
+        insert into tmp_multi_fallas
+        values (substrb('M15: «Lista de Facturas» devolvio ' || v_cuenta
+                        || ' facturas para un usuario de 2 empresas (se esperaba 2)', 1, 300));
+    end if;
+
+    -- M16: el usuario de UNA empresa ve SOLO la suya (regresion).
+    v_cuenta := contar_region(11950647600514906, 'DIAG_M1');
+    if v_cuenta <> 1 then
+        insert into tmp_multi_fallas
+        values (substrb('M16: «Lista de Presupuestos» devolvio ' || v_cuenta
+                        || ' presupuestos para un usuario de 1 empresa (se esperaba 1)', 1, 300));
+    end if;
+    v_cuenta := contar_region(29963866505095675, 'DIAG_M1');
+    if v_cuenta <> 1 then
+        insert into tmp_multi_fallas
+        values (substrb('M16: «Lista de Facturas» devolvio ' || v_cuenta
+                        || ' facturas para un usuario de 1 empresa (se esperaba 1)', 1, 300));
+    end if;
+
+    -- El usuario de la empresa ajena ve SOLO la suya (no la de los demas).
+    v_cuenta := contar_region(11950647600514906, 'DIAG_M3');
+    if v_cuenta <> 1 then
+        insert into tmp_multi_fallas
+        values (substrb('M20: «Lista de Presupuestos» devolvio ' || v_cuenta
+                        || ' presupuestos para un usuario de la empresa ajena (se esperaba 1)', 1, 300));
+    end if;
+    v_cuenta := contar_region(29963866505095675, 'DIAG_M3');
+    if v_cuenta <> 1 then
+        insert into tmp_multi_fallas
+        values (substrb('M20: «Lista de Facturas» devolvio ' || v_cuenta
+                        || ' facturas para un usuario de la empresa ajena (se esperaba 1)', 1, 300));
+    end if;
+
+    -- M20: el documento de la empresa ajena (presupuesto 900032) NO puede
+    -- salir en la lista del usuario de dos empresas.
+    v_ids := ids_region(11950647600514906, 'DIAG_M2');
+    if v_ids like '%900032%' then
+        insert into tmp_multi_fallas
+        values (substrb('M20: «Lista de Presupuestos» devolvio el presupuesto de la empresa ajena: '
+                        || v_ids, 1, 300));
+    end if;
+
+    -- Y la lista de DIAG_M1 (una sola empresa) tampoco puede traerlo.
+    v_ids := ids_region(11950647600514906, 'DIAG_M1');
+    if v_ids like '%900032%' then
+        insert into tmp_multi_fallas
+        values (substrb('M20: «Lista de Presupuestos» de un usuario de 1 empresa devolvio '
+                        || 'el presupuesto de la empresa ajena: ' || v_ids, 1, 300));
+    end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M17: los defectos de empresa de P13_ID_EMPRESA, P7_ID_EMPRESA y
+-- P17_ID_EMPRESA.
+--
+-- Se mide el TEXTO GUARDADO (APEX_APPLICATION_PAGE_ITEMS.ITEM_DEFAULT), no una
+-- copia a mano. Con un usuario de DOS empresas el defecto tiene que devolver
+-- NULL (la app NO elige por su cuenta: review focus 4 del plan) y con uno de
+-- UNA empresa tiene que devolver esa empresa.
+--
+-- OJO: el defecto es un 'select min(...) ... having count(*) = 1'. Con dos
+-- empresas NO DEVOLVE FILAS, asi que un 'execute immediate ... into' da
+-- NO_DATA_FOUND: eso es exactamente el resultado que se espera para el caso
+-- de dos empresas (el defecto es NULL), y lo que NO se espera para el caso de
+-- una empresa.
+-- -----------------------------------------------------------------------------
+declare
+    v_error  varchar2(300);
+    v_codigo number;
+
+    procedure medir_defecto(p_item varchar2, p_usuario varchar2,
+                            p_esperado number, p_caso varchar2) is
+        v_txt varchar2(32000);
+        v_val number;
+        v_cod number;
+    begin
+        v_txt := null;
+        select item_default into v_txt
+          from apex_application_page_items
+         where application_id = 100 and item_name = p_item;
+        v_cod := 0;
+        v_val := null;
+        begin
+            execute immediate v_txt into v_val using p_usuario;
+        exception
+            when no_data_found then
+                v_cod := 1;   -- sin filas: el defecto es NULL
+            when others then
+                v_cod := sqlcode;
+        end;
+        if p_esperado is null then
+            -- Se espera NULL: con dos empresas el defecto no devuelve filas.
+            if v_cod = 0 and v_val is not null then
+                insert into tmp_multi_fallas
+                values (substrb(p_caso || ': el defecto de ' || p_item
+                                || ' devolvio ' || v_val
+                                || ' para un usuario de 2 empresas (se esperaba NULL)', 1, 300));
+            elsif v_cod not in (0, 1) then
+                insert into tmp_multi_fallas
+                values (substrb(p_caso || ': el defecto de ' || p_item
+                                || ' dio el codigo ' || v_cod, 1, 300));
+            end if;
+        else
+            if v_cod <> 0 then
+                insert into tmp_multi_fallas
+                values (substrb(p_caso || ': el defecto de ' || p_item
+                                || ' dio el codigo ' || v_cod
+                                || ' para un usuario de 1 empresa (se esperaba 900030)', 1, 300));
+            elsif v_val <> p_esperado then
+                insert into tmp_multi_fallas
+                values (substrb(p_caso || ': el defecto de ' || p_item
+                                || ' devolvio ' || v_val
+                                || ' para un usuario de 1 empresa (se esperaba ' || p_esperado || ')', 1, 300));
+            end if;
+        end if;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb(p_caso || ': error al medir el defecto de ' || p_item
+                            || ': ' || v_error, 1, 300));
+    end medir_defecto;
+begin
+    -- Con DOS empresas: NULL en los tres.
+    medir_defecto('P13_ID_EMPRESA', 'DIAG_M2', null, 'M17');
+    medir_defecto('P7_ID_EMPRESA',  'DIAG_M2', null, 'M17');
+    medir_defecto('P17_ID_EMPRESA', 'DIAG_M2', null, 'M17');
+
+    -- Con UNA empresa: esa empresa (900030).
+    medir_defecto('P13_ID_EMPRESA', 'DIAG_M1', 900030, 'M17');
+    medir_defecto('P7_ID_EMPRESA',  'DIAG_M1', 900030, 'M17');
+    medir_defecto('P17_ID_EMPRESA', 'DIAG_M1', 900030, 'M17');
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M18: la tarjeta «Errores registrados hoy» del Panel (region «Indicadores»)
+-- NO cuenta los errores de una empresa ajena.
+--
+-- Se mide el TEXTO GUARDADO de la region «Indicadores»
+-- (APEX_APPLICATION_PAGE_REGIONS.REGION_SOURCE, region 23600000000000010) con
+-- ':P13_ID_EMPRESA' sustituido por la empresa ELEGIDA y ':APP_USER' por el
+-- usuario de prueba.
+--
+-- Se siembran DOS errores en SYN_ERROR_LOG: uno a nombre de DIAG_M3 (que
+-- pertenece a la empresa ajena 900032) y otro a nombre de DIAG_M2 (que
+-- pertenece a las empresas 900030 y 900031). Con ':P13_ID_EMPRESA' = 900030
+-- (la empresa ELEGIDA, que el usuario de dos empresas tiene) la tarjeta NO
+-- puede contar el error de DIAG_M3.
+--
+-- Los errores se siembran con la FECHA de hoy (la tarjeta filtra por
+-- 'TRUNC(e.fecha) = TRUNC(SYSDATE)') y se borran al final.
+-- -----------------------------------------------------------------------------
+declare
+    v_error  varchar2(300);
+    v_texto  clob;
+    v_cuenta number;
+
+    -- Cuenta los errores que ve la tarjeta «Errores registrados hoy» con una
+    -- empresa y un usuario dados.
+    function contar_errores(p_texto clob, p_empresa number, p_usuario varchar2) return number is
+        v_txt  varchar2(32000);
+        v_cnt  number;
+        v_cod  number;
+    begin
+        v_txt := dbms_lob.substr(p_texto, 32000, 1);
+        v_txt := replace(v_txt, ':P13_ID_EMPRESA', to_char(p_empresa));
+        v_txt := replace(v_txt, ':APP_USER', '''' || p_usuario || '''');
+        v_txt := replace(v_txt, ':P13_MONEDA', '''USD''');
+        v_cod := 0;
+        v_cnt := -1;
+        begin
+            -- Se cuenta el NUMERO DE ERRORES, no las FILAS: la tarjeta sale
+            -- siempre (con 0 errores), asi que contar filas daria 1 siempre.
+            -- El numero va en el prefijo del 'valor'.
+            execute immediate
+                'select nvl(to_number(regexp_substr(valor, ''^[0-9]+'')), 0)
+                  from (' || v_txt || ')
+                 where titulo = ''Errores registrados hoy'''
+                into v_cnt;
+        exception
+            when others then
+                v_cod := sqlcode;
+        end;
+        if v_cod <> 0 then
+            return -1;
+        end if;
+        return v_cnt;
+    end contar_errores;
+begin
+    -- Siembra de los dos errores de prueba.
+    begin
+        execute immediate
+            q'[insert into syn_error_log (fecha, usuario, mensaje, id_pagina)
+               values (sysdate, 'DIAG_M3', 'DIAG error empresa ajena', 13)]';
+        execute immediate
+            q'[insert into syn_error_log (fecha, usuario, mensaje, id_pagina)
+               values (sysdate, 'DIAG_M2', 'DIAG error empresa propia', 13)]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M18: no se pudieron sembrar los errores de prueba: ' || v_error, 1, 300));
+    end;
+
+    begin
+        select region_source into v_texto
+          from apex_application_page_regions
+         where application_id = 100 and region_id = 23600000000000010;
+
+        -- MEDIDO (2026-11-10): la tarjeta NO usa ':APP_USER'. Su filtro es
+        -- 'EXISTS (... UPPER(u.username) = UPPER(e.usuario) AND
+        -- ue.id_empresa = :P13_ID_EMPRESA)', o sea cuenta los errores cuyo
+        -- AUTOR tiene un par con la empresa ELEGIDA.
+        --
+        -- Con la empresa ELEGIDA (900030): solo el error de DIAG_M2 (1). El
+        -- error de DIAG_M3 (empresa 900032) NO se cuela.
+        v_cuenta := contar_errores(v_texto, 900030, 'DIAG_M2');
+        if v_cuenta <> 1 then
+            insert into tmp_multi_fallas
+            values (substrb('M18: la tarjeta conto ' || v_cuenta
+                            || ' errores para la empresa 900030 (se esperaba 1: solo el propio)', 1, 300));
+        end if;
+
+        -- Con la OTRA empresa (900032): solo el error de DIAG_M3 (1). El error
+        -- de DIAG_M2 NO se cuela: asi se comprueba que el filtro por empresa
+        -- funciona en los dos sentidos.
+        v_cuenta := contar_errores(v_texto, 900032, 'DIAG_M2');
+        if v_cuenta <> 1 then
+            insert into tmp_multi_fallas
+            values (substrb('M18: la tarjeta conto ' || v_cuenta
+                            || ' errores para la empresa 900032 (se esperaba 1: solo el de esa empresa)', 1, 300));
+        end if;
+
+        -- Y con una empresa que NADIE tiene (999999): 0 errores.
+        v_cuenta := contar_errores(v_texto, 999999, 'DIAG_M2');
+        if v_cuenta <> 0 then
+            insert into tmp_multi_fallas
+            values (substrb('M18: la tarjeta conto ' || v_cuenta
+                            || ' errores para una empresa que nadie tiene (se esperaba 0)', 1, 300));
+        end if;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M18: error al medir: ' || v_error, 1, 300));
+    end;
+
+    -- Limpieza de los errores de prueba.
+    begin
+        execute immediate q'[delete from syn_error_log where usuario in ('DIAG_M2','DIAG_M3','DIAG_M1','DIAG_ADM')]';
+        commit;
+    exception when others then null;
+    end;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M19: la lista de usuarios de la pagina 3.
+--
+-- Se mide el TEXTO GUARDADO de la region «Gestion de Usuarios»
+-- (APEX_APPLICATION_PAGE_REGIONS.REGION_SOURCE, region 10564941614198500) con
+-- ':APP_USER' sustituido por el administrador A (DIAG_ADM).
+--
+-- DIAG_ADM tiene pares en 900030 y 900031.
+--   DIAG_M2  -> par en 900030 y 900031  -> COMPARTE empresa: se INCLUYE.
+--   DIAG_M1  -> par en 900030          -> COMPARTE empresa: se INCLUYE.
+--   DIAG_M3  -> par en 900032          -> NO COMPARTE:          se EXCLUYE.
+--   DIAG_M0  -> PENDIENTE, sin empresas-> se INCLUYE (para que el
+--                 administrador lo pueda activar).
+--   DIAG_ADM -> el propio administrador  -> se INCLUYE.
+-- -----------------------------------------------------------------------------
+declare
+    v_error  varchar2(300);
+    v_texto  clob;
+    v_lista  varchar2(2000);
+    v_codigo number;
+begin
+    begin
+        select region_source into v_texto
+          from apex_application_page_regions
+         where application_id = 100 and region_id = 10564941614198500;
+
+        -- La lista de usuarios de DIAG_ADM: tiene que salir en la columna
+        -- USERNAME. La consulta se envuelve y se cuenta por nombre.
+        v_codigo := 0;
+        begin
+            execute immediate
+                q'[select listagg(t.username, '|') within group (order by t.username)
+                      from (]'
+                || v_texto
+                || q'[) t]'
+                into v_lista using 'DIAG_ADM';
+        exception
+            when others then
+                v_codigo := sqlcode;
+                v_lista := null;
+        end;
+
+        if v_codigo <> 0 then
+            insert into tmp_multi_fallas
+            values (substrb('M19: no se pudo ejecutar la lista de usuarios: codigo ' || v_codigo, 1, 300));
+        else
+            -- INCLUYE a quien comparte empresa.
+            if v_lista not like '%DIAG_M2%' then
+                insert into tmp_multi_fallas
+                values (substrb('M19: la lista NO incluye a DIAG_M2 (comparte empresa): ' || v_lista, 1, 300));
+            end if;
+            if v_lista not like '%DIAG_M1%' then
+                insert into tmp_multi_fallas
+                values (substrb('M19: la lista NO incluye a DIAG_M1 (comparte empresa): ' || v_lista, 1, 300));
+            end if;
+            -- EXCLUYE a quien no comparte empresa.
+            if v_lista like '%DIAG_M3%' then
+                insert into tmp_multi_fallas
+                values (substrb('M19: la lista INCLUYE a DIAG_M3 (empresa ajena): ' || v_lista, 1, 300));
+            end if;
+            -- INCLUYE al PENDIENTE sin empresas.
+            if v_lista not like '%DIAG_M0%' then
+                insert into tmp_multi_fallas
+                values (substrb('M19: la lista NO incluye a DIAG_M0 (PENDIENTE sin empresas): ' || v_lista, 1, 300));
+            end if;
+            -- El propio administrador tambien sale.
+            if v_lista not like '%DIAG_ADM%' then
+                insert into tmp_multi_fallas
+                values (substrb('M19: la lista NO incluye al propio administrador: ' || v_lista, 1, 300));
+            end if;
+        end if;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M19: error al medir: ' || v_error, 1, 300));
+    end;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- Limpieza de los datos de prueba de M15 a M20. Va SIEMPRE, aunque la
+-- medicion haya fallado: los datos de prueba no se quedan en la base.
+-- -----------------------------------------------------------------------------
+begin
+    begin
+        execute immediate q'[delete from syn_error_log where usuario in ('DIAG_M2','DIAG_M3','DIAG_M1','DIAG_ADM')]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa
+                            where usuario_id in (900030, 900031, 900032, 900033, 900034)
+                               or id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id in (900030, 900031, 900032, 900033, 900034)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from gastos_real where id_presupuesto in
+                            (select id_presupuesto from presupuestos where id_empresa in (900030, 900031, 900032))]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from facturas where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from presupuestos where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from clientes where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa in (900030, 900031, 900032)]';
+        commit;
+    exception when others then null;
+    end;
+end;
+/
 declare
     v_fallas number;
     v_lista  varchar2(2000);

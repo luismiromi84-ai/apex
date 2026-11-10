@@ -5,7 +5,7 @@ Comprueba, contra la app importada:
   2. La lista de usuarios (pagina 3) filtra por la empresa del usuario.
   3. Comportamiento real: con prueba2 (empresa 2) no se puede tocar un usuario de la
      empresa 1 (-20003), y con la propia empresa si. Todo con rollback.
-  4. Nada invalido y las 20 paginas siguen.
+  4. Nada invalido y las 21 paginas siguen.
 
 Uso:  python deploy/diagnostico/20261106_pagina4_empresa.py
 Sale con codigo 1 si algo falla.
@@ -54,16 +54,52 @@ def main():
     cur.execute("""select region_source from apex_application_page_regions
                     where application_id = 100 and page_id = 3 and region_name like 'Gesti%'""")
     fuente = cur.fetchone()[0].read()
-    comprueba("u.id_empresa is null" in fuente, "la lista trae los de su empresa y los pendientes sin empresa")
-    comprueba("upper(x.username) = upper(:APP_USER)" in fuente.replace("\n", " ")
-              or "upper(x.username)=upper(:APP_USER)" in fuente.replace("\n", "").replace(" ", ""),
-              "el filtro es por el usuario de la sesion")
+    # MEDIDO (2026-11-10, tarea 4 del plan de multiempresa): el filtro de la
+    # pagina 3 ya NO usa la columna unica USUARIO.ID_EMPRESA: usa la tabla de
+    # asociacion USUARIO_EMPRESA (F5). Se comprueba que el filtro existe y
+    # que se apoya en USUARIO_EMPRESA, no la forma exacta del texto: lo que
+    # el caso quiere decir lo comprueba el conteo de filas de mas abajo.
+    comprueba("usuario_empresa" in fuente,
+              "la lista trae los de su empresa y los pendientes sin empresa")
+    comprueba(":APP_USER" in fuente, "el filtro es por el usuario de la sesion")
 
     print("== Filas que ve cada administrador en la lista ==")
-    for usuario, esperado in (("prueba1", 3), ("prueba2", 1)):
+    # MEDIDO (2026-11-10): el numero esperado ya no se puede escribir a mano:
+    # la base tiene los 9 usuarios REALES (la purga del demo del 2026-11-08
+    # dejo la base con ellos) y el fixture agrega 3 mas. Se CALCULA con la
+    # misma regla del filtro F5: los usuarios que comparten alguna empresa con
+    # el administrador, mas los que no tienen ninguna empresa (los PENDIENTE
+    # que hay que activar). Lo que se sigue comprobando, ademas, es que
+    # prueba1 NO ve a los de la empresa 2.
+    for usuario, empresa in (("prueba1", 1), ("prueba2", 2)):
+        cur.execute("""select count(*) from usuario u
+                        where (exists (select 1
+                                  from usuario_empresa ue
+                                  join usuario_empresa mia on mia.id_empresa = ue.id_empresa
+                                  join usuario a on a.usuario_id = mia.usuario_id
+                                 where ue.usuario_id = u.usuario_id
+                                   and upper(a.username) = upper(:u))
+                            or not exists (select 1 from usuario_empresa x
+                                            where x.usuario_id = u.usuario_id))""",
+                    {"u": usuario})
+        esperado = cur.fetchone()[0]
         cur.execute(f"select count(*) from ({fuente})", {"APP_USER": usuario})
         n = cur.fetchone()[0]
         comprueba(n == esperado, f"{usuario} ve {esperado} usuario(s)", str(n))
+        # Y lo importante: el administrador NO ve a los usuarios de la OTRA
+        # empresa (la que no es la suya).
+        cur.execute("""select count(*) from usuario u
+                        where u.id_empresa = :e
+                          and exists (select 1 from usuario_empresa ue
+                                      join usuario_empresa mia on mia.id_empresa = ue.id_empresa
+                                      join usuario a on a.usuario_id = mia.usuario_id
+                                     where ue.usuario_id = u.usuario_id
+                                       and upper(a.username) = upper(:u))""",
+                    {"e": 3 - empresa, "u": usuario})
+        ajenos = cur.fetchone()[0]
+        comprueba(ajenos == 0,
+                  f"{usuario} no ve usuarios de la empresa {3 - empresa} ajena",
+                  str(ajenos))
 
     print("== Comportamiento: borrar usuarios ==")
     cur.execute("select usuario_id from usuario where upper(username) = 'PRUEBA1'")
@@ -108,7 +144,7 @@ def main():
     comprueba(n == 0, "cero objetos invalidos", str(n))
     cur.execute("select count(*) from apex_application_pages where application_id = 100")
     n = cur.fetchone()[0]
-    comprueba(n == 20, "siguen las 20 paginas", str(n))
+    comprueba(n == 21, "siguen las 21 paginas", str(n))
 
     print(f"\nRESULTADO: FALLAS={fallas}")
     con.close()

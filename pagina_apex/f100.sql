@@ -8541,9 +8541,13 @@ wwv_flow_imp_page.create_page_plug(
 '  from usuario u',
 '  left join empresas e on e.id_empresa = u.id_empresa',
 '  left join syn_roles r on r.id_rol = u.rol_id',
-' where u.id_empresa = (select x.id_empresa from usuario x',
-'                        where upper(x.username) = upper(:APP_USER))',
-'    or u.id_empresa is null',
+' where (exists (select 1',
+'                   from usuario_empresa ue',
+'                   join usuario_empresa mia on mia.id_empresa = ue.id_empresa',
+'                   join usuario a on a.usuario_id = mia.usuario_id',
+'                  where ue.usuario_id = u.usuario_id',
+'                    and upper(a.username) = upper(:APP_USER))',
+'         or not exists (select 1 from usuario_empresa x where x.usuario_id = u.usuario_id))',
 ' order by lower(u.username)'))
 ,p_include_rowid_column=>false
 ,p_plug_source_type=>'NATIVE_IR'
@@ -9620,9 +9624,7 @@ wwv_flow_imp_page.create_page_plug(
 '  FROM presupuestos_det d',
 ' WHERE d.id_presupuesto = :P5_ID_PRESUPUESTO',
 '   AND d.id_presupuesto IN (SELECT p.id_presupuesto FROM presupuestos p',
-'                            WHERE p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                                                    WHERE upper(u.username) = upper(:APP_USER)',
-'                                                      AND u.estado IN (''ACTIVO'', ''A'', ''1'')))',
+'                            WHERE p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))',
 ' ORDER BY d.id_detalle'))
 ,p_ajax_items_to_submit=>'P5_ID_PRESUPUESTO'
 ,p_plug_source_type=>'NATIVE_IR'
@@ -9801,9 +9803,7 @@ wwv_flow_imp_page.create_page_plug(
 '    ON c.id_cliente = p.id_cliente',
 '   AND c.id_empresa = p.id_empresa',
 ' WHERE p.estado NOT IN (''CANCELADO'')',
-'   AND p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                        WHERE upper(u.username) = upper(:APP_USER)',
-'                          AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' ORDER BY p.id_presupuesto DESC'))
 ,p_plug_source_type=>'NATIVE_IR'
 );
@@ -10695,8 +10695,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS_DET'
-,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'''
-||', ''A'', ''1'')))'
+,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
@@ -10866,9 +10865,7 @@ wwv_flow_imp_page.create_page_item(
 '                 WHERE e.id_empresa = NVL((SELECT p.id_empresa',
 '                                             FROM presupuestos p',
 '                                            WHERE p.id_presupuesto = fn_clean_num(:P6_ID_PRESUPUESTO)),',
-'                                         (SELECT MIN(u.id_empresa)',
-'                                            FROM usuario u',
-'                                           WHERE upper(u.username) = upper(:APP_USER)))) AS cod_pais',
+'                                         (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) AS cod_pais',
 '          FROM dual) pais',
 ' WHERE i.estado = ''ACTIVO''',
 '   -- Solo los impuestos del pais de la empresa del presupuesto y, si todavia',
@@ -11454,7 +11451,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS'
-,p_query_where=>'id_presupuesto = :P7_ID_PRESUPUESTO and id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1''))'
+,p_query_where=>'id_presupuesto = :P7_ID_PRESUPUESTO and id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
@@ -11540,13 +11537,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_source_plug_id=>wwv_flow_imp.id(14428894790287801)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select nvl(max(p.moneda_local), ''USD'')',
-'  from usuario u',
-'  join empresas e on e.id_empresa = u.id_empresa',
-'  left join paises p on p.cod_pais = e.cod_pais',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select nvl(max(moneda_local), ''USD'') from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Moneda'
 ,p_source=>'COD_MONEDA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -11758,11 +11749,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_source_plug_id=>wwv_flow_imp.id(14428894790287801)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select min(u.id_empresa)',
-'  from usuario u',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select min(id_empresa)',
+'   from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Empresa'
 ,p_source=>'ID_EMPRESA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -12373,9 +12361,7 @@ wwv_flow_imp_page.create_page_plug(
 '    SELECT 1 FROM facturas f ',
 '    WHERE f.id_factura = :P8_ID_FACTURAS ',
 '      AND f.estado NOT IN (''CANCELADA'', ''ANULADA'', ''TIMBRADA'')',
-'      AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                            WHERE upper(u.username) = upper(:APP_USER)',
-'                              AND u.estado IN (''ACTIVO'', ''A'', ''1'')))'))
+'      AND f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'))
 ,p_include_rowid_column=>false
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P8_ID_FACTURAS'
@@ -12687,9 +12673,7 @@ wwv_flow_imp_page.create_page_plug(
 '    ON f.id_cliente = c.id_cliente ',
 '   AND f.id_empresa = c.id_empresa',
 ' WHERE f.estado NOT IN (''CANCELADA'', ''ANULADA'', ''TIMBRADA'')',
-'   AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                        WHERE upper(u.username) = upper(:APP_USER)',
-'                          AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' ORDER BY f.id_factura DESC;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_prn_content_disposition=>'ATTACHMENT'
@@ -13397,7 +13381,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'FACTURAS'
-,p_query_where=>'id_factura = :P9_ID_FACTURA and id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1''))'
+,p_query_where=>'id_factura = :P9_ID_FACTURA and id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
@@ -13729,7 +13713,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>unistr('N\00B0 de Control')
 ,p_source=>'NRO_CONTROL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(u.id_empresa) from usuario u where upper(u.username) = upper(:APP_USER)))) = ''VE'''
+,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) = ''VE'''
 ,p_display_when_type=>'SQL_EXPRESSION'
 ,p_cSize=>30
 ,p_cMaxlength=>30
@@ -13931,9 +13915,7 @@ wwv_flow_imp_page.create_page_item(
 '  JOIN clientes c ON f.id_cliente = c.id_cliente AND c.id_empresa = f.id_empresa',
 ' WHERE f.tipo_documento = ''FAC''',
 '   AND f.estado <> ''ANULADA''',
-'   AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                         WHERE upper(u.username) = upper(:APP_USER)',
-'                           AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 '   AND ( :P9_ID_EMPRESA IS NULL OR f.id_empresa = fn_clean_num(:P9_ID_EMPRESA) )',
 '   AND ( :P9_ID_FACTURA IS NULL OR f.id_factura <> fn_clean_num(:P9_ID_FACTURA) )',
 ' ORDER BY f.id_factura DESC'))
@@ -13995,9 +13977,7 @@ wwv_flow_imp_page.create_page_item(
 '  FROM presupuestos p',
 '  JOIN clientes c ON p.id_cliente = c.id_cliente AND c.id_empresa = p.id_empresa',
 ' WHERE p.estado IN (''ENVIADO'', ''APROBADO'')',
-'   AND p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                         WHERE upper(u.username) = upper(:APP_USER)',
-'                           AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 '   AND ( :P9_ID_EMPRESA IS NULL OR p.id_empresa = fn_clean_num(:P9_ID_EMPRESA) )',
 ' ORDER BY p.id_presupuesto DESC'))
 ,p_lov_display_null=>'YES'
@@ -14242,7 +14222,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>unistr('UUID Fiscal (CFDI)')
 ,p_source=>'UUID_FISCAL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(u.id_empresa) from usuario u where upper(u.username) = upper(:APP_USER)))) = ''MX'''
+,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) = ''MX'''
 ,p_display_when_type=>'SQL_EXPRESSION'
 ,p_cSize=>30
 ,p_cMaxlength=>50
@@ -15379,7 +15359,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'FACTURAS_DET'
-,p_query_where=>'id_detalle = :P10_ID_DETALLE and exists (select 1 from facturas f where f.id_factura = id_factura and f.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_query_where=>'id_detalle = :P10_ID_DETALLE and exists (select 1 from facturas f where f.id_factura = id_factura and f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
@@ -15636,9 +15616,7 @@ wwv_flow_imp_page.create_page_item(
 '                 WHERE e.id_empresa = NVL((SELECT f.id_empresa',
 '                                             FROM facturas f',
 '                                            WHERE f.id_factura = fn_clean_num(:P10_ID_FACTURA)),',
-'                                         (SELECT MIN(u.id_empresa)',
-'                                            FROM usuario u',
-'                                           WHERE upper(u.username) = upper(:APP_USER)))) AS cod_pais',
+'                                         (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) AS cod_pais',
 '          FROM dual) pais',
 ' WHERE i.estado = ''ACTIVO''',
 '   AND NVL(i.es_retencion, ''N'') = ''N''',
@@ -16681,7 +16659,7 @@ wwv_flow_imp_page.create_page_plug(
 '       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
 '         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos'' AS valor',
 '  FROM facturas',
-' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+' WHERE id_empresa = :P13_ID_EMPRESA',
 '   AND cod_moneda = :P13_MONEDA',
 '   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
 '   AND estado <> ''ANULADA''',
@@ -16691,7 +16669,7 @@ wwv_flow_imp_page.create_page_plug(
 '       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
 '         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos''',
 '  FROM facturas',
-' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+' WHERE id_empresa = :P13_ID_EMPRESA',
 '   AND cod_moneda = :P13_MONEDA',
 '   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
 '   AND estado IN (''PENDIENTE'',''TIMBRADA'')',
@@ -16699,7 +16677,7 @@ wwv_flow_imp_page.create_page_plug(
 'SELECT ''Presupuestos en juego'',',
 '       TO_CHAR(COUNT(*)) || ''  -  '' || :P13_MONEDA',
 '  FROM presupuestos',
-' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+' WHERE id_empresa = :P13_ID_EMPRESA',
 '   AND cod_moneda = :P13_MONEDA',
 '   AND estado IN (''PENDIENTE'',''ENVIADO'',''APROBADO'')',
 'UNION ALL',
@@ -16722,8 +16700,9 @@ wwv_flow_imp_page.create_page_plug(
 '  FROM syn_error_log e',
 ' WHERE TRUNC(e.fecha) = TRUNC(SYSDATE)',
 '   AND EXISTS (SELECT 1 FROM usuario u',
-'                WHERE UPPER(u.username) = UPPER(e.usuario)',
-'                  AND u.id_empresa = NVL(:P13_ID_EMPRESA, 1))'))
+'                JOIN usuario_empresa ue ON ue.usuario_id = u.usuario_id',
+'               WHERE UPPER(u.username) = UPPER(e.usuario)',
+'                 AND ue.id_empresa = :P13_ID_EMPRESA)'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_CARDS'
 ,p_plug_query_num_rows_type=>'SCROLL'
@@ -17108,11 +17087,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select min(u.id_empresa)',
-'  from usuario u',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select min(id_empresa)',
+'   from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Empresa'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
@@ -17131,13 +17107,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select nvl(max(p.moneda_local), ''USD'')',
-'  from usuario u',
-'  join empresas e on e.id_empresa = u.id_empresa',
-'  left join paises p on p.cod_pais = e.cod_pais',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select nvl(max(moneda_local), ''USD'') from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Moneda'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
@@ -17877,9 +17847,7 @@ wwv_flow_imp_page.create_page_plug(
 '  join presupuestos p',
 '    on p.id_presupuesto = g.id_presupuesto',
 ' where g.id_presupuesto = :P16_ID_PRESUPUESTO',
-'   and p.id_empresa in (select u.id_empresa from usuario u',
-'                         where upper(u.username) = upper(:APP_USER)',
-'                           and u.estado in (''ACTIVO'', ''A'', ''1''))',
+'   and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' order by g.fecha_gasto desc, g.id_gasto desc'))
 ,p_plug_source_type=>'NATIVE_IR'
 );
@@ -17982,7 +17950,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'GASTO_REAL'
-,p_query_where=>'id_gasto = :P16_ID_GASTO and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_query_where=>'id_gasto = :P16_ID_GASTO and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
@@ -18016,9 +17984,7 @@ wwv_flow_imp_page.create_page_item(
 '       p.id_presupuesto as return_value',
 '  from presupuestos p',
 '  join clientes c on c.id_cliente = p.id_cliente and c.id_empresa = p.id_empresa',
-' where p.id_empresa in (select u.id_empresa from usuario u',
-'                         where upper(u.username) = upper(:APP_USER)',
-'                           and u.estado in (''ACTIVO'', ''A'', ''1''))',
+' where p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' order by p.id_presupuesto desc'))
 ,p_cSize=>30
 ,p_field_template=>1610598304472262251
@@ -18174,9 +18140,7 @@ wwv_flow_imp_page.create_page_process(
 '         where id_gasto = fn_clean_num(:P16_ID_GASTO)',
 '           and exists (select 1 from presupuestos p',
 '                        where p.id_presupuesto = gasto_real.id_presupuesto',
-'                          and p.id_empresa in (select u.id_empresa from usuario u',
-'                                                where upper(u.username) = upper(:APP_USER)',
-'                                                  and u.estado in (''ACTIVO'', ''A'', ''1'')));',
+'                          and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)));',
 '    exception',
 '        when no_data_found then return;',
 '    end;',
@@ -18432,11 +18396,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000088)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select min(u.id_empresa)',
-'  from usuario u',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select min(id_empresa)',
+'   from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Empresa'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -18937,12 +18898,9 @@ wwv_flow_imp_page.create_page_process(
 'begin',
 '    if :P18_ID_EMPRESA is null then',
 '        begin',
-'            select min(u.id_empresa)',
+'            select min(id_empresa)',
 '              into v_empresa',
-'              from usuario u',
-'             where upper(u.username) = upper(:APP_USER)',
-'               and u.estado in (''ACTIVO'', ''A'', ''1'')',
-'             having count(*) = 1;',
+'               from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1;',
 '        exception',
 '            when no_data_found then v_empresa := null;',
 '        end;',

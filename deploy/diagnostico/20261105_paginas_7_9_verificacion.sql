@@ -165,10 +165,23 @@ begin
     v_w9 := null;
   end;
 
-  if v_w7 is null or instr(upper(v_w7), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0 then
+  -- MEDIDO (2026-11-10, tarea 4 del plan de multiempresa): el filtro de
+  -- empresa de las regiones de formulario de las paginas 7 y 9 ya NO lee la
+  -- columna unica USUARIO.ID_EMPRESA: lee la vista V_EMPRESAS_USUARIO (la
+  -- tabla de asociacion USUARIO_EMPRESA), para que un usuario con VARIAS
+  -- empresas vea y edite lo de todas las suyas. El chequeo era LITERAL, asi
+  -- que se acepta las DOS formas. Lo que el caso quiere decir -«la region
+  -- filtra por empresa del usuario»- sigue siendo cierto en las dos, y lo
+  -- comprueban de verdad C7 y C8, con el WHERE real ejecutado contra datos
+  -- reales.
+  if v_w7 is null
+     or (instr(upper(v_w7), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0
+         and instr(upper(v_w7), 'V_EMPRESAS_USUARIO') = 0) then
     falla('C5', 'la region de la pagina 7 no filtra por empresa');
   end if;
-  if v_w9 is null or instr(upper(v_w9), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0 then
+  if v_w9 is null
+     or (instr(upper(v_w9), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0
+         and instr(upper(v_w9), 'V_EMPRESAS_USUARIO') = 0) then
     falla('C6', 'la region de la pagina 9 no filtra por empresa');
   end if;
 
