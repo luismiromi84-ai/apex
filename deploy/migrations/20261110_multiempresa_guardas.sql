@@ -206,3 +206,18 @@ exception
             'Tu cuenta no tiene empresa o rol asignado. Contacta al administrador.');
 end prc_post_login;
 /
+
+-- -----------------------------------------------------------------------------
+-- Cierre obligatorio: recompilar el esquema entero.
+--
+-- Sin esto, una migracion que toca USUARIO (o recompila un body) puede dejar
+-- objetos INVALID en silencio (incidente medido el 2026-11-05: 8 objetos
+-- INVALID, incluido FN_AUTENTICAR_USUARIO, que tumbaba el login).
+-- dbms_utility.compile_schema deja los objetos VALID y hace que el fallo
+-- aparece al ejecutar la migracion, no meses despues.
+-- -----------------------------------------------------------------------------
+begin
+    dbms_utility.compile_schema('WKSP_SYPEXWS', false);
+end;
+/
+
