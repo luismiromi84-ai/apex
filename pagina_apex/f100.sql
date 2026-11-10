@@ -19118,6 +19118,90 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_display_sequence=>20
 ,p_plug_item_display_point=>'ABOVE'
 );
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000396)
+,p_plug_name=>'Mis empresas'
+,p_static_id=>'admin-mis-empresas'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>15
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+ 'select id_empresa,',
+ '       nombre_empresa,',
+ '       cod_pais,',
+ '       rfc,',
+ '       estado',
+ '  from v_empresas_usuario',
+ ' where upper(username) = upper(:APP_USER)',
+ ' order by nombre_empresa'))
+,p_plug_source_type=>'NATIVE_IR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000000397)
+,p_no_data_found_message=>unistr('Todav\00EDa no tienes empresas asociadas. Crea una con el bot\00F3n \00ABNueva empresa\00BB.')
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_show_notify=>'Y'
+,p_internal_uid=>43000000000000397
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000398)
+,p_db_column_name=>'ID_EMPRESA'
+,p_display_order=>10
+,p_is_primary_key=>'Y'
+,p_column_identifier=>'A'
+,p_column_label=>'Editar'
+,p_column_link=>'f?p=&APP_ID.:19:&SESSION.::&DEBUG.:19:P19_ID_EMPRESA:#ID_EMPRESA#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Editar'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000399)
+,p_db_column_name=>'NOMBRE_EMPRESA'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Empresa'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000400)
+,p_db_column_name=>'COD_PAIS'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>unistr('Pa\00EDs')
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000401)
+,p_db_column_name=>'RFC'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'RIF / RFC'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000402)
+,p_db_column_name=>'ESTADO'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Estado'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000382)
 ,p_name=>'P19_ID_EMPRESA'
@@ -19261,11 +19345,29 @@ wwv_flow_imp_page.create_page_process(
 '        return;',
 '    end if;',
 '',
-'    -- Un usuario pertenece a una empresa; si tuviera varias, se ve la primera.',
-'    select min(u.id_empresa) into v_emp',
-'      from usuario u',
-'     where upper(u.username) = upper(:APP_USER)',
-'       and u.estado in (''ACTIVO'', ''A'', ''1'');',
+'    -- Si el listado trajo una empresa (P19_ID_EMPRESA), se carga esa.',
+'    -- Si no, se carga la empresa del usuario, pero SOLO si tiene una sola:',
+'    -- con varias hay que elegir, y no se elige por la cuenta.',
+'    v_emp := fn_clean_num(:P19_ID_EMPRESA);',
+'    if v_emp is null or v_emp = 0 then',
+'        -- OJO: el HAVING deja la consulta SIN filas si el usuario tiene',
+'        -- mas de una empresa, y eso es NO_DATA_FOUND (ORA-01403). Con',
+'        -- manejador, el formulario se abre en blanco y se elige desde el',
+'        -- listado.',
+'        begin',
+'            select min(id_empresa) into v_emp',
+'              from v_empresas_usuario',
+'             where upper(username) = upper(:APP_USER)',
+'             having count(*) = 1;',
+'        exception',
+'            when no_data_found then v_emp := null;',
+'        end;',
+'    end if;',
+'',
+'    if v_emp is null then return; end if;',
+'',
+'    -- La empresa tiene que ser una de las del usuario.',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then return; end if;',
 '',
 '    begin',
 '        select * into v_fila from empresas where id_empresa = v_emp;',
@@ -19342,7 +19444,19 @@ wwv_flow_imp_page.create_page_process(
 '',
 '        apex_util.set_session_state(''P19_ID_EMPRESA'', to_char(v_emp));',
 '        apex_util.set_session_state(''P19_MODO'', ''LIBRE'');',
-unistr('        apex_application.g_print_success_message := ''Empresa creada con el id '' || to_char(v_emp) || ''. Asignala a un usuario en Gesti\00F3n de Usuarios.'';'),
+'',
+'        -- La empresa nueva se asocia al usuario que la crea: sin el par en',
+'        -- USUARIO_EMPRESA no veria su propia empresa en el listado.',
+'        insert into usuario_empresa (usuario_id, id_empresa)',
+'        select u.usuario_id, v_emp',
+'          from usuario u',
+'         where upper(u.username) = upper(:APP_USER)',
+'           and u.estado in (''ACTIVO'', ''A'', ''1'')',
+'           and not exists (select 1 from usuario_empresa ue',
+'                            where ue.usuario_id = u.usuario_id',
+'                              and ue.id_empresa = v_emp);',
+'',
+unistr('        apex_application.g_print_success_message := ''Empresa creada con el id '' || to_char(v_emp) || '' y asociada a tu usuario.'';'),
 '    else',
 '        if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
 '            raise_application_error(-20003, ''Solo puede editar su propia empresa.'');',

@@ -96,6 +96,22 @@
 --       ve las dos; uno con un solo par ve una.
 --   M13 El mismo texto con un usuario que tiene un par en una empresa ACTIVA
 --       y otro en una INACTIVA: solo sale la ACTIVA.
+--
+-- Casos (tarea 6: pagina 19 «Administracion»):
+--   M14 (AMPLIADO por la tarea 6) Ninguna consulta guardada por APEX —regiones,
+--       items, LOVs y TAMBIEN los procesos de pagina, ya incluida la pagina 19—
+--       sigue leyendo la columna unica USUARIO.ID_EMPRESA.
+--   M23 El listado «Mis empresas» de la pagina 19, ejecutado con el TEXTO
+--       GUARDADO por APEX, devuelve las empresas del usuario: 2 para un usuario
+--       con 2 pares, 1 para uno con 1 par y 0 para uno sin pares.
+--   M24 El proceso real «Guardar empresa» (ALTA) inserta la empresa Y deja el
+--       par en USUARIO_EMPRESA para el usuario que la creo.
+--   M25 El proceso real «Guardar empresa» (EDICION) con una empresa que no es
+--       del usuario lanza -20003 y no cambia nada.
+--   M26 El proceso real «Carga la empresa del usuario» (BEFORE_HEADER) NO
+--       lanza NO_DATA_FOUND (ORA-01403) cuando el usuario tiene DOS empresas:
+--       el 'having count(*) = 1' deja la consulta sin filas y, sin manejador,
+--       tumbaba la pagina entera (medido el 2026-11-10).
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS;
@@ -734,6 +750,628 @@ begin
     end;
     begin
         execute immediate q'[delete from empresas where id_empresa = 900010]';
+        commit;
+    exception when others then null;
+    end;
+end;
+/
+
+-- =============================================================================
+-- Tarea 6: pagina 19 «Administracion» — listado de empresas del usuario y
+-- alta que asocia al creador.
+--
+--   M14 Ampliado: NINGUNA consulta guardada por APEX (regiones, items, LOVs,
+--       condiciones y TAMBIEN los procesos de pagina) sigue leyendo
+--       'id_empresa from usuario' ni 'min(u.id_empresa)'. La tarea 4 lo
+--       excluia a proposito (el proceso «Carga la empresa del usuario» de la
+--       pagina 19); aqui ya se incluye, porque la tarea 6 lo cambia.
+--   M23 Un usuario con DOS empresas ve las DOS en el listado de la pagina 19:
+--       se ejecuta el TEXTO GUARDADO de la region «Mis empresas» con
+--       ':APP_USER' sustituido.
+--   M24 El proceso real «Guardar empresa» (alta) inserta la empresa Y deja el
+--       par en USUARIO_EMPRESA para ':APP_USER'.
+--   M25 Editar una empresa que NO es del usuario lanza -20003 y no cambia nada.
+--
+-- PATRON (R3 del ledger): los procesos de pagina no se pueden ejecutar desde
+-- el runner, asi que se COPIAN desde APEX_APPLICATION_PAGE_PROC (el texto
+-- guardado, no una copia a mano) y se ejecutan con los binds sustituidos.
+-- El cuerpo se envuelve en un bloque anonimo y se ejecuta con
+-- 'execute immediate', de modo que un 'raise_application_error' se puede
+-- capturar con el manejador y comprobar el codigo (-20003).
+--
+-- El proceso «Guardar empresa» llama a fn_tiene_rol, que mira
+-- apex_application.g_user: en una sesion SQL esa variable es nula y la
+-- funcion devuelve FALSE. Por eso, ANTES de ejecutarlo, se fija
+-- apex_application.g_user con el usuario de prueba (en el MISMO bloque, porque
+-- el valor no sobrevive a un cambio de sentencia).
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- M14 (ampliado): ninguna consulta guardada por APEX sigue leyendo la columna
+-- unica USUARIO.ID_EMPRESA.
+--
+-- Se buscan dos patrones, en minusculas, en:
+--   - apex_application_page_regions.region_source   (la consulta de las regiones)
+--   - apex_application_page_items                   (LOV, defecto y condiciones)
+--   - apex_application_lovs.list_of_values_query    (las LOVs de la app)
+--   - apex_application_page_proc.process_source     (los procesos de pagina)
+-- Los patrones son:
+--   'id_empresa from usuario'   -> el subselect viejo (F1)
+--   'min(u.id_empresa)'          -> el defecto viejo (F2/F4)
+--
+-- El caso avisa POR CATEGORIA y con el numero de sitios que quedan, no uno por
+-- sitio: si no, una fila por cada uno de los 27 sitios pendientes taparia el
+-- mensaje 'RESULTADO: FALLAS=n' (limitado a 2000 bytes) y no dejaria ver los
+-- demas casos de la verificacion.
+-- -----------------------------------------------------------------------------
+declare
+    v_error   varchar2(300);
+    v_detalle clob;
+    v_n       number;
+    v_lista   varchar2(1000);
+
+    procedure avisar(p_categoria varchar2, p_n number, p_lista varchar2) is
+    begin
+        if p_n > 0 then
+            insert into tmp_multi_fallas
+            values (substrb('M14: ' || p_categoria || ': ' || p_n
+                            || ' sitio(s) siguen leyendo la columna unica del usuario'
+                            || ' -> ' || coalesce(p_lista, ''), 1, 300));
+        end if;
+    end;
+begin
+    -- 1) Regiones: la consulta guardada.
+    v_n := 0; v_lista := null;
+    for r in (select region_id, region_name, region_source
+                from apex_application_page_regions
+               where application_id = 100
+                 and region_source is not null) loop
+        v_detalle := lower(r.region_source);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || r.region_name || '(reg ' || r.region_id || ') ', 1, 200);
+        end if;
+    end loop;
+    avisar('regiones', v_n, v_lista);
+
+    -- 2) Los items: LOV, defecto y condiciones.
+    v_n := 0; v_lista := null;
+    for it in (select item_id, item_name, lov_definition, item_default,
+                      condition_expression1, condition_expression2,
+                      read_only_condition_exp1, read_only_condition_exp2
+                 from apex_application_page_items
+                where application_id = 100) loop
+        v_detalle := lower(coalesce(it.lov_definition, '') || ' '
+                           || coalesce(it.item_default, '') || ' '
+                           || coalesce(it.condition_expression1, '') || ' '
+                           || coalesce(it.condition_expression2, '') || ' '
+                           || coalesce(it.read_only_condition_exp1, '') || ' '
+                           || coalesce(it.read_only_condition_exp2, ''));
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || it.item_name || '(item ' || it.item_id || ') ', 1, 200);
+        end if;
+    end loop;
+    avisar('items', v_n, v_lista);
+
+    -- 3) Las LOVs de la app.
+    v_n := 0; v_lista := null;
+    for l in (select list_of_values_name, list_of_values_query
+                from apex_application_lovs
+               where application_id = 100
+                 and list_of_values_query is not null) loop
+        v_detalle := lower(l.list_of_values_query);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || l.list_of_values_name || ' ', 1, 200);
+        end if;
+    end loop;
+    avisar('LOVs', v_n, v_lista);
+
+    -- 4) Los procesos de pagina (INCLUIDA la pagina 19, que antes se excluia).
+    v_n := 0; v_lista := null;
+    for pr in (select page_id, process_id, process_name, process_source
+                  from apex_application_page_proc
+                 where application_id = 100
+                   and process_source is not null) loop
+        v_detalle := lower(pr.process_source);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            v_lista := substrb(coalesce(v_lista, '') || 'p' || pr.page_id || ':' || pr.process_name || ' ', 1, 200);
+        end if;
+    end loop;
+    avisar('procesos de pagina', v_n, v_lista);
+exception
+    when others then
+        v_error := sqlerrm;
+        insert into tmp_multi_fallas
+        values (substrb('M14: error al medir: ' || v_error, 1, 300));
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- Siembra de los datos de prueba de M23, M24 y M25 (rango reservado 900000+).
+--
+--   DIAG_P19_A  -> pares en las empresas 1 y 3 (las dos del usuario)
+--   DIAG_P19_B  -> par solo en la empresa 1 (regresion: una sola empresa)
+--   La empresa 900020 es de prueba y se borra al final.
+--
+-- Se usa SQL dinamico porque USUARIO_EMPRESA y EMPRESAS podrian no existir en
+-- una base donde la tarea 1 todavia no se aplico.
+-- -----------------------------------------------------------------------------
+declare
+    v_error varchar2(300);
+    v_hash  varchar2(512);
+begin
+    select sypex_hash_password('Diag#2026') into v_hash from dual;
+
+    -- Barrido de restos de una corrida anterior.
+    begin
+        execute immediate q'[delete from usuario_empresa
+                            where usuario_id in (900020, 900021)
+                               or id_empresa = 900020]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id in (900020, 900021)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900020]';
+        commit;
+    exception when others then null;
+    end;
+
+    begin
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    id_empresa, rol_id, debe_cambiar_clave)
+               values (900020, 'DIAG_P19_A', 'diag.p19.a@synpex.local', :h, 'ACTIVO',
+                       1, (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 'N')]'
+            using v_hash;
+        commit;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    id_empresa, rol_id, debe_cambiar_clave)
+               values (900021, 'DIAG_P19_B', 'diag.p19.b@synpex.local', :h, 'ACTIVO',
+                       1, (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 'N')]'
+            using v_hash;
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M23-M25: no se pudieron crear los usuarios de prueba: ' || v_error, 1, 300));
+    end;
+
+    begin
+        execute immediate
+            q'[insert into usuario_empresa (usuario_id, id_empresa)
+               select 900020, 1 from dual
+               union all select 900020, 3 from dual
+               union all select 900021, 1 from dual]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M23-M25: no se pudieron crear las asociaciones de prueba: ' || v_error, 1, 300));
+    end;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M23: el listado de la pagina 19 (region «Mis empresas») devuelve TODAS las
+-- empresas del usuario.
+--
+-- Se mide el TEXTO GUARDADO por APEX (APEX_APPLICATION_PAGE_REGIONS.
+-- REGION_SOURCE de la region con STATIC_ID 'admin-mis-empresas'), no una copia
+-- escrita a mano: si el texto guardado y el que se espera divergen, el caso
+-- tiene que fallar. La consulta se envuelve en 'select count(*) from (...)'
+-- para poder contarla, y se ejecuta con ':APP_USER' sustituido por el usuario
+-- de prueba.
+-- -----------------------------------------------------------------------------
+declare
+    v_error   varchar2(300);
+    v_texto   clob;
+    v_cuenta  number;
+    v_estado  number;
+begin
+    select count(*) into v_estado
+      from apex_application_page_regions
+     where application_id = 100 and page_id = 19
+       and region_static_id = 'admin-mis-empresas';
+
+    if v_estado = 0 then
+        insert into tmp_multi_fallas
+        values (substrb('M23: la pagina 19 no tiene la region «Mis empresas» (static_id admin-mis-empresas)', 1, 300));
+    else
+        begin
+            select region_source into v_texto
+              from apex_application_page_regions
+             where application_id = 100 and page_id = 19
+               and region_static_id = 'admin-mis-empresas';
+
+            -- Con dos empresas: el listado tiene que devolver las DOS.
+            execute immediate 'select count(*) from (' || v_texto || ')' into v_cuenta using 'DIAG_P19_A';
+            if v_cuenta <> 2 then
+                insert into tmp_multi_fallas
+                values (substrb('M23: el listado devolvio ' || v_cuenta
+                                || ' empresas para un usuario con 2 pares (se esperaba 2)', 1, 300));
+            end if;
+
+            -- Con una empresa: el listado tiene que devolver UNA (regresion).
+            execute immediate 'select count(*) from (' || v_texto || ')' into v_cuenta using 'DIAG_P19_B';
+            if v_cuenta <> 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M23: el listado devolvio ' || v_cuenta
+                                || ' empresas para un usuario con 1 par (se esperaba 1)', 1, 300));
+            end if;
+
+            -- Y el listado no puede traer empresas de otro usuario: con un
+            -- usuario sin pares tiene que devolver 0.
+            execute immediate 'select count(*) from (' || v_texto || ')' into v_cuenta using 'DIAG_P19_SIN_PAR';
+            if v_cuenta <> 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M23: el listado devolvio ' || v_cuenta
+                                || ' empresas para un usuario sin pares (se esperaba 0)', 1, 300));
+            end if;
+        exception
+            when others then
+                v_error := sqlerrm;
+                insert into tmp_multi_fallas
+                values (substrb('M23: no se pudo ejecutar el texto guardado de la region: ' || v_error, 1, 300));
+        end;
+    end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M24 y M25: el proceso real «Guardar empresa» (página 19).
+--
+-- El cuerpo sale de APEX_APPLICATION_PAGE_PROC (texto guardado) y se ejecuta
+-- con los binds sustituidos por literales. Se ejecuta con 'execute immediate'
+-- para poder capturar el 'raise_application_error' del manejador y leer su
+-- codigo (M25 espera -20003).
+--
+-- MEDIDO en esta base (2026-11-10): 'apex_util.set_session_state' y
+-- 'apex_application.g_print_success_message' funcionan fuera de una peticion
+-- de APEX, asi que el cuerpo guardado se puede ejecutar TAL CUAL, sin
+-- mutilarlo. Lo unico que hay que preparar es apex_application.g_user, que
+-- fn_tiene_rol lee para la guarda de rol: se fija en el MISMO bloque (el valor
+-- no sobrevive al cambio de sentencia) y se restaura al final.
+--
+-- M24 (ALTA): el proceso tiene que insertar la empresa Y el par en
+--      USUARIO_EMPRESA para ':APP_USER'.
+-- M25 (EDICION AJENA): con un id de empresa que no es del usuario, el proceso
+--      tiene que lanzar -20003 y NO cambiar nada.
+--
+-- El alta real de M24 se hace con un nombre propio de la verificacion
+-- ('DIAG P19 ALTA') y la empresa se borra al final. La transaccion NO se
+-- revierte (el proceso inserta y hace falta comprobarlo), asi que la limpieza
+-- va en un bloque aparte.
+-- -----------------------------------------------------------------------------
+declare
+    v_error  varchar2(300);
+    v_cuerpo clob;
+    v_codigo number;
+    v_cuenta number;
+    v_id     number;
+    v_nombre constant varchar2(50) := 'DIAG P19 ALTA';
+    v_g_user_anterior varchar2(100);
+begin
+    -- El cuerpo guardado del proceso «Guardar empresa».
+    begin
+        select process_source into v_cuerpo
+          from apex_application_page_proc
+         where application_id = 100 and page_id = 19
+           and process_name = 'Guardar empresa';
+    exception
+        when no_data_found then
+            insert into tmp_multi_fallas
+            values (substrb('M24-M25: no se encuentra el proceso «Guardar empresa» de la pagina 19', 1, 300));
+            v_cuerpo := null;
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M24-M25: error al leer el proceso: ' || v_error, 1, 300));
+            v_cuerpo := null;
+    end;
+
+    if v_cuerpo is not null then
+        v_g_user_anterior := apex_application.g_user;
+
+        -- ---------------------------------------------------------------------
+        -- M24: ALTA. Binds sustituidos por literales.
+        --
+        -- ':P19_ID_EMPRESA' -> 'null' (sin id = alta).
+        -- OJO: el orden de los 'replace' importa: si se reemplazara 'null'
+        -- despues, se romperia el 'null' del alta. Por eso el id se
+        -- sustituye por un texto que no aparece en el cuerpo ('<ID_VACIO>')
+        -- y se cambia a 'null' al final.
+        -- ---------------------------------------------------------------------
+        declare
+            v_c clob := v_cuerpo;
+        begin
+            v_c := replace(v_c, ':P19_ID_EMPRESA', '<ID_VACIO>');
+            v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', '''' || v_nombre || '''');
+            v_c := replace(v_c, ':P19_COD_PAIS', '''VE''');
+            v_c := replace(v_c, ':P19_TIPO_IDENT_FISCAL', '''RIF''');
+            v_c := replace(v_c, ':P19_RFC', '''DIAG-P19-RIF''');
+            v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
+            v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
+            v_c := replace(v_c, '<ID_VACIO>', 'null');
+
+            apex_application.g_user := 'DIAG_P19_A';
+            begin
+                execute immediate 'begin ' || v_c || ' end;';
+                v_codigo := 0;
+            exception
+                when others then
+                    v_codigo := sqlcode;
+            end;
+        end;
+
+        if v_codigo <> 0 then
+            insert into tmp_multi_fallas
+            values (substrb('M24: el alta devolvio el codigo ' || v_codigo || ' (se esperaba 0)', 1, 300));
+        end if;
+
+        -- La empresa se creo y el par quedo en USUARIO_EMPRESA.
+        select count(*) into v_cuenta
+          from empresas e
+         where e.nombre_empresa = v_nombre;
+        if v_cuenta <> 1 then
+            insert into tmp_multi_fallas
+            values (substrb('M24: el alta no dejo una empresa llamada «' || v_nombre
+                            || '» (se esperaba 1, se hallaron ' || v_cuenta || ')', 1, 300));
+        else
+            select min(id_empresa) into v_id
+              from empresas where nombre_empresa = v_nombre;
+            select count(*) into v_cuenta
+              from usuario_empresa ue
+              join usuario u on u.usuario_id = ue.usuario_id
+             where upper(u.username) = 'DIAG_P19_A'
+               and ue.id_empresa = v_id;
+            if v_cuenta <> 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M24: el alta no dejo el par en USUARIO_EMPRESA para el creador'
+                                || ' (se esperaba 1, se hallaron ' || v_cuenta || ')', 1, 300));
+            end if;
+        end if;
+
+        -- ---------------------------------------------------------------------
+        -- M25: EDICION de una empresa AJENA.
+        --
+        -- Se usa la empresa 5 (una 'dotech' real, que NO es de DIAG_P19_A):
+        -- se guarda su nombre y su RIF, se intenta editarla y se comprueba que
+        -- el proceso da -20003 y que los datos NO cambian.
+        -- ---------------------------------------------------------------------
+        declare
+            v_ajena number := 5;
+            v_nombre_ajeno varchar2(150);
+            v_rfc_ajeno varchar2(20);
+            v_c clob := v_cuerpo;
+            v_cod number;
+        begin
+            select nombre_empresa, rfc into v_nombre_ajeno, v_rfc_ajeno
+              from empresas where id_empresa = v_ajena;
+
+            v_c := replace(v_c, ':P19_ID_EMPRESA', to_char(v_ajena));
+            v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', '''DIAG P19 AJENA''');
+            v_c := replace(v_c, ':P19_COD_PAIS', '''VE''');
+            v_c := replace(v_c, ':P19_TIPO_IDENT_FISCAL', '''RIF''');
+            v_c := replace(v_c, ':P19_RFC', '''DIAG-ALTERADO''');
+            v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
+            v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
+
+            apex_application.g_user := 'DIAG_P19_A';
+            begin
+                execute immediate 'begin ' || v_c || ' end;';
+                v_cod := 0;
+            exception
+                when others then
+                    v_cod := sqlcode;
+            end;
+
+            if v_cod <> -20003 then
+                insert into tmp_multi_fallas
+                values (substrb('M25: editar una empresa ajena no dio -20003 (dio el codigo '
+                                || v_cod || ')', 1, 300));
+            end if;
+
+            select count(*) into v_cuenta
+              from empresas
+             where id_empresa = v_ajena
+               and nombre_empresa = v_nombre_ajeno
+               and rfc = v_rfc_ajeno;
+            if v_cuenta <> 1 then
+                insert into tmp_multi_fallas
+                values (substrb('M25: la edicion de una empresa ajena CAMBIO sus datos'
+                                || ' (se esperaba que quedaran intactos)', 1, 300));
+            end if;
+        end;
+
+        apex_application.g_user := v_g_user_anterior;
+    end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M26 (regresion, anadida el 2026-11-10 tras un fallo real): el proceso
+-- «Carga la empresa del usuario» (BEFORE_HEADER de la pagina 19) NO puede
+-- lanzar NO_DATA_FOUND cuando el usuario tiene DOS empresas.
+--
+-- MEDIDO: el 'select min(id_empresa) ... having count(*) = 1' deja la consulta
+-- SIN filas si el usuario tiene mas de una empresa, y eso es NO_DATA_FOUND
+-- (ORA-01403). Sin manejador, el proceso tumbaba la pagina entera con la
+-- pantalla de error «No se ha encontrado ningun dato».
+--
+-- Se ejecuta el CUERPO GUARDADO del proceso (no una copia) con los binds
+-- sustituidos:
+--   - ':P19_ID_EMPRESA' -> 'null'   (el listado no trajo ninguna)
+--   - ':APP_USER'      -> 'DIAG_P19_A' (el usuario de DOS empresas)
+-- Se espera codigo 0 (sin excepcion). Con una empresa y con el id del listado
+-- tambien tiene que salir sin excepcion.
+-- -----------------------------------------------------------------------------
+declare
+    v_error  varchar2(300);
+    v_cuerpo clob;
+    v_codigo number;
+    v_g_user_anterior varchar2(100);
+begin
+    begin
+        select process_source into v_cuerpo
+          from apex_application_page_proc
+         where application_id = 100 and page_id = 19
+           and process_name = 'Carga la empresa del usuario';
+    exception
+        when no_data_found then
+            insert into tmp_multi_fallas
+            values (substrb('M26: no se encuentra el proceso «Carga la empresa del usuario» de la pagina 19', 1, 300));
+            v_cuerpo := null;
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M26: error al leer el proceso: ' || v_error, 1, 300));
+            v_cuerpo := null;
+    end;
+
+    if v_cuerpo is not null then
+        v_g_user_anterior := apex_application.g_user;
+        apex_application.g_user := 'DIAG_P19_A';
+
+        -- (a) Usuario de DOS empresas y sin id en el listado: no debe fallar.
+        -- OJO: hay que sustituir TODOS los binds del cuerpo. Si se queda uno
+        -- sin sustituir, la ejecucion falla con ORA-01008 ('value for bind
+        -- variable placeholder 1 was not provided'), que no es un fallo del
+        -- proceso pero tapa el resultado real.
+        declare
+            v_c clob := v_cuerpo;
+        begin
+            v_c := replace(v_c, ':P19_ID_EMPRESA', 'null');
+            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
+            v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
+            begin
+                execute immediate 'begin ' || v_c || ' end;';
+                v_codigo := 0;
+            exception
+                when others then
+                    v_codigo := sqlcode;
+            end;
+            if v_codigo <> 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M26: la carga con un usuario de 2 empresas dio el codigo '
+                                || v_codigo || ' (se esperaba 0; NO_DATA_FOUND = -1 '
+                                || 'tumba la pagina con ORA-01403)', 1, 300));
+            end if;
+        end;
+
+        -- (b) Usuario de UNA empresa: tampoco debe fallar.
+        declare
+            v_c clob := v_cuerpo;
+        begin
+            v_c := replace(v_c, ':P19_ID_EMPRESA', 'null');
+            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
+            v_c := replace(v_c, ':APP_USER', '''DIAG_P19_B''');
+            begin
+                execute immediate 'begin ' || v_c || ' end;';
+                v_codigo := 0;
+            exception
+                when others then
+                    v_codigo := sqlcode;
+            end;
+            if v_codigo <> 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M26: la carga con un usuario de 1 empresa dio el codigo '
+                                || v_codigo || ' (se esperaba 0)', 1, 300));
+            end if;
+        end;
+
+        -- (c) Con el id que trae el listado: tampoco debe fallar.
+        declare
+            v_c clob := v_cuerpo;
+        begin
+            v_c := replace(v_c, ':P19_ID_EMPRESA', '3');
+            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
+            v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
+            begin
+                execute immediate 'begin ' || v_c || ' end;';
+                v_codigo := 0;
+            exception
+                when others then
+                    v_codigo := sqlcode;
+            end;
+            if v_codigo <> 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M26: la carga con el id del listado dio el codigo '
+                                || v_codigo || ' (se esperaba 0)', 1, 300));
+            end if;
+        end;
+
+        -- (d) Con el id de una empresa AJENA: la carga no debe fallar (el
+        -- proceso sale con 'return' y no carga nada), pero tampoco puede
+        -- dejar la empresa ajena en el formulario.
+        declare
+            v_c clob := v_cuerpo;
+        begin
+            v_c := replace(v_c, ':P19_ID_EMPRESA', '5');
+            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
+            v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
+            begin
+                execute immediate 'begin ' || v_c || ' end;';
+                v_codigo := 0;
+            exception
+                when others then
+                    v_codigo := sqlcode;
+            end;
+            if v_codigo <> 0 then
+                insert into tmp_multi_fallas
+                values (substrb('M26: la carga con una empresa ajena dio el codigo '
+                                || v_codigo || ' (se esperaba 0)', 1, 300));
+            end if;
+        end;
+
+        apex_application.g_user := v_g_user_anterior;
+    end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- Limpieza de los datos de prueba de M23, M24 y M25. Va SIEMPRE, aunque la
+-- medicion haya fallado: los datos de prueba no se quedan en la base.
+-- -----------------------------------------------------------------------------
+begin
+    begin
+        execute immediate q'[delete from usuario_empresa
+                            where usuario_id in (900020, 900021)
+                               or id_empresa in (900020,
+                                   (select min(id_empresa) from empresas where nombre_empresa = 'DIAG P19 ALTA'))]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where nombre_empresa = 'DIAG P19 ALTA']';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario_empresa where usuario_id in (900020, 900021)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id in (900020, 900021)]';
         commit;
     exception when others then null;
     end;
