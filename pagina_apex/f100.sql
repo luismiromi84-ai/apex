@@ -19059,6 +19059,217 @@ wwv_flow_imp_page.create_page_da_action(
 end;
 /
 
+prompt --application/pages/page_00019
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>19
+,p_name=>unistr('Administraci\00F3n')
+,p_alias=>'ADMINISTRACION'
+,p_step_title=>unistr('Administraci\00F3n')
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Mismo estandar de cabecera que la 3, 5 y 8 */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
+'    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
+'    border: none !important;',
+'    box-shadow: none !important;',
+'    padding: 16px 20px !important;',
+'}',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title {',
+'    color: #ffffff !important;',
+'    font-weight: 600 !important;',
+'    font-size: 1.25rem !important;',
+'}'))
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000380)
+,p_plug_name=>unistr('Administraci\00F3n')
+,p_static_id=>'admin-selector'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_source_type=>'NATIVE_DISPLAY_SELECTOR'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000381)
+,p_plug_name=>'Empresa'
+,p_static_id=>'admin-empresa'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000382)
+,p_name=>'P19_ID_EMPRESA'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000383)
+,p_name=>'P19_NOMBRE_EMPRESA'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>unistr('Nombre de la empresa')
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>40
+,p_cMaxlength=>150
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000384)
+,p_name=>'P19_COD_PAIS'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>unistr('Pa\00EDs')
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select ''Venezuela (VE)'' as display_value, ''VE'' as return_value from dual',
+'union all',
+'select ''Mxico (MX)'', ''MX'' from dual'))
+,p_lov_display_null=>'NO'
+,p_cSize=>20
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000385)
+,p_name=>'P19_TIPO_IDENT_FISCAL'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>unistr('Tipo de identificaci\00F3n fiscal')
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:RIF;RIF,RFC;RFC'
+,p_lov_display_null=>'NO'
+,p_cSize=>10
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000386)
+,p_name=>'P19_RFC'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>'RIF / RFC'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>25
+,p_cMaxlength=>20
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000387)
+,p_name=>'P19_ESTADO'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>'Estado'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:ACTIVO;ACTIVO,INACTIVO;INACTIVO'
+,p_lov_display_null=>'NO'
+,p_cSize=>15
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000388)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_button_name=>'BTN_GUARDAR_EMPRESA'
+,p_static_id=>'btn-guardar-empresa'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar empresa'
+,p_icon_css_classes=>'fa-floppy-o'
+,p_button_condition_type=>'EXPRESSION'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000389)
+,p_process_sequence=>9
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Carga la empresa del usuario'
+,p_static_id=>'carga-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number;',
+'    v_fila empresas%rowtype;',
+'begin',
+'    -- Un usuario pertenece a una empresa; si tuviera varias, se ve la primera.',
+'    select min(u.id_empresa) into v_emp',
+'      from usuario u',
+'     where upper(u.username) = upper(:APP_USER)',
+'       and u.estado in (''ACTIVO'', ''A'', ''1'');',
+'',
+'    begin',
+'        select * into v_fila from empresas where id_empresa = v_emp;',
+'    exception',
+'        when no_data_found then return;',
+'    end;',
+'',
+'    apex_util.set_session_state(''P19_ID_EMPRESA'', to_char(v_fila.id_empresa));',
+'    apex_util.set_session_state(''P19_NOMBRE_EMPRESA'', v_fila.nombre_empresa);',
+'    apex_util.set_session_state(''P19_COD_PAIS'', v_fila.cod_pais);',
+'    apex_util.set_session_state(''P19_TIPO_IDENT_FISCAL'', nvl(v_fila.tipo_ident_fiscal, ''RIF''));',
+'    apex_util.set_session_state(''P19_RFC'', v_fila.rfc);',
+'    apex_util.set_session_state(''P19_ESTADO'', nvl(v_fila.estado, ''ACTIVO''));',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000390)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar empresa'
+,p_static_id=>'guardar-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number := fn_clean_num(:P19_ID_EMPRESA);',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    if v_emp is null or v_emp = 0 then',
+'        raise_application_error(-20070, ''No se pudo identificar la empresa.'');',
+'    end if;',
+'',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        raise_application_error(-20003, ''Solo puede editar su propia empresa.'');',
+'    end if;',
+'',
+'    if :P19_NOMBRE_EMPRESA is null then',
+'        raise_application_error(-20071, ''El nombre de la empresa es obligatorio.'');',
+'    end if;',
+'',
+'    update empresas',
+'       set nombre_empresa    = :P19_NOMBRE_EMPRESA,',
+'           cod_pais          = :P19_COD_PAIS,',
+'           tipo_ident_fiscal = :P19_TIPO_IDENT_FISCAL,',
+'           rfc               = :P19_RFC,',
+'           estado            = nvl(:P19_ESTADO, ''ACTIVO'')',
+'     where id_empresa = v_emp;',
+'',
+'    apex_application.g_print_success_message := ''Empresa guardada.'';',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000388)
+);
+end;
+/
+
 prompt --application/pages/page_09999
 begin
 wwv_flow_imp_page.create_page(
