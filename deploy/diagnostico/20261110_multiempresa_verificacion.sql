@@ -1459,7 +1459,36 @@ begin
     end loop;
     avisar('LOVs', v_n, v_lista);
 
-    -- 5) Los procesos de pagina. Se escanean TODOS (ninguna exclusion).
+    -- 5) La EXCEPCION DE LA PAGINA 4, contada ANTES del escaneo general.
+    --
+    -- FIX ROUND 2 (2026-11-10): aqui estaba el fallo. El descuento
+    -- 'v_n := v_n - v_n_p4' estaba ANTES de que 'v_n_p4' tuviera valor: en
+    -- PL/SQL una variable NUMBER sin inicializar es NULL, asi que
+    -- 'v_n - v_n_p4' daba NULL, 'avisar' recibia NULL y su 'if p_n > 0' no
+    -- se cumplia NUNCA: la categoria 'procesos de pagina' no reportaba NADA
+    -- (ni cuando quedaban procesos fuera de la pagina 4). Ahora el conteo de
+    -- la pagina 4 se calcula PRIMERO y el descuento se hace despues, con un
+    -- NUMBER de verdad.
+    --
+    -- El escaneo general (abajo) sigue cubriendo TODAS las paginas: la
+    -- excepcion de la pagina 4 la AFIRMA el caso propio M14b, con una lista
+    -- cerrada (mas abajo), y aqui solo se descuenta del conteo para que el
+    -- mensaje hable de los sitios REALMENTE pendientes de esta tarea.
+    v_n_p4 := 0; v_lista_p4 := null;
+    for pr in (select page_id, process_name, process_source
+                  from apex_application_page_proc
+                 where application_id = 100
+                   and page_id = 4
+                   and process_source is not null) loop
+        v_detalle := lower(pr.process_source);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n_p4 := v_n_p4 + 1;
+            v_lista_p4 := substrb(coalesce(v_lista_p4, '') || pr.process_name || ' ', 1, 200);
+        end if;
+    end loop;
+
+    -- 6) Los procesos de pagina. Se escanean TODOS (ninguna exclusion).
     --
     -- FIX ROUND 1 (2026-11-10): esta categoria excluia en SILENCIO la
     -- pagina 4, y el brief de la tarea 4 solo permite excluir la pagina 19.
@@ -1477,31 +1506,19 @@ begin
             v_lista := substrb(coalesce(v_lista, '') || 'p' || pr.page_id || ':' || pr.process_name || ' ', 1, 200);
         end if;
     end loop;
-    -- Los 4 procesos de la pagina 4 son la excepcion CONOCIDA (FASE 3 del
+    -- Los procesos de la pagina 4 son la excepcion CONOCIDA (FASE 3 del
     -- spec): los cuenta aparte el caso M14b, con su lista cerrada. Aqui se
     -- descuentan para que el conteo sea el de los sitios REALMENTE
-    -- pendientes de esta tarea.
-    v_n := v_n - v_n_p4;
+    -- pendientes de esta tarea. 'v_n_p4' ya tiene valor (se conto antes).
+    v_n := v_n - nvl(v_n_p4, 0);
+    -- Red de seguridad: 'avisar' NUNCA debe recibir NULL (una categoria con
+    -- conteo NULL no reportaria nada, que es justo el fallo que se corrige
+    -- aqui). Si por lo que sea el conteo fuera NULL, se trata como 0 y se
+    -- avisa igualmente, para que no se pueda volver a silenciar la categoria.
+    if v_n is null then
+        v_n := 0;
+    end if;
     avisar('procesos de pagina', v_n, v_lista);
-
-    -- 6) La EXCEPCION DE LA PAGINA 4, contada aparte para el M14b.
-    --
-    -- FIX ROUND 1 (2026-11-10): esto ya no es un 'aviso' en
-    -- tmp_multi_notas, sino un caso PROPIO (M14b) con lista CERRADA. Se
-    -- cuentan aqui los procesos de la pagina 4 que leen la columna unica.
-    v_n_p4 := 0; v_lista_p4 := null;
-    for pr in (select page_id, process_name, process_source
-                  from apex_application_page_proc
-                 where application_id = 100
-                   and page_id = 4
-                   and process_source is not null) loop
-        v_detalle := lower(pr.process_source);
-        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
-           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
-            v_n_p4 := v_n_p4 + 1;
-            v_lista_p4 := substrb(coalesce(v_lista_p4, '') || pr.process_name || ' ', 1, 200);
-        end if;
-    end loop;
 
     -- 7) Cada pagina de la tabla del brief tiene que leer la VISTA. Se cuentan
     --    los sitios que la leen (region_source + where_clause + items + LOVs +
