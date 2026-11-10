@@ -19128,7 +19128,15 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
 ,p_display_as=>'NATIVE_HIDDEN'
-,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000395)
+,p_name=>'P19_MODO'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
@@ -19247,6 +19255,16 @@ wwv_flow_imp_page.create_page_process(
 '    v_emp number;',
 '    v_fila empresas%rowtype;',
 'begin',
+'    -- Con «Nueva empresa» el formulario queda libre (y con lo recien guardado, tras',
+'    -- guardar). Esta carga corre tambien en el render que sigue al submit, y sin',
+'    -- esta guarda volveria a poner la empresa del usuario encima: el formulario no',
+'    -- quedaria en blanco y «Guardar empresa» actualizaria su empresa en vez de',
+'    -- dar de alta una nueva.',
+'    if nvl(:P19_MODO, ''VER'') = ''LIBRE'' then',
+'        apex_util.set_session_state(''P19_MODO'', ''VER'');',
+'        return;',
+'    end if;',
+'',
 '    -- Un usuario pertenece a una empresa; si tuviera varias, se ve la primera.',
 '    select min(u.id_empresa) into v_emp',
 '      from usuario u',
@@ -19289,6 +19307,8 @@ wwv_flow_imp_page.create_page_process(
 '    apex_util.set_session_state(''P19_TIPO_IDENT_FISCAL'', ''RIF'');',
 '    apex_util.set_session_state(''P19_RFC'', null);',
 '    apex_util.set_session_state(''P19_ESTADO'', ''ACTIVO'');',
+'    -- Para que la carga del render siguiente no lo rellene otra vez.',
+'    apex_util.set_session_state(''P19_MODO'', ''LIBRE'');',
 '',
 unistr('    apex_application.g_print_success_message := ''Formulario en blanco: escribe la empresa nueva y pulsa Guardar empresa.'';'),
 'end;'))
@@ -19325,6 +19345,7 @@ wwv_flow_imp_page.create_page_process(
 '                :P19_RFC, nvl(:P19_ESTADO, ''ACTIVO''), systimestamp);',
 '',
 '        apex_util.set_session_state(''P19_ID_EMPRESA'', to_char(v_emp));',
+'        apex_util.set_session_state(''P19_MODO'', ''LIBRE'');',
 unistr('        apex_application.g_print_success_message := ''Empresa creada con el id '' || to_char(v_emp) || ''. Asignala a un usuario en Gesti\00F3n de Usuarios.'';'),
 '    else',
 '        if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
@@ -19339,6 +19360,7 @@ unistr('        apex_application.g_print_success_message := ''Empresa creada con
 '               estado            = nvl(:P19_ESTADO, ''ACTIVO'')',
 '         where id_empresa = v_emp;',
 '',
+'        apex_util.set_session_state(''P19_MODO'', ''LIBRE'');',
 '        apex_application.g_print_success_message := ''Empresa guardada.'';',
 '    end if;',
 'end;'))
