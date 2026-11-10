@@ -18,8 +18,22 @@
 #   5. Un usuario temporal ADMIN con UNA empresa: el listado muestra UNA fila y
 #      el formulario la trae por defecto (regresion).
 #
-# Al final borra TODO: el usuario temporal, la empresa de prueba y su par.
-# Las empresas reales (1, 2, 3, 4, 5) no se tocan.
+# Al final borra TODO: los usuarios temporales, la empresa centinela, la
+# empresa de prueba y sus pares. Las empresas reales (1, 2, 3, 4, 5) no se
+# tocan.
+#
+# RANGO RESERVADO (regla del plan): TODOS los datos de prueba usan ids
+# 900000+. Concretamente:
+#   - los dos usuarios temporales se insertan con 'usuario_id' EXPLICITO
+#     (900901 y 900902), no con la identity;
+#   - la empresa centinela se crea con 'id_empresa' = 900910;
+#   - la empresa que crea el ALTA la asigna el proceso con
+#     'select nvl(max(id_empresa),0)+1 from empresas', o sea que con la
+#     centinela presente toma 900911: tambien dentro del rango reservado.
+#     (Medido el 2026-11-10: con la centinela 900910, el proceso real
+#     «Guardar empresa» asigna 900911.)
+# MEDIDO: 'USUARIO.USUARIO_ID' y 'EMPRESAS.ID_EMPRESA' son identity BY DEFAULT,
+# asi que un 'insert' con el id explicito entra (probado y revertido).
 #
 # De donde sale el arnes CDP: deploy/diagnostico/20261109_pagina19_nueva_empresa.py
 #
@@ -54,6 +68,17 @@ CLAVE = "Diag#2026"
 USUARIO_A = "DIAG_MULTI_A"   # dos empresas
 USUARIO_B = "DIAG_MULTI_B"   # una empresa
 NOMBRE_PRUEBA = "EMPRESA PRUEBA MULTI"
+
+# RANGO RESERVADO 900000+ (regla del plan): nada de esto puede tocar el rango
+# real de ids.
+# Los ids 900001..900005 y 900010 ya los usa la verificacion SQL
+# (20261110_multiempresa_verificacion.sql), asi que este script usa ids
+# PROPIOS: una corrida no pisa a la otra.
+ID_USUARIO_A = 900901
+ID_USUARIO_B = 900902
+ID_EMPRESA_CENTINELA = 900910   # hace que el alta tome 900911
+ID_EMPRESA_ALTA = 900911        # el id que tomara el alta; se comprueba
+NOMBRE_CENTINELA = "DIAG CENTINELA 900910"
 CAPTURA = os.path.join(REPO, "deploy", "resultados", "20261110_pagina19_listado.png")
 
 fallas = 0
@@ -79,51 +104,67 @@ def sql(texto, **params):
 
 
 def borrar_todo():
+    """Borra TODOS los datos de prueba (rango 900000+)."""
+    # Los pares primero (FK a USUARIO y a EMPRESAS).
     sql("""delete from usuario_empresa
-            where usuario_id in (select usuario_id from usuario
-                                  where upper(username) in ('DIAG_MULTI_A','DIAG_MULTI_B'))
-               or id_empresa in (select id_empresa from empresas
-                                  where nombre_empresa = :n)""", n=NOMBRE_PRUEBA)
+             where usuario_id in (:a, :b)
+                or id_empresa in (:c, :x)""",
+        a=ID_USUARIO_A, b=ID_USUARIO_B, c=ID_EMPRESA_CENTINELA, x=ID_EMPRESA_ALTA)
     con.commit()
-    sql("delete from empresas where nombre_empresa = :n", n=NOMBRE_PRUEBA)
+    # Las empresas de prueba (la centinela y la que creo el alta).
+    sql("""delete from empresas
+             where id_empresa in (:c, :x)
+                or nombre_empresa = :n""",
+        c=ID_EMPRESA_CENTINELA, x=ID_EMPRESA_ALTA, n=NOMBRE_PRUEBA)
     con.commit()
-    sql("""delete from usuario
-            where upper(username) in ('DIAG_MULTI_A','DIAG_MULTI_B')""")
+    # Los usuarios temporales.
+    sql("delete from usuario where usuario_id in (:a, :b)",
+        a=ID_USUARIO_A, b=ID_USUARIO_B)
     con.commit()
 
 
-borrar_todo()
+def preparar():
+    """Deja la base como la necesita la prueba, TODO en el rango 900000+.
 
-sql("""insert into usuario (username, email, password_hash, estado, id_empresa, rol_id,
-                          debe_cambiar_clave, reintentos_fallidos)
-       values (:u, :e, sypex_hash_password(:p), 'ACTIVO', 1,
-               (select min(id_rol) from syn_roles where codigo_rol='ADMIN'), 'N', 0)""",
-    u=USUARIO_A, e="diag.multi.a@synpex.local", p=CLAVE)
-con.commit()
-sql("""insert into usuario (username, email, password_hash, estado, id_empresa, rol_id,
-                          debe_cambiar_clave, reintentos_fallidos)
-       values (:u, :e, sypex_hash_password(:p), 'ACTIVO', 1,
-               (select min(id_rol) from syn_roles where codigo_rol='ADMIN'), 'N', 0)""",
-    u=USUARIO_B, e="diag.multi.b@synpex.local", p=CLAVE)
-con.commit()
+    Los usuarios se insertan con 'usuario_id' EXPLICITO (la identity es BY
+    DEFAULT, asi que entra). La centinela 900910 hace que el proceso de alta
+    calcule 'max(id_empresa)+1' = 900911, tambien dentro del rango reservado.
+    """
+    borrar_todo()
 
-# El usuario A tiene pares en las empresas 1 y 3 (dos reales del dueño);
-# el B, solo en la 1.
-sql("""insert into usuario_empresa (usuario_id, id_empresa)
-       select u.usuario_id, e.id_empresa
-         from usuario u
-         join (select 1 id_empresa from dual
-                union all select 3 from dual) e on 1 = 1
-        where upper(u.username) = :u""", u=USUARIO_A)
-con.commit()
-sql("""insert into usuario_empresa (usuario_id, id_empresa)
-       select u.usuario_id, 1 from usuario u where upper(u.username) = :u""", u=USUARIO_B)
-con.commit()
+    # La centinela: sin hijos, solo para que el alto tome un id de prueba.
+    sql("""insert into empresas (id_empresa, nombre_empresa, cod_pais,
+                                   tipo_ident_fiscal, estado, fecha_creacion)
+           values (:i, :n, 'VE', 'RIF', 'ACTIVO', systimestamp)""",
+        i=ID_EMPRESA_CENTINELA, n=NOMBRE_CENTINELA)
+    con.commit()
 
-sql("select u.usuario_id, ue.id_empresa from usuario_empresa ue "
-    "join usuario u on u.usuario_id = ue.usuario_id "
-    "where upper(u.username) in ('DIAG_MULTI_A','DIAG_MULTI_B') order by 1,2")
-print("  pares de prueba:", cur.fetchall())
+    for uid, nombre, correo in ((ID_USUARIO_A, USUARIO_A, "diag.multi.a@synpex.local"),
+                                (ID_USUARIO_B, USUARIO_B, "diag.multi.b@synpex.local")):
+        sql("""insert into usuario (usuario_id, username, email, password_hash, estado,
+                                      id_empresa, rol_id, debe_cambiar_clave, reintentos_fallidos)
+               values (:i, :u, :e, sypex_hash_password(:p), 'ACTIVO', 1,
+                       (select min(id_rol) from syn_roles where codigo_rol='ADMIN'), 'N', 0)""",
+            i=uid, u=nombre, e=correo, p=CLAVE)
+        con.commit()
+
+    # El usuario A tiene pares en las empresas 1 y 3 (dos reales del dueño);
+    # el B, solo en la 1.
+    sql("""insert into usuario_empresa (usuario_id, id_empresa)
+           values (:u, 1)""", u=ID_USUARIO_A)
+    con.commit()
+    sql("""insert into usuario_empresa (usuario_id, id_empresa)
+           values (:u, 3)""", u=ID_USUARIO_A)
+    con.commit()
+    sql("""insert into usuario_empresa (usuario_id, id_empresa)
+           values (:u, 1)""", u=ID_USUARIO_B)
+    con.commit()
+
+    sql("select u.usuario_id, ue.id_empresa from usuario_empresa ue "
+        "join usuario u on u.usuario_id = ue.usuario_id "
+        "where u.usuario_id in (:a, :b) order by 1,2",
+        a=ID_USUARIO_A, b=ID_USUARIO_B)
+    print("  pares de prueba:", cur.fetchall())
 
 # ---------------------------------------------------------------------------
 # Edge headless por CDP.
@@ -223,6 +264,10 @@ def entrar(usuario):
 
 
 try:
+    # La preparacion va DENTRO del try: si falla el arranque (por ejemplo, que
+    # Edge no abra), el finally borra igual lo que se haya creado.
+    preparar()
+
     # -----------------------------------------------------------------------
     # 1) Usuario de DOS empresas.
     # -----------------------------------------------------------------------
@@ -306,6 +351,12 @@ try:
     time.sleep(2)
     sql("select id_empresa from empresas where nombre_empresa = :n", n=NOMBRE_PRUEBA)
     fila = cur.fetchone()
+    if fila and fila[0] < 900000:
+        falla("la empresa de prueba tombo el id %d, que esta FUERA del rango "
+              "reservado 900000+" % fila[0])
+    if fila and fila[0] != ID_EMPRESA_ALTA:
+        falla("la empresa de prueba tomo el id %d (se esperaba %d, el siguiente "
+              "al de la centinela %d)" % (fila[0], ID_EMPRESA_ALTA, ID_EMPRESA_CENTINELA))
     if not fila:
         falla("no se creo la empresa de prueba")
     else:
@@ -361,6 +412,16 @@ try:
 finally:
     proc.terminate()
     borrar_todo()
+    # Comprobacion: no queda ninguna fila de prueba (rango reservado).
+    for etiqueta, consulta in (
+            ("usuario", "select count(*) from usuario where usuario_id >= 900000"),
+            ("usuario_empresa", "select count(*) from usuario_empresa where usuario_id >= 900000"),
+            ("empresas", "select count(*) from empresas where id_empresa >= 900000")):
+        sql(consulta)
+        n = cur.fetchone()[0]
+        print("  filas de prueba que quedan en %s: %d" % (etiqueta, n))
+        if n:
+            falla("quedan %d filas de prueba en %s (rango 900000+)" % (n, etiqueta))
     con.close()
 
 print("\nRESULTADO: FALLAS=%d" % fallas)
