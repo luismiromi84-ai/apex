@@ -19230,7 +19230,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'N'
-,p_button_image_alt=>'Crear empresa'
+,p_button_image_alt=>'Nueva empresa'
 ,p_icon_css_classes=>'fa-plus'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
@@ -19276,26 +19276,21 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Crear empresa'
 ,p_static_id=>'crear-empresa'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'declare',
-'    v_nueva number;',
 'begin',
 '    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 '    end if;',
 '',
-'    if :P19_NOMBRE_EMPRESA is null then',
-'        raise_application_error(-20071, ''Escribe el nombre de la empresa nueva.'');',
-'    end if;',
+'    -- No escribe nada: deja el formulario en blanco para dar de alta una empresa',
+'    -- nueva. Al guardar, sin id, el proceso de guardado inserta.',
+'    apex_util.set_session_state(''P19_ID_EMPRESA'', null);',
+'    apex_util.set_session_state(''P19_NOMBRE_EMPRESA'', null);',
+'    apex_util.set_session_state(''P19_COD_PAIS'', ''VE'');',
+'    apex_util.set_session_state(''P19_TIPO_IDENT_FISCAL'', ''RIF'');',
+'    apex_util.set_session_state(''P19_RFC'', null);',
+'    apex_util.set_session_state(''P19_ESTADO'', ''ACTIVO'');',
 '',
-'    -- OJO: en esta base EMPRESAS.ID_EMPRESA no tiene identity (su default es 1),',
-'    -- asi que el id se calcula aqui: sin esto, el insert choca con la PK.',
-'    select nvl(max(id_empresa), 0) + 1 into v_nueva from empresas;',
-'',
-'    insert into empresas (id_empresa, nombre_empresa, cod_pais, tipo_ident_fiscal, rfc, estado, fecha_creacion)',
-'    values (v_nueva, :P19_NOMBRE_EMPRESA, :P19_COD_PAIS, :P19_TIPO_IDENT_FISCAL, :P19_RFC,',
-'            nvl(:P19_ESTADO, ''ACTIVO''), systimestamp);',
-'',
-unistr('    apex_application.g_print_success_message := ''Empresa creada con el id '' || to_char(v_nueva) || ''. Asignala a un usuario en Gesti\00F3n de Usuarios.'';'),
+unistr('    apex_application.g_print_success_message := ''Formulario en blanco: escribe la empresa nueva y pulsa Guardar empresa.'';'),
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000000393)
@@ -19315,27 +19310,37 @@ wwv_flow_imp_page.create_page_process(
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 '    end if;',
 '',
-'    if v_emp is null or v_emp = 0 then',
-'        raise_application_error(-20070, ''No se pudo identificar la empresa.'');',
-'    end if;',
-'',
-'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
-'        raise_application_error(-20003, ''Solo puede editar su propia empresa.'');',
-'    end if;',
-'',
 '    if :P19_NOMBRE_EMPRESA is null then',
 '        raise_application_error(-20071, ''El nombre de la empresa es obligatorio.'');',
 '    end if;',
 '',
-'    update empresas',
-'       set nombre_empresa    = :P19_NOMBRE_EMPRESA,',
-'           cod_pais          = :P19_COD_PAIS,',
-'           tipo_ident_fiscal = :P19_TIPO_IDENT_FISCAL,',
-'           rfc               = :P19_RFC,',
-'           estado            = nvl(:P19_ESTADO, ''ACTIVO'')',
-'     where id_empresa = v_emp;',
+'    if v_emp is null or v_emp = 0 then',
+'        -- ALTA. OJO: en esta base EMPRESAS.ID_EMPRESA no es identity y su default',
+'        -- es 1, asi que el id se calcula aqui o el insert choca con la clave.',
+'        select nvl(max(id_empresa), 0) + 1 into v_emp from empresas;',
 '',
-'    apex_application.g_print_success_message := ''Empresa guardada.'';',
+'        insert into empresas (id_empresa, nombre_empresa, cod_pais, tipo_ident_fiscal,',
+'                              rfc, estado, fecha_creacion)',
+'        values (v_emp, :P19_NOMBRE_EMPRESA, :P19_COD_PAIS, :P19_TIPO_IDENT_FISCAL,',
+'                :P19_RFC, nvl(:P19_ESTADO, ''ACTIVO''), systimestamp);',
+'',
+'        apex_util.set_session_state(''P19_ID_EMPRESA'', to_char(v_emp));',
+unistr('        apex_application.g_print_success_message := ''Empresa creada con el id '' || to_char(v_emp) || ''. Asignala a un usuario en Gesti\00F3n de Usuarios.'';'),
+'    else',
+'        if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'            raise_application_error(-20003, ''Solo puede editar su propia empresa.'');',
+'        end if;',
+'',
+'        update empresas',
+'           set nombre_empresa    = :P19_NOMBRE_EMPRESA,',
+'               cod_pais          = :P19_COD_PAIS,',
+'               tipo_ident_fiscal = :P19_TIPO_IDENT_FISCAL,',
+'               rfc               = :P19_RFC,',
+'               estado            = nvl(:P19_ESTADO, ''ACTIVO'')',
+'         where id_empresa = v_emp;',
+'',
+'        apex_application.g_print_success_message := ''Empresa guardada.'';',
+'    end if;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000000388)
