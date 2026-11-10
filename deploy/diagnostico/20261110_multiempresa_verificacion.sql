@@ -88,6 +88,14 @@
 --       fn_autenticar_usuario con clave correcta devuelve true.
 --   M10 La consulta de prc_post_login (copiada con el usuario como literal)
 --       devuelve 1 fila para el usuario con pares y 0 para uno sin asociacion.
+--
+-- Casos (tarea 3: la LOV EMPRESA lista todas las empresas del usuario):
+--   M11 El texto guardado de la LOV EMPRESA (APEX_APPLICATION_LOVS) lee
+--       V_EMPRESAS_USUARIO y conserva el filtro e.estado = 'ACTIVO'.
+--   M12 Ejecutando ese texto guardado: un usuario con pares en dos empresas
+--       ve las dos; uno con un solo par ve una.
+--   M13 El mismo texto con un usuario que tiene un par en una empresa ACTIVA
+--       y otro en una INACTIVA: solo sale la ACTIVA.
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS;
@@ -444,6 +452,291 @@ begin
         exception when others then null;
         end;
     end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M11, M12 y M13: la LOV EMPRESA lista TODAS las empresas del usuario.
+--
+-- El caso mide la CONSULTA REAL guardada por APEX (APEX_APPLICATION_LOVS.
+-- LIST_OF_VALUES_QUERY), no una copia escrita a mano: si el texto guardado y
+-- el que se espera divergen, el caso tiene que fallar.
+--
+-- Para ejecutarla hace falta un usuario de prueba:
+--   DIAG_LOV_01  -> pares en las empresas 1 y 2 (las dos ACTIVO)
+--   DIAG_LOV_02  -> par solo en la empresa 1
+--   DIAG_LOV_03  -> par en la empresa 1 y en una empresa INACTIVA de prueba
+-- Se borran al final (rango reservado 900003+ y la empresa 900010).
+--
+-- OJO: en M13 el usuario tiene DOS pares (una empresa ACTIVO y otra INACTIVA)
+-- y su USUARIO.ID_EMPRESA apunta a la INACTIVA. Asi el caso mide las dos
+-- cosas de una vez: la consulta tiene que LEER EL PAR (si leyera la columna
+-- unica devolveria 0 filas en vez de 1) y tiene que FILTRAR LAS EMPRESAS
+-- INACTIVAS (si no filtrara, devolveria 2 filas en vez de 1).
+--
+-- El texto guardado se envuelve en 'select count(*) from (<texto>)' para
+-- poder contarlo: la LOV devuelve dos columnas (display_value, return_value)
+-- y un 'execute immediate ... into' de un escalar no compila (ORA-00932).
+-- Se le quita el ';' final: el texto viejo de la LOV lo traia y dentro de
+-- un parentesis es ORA-00911.
+--
+-- TRAMPA MEDIDA (ORA-12839): en esta base, varias DML seguidas sobre tablas
+-- con identity en la MISMA transaccion dan 'cannot modify an object in
+-- parallel after modifying it'. Por eso la siembra, la medicion y la
+-- limpieza van en bloques separados, con 'commit' entre ellos. Por lo mismo
+-- el bloque de siembra empieza barriendo lo que dejo una corrida anterior
+-- (los nombres son propios de esta verificacion, 'DIAG LOV ...'), y el de
+-- limpieza esta al final aunque la medicion falle.
+-- -----------------------------------------------------------------------------
+
+-- -----------------------------------------------------------------------------
+-- M11: el texto guardado en APEX_APPLICATION_LOVS para la LOV 'EMPRESA'
+--      menciona V_EMPRESAS_USUARIO y conserva el filtro e.estado = 'ACTIVO'.
+-- -----------------------------------------------------------------------------
+declare
+    v_error varchar2(300);
+    v_texto varchar2(4000);
+begin
+    begin
+        select l.list_of_values_query into v_texto
+          from apex_application_lovs l
+         where l.list_of_values_name = 'EMPRESA';
+    exception
+        when no_data_found then
+            v_texto := null;
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M11: error al leer la LOV EMPRESA: ' || v_error, 1, 300));
+    end;
+
+    if v_texto is null and v_error is null then
+        insert into tmp_multi_fallas
+        values (substrb('M11: no se encuentra la LOV EMPRESA en APEX_APPLICATION_LOVS', 1, 300));
+    elsif v_texto is not null then
+        if lower(v_texto) not like '%v_empresas_usuario%' then
+            insert into tmp_multi_fallas
+            values (substrb('M11: la LOV EMPRESA no lee V_EMPRESAS_USUARIO: '
+                            || substrb(v_texto, 1, 200), 1, 300));
+        end if;
+        if upper(v_texto) not like '%ESTADO = ''ACTIVO''%' then
+            insert into tmp_multi_fallas
+            values (substrb('M11: la LOV EMPRESA no conserva el filtro e.estado = ''ACTIVO'': '
+                            || substrb(v_texto, 1, 200), 1, 300));
+        end if;
+    end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- Siembra de los datos de prueba de M12 y M13. Barre primero lo que quedo de
+-- una corrida anterior (por si una corrida se interrumpio entre la siembra y
+-- la limpieza) y luego crea la empresa INACTIVA y los tres usuarios.
+-- -----------------------------------------------------------------------------
+declare
+    v_error varchar2(300);
+begin
+    -- Barrido de restos de una corrida anterior. Un 'commit' despues de
+    -- cada DELETE: en esta base, dos DML sobre tablas con identity en la
+    -- misma transaccion dan ORA-12839 (medido).
+    begin
+        execute immediate q'[delete from usuario_empresa
+                            where usuario_id in (900003, 900004, 900005)
+                               or id_empresa = 900010]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id in (900003, 900004, 900005)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900010]';
+        commit;
+    exception when others then null;
+    end;
+
+    begin
+        -- Empresa de prueba INACTIVA (id manual para poder borrarla sin
+        -- depender de la secuencia).
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal)
+               values (900010, 'DIAG LOV INACTIVA', 'INACTIVO', 'VE', 'RIF')]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M12-M13: no se pudo crear la empresa de prueba: ' || v_error, 1, 300));
+    end;
+
+    -- Los tres usuarios de prueba. USUARIO.ID_EMPRESA se deja en la empresa
+    -- principal (salvo el tercero): la consulta nueva NO debe mirarlo (lee
+    -- los pares), asi que ponerlo no cambia el resultado esperado.
+    begin
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900003, 'DIAG_LOV_01', 'diag.lov.01@synpex.local', 'x', 'ACTIVO',
+                       (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 1, 'N')]';
+        commit;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900004, 'DIAG_LOV_02', 'diag.lov.02@synpex.local', 'x', 'ACTIVO',
+                       (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 1, 'N')]';
+        commit;
+        execute immediate
+            q'[insert into usuario (usuario_id, username, email, password_hash, estado,
+                                    rol_id, id_empresa, debe_cambiar_clave)
+               values (900005, 'DIAG_LOV_03', 'diag.lov.03@synpex.local', 'x', 'ACTIVO',
+                       (select min(id_rol) from syn_roles where codigo_rol = 'ADMIN'), 900010, 'N')]';
+        commit;
+
+        execute immediate
+            q'[insert into usuario_empresa (usuario_id, id_empresa)
+               select 900003, 1 from dual
+               union all select 900003, 2 from dual
+               union all select 900004, 1 from dual
+               union all select 900005, 1 from dual
+               union all select 900005, 900010 from dual]';
+        commit;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M12-M13: no se pudieron crear los usuarios de prueba: ' || v_error, 1, 300));
+    end;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M12 y M13: se ejecuta el texto GUARDADO de la LOV con cada usuario de
+-- prueba y se cuentan las empresas que devuelve.
+-- -----------------------------------------------------------------------------
+declare
+    v_existe number;
+    v_cuenta number;
+    v_lista  varchar2(2000);
+
+    -- Cuenta las filas que devuelve el texto guardado de la LOV para un
+    -- usuario dado. Si la consulta no se puede ejecutar (texto roto, objeto
+    -- que no existe), devuelve -1 para que el caso lo reporte como fallo.
+    function contar_lov(p_usuario varchar2) return number is
+        v_txt varchar2(4000);
+        v_cnt number;
+    begin
+        select l.list_of_values_query into v_txt
+          from apex_application_lovs l
+         where l.list_of_values_name = 'EMPRESA';
+        v_txt := rtrim(rtrim(v_txt), ';');
+        execute immediate 'select count(*) from (' || v_txt || ')'
+           into v_cnt using p_usuario;
+        return v_cnt;
+    exception
+        when others then
+            return -1;
+    end contar_lov;
+
+    -- Devuelve la lista de ID_EMPRESA que la LOV guardada devuelve para un
+    -- usuario, separada por '|'. Si la consulta no se puede ejecutar,
+    -- devuelve la cadena 'ERROR'.
+    function ids_lov(p_usuario varchar2) return varchar2 is
+        v_txt varchar2(4000);
+        v_lis varchar2(2000);
+    begin
+        select l.list_of_values_query into v_txt
+          from apex_application_lovs l
+         where l.list_of_values_name = 'EMPRESA';
+        v_txt := rtrim(rtrim(v_txt), ';');
+        execute immediate
+            q'[select listagg(t.return_value, '|') within group (order by t.return_value)
+                  from (]'
+            || v_txt
+            || q'[) t]'
+            into v_lis using p_usuario;
+        return v_lis;
+    exception
+        when others then
+            return 'ERROR';
+    end ids_lov;
+begin
+    select count(*) into v_existe from all_tables
+     where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA';
+
+    if v_existe = 0 then
+        insert into tmp_multi_fallas
+        values (substrb('M12-M13: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
+    else
+        -- M12: el usuario de dos empresas ve las DOS; el de una, ve UNA.
+        v_cuenta := contar_lov('DIAG_LOV_01');
+        if v_cuenta <> 2 then
+            insert into tmp_multi_fallas
+            values (substrb('M12: la LOV devolvio ' || v_cuenta
+                            || ' empresas para un usuario con 2 pares (se esperaba 2)', 1, 300));
+        end if;
+        v_lista := ids_lov('DIAG_LOV_01');
+        if v_lista <> '1|2' then
+            insert into tmp_multi_fallas
+            values (substrb('M12: la LOV devolvio las empresas ' || v_lista
+                            || ' para un usuario con pares en la 1 y la 2 (se esperaba 1|2)', 1, 300));
+        end if;
+
+        v_cuenta := contar_lov('DIAG_LOV_02');
+        if v_cuenta <> 1 then
+            insert into tmp_multi_fallas
+            values (substrb('M12: la LOV devolvio ' || v_cuenta
+                            || ' empresas para un usuario con 1 par (se esperaba 1)', 1, 300));
+        end if;
+        v_lista := ids_lov('DIAG_LOV_02');
+        if v_lista <> '1' then
+            insert into tmp_multi_fallas
+            values (substrb('M12: la LOV devolvio las empresas ' || v_lista
+                            || ' para un usuario con un solo par en la 1 (se esperaba 1)', 1, 300));
+        end if;
+
+        -- M13: la empresa INACTIVA no aparece, pero la ACTIVA si.
+        v_cuenta := contar_lov('DIAG_LOV_03');
+        if v_cuenta <> 1 then
+            insert into tmp_multi_fallas
+            values (substrb('M13: la LOV devolvio ' || v_cuenta
+                            || ' empresas para un usuario con un par ACTIVO y otro INACTIVO'
+                            || ' (se esperaba 1, solo la ACTIVA)', 1, 300));
+        end if;
+        v_lista := ids_lov('DIAG_LOV_03');
+        if v_lista <> '1' then
+            insert into tmp_multi_fallas
+            values (substrb('M13: la LOV devolvio las empresas ' || v_lista
+                            || ' para un usuario con un par ACTIVO y otro INACTIVO'
+                            || ' (se esperaba 1: la INACTIVA no debe salir)', 1, 300));
+        end if;
+    end if;
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- Limpieza de los datos de prueba de M12 y M13. Va SIEMPRE, aunque la
+-- medicion haya fallado: los datos de prueba no se quedan en la base.
+-- -----------------------------------------------------------------------------
+begin
+    begin
+        execute immediate q'[delete from usuario_empresa
+                            where usuario_id in (900003, 900004, 900005)
+                               or id_empresa = 900010]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from usuario where usuario_id in (900003, 900004, 900005)]';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900010]';
+        commit;
+    exception when others then null;
+    end;
 end;
 /
 

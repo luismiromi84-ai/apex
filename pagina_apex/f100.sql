@@ -3347,13 +3347,11 @@ wwv_flow_imp_shared.create_list_of_values(
 ,p_static_id=>'empresas-nombre-empresa'
 ,p_lov_query=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT e.nombre_empresa || '' ('' || e.cod_pais || '')'' AS display_value,',
-'       e.id_empresa     AS return_value',
-'  FROM empresas e',
-'  JOIN usuario u ',
-'    ON e.id_empresa = u.id_empresa  -- Verifica si en la tabla usuario es ID_EMPRESA o EMPRESA_ID',
+'       e.id_empresa AS return_value',
+'  FROM v_empresas_usuario e',
 ' WHERE e.estado = ''ACTIVO''',
-'   AND UPPER(u.username) = UPPER(:APP_USER)',
-' ORDER BY e.nombre_empresa;'))
+'   AND UPPER(e.username) = UPPER(:APP_USER)',
+' ORDER BY e.nombre_empresa'))
 ,p_source_type=>'SQL'
 ,p_location=>'LOCAL'
 ,p_return_column_name=>'RETURN_VALUE'
@@ -9076,13 +9074,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_source=>'ID_EMPRESA'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT e.nombre_empresa,',
-'       e.id_empresa',
-'  FROM empresas e',
-'  JOIN usuario u ',
-'    ON e.id_empresa = u.id_empresa',
+'SELECT e.nombre_empresa || '' ('' || e.cod_pais || '')'' AS display_value,',
+'       e.id_empresa AS return_value',
+'  FROM v_empresas_usuario e',
 ' WHERE e.estado = ''ACTIVO''',
-'   AND UPPER(u.username) = UPPER(:APP_USER)',
+'   AND UPPER(e.username) = UPPER(:APP_USER)',
 ' ORDER BY e.nombre_empresa'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_text=>'-- Seleccione Empresa --'
