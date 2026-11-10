@@ -384,6 +384,17 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_current_for_pages=>'13'
 );
 wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(43000000000000391)
+,p_list_item_display_sequence=>60
+,p_list_item_link_text=>unistr('Administraci\00F3n')
+,p_static_id=>'administracion'
+,p_list_item_link_target=>'f?p=&APP_ID.:19:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-cog'
+,p_security_scheme=>wwv_flow_imp.id(9149896901584567)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'19'
+);
+wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(11948716200514858)
 ,p_list_item_display_sequence=>30
 ,p_list_item_link_text=>'Presupuestos'
@@ -3519,6 +3530,13 @@ wwv_flow_imp_shared.create_menu_option(
 ,p_static_id=>'home'
 ,p_link=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
 ,p_page_id=>1
+);
+wwv_flow_imp_shared.create_menu_option(
+ p_id=>wwv_flow_imp.id(43000000000000392)
+,p_short_name=>unistr('Administraci\00F3n')
+,p_static_id=>'administracion'
+,p_link=>'f?p=&APP_ID.:19:&APP_SESSION.::&DEBUG.:::'
+,p_page_id=>19
 );
 wwv_flow_imp_shared.create_menu_option(
  p_id=>wwv_flow_imp.id(23608707238366012)
@@ -19098,6 +19116,7 @@ wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000381)
 ,p_plug_name=>'Empresa'
 ,p_static_id=>'admin-empresa'
+,p_region_css_classes=>'card-3d'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>20
@@ -19120,6 +19139,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
 ,p_prompt=>unistr('Nombre de la empresa')
 ,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
 ,p_cSize=>40
 ,p_cMaxlength=>150
 ,p_field_template=>1610598304472262251
@@ -19138,6 +19158,8 @@ wwv_flow_imp_page.create_page_item(
 'select ''Mxico (MX)'', ''MX'' from dual'))
 ,p_lov_display_null=>'NO'
 ,p_cSize=>20
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 );
@@ -19148,6 +19170,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
 ,p_prompt=>unistr('Tipo de identificaci\00F3n fiscal')
 ,p_display_as=>'NATIVE_SELECT_LIST'
+,p_colspan=>6
 ,p_lov=>'STATIC2:RIF;RIF,RFC;RFC'
 ,p_lov_display_null=>'NO'
 ,p_cSize=>10
@@ -19161,6 +19184,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
 ,p_prompt=>'RIF / RFC'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 ,p_cSize=>25
 ,p_cMaxlength=>20
 ,p_field_template=>1610598304472262251
@@ -19173,6 +19198,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
 ,p_prompt=>'Estado'
 ,p_display_as=>'NATIVE_SELECT_LIST'
+,p_colspan=>6
 ,p_lov=>'STATIC2:ACTIVO;ACTIVO,INACTIVO;INACTIVO'
 ,p_lov_display_null=>'NO'
 ,p_cSize=>15
@@ -19191,6 +19217,21 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Guardar empresa'
 ,p_icon_css_classes=>'fa-floppy-o'
+,p_button_condition_type=>'EXPRESSION'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000393)
+,p_button_sequence=>190
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_button_name=>'BTN_CREAR_EMPRESA'
+,p_static_id=>'btn-crear-empresa'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Crear empresa'
+,p_icon_css_classes=>'fa-plus'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
 );
@@ -19226,6 +19267,35 @@ wwv_flow_imp_page.create_page_process(
 '    apex_util.set_session_state(''P19_ESTADO'', nvl(v_fila.estado, ''ACTIVO''));',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000394)
+,p_process_sequence=>8
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Crear empresa'
+,p_static_id=>'crear-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_nueva number;',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    if :P19_NOMBRE_EMPRESA is null then',
+'        raise_application_error(-20071, ''Escribe el nombre de la empresa nueva.'');',
+'    end if;',
+'',
+'    insert into empresas (nombre_empresa, cod_pais, tipo_ident_fiscal, rfc, estado, fecha_creacion)',
+'    values (:P19_NOMBRE_EMPRESA, :P19_COD_PAIS, :P19_TIPO_IDENT_FISCAL, :P19_RFC,',
+'            nvl(:P19_ESTADO, ''ACTIVO''), systimestamp)',
+'    returning id_empresa into v_nueva;',
+'',
+unistr('    apex_application.g_print_success_message := ''Empresa creada con el id '' || to_char(v_nueva) || ''. Asignala a un usuario en Gesti\00F3n de Usuarios.'';'),
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000393)
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000390)
