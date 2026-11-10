@@ -1298,6 +1298,16 @@ end;
 --       procesos de pagina, ya incluida la pagina 19- sigue leyendo la columna
 --       unica del usuario. Ademas, cada pagina de la tabla del brief tiene que
 --       leer la vista V_EMPRESAS_USUARIO (y la pagina 3, USUARIO_EMPRESA).
+--       El escaneo de procesos es COMPLETO: no excluye ninguna pagina.
+--   M14b LA EXCEPCION DE LA PAGINA 4, AFIRMADA CON LISTA CERRADA. Los cuatro
+--       procesos de escritura de la pagina 4 ('Crear Usuario', 'update
+--       usuario', 'Eliminar Usuario' y 'Desbloquear usuario') fuerzan
+--       'id_empresa = v_mia' (la empresa PRINCIPAL del administrador): es la
+--       limitacion viva de la FASE 3 del spec, que este plan NO hace (ver el
+--       brief de la tarea 7, seccion 'Lo que este plan NO hace'). El M14 los
+--       escanea TODOS, pero el M14b AFIRMA que el conjunto de procesos de la
+--       pagina 4 que leen la columna unica es EXACTAMENTE esa lista cerrada:
+--       si aparece un quinto, el caso falla. Lo que la cierra: la fase 3.
 --   M15 Las listas «Lista de Presupuestos» (5) y «Lista de Facturas» (8),
 --       ejecutadas con el TEXTO GUARDADO por APEX como un usuario de DOS
 --       empresas: devuelven documentos de las DOS y NINGUNO de una tercera.
@@ -1313,8 +1323,10 @@ end;
 --       de una empresa con la que A no comparte, e INCLUYE al PENDIENTE sin
 --       empresas.
 --   M20 No hay fuga: ninguna consulta guardada devuelve documentos de una
---       empresa no asociada (se comprueba con los ids de una empresa sembrada
---       para otro usuario).
+--       empresa no asociada. Se comprueba POR ID (no solo por conteo de
+--       filas), en los dos escenarios (usuario de DOS empresas y de UNA), y
+--       en las DOS tablas: el presupuesto y la factura de la empresa ajena
+--       (id 900032) no pueden salir en ninguna de las dos listas.
 --
 -- PATRON DE SIEMBRA (el mismo de las tareas anteriores):
 --   - Rango reservado 900000+. Empresas de prueba: 900030 (compartida),
@@ -1368,6 +1380,8 @@ declare
     v_i       number;
     v_pagina  number;
     v_esperado number;
+    v_n_p4     number;
+    v_lista_p4 varchar2(300);
 
     procedure avisar(p_categoria varchar2, p_n number, p_lista varchar2) is
     begin
@@ -1445,13 +1459,16 @@ begin
     end loop;
     avisar('LOVs', v_n, v_lista);
 
-    -- 5) Los procesos de pagina, EXCLUIDA la pagina 4 (ver la excepcion
-    --    documentada arriba: es la fase 3 del spec, no la tarea 4).
+    -- 5) Los procesos de pagina. Se escanean TODOS (ninguna exclusion).
+    --
+    -- FIX ROUND 1 (2026-11-10): esta categoria excluia en SILENCIO la
+    -- pagina 4, y el brief de la tarea 4 solo permite excluir la pagina 19.
+    -- Ahora el escaneo es completo, y la excepcion de la pagina 4 la
+    -- AFIRMA el caso propio M14b, con una lista cerrada (mas abajo).
     v_n := 0; v_lista := null;
     for pr in (select page_id, process_id, process_name, process_source
                   from apex_application_page_proc
                  where application_id = 100
-                   and page_id <> 4
                    and process_source is not null) loop
         v_detalle := lower(pr.process_source);
         if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
@@ -1460,11 +1477,19 @@ begin
             v_lista := substrb(coalesce(v_lista, '') || 'p' || pr.page_id || ':' || pr.process_name || ' ', 1, 200);
         end if;
     end loop;
+    -- Los 4 procesos de la pagina 4 son la excepcion CONOCIDA (FASE 3 del
+    -- spec): los cuenta aparte el caso M14b, con su lista cerrada. Aqui se
+    -- descuentan para que el conteo sea el de los sitios REALMENTE
+    -- pendientes de esta tarea.
+    v_n := v_n - v_n_p4;
     avisar('procesos de pagina', v_n, v_lista);
 
-    -- 6) DEUDA CONOCIDA (NO cuenta como falla): los procesos de la pagina 4.
-    --    Se dejan anotados en tmp_multi_notas para que no se pierdan de vista.
-    v_n := 0; v_lista := null;
+    -- 6) La EXCEPCION DE LA PAGINA 4, contada aparte para el M14b.
+    --
+    -- FIX ROUND 1 (2026-11-10): esto ya no es un 'aviso' en
+    -- tmp_multi_notas, sino un caso PROPIO (M14b) con lista CERRADA. Se
+    -- cuentan aqui los procesos de la pagina 4 que leen la columna unica.
+    v_n_p4 := 0; v_lista_p4 := null;
     for pr in (select page_id, process_name, process_source
                   from apex_application_page_proc
                  where application_id = 100
@@ -1473,15 +1498,10 @@ begin
         v_detalle := lower(pr.process_source);
         if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
            or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
-            v_n := v_n + 1;
-            v_lista := substrb(coalesce(v_lista, '') || pr.process_name || ' ', 1, 200);
+            v_n_p4 := v_n_p4 + 1;
+            v_lista_p4 := substrb(coalesce(v_lista_p4, '') || pr.process_name || ' ', 1, 200);
         end if;
     end loop;
-    if v_n > 0 then
-        insert into tmp_multi_notas
-        values (substrb('M14-DEUDA (fase 3, no es falla): p4 usa la empresa principal en '
-                        || v_n || ' proceso(s): ' || v_lista, 1, 300));
-    end if;
 
     -- 7) Cada pagina de la tabla del brief tiene que leer la VISTA. Se cuentan
     --    los sitios que la leen (region_source + where_clause + items + LOVs +
@@ -1580,6 +1600,97 @@ exception
         v_error := sqlerrm;
         insert into tmp_multi_fallas
         values (substrb('M14: error al medir: ' || v_error, 1, 300));
+end;
+/
+
+-- -----------------------------------------------------------------------------
+-- M14b: LA EXCEPCION DE LA PAGINA 4, AFIRMADA CON LISTA CERRADA.
+--
+-- Por que la pagina 4 es la excepcion:
+--   Sus cuatro procesos de escritura ('Crear Usuario', 'update usuario',
+--   'Eliminar Usuario' y 'Desbloquear usuario') fuerzan
+--   'id_empresa = v_mia', donde 'v_mia' es la empresa PRINCIPAL del
+--   administrador. Eso es la limitacion VIVA de la FASE 3 del spec (la pagina 4
+--   con seleccion multiple de empresas), que este plan NO hace: ver
+--   '.superpowers/sdd/2026-11-10-multiempresa-usuario-empresa/task-7-brief.md',
+--   seccion 'Lo que este plan NO hace':
+--     «los procesos de la pagina 4 fuerzan id_empresa = v_mia, donde v_mia es
+--       la empresa PRINCIPAL del administrador; un administrador con dos
+--       empresas solo podra asignar esa principal. Es el comportamiento de hoy
+--       y no empeora.»
+--   Lo que la cierra: la FASE 3 del spec (pagina 4 con asignacion multiple).
+--   Cuando se implemente, este caso tiene que cambiar.
+--
+-- QUE COMPRUEBA (FIX ROUND 1, 2026-11-10): este caso AFIRMA el conjunto
+-- EXACTO de procesos de la pagina 4 que leen la columna unica del usuario.
+-- No es 'cualquiera que lea la columna': es una lista CERRADA, de modo que si
+-- manana aparece un QUINTO proceso de la pagina 4 que lea la columna unica,
+-- el caso FALLA (y no se avisa en silencio). Y si alguno de los cuatro deja
+-- de leerla (porque ya se haya arreglado), el caso tambien falla, porque la
+-- lista cerrada ya no cuadra.
+--
+-- La lista cerrada (MEDIDA el 2026-11-10 sobre la app importada):
+--   Crear Usuario | Eliminar Usuario | update usuario | Desbloquear usuario
+-- Los otros dos procesos de la pagina 4 ('Close Dialog' y 'Valida rol
+-- administrador') NO leen la columna unica y no se listan.
+-- -----------------------------------------------------------------------------
+declare
+    v_error   varchar2(300);
+    v_detalle clob;
+    v_n       number;
+    v_lista   varchar2(300);
+    v_esperada constant varchar2(300) :=
+        'Crear Usuario|Desbloquear usuario|Eliminar Usuario|update usuario|';
+begin
+    -- Los procesos de la pagina 4 que leen la columna unica del usuario.
+    v_n := 0; v_lista := null;
+    for pr in (select process_name, process_source
+                  from apex_application_page_proc
+                 where application_id = 100
+                   and page_id = 4
+                   and process_source is not null) loop
+        v_detalle := lower(pr.process_source);
+        if dbms_lob.instr(v_detalle, 'id_empresa from usuario') > 0
+           or dbms_lob.instr(v_detalle, 'min(u.id_empresa)') > 0 then
+            v_n := v_n + 1;
+            -- Se ordena el nombre para que la comparacion sea estable.
+            v_lista := v_lista || pr.process_name || '|';
+        end if;
+    end loop;
+
+    -- La lista se ordena: se recoge en una cadena y se ordena con un
+    -- listagg sobre los nombres sueltos.
+    declare
+        v_ordenada varchar2(300);
+    begin
+        select listagg(t.nombre, '|') within group (order by t.nombre)
+          into v_ordenada
+          from (select distinct pr.process_name as nombre
+                  from apex_application_page_proc pr
+                 where pr.application_id = 100
+                   and pr.page_id = 4
+                   and pr.process_source is not null
+                   and (dbms_lob.instr(lower(pr.process_source), 'id_empresa from usuario') > 0
+                     or dbms_lob.instr(lower(pr.process_source), 'min(u.id_empresa)') > 0)) t;
+
+        if v_ordenada is null then
+            v_ordenada := '';
+        end if;
+        v_ordenada := v_ordenada || '|';
+
+        if v_ordenada <> v_esperada then
+            insert into tmp_multi_fallas
+            values (substrb('M14b: la excepcion de la pagina 4 no cuadra con la lista cerrada. '
+                            || 'Se esperaba «' || v_esperada || '» y hay «' || v_ordenada
+                            || '». Si es un proceso NUEVO, hay que decidir si entra en la '
+                            || 'excepcion (fase 3) o si hay que cambiarlo.', 1, 300));
+        end if;
+    exception
+        when others then
+            v_error := sqlerrm;
+            insert into tmp_multi_fallas
+            values (substrb('M14b: error al medir: ' || v_error, 1, 300));
+    end;
 end;
 /
 
@@ -1848,23 +1959,32 @@ declare
             return -1;
     end contar_region;
 
-    -- Devuelve la lista de ids de presupuesto que devuelve el texto
-    -- guardado. Se usa para el M20 (comprobar que no sale el documento de la
-    -- empresa ajena).
-    function ids_region(p_region_id number, p_usuario varchar2) return varchar2 is
+    -- Devuelve la lista de ids que devuelve el texto guardado. Se usa para
+    -- el M20 (comprobar que no sale el documento de la empresa ajena).
+    --
+    -- FIX ROUND 1 (2026-11-10): la columna de id depende de la region: la
+    -- lista de presupuestos la trae como 'id_presupuesto' y la de facturas
+    -- como 'id_factura'. Se pasa el nombre de la columna.
+    function ids_region(p_region_id number, p_usuario varchar2,
+                        p_columna varchar2) return varchar2 is
         v_txt varchar2(32000);
         v_lis varchar2(2000);
+        v_sql varchar2(32000);
     begin
         select region_source into v_txt
           from apex_application_page_regions
          where application_id = 100 and region_id = p_region_id;
         v_txt := rtrim(rtrim(v_txt), ';');
-        execute immediate
-            q'[select listagg(to_char(t.id_presupuesto), '|') within group (order by t.id_presupuesto)
-                  from (]'
-            || v_txt
-            || q'[) t]'
-            into v_lis using p_usuario;
+        -- MEDIDO (2026-11-10): con la concatenacion directa el literal
+        -- PL/SQL queda ambiguo (la comilla de despues de '|| p_columna ||'
+        -- abre un literal que no se cierra) y python-oracledb lo rechaza con
+        -- 'DPY-2041: missing ending quote'. Por eso el SQL se arma en una
+        -- variable y el trozo con la comilla del separador '|' va en q'{...}',
+        -- que no hay que doblar.
+        v_sql := 'select listagg(to_char(t.' || p_columna || q'{), '|'}) within group (order by t.}'
+                  || p_columna || ')'
+                  || ' from (' || v_txt || ') t';
+        execute immediate v_sql into v_lis using p_usuario;
         return v_lis;
     exception
         when others then
@@ -1913,21 +2033,46 @@ begin
                         || ' facturas para un usuario de la empresa ajena (se esperaba 1)', 1, 300));
     end if;
 
-    -- M20: el documento de la empresa ajena (presupuesto 900032) NO puede
-    -- salir en la lista del usuario de dos empresas.
-    v_ids := ids_region(11950647600514906, 'DIAG_M2');
+    -- M20: el documento de la empresa ajena (id 900032 en las dos tablas)
+    -- NO puede salir en la lista del usuario de dos empresas, NI en la del
+    -- usuario de una.
+    --
+    -- Se comprueba POR ID, no solo por conteo de filas: un conteo de 2
+    -- podria pasar devolviendo las dos facturas equivocadas.
+    --
+    -- (a) El PRESUPUESTO de la empresa ajena (id 900032).
+    v_ids := ids_region(11950647600514906, 'DIAG_M2', 'id_presupuesto');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
         values (substrb('M20: «Lista de Presupuestos» devolvio el presupuesto de la empresa ajena: '
                         || v_ids, 1, 300));
     end if;
 
-    -- Y la lista de DIAG_M1 (una sola empresa) tampoco puede traerlo.
-    v_ids := ids_region(11950647600514906, 'DIAG_M1');
+    -- (b) Y la lista de DIAG_M1 (una sola empresa) tampoco puede traerlo.
+    v_ids := ids_region(11950647600514906, 'DIAG_M1', 'id_presupuesto');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
         values (substrb('M20: «Lista de Presupuestos» de un usuario de 1 empresa devolvio '
                         || 'el presupuesto de la empresa ajena: ' || v_ids, 1, 300));
+    end if;
+
+    -- (c) La FACTURA de la empresa ajena (id 900032), para el usuario de
+    -- DOS empresas. FIX ROUND 1: antes solo se comprobaba el presupuesto, y
+    -- el conteo de filas del M15 (de facturas) podia pasar devolviendo las
+    -- dos facturas equivocadas.
+    v_ids := ids_region(29963866505095675, 'DIAG_M2', 'id_factura');
+    if v_ids like '%900032%' then
+        insert into tmp_multi_fallas
+        values (substrb('M20: «Lista de Facturas» devolvio la factura de la empresa ajena: '
+                        || v_ids, 1, 300));
+    end if;
+
+    -- (d) Y para el usuario de UNA empresa.
+    v_ids := ids_region(29963866505095675, 'DIAG_M1', 'id_factura');
+    if v_ids like '%900032%' then
+        insert into tmp_multi_fallas
+        values (substrb('M20: «Lista de Facturas» de un usuario de 1 empresa devolvio '
+                        || 'la factura de la empresa ajena: ' || v_ids, 1, 300));
     end if;
 end;
 /
