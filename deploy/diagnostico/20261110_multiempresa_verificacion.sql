@@ -34,19 +34,33 @@
 --      esta version (ORA-00984 y 'SQL Statement ignored'): el SQL dinamico no
 --      ve el tipo declarado en el bloque. Por eso cada consulta devuelve una
 --      sola fila con 'listagg' y se recoge en un VARCHAR2.
---   4. En esta version SQLERRM no se puede usar como identificador dentro de
---      una expresion en un manejador de excepcion (ORA-00984 'column not
---      allowed here'); solo funciona como argumento de un procedimiento o
---      asignado a una variable. Por eso el manejador de cada caso hace
---      'v_error := sqlerrm' y concatena la variable despues.
+--   4. SQLERRM SI se puede usar en una expresion PL/SQL dentro de un
+--      manejador de excepcion: 'v_error := sqlerrm', 'v_error := ''x'' ||
+--      sqlerrm' y 'falla(''x'' || sqlerrm)' funcionan (medido). Lo que NO
+--      funciona es usarlo como identificador suelto DENTRO de una sentencia
+--      SQL (por ejemplo 'insert into t values (sqlerrm)' o
+--      'insert into t values (''x'' || sqlerrm)'): ahi da ORA-00984
+--      'column not allowed here' y la sentencia se marca 'SQL Statement
+--      ignored'. Por eso los manejadores de este archivo hacen
+--      'v_error := sqlerrm' y pasan la variable ya concatenada al INSERT.
 --
---   5. Cada 'insert' de caso recorta su texto con 'substr(..., 1, 300)': si
---      no, un detalle largo revienta con ORA-12899 en vez de reportarse.
+--   5. TODOS los recortes de texto van en BYTES, no en caracteres. En esta
+--      base NLS_CHARACTERSET=AL32UTF8 y NLS_LENGTH_SEMANTICS=BYTE, asi que
+--      'tmp_multi_fallas.caso varchar2(300)' son 300 BYTES y
+--      'v_lista varchar2(2000)' son 2000 BYTES, mientras que 'substr(x,1,N)'
+--      recorta N CARACTERES. Con texto no ASCII un recorte por caracteres se
+--      pasa de largo: 'substr(rpad(''x'',290,''x'')||rpad(''á'',10,''á''),1,300)'
+--      son 310 bytes contra 300 de la columna y revienta con ORA-12899.
+--      Por eso los recortes usan 'substrb(...)', que recorta bytes:
+--        - los 15 'insert into tmp_multi_fallas' (columna 'caso');
+--        - el 'listagg' del bloque de cierre, que alimenta 'v_lista';
+--        - el 'substr' del mensaje de 'raise_application_error', que tambien
+--          cuenta bytes (el limite de ese error es 2048 bytes).
 --
 --   6. El 'listagg' del bloque de cierre lleva 'on overflow truncate' Y un
---      'substr' por fuera. Los dos hacen falta y no son redundantes:
+--      'substrb' por fuera. Los dos hacen falta y no son redundantes:
 --        - sin 'on overflow truncate', la agregacion revienta con ORA-01489
---          ANTES de llegar al substr y se pierde el 'RESULTADO: FALLAS=n';
+--          ANTES de llegar al recorte y se pierde el 'RESULTADO: FALLAS=n';
 --        - con 'on overflow truncate' a secas, en esta version el recorte es
 --          al maximo de la propia lista (medido: 5857 caracteres con 20
 --          elementos de 290), NO al tamano de la variable destino, asi que el
@@ -89,13 +103,13 @@ create table tmp_multi_fallas (caso varchar2(300));
 --    Solo consulta el diccionario, asi que no necesita que la tabla exista.
 -- -----------------------------------------------------------------------------
 insert into tmp_multi_fallas
-select substr('M1: falta USUARIO_EMPRESA', 1, 300) from dual
+select substrb('M1: falta USUARIO_EMPRESA', 1, 300) from dual
  where not exists (select 1 from all_tables
                     where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA');
 /
 
 insert into tmp_multi_fallas
-select substr('M1: falta la PK PK_USUARIO_EMPRESA (usuario_id, id_empresa)', 1, 300) from dual
+select substrb('M1: falta la PK PK_USUARIO_EMPRESA (usuario_id, id_empresa)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and (select count(*) from all_constraints c
@@ -108,7 +122,7 @@ select substr('M1: falta la PK PK_USUARIO_EMPRESA (usuario_id, id_empresa)', 1, 
 /
 
 insert into tmp_multi_fallas
-select substr('M1: falta el indice IX_UE_EMPRESA (id_empresa)', 1, 300) from dual
+select substrb('M1: falta el indice IX_UE_EMPRESA (id_empresa)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and not exists (select 1 from all_indexes
@@ -116,7 +130,7 @@ select substr('M1: falta el indice IX_UE_EMPRESA (id_empresa)', 1, 300) from dua
 /
 
 insert into tmp_multi_fallas
-select substr('M1: falta la FK de USUARIO_EMPRESA a USUARIO(USUARIO_ID)', 1, 300) from dual
+select substrb('M1: falta la FK de USUARIO_EMPRESA a USUARIO(USUARIO_ID)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and not exists (select 1 from all_constraints c
@@ -133,7 +147,7 @@ select substr('M1: falta la FK de USUARIO_EMPRESA a USUARIO(USUARIO_ID)', 1, 300
 /
 
 insert into tmp_multi_fallas
-select substr('M1: falta la FK de USUARIO_EMPRESA a EMPRESAS(ID_EMPRESA)', 1, 300) from dual
+select substrb('M1: falta la FK de USUARIO_EMPRESA a EMPRESAS(ID_EMPRESA)', 1, 300) from dual
  where exists (select 1 from all_tables
                 where owner = 'WKSP_SYPEXWS' and table_name = 'USUARIO_EMPRESA')
    and not exists (select 1 from all_constraints c
@@ -153,7 +167,7 @@ select substr('M1: falta la FK de USUARIO_EMPRESA a EMPRESAS(ID_EMPRESA)', 1, 30
 -- M2: la vista existe y es VALID. Solo diccionario.
 -- -----------------------------------------------------------------------------
 insert into tmp_multi_fallas
-select substr('M2: falta V_EMPRESAS_USUARIO o no esta VALID', 1, 300) from dual
+select substrb('M2: falta V_EMPRESAS_USUARIO o no esta VALID', 1, 300) from dual
  where not exists (select 1 from all_objects
                     where owner = 'WKSP_SYPEXWS' and object_name = 'V_EMPRESAS_USUARIO'
                       and object_type = 'VIEW' and status = 'VALID');
@@ -192,12 +206,12 @@ begin
     -- listas saldrian vacias en silencio.
     if v_tiene_tabla = 0 then
         insert into tmp_multi_fallas
-        values (substr('M3: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
+        values (substrb('M3: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
     else
         v_detalle := null;
         begin
             execute immediate
-                q'[select substr(listagg(u.username || ' (empresa ' || u.id_empresa || ')', ' | '
+                q'[select substrb(listagg(u.username || ' (empresa ' || u.id_empresa || ')', ' | '
                               on overflow truncate) within group (order by u.username), 1, 2000)
                      from usuario u
                     where u.estado in ('ACTIVO','A','1')
@@ -210,11 +224,11 @@ begin
             when others then
                 v_error := sqlerrm;
                 insert into tmp_multi_fallas
-                values (substr('M3: error al medir: ' || v_error, 1, 300));
+                values (substrb('M3: error al medir: ' || v_error, 1, 300));
         end;
         if v_detalle is not null then
             insert into tmp_multi_fallas
-            values (substr('M3: sin par en USUARIO_EMPRESA: ' || v_detalle, 1, 300));
+            values (substrb('M3: sin par en USUARIO_EMPRESA: ' || v_detalle, 1, 300));
         end if;
     end if;
 
@@ -222,12 +236,12 @@ begin
     -- par en USUARIO_EMPRESA (hoy cubre las tres 'dotech', 3/4/5).
     if v_tiene_tabla = 0 then
         insert into tmp_multi_fallas
-        values (substr('M5: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
+        values (substrb('M5: no se puede medir, falta la tabla USUARIO_EMPRESA', 1, 300));
     else
         v_detalle := null;
         begin
             execute immediate
-                q'[select substr(listagg(e.id_empresa || ' (' || e.nombre_empresa || ')', ' | '
+                q'[select substrb(listagg(e.id_empresa || ' (' || e.nombre_empresa || ')', ' | '
                               on overflow truncate) within group (order by e.id_empresa), 1, 2000)
                      from empresas e
                     where not exists (select 1 from usuario_empresa ue
@@ -237,23 +251,23 @@ begin
             when others then
                 v_error := sqlerrm;
                 insert into tmp_multi_fallas
-                values (substr('M5: error al medir: ' || v_error, 1, 300));
+                values (substrb('M5: error al medir: ' || v_error, 1, 300));
         end;
         if v_detalle is not null then
             insert into tmp_multi_fallas
-            values (substr('M5: empresas sin ningun usuario asociado: ' || v_detalle, 1, 300));
+            values (substrb('M5: empresas sin ningun usuario asociado: ' || v_detalle, 1, 300));
         end if;
     end if;
 
     -- M4: la vista devuelve MONEDA_LOCAL no nula para la empresa 1 (VE) y la 2 (MX).
     if v_tiene_vista = 0 then
         insert into tmp_multi_fallas
-        values (substr('M4: no se puede medir, falta la vista V_EMPRESAS_USUARIO', 1, 300));
+        values (substrb('M4: no se puede medir, falta la vista V_EMPRESAS_USUARIO', 1, 300));
     else
         v_detalle := null;
         begin
             execute immediate
-                q'[select substr(listagg(e.id_empresa || ' (' || e.cod_pais || ')', ' | '
+                q'[select substrb(listagg(e.id_empresa || ' (' || e.cod_pais || ')', ' | '
                               on overflow truncate) within group (order by e.id_empresa), 1, 2000)
                      from empresas e
                     where e.cod_pais in ('VE','MX')
@@ -265,11 +279,11 @@ begin
             when others then
                 v_error := sqlerrm;
                 insert into tmp_multi_fallas
-                values (substr('M4: error al medir: ' || v_error, 1, 300));
+                values (substrb('M4: error al medir: ' || v_error, 1, 300));
         end;
         if v_detalle is not null then
             insert into tmp_multi_fallas
-            values (substr('M4: la vista no devuelve MONEDA_LOCAL para: ' || v_detalle, 1, 300));
+            values (substrb('M4: la vista no devuelve MONEDA_LOCAL para: ' || v_detalle, 1, 300));
         end if;
     end if;
 end;
@@ -290,10 +304,10 @@ begin
     -- ORA-06502 y se pierde el 'RESULTADO: FALLAS=n'. Con el substr de fuera,
     -- el valor entra en la variable y el raise_application_error (que admite
     -- 2048 bytes) ya recorta a 2000.
-    select substr(listagg(caso, ' | ' on overflow truncate) within group (order by caso), 1, 2000)
+    select substrb(listagg(caso, ' | ' on overflow truncate) within group (order by caso), 1, 2000)
       into v_lista
       from tmp_multi_fallas;
     execute immediate 'drop table tmp_multi_fallas purge';
-    raise_application_error(-20100, substr('RESULTADO: FALLAS=' || v_fallas || ' | ' || v_lista, 1, 2000));
+    raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || ' | ' || v_lista, 1, 2000));
 end;
 /
