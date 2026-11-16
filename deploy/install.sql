@@ -63,12 +63,14 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_tasa_cambio.sql
 @@../funciones/fn_tiene_rol.sql
 @@../funciones/fn_usuario_empresa_valida.sql
+@@../funciones/fn_usuario_administrable.sql
 @@../funciones/fn_presupuesto_propio.sql
 @@../funciones/fn_factura_propio.sql
 @@../funciones/fn_factura_editable.sql
 @@../funciones/fn_presupuesto_editable.sql
 @@../funciones/fn_nota_traible.sql
 @@../funciones/fn_nota_con_lineas.sql
+@@../funciones/fn_rif_cliente_valido.sql
 @@../funciones/fn_transicion_estado_valida.sql
 -- Folio atomico por empresa (lo llaman pkg_presupuestos y pkg_facturacion).
 @@../funciones/fn_asignar_folio.sql
@@ -108,6 +110,7 @@ prompt ============================================================
 prompt 6/8 Procedimientos
 prompt ============================================================
 @@../procedimientos/prc_post_login.sql
+@@../procedimientos/prc_empresas_usuario.sql
 @@../procedimientos/prc_actualizar_tasas_diarias.sql
 @@../procedimientos/prc_job_tasas_bcv.sql
 @@../procedimientos/prc_log_reset_password.sql

@@ -88,7 +88,7 @@ def main():
     comprueba(n == 0, "cero objetos invalidos", str(n))
     cur.execute("select count(*) from apex_application_pages where application_id = 100")
     n = cur.fetchone()[0]
-    comprueba(n == 21, "siguen las 21 paginas", str(n))
+    comprueba(n == 23, "siguen las 23 paginas", str(n))
 
     print(f"\nRESULTADO: FALLAS={fallas}")
     con.close()

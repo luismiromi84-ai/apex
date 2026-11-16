@@ -1,4 +1,4 @@
-"""El menu lateral tiene que salir en orden alfabetico.
+"""El menu lateral: Home primero y el resto en orden alfabetico.
 
 Comprueba las dos caras: la secuencia guardada en APEX (APEX_APPLICATION_LIST_ITEMS) y el
 orden que pinta el navegador de verdad (Edge headless por CDP, con un ADMIN temporal).
@@ -23,8 +23,8 @@ import oracledb
 from verificar_conexion import CONNECT_STRING, credenciales
 
 USUARIO, CLAVE = "diag.menu", "Diag#2026"
-ESPERADO = ["Administración", "Facturación", "Gestión de Usuarios", "Home", "Panel general",
-            "Presupuestos"]
+ESPERADO = ["Home", "Administración", "Clientes", "Facturación", "Gestión de Usuarios",
+            "Panel general", "Presupuestos"]
 fallas = 0
 
 c = credenciales()
@@ -44,7 +44,7 @@ for texto, seq in filas:
 orden_apex = [t for t, _ in filas]
 if orden_apex != ESPERADO:
     fallas += 1
-    print("  MAL el orden guardado no es alfabetico:", orden_apex)
+    print("  MAL el orden guardado no es el orden esperado (Home primero):", orden_apex)
 
 # 2) El render real del navegador.
 cur.execute("begin delete from usuario_empresa where usuario_id in (select usuario_id from usuario where upper(username)='DIAG.MENU'); commit; delete from usuario where upper(username)='DIAG.MENU'; commit; end;")

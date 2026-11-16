@@ -19,17 +19,28 @@
 -- nunca quede fuera del conjunto de asociaciones (que es lo que el spec exige:
 -- ID_EMPRESA se recalcula como el menor de la seleccion).
 --
--- Se escribe con INSERT + DUP_VAL_ON_INDEX en vez de SELECT + INSERT para que
--- dos sesiones que guarden el mismo par a la vez no se peleen.
+-- Se mira primero y SOLO se inserta si falta. Con "insert + cuando duplicado"
+-- el caso "el par ya existe en ESTA misma transaccion" (la pagina 4 lo inserta
+-- y despues actualiza ID_EMPRESA) no da un duplicado limpio: en esta ADB da
+-- ORA-12860 (medido el 2026-11-11). El manejador queda como red de seguridad.
 -- =============================================================================
 
 create or replace trigger trg_usuario_empresa_principal
     after insert or update of id_empresa on usuario
     for each row
     when (new.id_empresa is not null)
+declare
+    v_existe number;
 begin
-    insert into usuario_empresa (usuario_id, id_empresa)
-    values (:new.usuario_id, :new.id_empresa);
+    select count(*) into v_existe
+      from usuario_empresa
+     where usuario_id = :new.usuario_id
+       and id_empresa  = :new.id_empresa;
+
+    if v_existe = 0 then
+        insert into usuario_empresa (usuario_id, id_empresa)
+        values (:new.usuario_id, :new.id_empresa);
+    end if;
 exception
     when dup_val_on_index then
         null;

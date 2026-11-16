@@ -46,8 +46,13 @@ def main():
     for nombre in ("crear-usuario", "update-usuario", "eliminar-usuario", "desbloquear-usuario"):
         clave = [k for k in procesos if k.lower().replace(" ", "-") == nombre]
         cuerpo = procesos[clave[0]] if clave else ""
-        comprueba("fn_clean_num(:P4_ID_EMPRESA)" in cuerpo or "fn_clean_num(:P4_USUARIO_ID)" in cuerpo,
-                  f"{nombre}: valida la empresa")
+        # Desde la fase 3 la validacion de "es una empresa suya" vive en
+        # v_empresas_usuario (crear) o en fn_usuario_administrable / el
+        # procedimiento (los otros tres).
+        valida = ("v_empresas_usuario" in cuerpo
+                  or "fn_usuario_administrable" in cuerpo
+                  or "prc_empresas_usuario" in cuerpo)
+        comprueba(valida, f"{nombre}: valida la empresa")
         comprueba("raise_application_error(-20003" in cuerpo, f"{nombre}: rechaza con -20003")
 
     print("== Lista de usuarios (pagina 3) ==")
@@ -144,7 +149,7 @@ def main():
     comprueba(n == 0, "cero objetos invalidos", str(n))
     cur.execute("select count(*) from apex_application_pages where application_id = 100")
     n = cur.fetchone()[0]
-    comprueba(n == 21, "siguen las 21 paginas", str(n))
+    comprueba(n == 23, "siguen las 23 paginas", str(n))
 
     print(f"\nRESULTADO: FALLAS={fallas}")
     con.close()

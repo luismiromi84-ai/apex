@@ -366,7 +366,7 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(9156795883584624)
-,p_list_item_display_sequence=>40
+,p_list_item_display_sequence=>1
 ,p_list_item_link_text=>'Home'
 ,p_static_id=>'home'
 ,p_list_item_link_target=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
@@ -393,6 +393,17 @@ wwv_flow_imp_shared.create_list_item(
 ,p_security_scheme=>wwv_flow_imp.id(9149896901584567)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'19'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(43000000000000550)
+,p_list_item_display_sequence=>15
+,p_list_item_link_text=>'Clientes'
+,p_static_id=>'clientes'
+,p_list_item_link_target=>'f?p=&APP_ID.:20:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-users'
+,p_security_scheme=>wwv_flow_imp.id(9149896901584567)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'20,21'
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(11948716200514858)
@@ -3535,6 +3546,13 @@ wwv_flow_imp_shared.create_menu_option(
 ,p_static_id=>'administracion'
 ,p_link=>'f?p=&APP_ID.:19:&APP_SESSION.::&DEBUG.:::'
 ,p_page_id=>19
+);
+wwv_flow_imp_shared.create_menu_option(
+ p_id=>wwv_flow_imp.id(43000000000000551)
+,p_short_name=>'Clientes'
+,p_static_id=>'clientes'
+,p_link=>'f?p=&APP_ID.:20:&APP_SESSION.::&DEBUG.:::'
+,p_page_id=>20
 );
 wwv_flow_imp_shared.create_menu_option(
  p_id=>wwv_flow_imp.id(23608707238366012)
@@ -8750,46 +8768,6 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-user-plus'
 ,p_grid_new_row=>'Y'
 );
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(43000000000000098)
-,p_button_sequence=>20
-,p_button_plug_id=>wwv_flow_imp.id(10564941614198500)
-,p_button_name=>'BTN_LOGOS'
-,p_static_id=>'btn-logos'
-,p_show_as_disabled=>false
-,p_button_action=>'REDIRECT_PAGE'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
-,p_button_template_id=>2084305881903810008
-,p_button_is_hot=>'N'
-,p_button_image_alt=>'Logo de empresas'
-,p_button_redirect_url=>'f?p=&APP_ID.:17:&SESSION.::&DEBUG.:17::'
-,p_warn_on_unsaved_changes=>null
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
-,p_button_condition2=>'PLSQL'
-,p_button_condition_type=>'EXPRESSION'
-,p_icon_css_classes=>'fa-image'
-,p_grid_new_row=>'N'
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(43000000000000160)
-,p_button_sequence=>25
-,p_button_plug_id=>wwv_flow_imp.id(10564941614198500)
-,p_button_name=>'BTN_FISCAL'
-,p_static_id=>'btn-datos-fiscales'
-,p_show_as_disabled=>false
-,p_button_action=>'REDIRECT_PAGE'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
-,p_button_template_id=>2084305881903810008
-,p_button_is_hot=>'N'
-,p_button_image_alt=>'Datos fiscales'
-,p_button_redirect_url=>'f?p=&APP_ID.:18:&SESSION.::&DEBUG.:18::'
-,p_warn_on_unsaved_changes=>null
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
-,p_button_condition2=>'PLSQL'
-,p_button_condition_type=>'EXPRESSION'
-,p_icon_css_classes=>'fa-file-text-o'
-,p_grid_new_row=>'N'
-);
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(10570004842198544)
 ,p_name=>'Edit Report - Dialog Closed'
@@ -9088,13 +9066,11 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(13416539681455103)
 ,p_name=>'P4_ID_EMPRESA'
-,p_source_data_type=>'NUMBER'
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(10554535102198302)
-,p_item_source_plug_id=>wwv_flow_imp.id(10554535102198302)
-,p_prompt=>'Empresa'
-,p_source=>'ID_EMPRESA'
-,p_display_as=>'NATIVE_SELECT_LIST'
+,p_prompt=>unistr('Empresas')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_CHECKBOX'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT e.nombre_empresa || '' ('' || e.cod_pais || '')'' AS display_value,',
 '       e.id_empresa AS return_value',
@@ -9102,16 +9078,10 @@ wwv_flow_imp_page.create_page_item(
 ' WHERE e.estado = ''ACTIVO''',
 '   AND UPPER(e.username) = UPPER(:APP_USER)',
 ' ORDER BY e.nombre_empresa'))
-,p_lov_display_null=>'YES'
-,p_lov_null_text=>'-- Seleccione Empresa --'
-,p_cHeight=>1
-,p_colspan=>4
+,p_colspan=>12
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
 ,p_lov_display_extra=>'NO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(11751501023216201)
@@ -9220,13 +9190,13 @@ wwv_flow_imp_page.create_page_item(
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(43000000000000066)
-,p_validation_name=>'Activo exige empresa y rol'
-,p_static_id=>'activo-exige-empresa-rol'
+,p_validation_name=>'Activo exige rol'
+,p_static_id=>'activo-exige-rol'
 ,p_validation_sequence=>10
-,p_validation=>'NOT (:P4_ESTADO = ''ACTIVO'' AND (:P4_ID_EMPRESA IS NULL OR :P4_ROL_ID IS NULL))'
+,p_validation=>'NOT (:P4_ESTADO = ''ACTIVO'' AND :P4_ROL_ID IS NULL)'
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'EXPRESSION'
-,p_error_message=>'No se puede activar un usuario sin empresa y rol.'
+,p_error_message=>'No se puede activar un usuario sin rol.'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -9285,14 +9255,36 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'crear-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
-'    v_mia number;',
+'    v_sel    varchar2(4000) := :P4_ID_EMPRESA;',
+'    v_n      number := 0;',
+'    v_min    number;',
+'    v_emp    number;',
+'    v_ok     number;',
+'    v_estado varchar2(20);',
+'    v_msg    varchar2(400);',
+'    v_id     number;',
 'begin',
-'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
-'      into v_mia from dual;',
+'    -- Fase 3: el administrador asigna VARIAS de SUS empresas (casillas).',
+'    -- nvl(v_sel, '':'') deja la lista vacia cuando no marco nada, y entonces',
+'    -- manda el -20013 de mas abajo (no el -20003 de empresa ajena).',
+'    for r in (select trim(column_value) as valor',
+'                from table(apex_string.split(nvl(v_sel, '':''), '':''))) loop',
+'        if r.valor is not null then',
+'            v_emp := fn_clean_num(r.valor);',
+'            select count(*) into v_ok',
+'              from v_empresas_usuario',
+'             where upper(username) = upper(:APP_USER)',
+'               and id_empresa = v_emp;',
+'            if v_ok = 0 then',
+'                raise_application_error(-20003, ''Solo puede asignar empresas suyas.'');',
+'            end if;',
+'            v_n := v_n + 1;',
+'            v_min := least(nvl(v_min, v_emp), v_emp);',
+'        end if;',
+'    end loop;',
 '',
-'    -- Cada administrador da de alta usuarios SOLO en su empresa.',
-'    if v_mia is null or fn_clean_num(:P4_ID_EMPRESA) <> v_mia then',
-'        raise_application_error(-20003, ''Solo puede crear usuarios en su propia empresa.'');',
+'    if v_n = 0 then',
+'        raise_application_error(-20013, ''Selecciona al menos una empresa para el usuario.'');',
 '    end if;',
 '',
 'INSERT INTO wksp_sypexws.usuario (',
@@ -9309,11 +9301,16 @@ wwv_flow_imp_page.create_page_process(
 '    :P4_EMAIL,',
 '    :P4_ESTADO,',
 '    :P4_ROL_ID,',
-'    v_mia,',
+'    v_min,',
 '    sypex_hash_password(:P4_PASSWORD),',
 '    SYSDATE,',
 '    ''S''',
-');',
+') RETURNING usuario_id INTO v_id;',
+'',
+'    prc_empresas_usuario(v_id, v_sel, :APP_USER, v_estado, v_msg);',
+'    if v_msg is not null then',
+'        apex_application.g_print_success_message := v_msg;',
+'    end if;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
@@ -9329,26 +9326,16 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'desbloquear-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
-'    v_mia number;',
-'    v_obj number;',
+'    v_id number := fn_clean_num(:P4_USUARIO_ID);',
 'begin',
-'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
-'      into v_mia from dual;',
-'    select (select id_empresa from usuario where usuario_id = fn_clean_num(:P4_USUARIO_ID))',
-'      into v_obj from dual;',
-'',
-'    -- Solo los usuarios de la propia empresa; un pendiente sin empresa se puede',
-'    -- activar, pero solo para la empresa del administrador.',
-'    if v_mia is null',
-'       or (v_obj is not null and v_obj <> v_mia)',
-'       or fn_clean_num(:P4_ID_EMPRESA) <> v_mia then',
-unistr('        raise_application_error(-20003, ''Solo puede administrar usuarios de su propia empresa.'');'),
+'    if not fn_usuario_administrable(:APP_USER, v_id) then',
+'        raise_application_error(-20003, ''Solo puede administrar usuarios de su empresa.'');',
 '    end if;',
 '',
 'update usuario',
 '   set reintentos_fallidos = 0,',
 '       bloqueado_hasta = null',
-' where usuario_id = fn_clean_num(:P4_USUARIO_ID);',
+' where usuario_id = v_id;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
@@ -9365,24 +9352,13 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'eliminar-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
-'    v_mia number;',
-'    v_obj number;',
+'    v_id number := fn_clean_num(:P4_USUARIO_ID);',
 'begin',
-unistr('    -- Auditoria: un usuario NO se borra. Se desactiva (Estado = INACTIVO)'),
-unistr('    -- desde este mismo formulario, y la fila queda para el historial.'),
-'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
-'      into v_mia from dual;',
-'    select (select id_empresa from usuario where usuario_id = fn_clean_num(:P4_USUARIO_ID))',
-'      into v_obj from dual;',
-'',
-'    -- Un usuario PENDIENTE sin empresa se puede activar: el UPDATE lo asigna',
-'    -- a la empresa del administrador. Solo se rechaza si es de OTRA empresa.',
-'    if v_mia is null',
-'       or (v_obj is not null and v_obj <> v_mia) then',
-unistr('        raise_application_error(-20003, ''Solo puede administrar usuarios de su propia empresa.'');'),
+'    if not fn_usuario_administrable(:APP_USER, v_id) then',
+'        raise_application_error(-20003, ''Solo puede administrar usuarios de su empresa.'');',
 '    end if;',
 '',
-unistr('    raise_application_error(-20005, ''Los usuarios no se eliminan: por auditoria la cuenta se conserva. Pon el estado en INACTIVO y guarda.'');'),
+'    raise_application_error(-20005, ''Los usuarios no se eliminan: por auditoria la cuenta se conserva. Pon el estado en INACTIVO y guarda.'');',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
@@ -9412,19 +9388,13 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'update-usuario'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
-'    v_mia number;',
-'    v_obj number;',
+'    v_id     number := fn_clean_num(:P4_USUARIO_ID);',
+'    v_estado varchar2(20);',
+'    v_msg    varchar2(400);',
 'begin',
-'    select (select id_empresa from usuario where upper(username) = upper(:APP_USER))',
-'      into v_mia from dual;',
-'    select (select id_empresa from usuario where usuario_id = fn_clean_num(:P4_USUARIO_ID))',
-'      into v_obj from dual;',
-'',
-'    -- Un usuario PENDIENTE sin empresa se puede activar: el UPDATE lo asigna',
-'    -- a la empresa del administrador. Solo se rechaza si es de OTRA empresa.',
-'    if v_mia is null',
-'       or (v_obj is not null and v_obj <> v_mia) then',
-unistr('        raise_application_error(-20003, ''Solo puede administrar usuarios de su propia empresa.'');'),
+'    -- Fase 3: la guarda es "comparte alguna empresa", no "es de mi empresa".',
+'    if not fn_usuario_administrable(:APP_USER, v_id) then',
+'        raise_application_error(-20003, ''Solo puede administrar usuarios de su empresa.'');',
 '    end if;',
 '',
 'UPDATE wksp_sypexws.usuario',
@@ -9432,7 +9402,6 @@ unistr('        raise_application_error(-20003, ''Solo puede administrar usuario
 '       email               = :P4_EMAIL,',
 '       estado              = :P4_ESTADO,',
 '       rol_id              = :P4_ROL_ID,',
-'       id_empresa          = v_mia,',
 '       password_hash       = CASE',
 '                               WHEN :P4_PASSWORD IS NOT NULL THEN sypex_hash_password(:P4_PASSWORD)',
 '                               ELSE password_hash',
@@ -9449,12 +9418,50 @@ unistr('        raise_application_error(-20003, ''Solo puede administrar usuario
 '                               WHEN :P4_PASSWORD IS NOT NULL THEN ''S''',
 '                               ELSE debe_cambiar_clave',
 '                             END',
-' WHERE usuario_id     = fn_clean_num(:P4_USUARIO_ID);',
+' WHERE usuario_id     = v_id;',
+'',
+'    -- Las empresas las sincroniza el procedimiento (tambien fija ID_EMPRESA',
+'    -- a la menor y desactiva si el usuario se queda sin ninguna).',
+'    prc_empresas_usuario(v_id, :P4_ID_EMPRESA, :APP_USER, v_estado, v_msg);',
+'    if v_msg is not null then',
+'        apex_application.g_print_success_message := v_msg;',
+'    end if;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(10562251657198329)
 ,p_internal_uid=>11938733711907303
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000406)
+,p_process_sequence=>20
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>unistr('Carga empresas del usuario')
+,p_static_id=>'carga-empresas-usuario'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id  number := fn_clean_num(:P4_USUARIO_ID);',
+'    v_sel varchar2(4000);',
+'begin',
+'    -- Solo al abrir el dialogo. En el render que sigue a un submit NO se carga:',
+'    -- pisaria las casillas que el administrador acaba de marcar (o desmarcar).',
+'    if v_id is null or :REQUEST is not null then',
+'        return;',
+'    end if;',
+'',
+'    -- El item es de casillas y no es columna del formulario: sus valores se',
+'    -- cargan de USUARIO_EMPRESA (formato 1:3 que es el que manda APEX).',
+'    select listagg(id_empresa, '':'' ) within group (order by id_empresa)',
+'      into v_sel',
+'      from usuario_empresa',
+'     where usuario_id = v_id;',
+'    apex_util.set_session_state(''P4_ID_EMPRESA'', v_sel);',
+'exception',
+'    when no_data_found then apex_util.set_session_state(''P4_ID_EMPRESA'', null);',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000406
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000002)
@@ -19304,6 +19311,46 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_template_options=>'#DEFAULT#'
 );
 wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000407)
+,p_button_sequence=>30
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_button_name=>'BTN_FISCAL_ADMIN'
+,p_static_id=>'btn-datos-fiscales-admin'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>unistr('Datos fiscales')
+,p_button_redirect_url=>'f?p=&APP_ID.:18:&SESSION.::&DEBUG.:18::'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-file-text-o'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000408)
+,p_button_sequence=>40
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_button_name=>'BTN_LOGO_ADMIN'
+,p_static_id=>'btn-logo-admin'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft:t-Button--hoverIconSpin'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>unistr('Logo de empresa')
+,p_button_redirect_url=>'f?p=&APP_ID.:17:&SESSION.::&DEBUG.:17::'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-image'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000388)
 ,p_button_sequence=>200
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000000381)
@@ -19486,6 +19533,553 @@ unistr('        apex_application.g_print_success_message := ''Empresa creada con
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000000388)
+);
+end;
+/
+
+prompt --application/pages/page_00020
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>20
+,p_name=>'Clientes'
+,p_alias=>'CLIENTES'
+,p_step_title=>'Clientes'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
+'    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
+'    border: none !important;',
+'    box-shadow: none !important;',
+'    padding: 16px 20px !important;',
+'}',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title {',
+'    color: #ffffff !important;',
+'    font-weight: 600 !important;',
+'    font-size: 1.25rem !important;',
+'}'))
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000501)
+,p_plug_name=>'Clientes'
+,p_static_id=>'clientes-lista'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+ 'select c.id_cliente,',
+ '       c.rif,',
+ '       c.razon_social,',
+ '       c.cod_pais,',
+ '       case c.tipo_persona when ''J'' then ''Juridica'' else ''Natural'' end as tipo,',
+ '       c.email,',
+ '       c.telefono,',
+ '       c.estado',
+ '  from clientes c',
+ ' where c.id_empresa in (select id_empresa from v_empresas_usuario',
+ '                         where upper(username) = upper(:APP_USER))',
+ ' order by c.razon_social'))
+,p_plug_source_type=>'NATIVE_IR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000000502)
+,p_max_row_count_message=>'El informe tiene demasiadas filas (#MAX_ROW_COUNT#). Filtra.'
+,p_no_data_found_message=>'No hay clientes para tus empresas.'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000503)
+,p_db_column_name=>'ID_CLIENTE'
+,p_display_order=>0
+,p_is_primary_key=>'Y'
+,p_column_identifier=>'A'
+,p_column_label=>'Editar'
+,p_column_link=>'f?p=&APP_ID.:21:&APP_SESSION.::&DEBUG.::P21_ID_CLIENTE:#ID_CLIENTE#'
+,p_column_linktext=>'<span class="fa fa-pencil" aria-hidden="true"></span> Editar'
+,p_column_type=>'NUMBER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000504)
+,p_db_column_name=>'RIF'
+,p_display_order=>10
+,p_column_identifier=>'B'
+,p_column_label=>'RIF / RFC'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000505)
+,p_db_column_name=>'RAZON_SOCIAL'
+,p_display_order=>20
+,p_column_identifier=>'C'
+,p_column_label=>'Nombre'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000506)
+,p_db_column_name=>'COD_PAIS'
+,p_display_order=>30
+,p_column_identifier=>'D'
+,p_column_label=>unistr('Pa\00EDs')
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000507)
+,p_db_column_name=>'TIPO'
+,p_display_order=>40
+,p_column_identifier=>'E'
+,p_column_label=>unistr('Tipo')
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000508)
+,p_db_column_name=>'EMAIL'
+,p_display_order=>50
+,p_column_identifier=>'F'
+,p_column_label=>'Correo'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000509)
+,p_db_column_name=>'TELEFONO'
+,p_display_order=>60
+,p_column_identifier=>'G'
+,p_column_label=>unistr('Tel\00E9fono')
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000510)
+,p_db_column_name=>'ESTADO'
+,p_display_order=>70
+,p_column_identifier=>'H'
+,p_column_label=>'Estado'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000511)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000501)
+,p_button_name=>'BTN_NUEVO_CLIENTE'
+,p_static_id=>'btn-nuevo-cliente'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Nuevo cliente'
+,p_button_redirect_url=>'f?p=&APP_ID.:21:&APP_SESSION.::&DEBUG.:21::'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-plus'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000512)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol clientes'
+,p_static_id=>'valida-rol-clientes'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000512
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000513)
+,p_name=>unistr('Lista - Di\00E1logo cerrado')
+,p_static_id=>'clientes-dialogo-cerrado'
+,p_event_sequence=>10
+,p_triggering_element_type=>'REGION'
+,p_triggering_region_id=>wwv_flow_imp.id(43000000000000501)
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'apexafterclosedialog'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000514)
+,p_event_id=>wwv_flow_imp.id(43000000000000513)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000000501)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+end;
+/
+
+prompt --application/pages/page_00021
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>21
+,p_name=>'Cliente'
+,p_alias=>'CLIENTE'
+,p_page_mode=>'MODAL'
+,p_step_title=>'Cliente'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>2101883943284197310
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_resizable=>'Y'
+,p_protection_level=>'C'
+,p_page_component_map=>'16'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000520)
+,p_plug_name=>'Cliente'
+,p_static_id=>'cliente-form'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000521)
+,p_name=>'P21_ID_CLIENTE'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000522)
+,p_name=>'P21_ID_EMPRESA'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>'Empresa'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT e.nombre_empresa || '' ('' || e.cod_pais || '')'' AS display_value,',
+'       e.id_empresa AS return_value',
+'  FROM v_empresas_usuario e',
+' WHERE e.estado = ''ACTIVO''',
+'   AND UPPER(e.username) = UPPER(:APP_USER)',
+' ORDER BY e.nombre_empresa'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Seleccione Empresa --'
+,p_cHeight=>1
+,p_colspan=>6
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000523)
+,p_name=>'P21_TIPO_RIF'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>'Tipo de RIF'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:Juridica (J);J,Venezolano (V);V,Extranjero (E);E'
+,p_lov_display_null=>'NO'
+,p_cHeight=>1
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000524)
+,p_name=>'P21_RIF'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>'RIF / RFC'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_cSize=>20
+,p_cMaxlength=>20
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000525)
+,p_name=>'P21_RAZON_SOCIAL'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>unistr('Nombre o raz\00F3n social')
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_cSize=>40
+,p_cMaxlength=>150
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000526)
+,p_name=>'P21_COD_PAIS'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>unistr('Pa\00EDs')
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT p.nombre AS display_value, p.cod_pais AS return_value',
+'  FROM paises p',
+' WHERE p.activo = ''S''',
+' ORDER BY p.nombre'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Seleccione --'
+,p_cHeight=>1
+,p_colspan=>6
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000527)
+,p_name=>'P21_EMAIL'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>'Correo'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_cSize=>40
+,p_cMaxlength=>100
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000528)
+,p_name=>'P21_TELEFONO'
+,p_item_sequence=>80
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>unistr('Tel\00E9fono')
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_cSize=>30
+,p_cMaxlength=>50
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000529)
+,p_name=>'P21_DIRECCION'
+,p_item_sequence=>90
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>unistr('Direcci\00F3n')
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_cSize=>50
+,p_cMaxlength=>300
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000530)
+,p_name=>'P21_ESTADO'
+,p_item_sequence=>100
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_prompt=>'Estado'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:ACTIVO;ACTIVO,INACTIVO;INACTIVO'
+,p_lov_display_null=>'NO'
+,p_cHeight=>1
+,p_colspan=>6
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000531)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_button_name=>'BTN_GUARDAR_CLIENTE'
+,p_static_id=>'btn-guardar-cliente'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-save'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000532)
+,p_button_sequence=>210
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000520)
+,p_button_name=>'BTN_CANCELAR_CLIENTE'
+,p_static_id=>'btn-cancelar-cliente'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Volver'
+,p_button_redirect_url=>'f?p=&APP_ID.:20:&APP_SESSION.::&DEBUG.:20::'
+,p_warn_on_unsaved_changes=>null
+,p_icon_css_classes=>'fa-arrow-left'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000533)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol cliente'
+,p_static_id=>'valida-rol-cliente'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000533
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000534)
+,p_process_sequence=>20
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Carga cliente'
+,p_static_id=>'carga-cliente'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id  number := nullif(fn_clean_num(:P21_ID_CLIENTE), 0);',
+'    v_row clientes%rowtype;',
+'begin',
+'    -- Solo al abrir. En el render que sigue a un submit NO se carga: pisaria',
+'    -- lo que el usuario acaba de escribir.',
+'    if v_id is null or :REQUEST is not null then',
+'        return;',
+'    end if;',
+'    begin',
+'        select * into v_row from clientes where id_cliente = v_id;',
+'    exception',
+'        when no_data_found then return;',
+'    end;',
+'    apex_util.set_session_state(''P21_ID_EMPRESA'', v_row.id_empresa);',
+'    apex_util.set_session_state(''P21_TIPO_RIF'',',
+'        case when substr(upper(v_row.rif), 1, 1) in (''V'', ''E'')',
+'             then substr(upper(v_row.rif), 1, 1) else ''J'' end);',
+'    apex_util.set_session_state(''P21_RIF'',',
+'        regexp_replace(replace(nvl(v_row.rif, '' ''), ''-'', null), ''^[JVE]''));',
+'    apex_util.set_session_state(''P21_RIF'', v_row.rif);',
+'    apex_util.set_session_state(''P21_RAZON_SOCIAL'', v_row.razon_social);',
+'    apex_util.set_session_state(''P21_COD_PAIS'', v_row.cod_pais);',
+'    apex_util.set_session_state(''P21_EMAIL'', v_row.email);',
+'    apex_util.set_session_state(''P21_TELEFONO'', v_row.telefono);',
+'    apex_util.set_session_state(''P21_DIRECCION'', v_row.direccion);',
+'    apex_util.set_session_state(''P21_ESTADO'', nvl(v_row.estado, ''ACTIVO''));',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000534
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000535)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar cliente'
+,p_static_id=>'guardar-cliente'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id    number := nullif(fn_clean_num(:P21_ID_CLIENTE), 0);',
+'    v_emp   number := nullif(fn_clean_num(:P21_ID_EMPRESA), 0);',
+'    v_letra varchar2(1) := nvl(:P21_TIPO_RIF, ''J'');',
+'    v_tipo  varchar2(1) := case when nvl(:P21_TIPO_RIF, ''J'') = ''J'' then ''J'' else ''N'' end;',
+'    v_pais  varchar2(2) := :P21_COD_PAIS;',
+'    v_num   varchar2(30) := regexp_replace(replace(replace(upper(trim(:P21_RIF)), ''-'', null), '' '', null), ''^[JVE]'');',
+'    v_rif   varchar2(20) := v_letra || ''-'' || v_num;',
+'    v_n     number;',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'    if v_emp is null or not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        raise_application_error(-20003, ''Esa empresa no es suya.'');',
+'    end if;',
+'    if :P21_RAZON_SOCIAL is null then',
+'        raise_application_error(-20020, ''El nombre del cliente es obligatorio.'');',
+'    end if;',
+'    if not fn_rif_cliente_valido(v_rif, v_pais, v_tipo) then',
+'        raise_application_error(-20021, ''El RIF/RFC no tiene la forma esperada: ''',
+'            || case when v_tipo = ''J'' then ''juridica'' else ''natural'' end',
+'            || '' en '' || nvl(v_pais, ''(sin pais)'') || ''. Vease la ayuda del campo.'');',
+'    end if;',
+'    select count(*) into v_n',
+'      from clientes',
+'     where id_empresa = v_emp',
+'       and upper(rif) = v_rif',
+'       and id_cliente <> nvl(v_id, -1);',
+'    if v_n > 0 then',
+'        apex_application.g_print_success_message :=',
+'            ''Aviso: ya existe un cliente con ese RIF en esta empresa.'';',
+'    end if;',
+'    if v_id is null then',
+'        insert into clientes (id_empresa, rif, razon_social, tipo_persona, cod_pais,',
+'                              email, telefono, direccion, estado)',
+'        values (v_emp, v_rif, :P21_RAZON_SOCIAL, v_tipo, v_pais,',
+'                :P21_EMAIL, :P21_TELEFONO, :P21_DIRECCION, nvl(:P21_ESTADO, ''ACTIVO''));',
+'    else',
+'        update clientes',
+'           set id_empresa    = v_emp,',
+'               rif           = v_rif,',
+'               razon_social  = :P21_RAZON_SOCIAL,',
+'               tipo_persona  = v_tipo,',
+'               cod_pais      = v_pais,',
+'               email         = :P21_EMAIL,',
+'               telefono      = :P21_TELEFONO,',
+'               direccion     = :P21_DIRECCION,',
+'               estado        = nvl(:P21_ESTADO, ''ACTIVO'')',
+'         where id_cliente = v_id;',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000531)
+,p_process_success_message=>'Cliente guardado.'
+,p_internal_uid=>43000000000000535
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000536)
+,p_process_sequence=>20
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_CLOSE_WINDOW'
+,p_process_name=>'Cerrar cliente'
+,p_static_id=>'close-dialog-cliente'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'show_success_messages', 'Y')).to_clob
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000531)
+,p_internal_uid=>43000000000000536
 );
 end;
 /
