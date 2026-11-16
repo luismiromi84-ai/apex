@@ -64,6 +64,11 @@ delete from producto_servicio where id_producto_servicio between 900000 and 9009
 commit;
 /
 
+delete from usuario_empresa where usuario_id between 900000 and 900999;
+/
+commit;
+/
+
 delete from usuario where usuario_id between 900000 and 900999;
 /
 commit;
@@ -83,6 +88,23 @@ values (900002, 'prueba2', 'prueba2@synpex.local', sypex_hash_password('Prueba#2
 insert into usuario (usuario_id, username, email, password_hash, estado, id_empresa, rol_id, debe_cambiar_clave)
 values (900003, 'prueba3', 'prueba3@synpex.local', sypex_hash_password('Prueba#2026'), 'ACTIVO', 1,
         (select id_rol from syn_roles where codigo_rol = 'CONSULTA'), 'N');
+/
+
+--
+-- Los pares en USUARIO_EMPRESA (tarea 4 del plan de multiempresa, 2026-11-10).
+-- El fixture es anterior al modelo multiempresa (2026-11-08) y creaba los
+-- usuarios solo con la columna unica USUARIO.ID_EMPRESA. Con el modelo
+-- nuevo, un usuario SIN par no tiene ninguna empresa: la vista
+-- V_EMPRESAS_USUARIO no le devuelve nada y el filtro de la pagina 3 (F5) lo
+-- trata como 'pendiente sin empresa'. Se siembran los pares que
+-- corresponden a la empresa principal de cada usuario de prueba.
+insert into usuario_empresa (usuario_id, id_empresa)
+select u, e from (
+    select 900001 u, 1 e from dual
+    union all select 900002, 2 from dual
+    union all select 900003, 1 from dual) p
+ where not exists (select 1 from usuario_empresa x
+                    where x.usuario_id = p.u and x.id_empresa = p.e);
 /
 
 -- -----------------------------------------------------------------------------

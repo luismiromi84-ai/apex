@@ -43,17 +43,19 @@ select 'C) la computacion de P7_FOLIO no filtra por empresa'
    and c.item_name = 'P7_FOLIO'
    and instr(upper(c.computation), 'ID_EMPRESA') = 0
 union all
--- D) pagina 9: prefijo F-, filtro por empresa, sin corte por tipo de documento
-select 'D) el folio de factura no conserva el prefijo F- o no filtra por empresa'
+-- D) pagina 9: el folio sale de fn_siguiente_folio por empresa Y por serie
+--    (desde el 2026-11-07 el prefijo depende de FAC/NC/ND, asi que la accion
+--    tiene que mirar tambien el tipo de documento; antes de las notas no lo hacia)
+select 'D) el folio de factura no usa el contador por empresa y tipo de documento'
   from dual
  where not exists (select 1
                      from apex_application_page_da_acts a
                     where a.application_id = 100
                       and a.page_id = 9
                       and instr(a.affected_elements, 'P9_FOLIO_FACTURA') > 0
-                      and instr(upper(a.attributes), 'ID_EMPRESA') > 0
-                      and instr(a.attributes, '''F-''') > 0
-                      and instr(upper(a.attributes), 'TIPO_DOCUMENTO') = 0)
+                      and instr(upper(a.attributes), 'FN_SIGUIENTE_FOLIO') > 0
+                      and instr(upper(a.attributes), 'P9_ID_EMPRESA') > 0
+                      and instr(upper(a.attributes), 'TIPO_DOCUMENTO') > 0)
 union all
 -- E) el calculo del folio de factura debe dispararse al cambiar la empresa (evento
 --    'change', no 'focusout': la empresa tambien llega por retorno del presupuesto)

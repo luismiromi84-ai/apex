@@ -23,6 +23,7 @@ prompt ============================================================
 @@../tabla/empresas.sql
 @@../tabla/syn_roles.sql
 @@../tabla/usuario.sql
+@@../tabla/usuario_empresa.sql
 @@../tabla/syn_login_log.sql
 @@../tabla/syn_error_log.sql
 @@../tabla/clientes.sql
@@ -67,6 +68,7 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_factura_editable.sql
 @@../funciones/fn_presupuesto_editable.sql
 @@../funciones/fn_nota_traible.sql
+@@../funciones/fn_nota_con_lineas.sql
 @@../funciones/fn_transicion_estado_valida.sql
 -- Folio atomico por empresa (lo llaman pkg_presupuestos y pkg_facturacion).
 @@../funciones/fn_asignar_folio.sql
@@ -78,6 +80,7 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 
 -- Vistas (dependen de tablas y del paquete de gasto real, pero no del body).
 @@../vistas/v_presupuesto_real.sql
+@@../vistas/v_empresas_usuario.sql
 
 prompt ============================================================
 prompt 4/8 Especificaciones de packages
@@ -98,6 +101,8 @@ prompt ============================================================
 prompt    Van despues de fn_transicion_estado_valida (bloque 3).
 @@../trigger/trg_valida_estado_presupuesto.sql
 @@../trigger/trg_valida_estado_factura.sql
+-- Multiempresa: la empresa "principal" del usuario queda siempre asociada.
+@@../trigger/trg_usuario_empresa_principal.sql
 
 prompt ============================================================
 prompt 6/8 Procedimientos

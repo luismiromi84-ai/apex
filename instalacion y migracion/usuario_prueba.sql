@@ -46,6 +46,7 @@ prompt
 -- Limpieza, cuando ya estén cargados y probados los usuarios reales:
 --
 --   alter session set current_schema = WKSP_SYPEXWS;
+--   delete from usuario_empresa where usuario_id = 9001;
 --   delete from usuario   where usuario_id = 9001;
 --   delete from syn_roles where id_rol      = 9001;
 --   commit;

@@ -44,6 +44,15 @@ delete from producto_servicio where id_producto_servicio between 900000 and 9009
 commit;
 /
 
+-- Los pares en USUARIO_EMPRESA (tabla de asociacion del modelo
+-- multiempresa, 2026-11-10) van PRIMERO: la FK va de USUARIO_EMPRESA a
+-- USUARIO, asi que sin este borrado el 'delete from usuario' falla con
+-- ORA-02292 (hay filas hijas).
+delete from usuario_empresa where usuario_id between 900000 and 900999;
+/
+commit;
+/
+
 delete from usuario where usuario_id between 900000 and 900999;
 /
 commit;
@@ -57,6 +66,8 @@ union all
 select 'productos', count(*) from producto_servicio where id_producto_servicio between 900000 and 900999
 union all
 select 'usuarios', count(*) from usuario where usuario_id between 900000 and 900999
+union all
+select 'usuario_empresa', count(*) from usuario_empresa where usuario_id between 900000 and 900999
 union all
 select 'gastos', count(*) from gasto_real where id_gasto between 900000 and 900999
 /

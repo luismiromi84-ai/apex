@@ -28,6 +28,11 @@
 --   T11 Presupuesto USD con la tasa del dia     -> guarda
 --   T12 fn_clean_num conserva una tasa de 6 decimales (antes devolvia NULL
 --       y la factura moria con ORA-01400 al insertar la tasa)
+--   T13 con p_fecha_referencia = 01/11 se acepta la tasa sembrada para ese dia
+--       (2000), que es imposible de validar contra la de hoy
+--   T14 con la fecha de referencia, una tasa absurda sigue rechazandose
+--   T15 SIN fecha de referencia, esa misma tasa se rechaza: el comportamiento
+--       por defecto sigue comparando contra p_fecha
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS;
@@ -42,6 +47,8 @@ declare
   v_tasa    number;
   v_mxn     number := fn_tasa_ves(sysdate, 'MXN');
   v_usd     number := fn_tasa_ves(sysdate, 'USD');
+  v_fecha_ref date;
+  v_tasa_ref  number;
 
   procedure falla (p_caso in varchar2, p_detalle in varchar2) is
   begin
@@ -228,11 +235,50 @@ begin
                    || sqlcode || ' ' || sqlerrm);
   end;
 
+  -- T13-T15 necesitan una tasa que SOLO cuadre con su propia fecha, para que el
+  -- caso distinga de verdad "usa la fecha de referencia" de "usa p_fecha".
+  -- Se siembra una tasa vieja muy distinta de la de hoy; todo va con rollback.
+  insert into tipo_cambio (moneda_origen, moneda_destino, tipo_tasa, tasa_cambio, fecha_vigencia)
+  values ('USD', 'VES', 'REAL', 2000, date '2026-11-01');
+  v_fecha_ref := date '2026-11-01';
+  v_tasa_ref  := 2000;
+
   -- T12: una tasa con 6 decimales no puede perderse al pasar por fn_clean_num
   v_tasa := fn_clean_num(to_char(v_mxn));
   if v_tasa is null or abs(v_tasa - v_mxn) > 0.000001 then
     falla('T12', 'fn_clean_num(' || to_char(v_mxn) || ') devolvio ' || v_tasa);
   end if;
+
+  -- T13: una tasa vieja se acepta cuando la referencia es el dia de esa tasa
+  v_tasa := fn_validar_tasa_documento('USD', sysdate, v_tasa_ref, v_fecha_ref);
+  if v_tasa is null or abs(v_tasa - v_tasa_ref) > 0.000001 then
+    falla('T13', 'con fecha de referencia ' || to_char(v_fecha_ref, 'DD/MM/YYYY')
+                 || ' devolvio ' || v_tasa || ' en vez de ' || v_tasa_ref);
+  end if;
+
+  -- T14: con la fecha de referencia, una tasa absurda sigue rechazandose
+  begin
+    v_tasa := fn_validar_tasa_documento('USD', sysdate, 9999, v_fecha_ref);
+    falla('T14', 'acepto una tasa de 9999 con referencia ' || to_char(v_fecha_ref, 'DD/MM/YYYY'));
+  exception
+    when others then
+      if sqlcode <> -20061 then
+        falla('T14', 'esperaba -20061 y fue ' || sqlcode);
+      end if;
+  end;
+
+  -- T15: sin fecha de referencia se compara contra p_fecha, como siempre: la
+  -- misma tasa de 2000 se rechaza porque hoy la del dia es ~895.
+  begin
+    v_tasa := fn_validar_tasa_documento('USD', sysdate, v_tasa_ref);
+    falla('T15', 'sin referencia acepto una tasa de ' || v_tasa_ref
+                 || ' que solo cuadra con el 01/11');
+  exception
+    when others then
+      if sqlcode <> -20061 then
+        falla('T15', 'esperaba -20061 y fue ' || sqlcode);
+      end if;
+  end;
 
   rollback;
 

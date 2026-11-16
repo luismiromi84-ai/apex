@@ -69,6 +69,9 @@ declare
 begin
   -- 2.1 registro de intentos ---------------------------------------------------
   delete from syn_login_log where usuario_intentado = 'ZZ_TEST_AUTH';
+  delete from usuario_empresa
+   where usuario_id in (select usuario_id from usuario where upper(username) = 'ZZ_TEST_AUTH');
+  commit;
   delete from usuario where upper(username) = 'ZZ_TEST_AUTH';
 
   insert into usuario (username, email, password_hash, estado, fecha_creacion, id_empresa, rol_id)
@@ -103,6 +106,8 @@ begin
   if v_log <> 6 then v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [log=' || v_log || ' filas, esperado 6]'; end if;
 
   delete from syn_login_log where usuario_intentado = 'ZZ_TEST_AUTH';
+  delete from usuario_empresa where usuario_id = v_id;
+  commit;
   delete from usuario where usuario_id = v_id;
   commit;
 
@@ -155,6 +160,9 @@ begin
   end if;
 
   -- 2.3 fn_autenticar_usuario -------------------------------------------------
+  delete from usuario_empresa
+   where usuario_id in (select usuario_id from usuario where upper(username) = 'ZZ_AUTH_TEST');
+  commit;
   delete from usuario where upper(username) = 'ZZ_AUTH_TEST';
   commit;
 
@@ -211,7 +219,10 @@ begin
     v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso6: entra estando inactivo]';
   end if;
 
-  -- caso 7: sin empresa no entra y queda registrado
+  -- caso 7: sin empresa ASOCIADA no entra y queda registrado. Desde el
+  -- 2026-11-10 el permiso sale de USUARIO_EMPRESA: dejar id_empresa en nulo no
+  -- basta si el par sigue existiendo (multiempresa: id_empresa es solo "principal").
+  delete from usuario_empresa where usuario_id = v_id2;
   update usuario set estado = 'ACTIVO', id_empresa = null where usuario_id = v_id2;
   commit;
   if fn_autenticar_usuario('ZZ_AUTH_TEST', 'Clave#2026') then
@@ -274,10 +285,15 @@ begin
   end if;
 
   delete from syn_login_log where usuario_intentado = 'ZZ_AUTH_TEST';
+  delete from usuario_empresa where usuario_id = v_id2;
+  commit;
   delete from usuario where usuario_id = v_id2;
   commit;
 
   -- 2.4 prc_post_login resuelve empresa y rol tambien para estado 'A'
+  delete from usuario_empresa
+   where usuario_id in (select usuario_id from usuario where upper(username) = 'ZZ_POST_TEST');
+  commit;
   delete from usuario where upper(username) = 'ZZ_POST_TEST';
   insert into usuario (username, email, password_hash, estado, fecha_creacion, id_empresa, rol_id)
   values ('ZZ_POST_TEST', 'zz3@test.local', 'x', 'A', sysdate, 1, 1001);
@@ -293,6 +309,9 @@ begin
     v_fallas := v_fallas + 1; v_detalle := v_detalle || ' [caso11: estado A no resuelve empresa/rol]';
   end if;
 
+  delete from usuario_empresa
+   where usuario_id in (select usuario_id from usuario where upper(username) = 'ZZ_POST_TEST');
+  commit;
   delete from usuario where upper(username) = 'ZZ_POST_TEST';
   commit;
 

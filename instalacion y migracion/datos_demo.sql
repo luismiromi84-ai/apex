@@ -29,6 +29,8 @@ delete from presupuestos      where id_presupuesto       between 1000 and 1999;
 delete from tipo_cambio       where id_tipo_cambio       between 1000 and 1999;
 delete from producto_servicio where id_producto_servicio between 1000 and 1999;
 delete from clientes          where id_cliente           between 1000 and 1999;
+delete from usuario_empresa   where usuario_id           between 1000 and 1999;
+commit;
 delete from usuario           where usuario_id           between 1000 and 1999;
 delete from syn_roles         where id_rol               between 1000 and 1999;
 delete from emp               where empno between 7369 and 7934;

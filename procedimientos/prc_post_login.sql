@@ -24,9 +24,14 @@
 -- solo miraba ACTIVO y con 'A'/'1' el login entraba pero la bandera quedaba
 -- nula.
 --
--- Si el usuario no tiene empresa o rol se lanza error en vez de silenciar
--- NO_DATA_FOUND. fn_autenticar_usuario ya lo rechaza antes de crear sesion,
--- asi que esto solo deberia alcanzarse si los datos cambian entre ambos pasos.
+-- Si el usuario no tiene empresa asociada o rol se lanza error en vez de
+-- silenciar NO_DATA_FOUND. fn_autenticar_usuario ya lo rechaza antes de crear
+-- sesion, asi que esto solo deberia alcanzarse si los datos cambian entre
+-- ambos pasos.
+--
+-- Desde el 2026-11-10 la empresa se valida contra USUARIO_EMPRESA (tabla de
+-- asociacion multiempresa): basta con al menos un par. La columna
+-- USUARIO.ID_EMPRESA queda como 'empresa principal' y puede ser nula.
 -- =============================================================================
 
 create or replace procedure prc_post_login is
@@ -35,10 +40,10 @@ begin
     select nvl(u.debe_cambiar_clave, 'N')
       into v_debe_cambiar
       from usuario u
-      join empresas e on e.id_empresa = u.id_empresa
       join syn_roles r on r.id_rol = u.rol_id
      where upper(u.username) = upper(v('APP_USER'))
-       and u.estado in ('ACTIVO', 'A', '1');
+       and u.estado in ('ACTIVO', 'A', '1')
+       and exists (select 1 from usuario_empresa ue where ue.usuario_id = u.usuario_id);
 
     apex_util.set_session_state('F_DEBE_CAMBIAR_CLAVE', v_debe_cambiar);
 exception

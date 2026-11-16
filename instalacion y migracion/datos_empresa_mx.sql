@@ -55,6 +55,7 @@ select id_empresa, count(*) clientes from clientes group by id_empresa order by 
 select usuario_id, username, id_empresa from usuario where usuario_id = 9010;
 
 -- Limpieza:
+--   delete from usuario_empresa where usuario_id = 9010;
 --   delete from usuario  where usuario_id = 9010;
 --   delete from clientes where id_cliente between 201 and 203;
 --   delete from empresas where id_empresa = 2;

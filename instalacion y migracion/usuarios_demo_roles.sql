@@ -38,5 +38,6 @@ select u.usuario_id, u.username, r.codigo_rol, u.estado, u.id_empresa
  order by u.usuario_id;
 
 -- Limpieza (solo el usuario creado aqui):
+--   delete from usuario_empresa where usuario_id = 9003;
 --   delete from usuario where usuario_id = 9003;
 --   commit;

@@ -415,6 +415,14 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
         v_total_bs   NUMBER := 0;
         v_logo       CLOB;
         v_pct_desc   NUMBER;
+    -- Tipo de documento y referencia a la factura que se acredita (nota de
+    -- credito/debito): por providencia la nota tiene que decir que documento modifica.
+    v_tipo_doc   VARCHAR2(10);
+    v_titulo     VARCHAR2(40);
+    v_origen     NUMBER;
+    v_ref        VARCHAR2(300);
+    v_tipo_emision VARCHAR2(20);
+    v_maquina    VARCHAR2(60);
     -- etiqueta del descuento: con el porcentaje solo si TODAS las lineas del
     -- grupo comparten el mismo (antes se mostraba el promedio y no cuadraba)
     v_lbl_desc   VARCHAR2(60);
@@ -435,13 +443,16 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
                    f.folio_factura, f.nro_control, TO_CHAR(f.fecha_emision, 'DD/MM/YYYY'),
                    nvl(f.observaciones, ' '),
                    c.razon_social, c.rif, c.direccion, c.telefono, c.email,
-                   nvl(f.tipo_cambio, 1)
+                   nvl(f.tipo_cambio, 1),
+                   nvl(f.tipo_documento, 'FAC'), f.id_factura_origen,
+                   nvl(ef.tipo_emision, 'FORMA_LIBRE'), ef.nro_registro_maquina
               INTO v_id_empresa, v_empresa, v_rif_emp, v_dir_emp, v_tel_emp, v_mail_emp,
                    v_prov, v_prov_fec, v_desde, v_hasta,
                    v_imp_nom, v_imp_rif, v_imp_dir, v_imp_tel, v_imp_mail,
                    v_folio, v_control, v_fecha, v_obs,
                    v_cliente, v_rif_cli, v_dir_cli, v_tel_cli, v_mail_cli,
-                   v_tasa
+                   v_tasa, v_tipo_doc, v_origen,
+                   v_tipo_emision, v_maquina
               FROM facturas f
               JOIN empresas e ON e.id_empresa = f.id_empresa
               JOIN clientes c ON c.id_cliente = f.id_cliente
@@ -456,6 +467,29 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
         v_logo := pkg_empresa_logo.fn_logo_img(v_id_empresa,
                     'max-height:56px;max-width:200px;display:block;margin:0 auto 6px auto;');
 
+        -- El documento se rotula por su tipo: una nota de credito no es una factura.
+        v_titulo := CASE UPPER(NVL(v_tipo_doc, 'FAC'))
+                        WHEN 'NC' THEN 'NOTA DE CR&Eacute;DITO'
+                        WHEN 'ND' THEN 'NOTA DE D&Eacute;BITO'
+                        ELSE 'FACTURA'
+                    END;
+
+        -- Referencia obligatoria a la factura que la nota modifica.
+        IF v_origen IS NOT NULL THEN
+            BEGIN
+                SELECT 'Documento que acredita: Factura ' || o.folio_factura
+                       || CASE WHEN o.nro_control IS NOT NULL
+                               THEN ', N' || to_char(unistr('\00BA')) || ' de Control ' || o.nro_control ELSE '' END
+                       || ', del ' || TO_CHAR(o.fecha_emision, 'DD/MM/YYYY')
+                  INTO v_ref
+                  FROM facturas o
+                 WHERE o.id_factura = v_origen;
+            EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                    v_ref := NULL;
+            END;
+        END IF;
+
         v_css := q'~
 .fiscal { width: 100%; max-width: 780px; margin: 0 auto; font-family: "Segoe UI", Arial, sans-serif;
           font-size: 12px; color: #111; }
@@ -468,6 +502,7 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
 .fiscal .fe-cab td { vertical-align: bottom; }
 .fiscal .fe-titulo { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
 .fiscal .fe-titulo span { color: #b00; }
+.fiscal .fe-ref { margin: 2px 0 8px 0; font-size: 11px; font-weight: 600; color: #333; }
 .fiscal .fe-derecha { text-align: right; }
 .fiscal .fe-control { font-size: 15px; font-weight: 700; }
 .fiscal .fe-cliente { border: 1px solid #111; border-radius: 8px; padding: 8px 12px; margin: 4px 0 10px 0; }
@@ -501,14 +536,21 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
 
   <table class="fe-cab">
     <tr>
-      <td class="fe-titulo">FACTURA <span>N&ordm; ~' || sys.htf.escape_sc(v_folio) || q'~</span></td>
+      <td class="fe-titulo">~' || v_titulo || q'~ <span>N&ordm; ~' || sys.htf.escape_sc(v_folio) || q'~</span></td>
       <td class="fe-derecha">
         <div class="fe-control">N&ordm; CONTROL ~' || sys.htf.escape_sc(v_control) || q'~</div>
+~' || CASE WHEN UPPER(NVL(v_tipo_emision, 'FORMA_LIBRE')) = 'MAQUINA_FISCAL'
+                   AND v_maquina IS NOT NULL
+           THEN '<div class="fe-maquina">M&aacute;quina fiscal N&ordm; '
+                || sys.htf.escape_sc(v_maquina) || '</div>'
+           ELSE '' END || q'~
         <div>Fecha de emisi&oacute;n: ~' || sys.htf.escape_sc(v_fecha) || q'~</div>
       </td>
     </tr>
   </table>
-
+~' || CASE WHEN v_ref IS NOT NULL
+           THEN '<div class="fe-ref">' || sys.htf.escape_sc(v_ref) || '</div>'
+           ELSE '' END || q'~
   <div class="fe-cliente">
     <div class="fe-cliente-tit">Datos del cliente</div>
     <div><strong>Raz&oacute;n social:</strong> ~' || sys.htf.escape_sc(v_cliente) || q'~

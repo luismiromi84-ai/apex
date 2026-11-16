@@ -344,7 +344,7 @@ wwv_flow_imp_shared.create_list(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(18272401440108059)
-,p_list_item_display_sequence=>40
+,p_list_item_display_sequence=>20
 ,p_list_item_link_text=>unistr('Facturaci\00F3n')
 ,p_static_id=>'facturacion'
 ,p_list_item_link_target=>'f?p=&APP_ID.:8:&APP_SESSION.::&DEBUG.:::'
@@ -355,7 +355,7 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(10564521986198336)
-,p_list_item_display_sequence=>20
+,p_list_item_display_sequence=>30
 ,p_list_item_link_text=>unistr('Gesti\00F3n de Usuarios')
 ,p_static_id=>unistr('gesti\00F3n-de-usuarios')
 ,p_list_item_link_target=>'f?p=&APP_ID.:3:&APP_SESSION.::&DEBUG.:::'
@@ -366,7 +366,7 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(9156795883584624)
-,p_list_item_display_sequence=>10
+,p_list_item_display_sequence=>40
 ,p_list_item_link_text=>'Home'
 ,p_static_id=>'home'
 ,p_list_item_link_target=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
@@ -384,8 +384,19 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_current_for_pages=>'13'
 );
 wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(43000000000000391)
+,p_list_item_display_sequence=>10
+,p_list_item_link_text=>unistr('Administraci\00F3n')
+,p_static_id=>'administracion'
+,p_list_item_link_target=>'f?p=&APP_ID.:19:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-cog'
+,p_security_scheme=>wwv_flow_imp.id(9149896901584567)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'19'
+);
+wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(11948716200514858)
-,p_list_item_display_sequence=>30
+,p_list_item_display_sequence=>60
 ,p_list_item_link_text=>'Presupuestos'
 ,p_static_id=>'presupuestos'
 ,p_list_item_link_target=>'f?p=&APP_ID.:5:&APP_SESSION.::&DEBUG.:::'
@@ -3336,13 +3347,11 @@ wwv_flow_imp_shared.create_list_of_values(
 ,p_static_id=>'empresas-nombre-empresa'
 ,p_lov_query=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT e.nombre_empresa || '' ('' || e.cod_pais || '')'' AS display_value,',
-'       e.id_empresa     AS return_value',
-'  FROM empresas e',
-'  JOIN usuario u ',
-'    ON e.id_empresa = u.id_empresa  -- Verifica si en la tabla usuario es ID_EMPRESA o EMPRESA_ID',
+'       e.id_empresa AS return_value',
+'  FROM v_empresas_usuario e',
 ' WHERE e.estado = ''ACTIVO''',
-'   AND UPPER(u.username) = UPPER(:APP_USER)',
-' ORDER BY e.nombre_empresa;'))
+'   AND UPPER(e.username) = UPPER(:APP_USER)',
+' ORDER BY e.nombre_empresa'))
 ,p_source_type=>'SQL'
 ,p_location=>'LOCAL'
 ,p_return_column_name=>'RETURN_VALUE'
@@ -3519,6 +3528,13 @@ wwv_flow_imp_shared.create_menu_option(
 ,p_static_id=>'home'
 ,p_link=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
 ,p_page_id=>1
+);
+wwv_flow_imp_shared.create_menu_option(
+ p_id=>wwv_flow_imp.id(43000000000000392)
+,p_short_name=>unistr('Administraci\00F3n')
+,p_static_id=>'administracion'
+,p_link=>'f?p=&APP_ID.:19:&APP_SESSION.::&DEBUG.:::'
+,p_page_id=>19
 );
 wwv_flow_imp_shared.create_menu_option(
  p_id=>wwv_flow_imp.id(23608707238366012)
@@ -8508,6 +8524,14 @@ wwv_flow_imp_page.create_page_plug(
 '       u.fecha_creacion,',
 '       e.nombre_empresa as empresa,',
 '       r.codigo_rol as rol,',
+'       (select listagg(e2.nombre_empresa, '', '') within group (order by e2.nombre_empresa)',
+'          from usuario_empresa ue2',
+'          join empresas e2 on e2.id_empresa = ue2.id_empresa',
+'         where ue2.usuario_id = u.usuario_id',
+'           and exists (select 1 from usuario_empresa mia',
+'                        join usuario a on a.usuario_id = mia.usuario_id',
+'                       where mia.id_empresa = ue2.id_empresa',
+'                         and upper(a.username) = upper(:APP_USER))) as empresas,',
 '       case',
 '         when u.bloqueado_hasta > sysdate then ''BLOQUEADO''',
 '         when upper(nvl(u.estado, ''#'')) = ''PENDIENTE'' then ''PENDIENTE''',
@@ -8525,9 +8549,13 @@ wwv_flow_imp_page.create_page_plug(
 '  from usuario u',
 '  left join empresas e on e.id_empresa = u.id_empresa',
 '  left join syn_roles r on r.id_rol = u.rol_id',
-' where u.id_empresa = (select x.id_empresa from usuario x',
-'                        where upper(x.username) = upper(:APP_USER))',
-'    or u.id_empresa is null',
+' where (exists (select 1',
+'                   from usuario_empresa ue',
+'                   join usuario_empresa mia on mia.id_empresa = ue.id_empresa',
+'                   join usuario a on a.usuario_id = mia.usuario_id',
+'                  where ue.usuario_id = u.usuario_id',
+'                    and upper(a.username) = upper(:APP_USER))',
+'         or not exists (select 1 from usuario_empresa x where x.usuario_id = u.usuario_id))',
 ' order by lower(u.username)'))
 ,p_include_rowid_column=>false
 ,p_plug_source_type=>'NATIVE_IR'
@@ -8663,6 +8691,16 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000403)
+,p_db_column_name=>'EMPRESAS'
+,p_display_order=>27
+,p_column_identifier=>'K'
+,p_column_label=>'Empresas'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(10566808651198528)
 ,p_db_column_name=>'USERNAME'
 ,p_display_order=>2
@@ -8694,7 +8732,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'primary'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'USUARIO_ID:USERNAME:EMAIL:EMPRESA:ROL:ESTADO:SITUACION:FECHA_CREACION'
+,p_report_columns=>'USUARIO_ID:USERNAME:EMAIL:EMPRESA:ROL:EMPRESAS:ESTADO:SITUACION:FECHA_CREACION'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(10569657589198543)
@@ -9058,13 +9096,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_source=>'ID_EMPRESA'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT e.nombre_empresa,',
-'       e.id_empresa',
-'  FROM empresas e',
-'  JOIN usuario u ',
-'    ON e.id_empresa = u.id_empresa',
+'SELECT e.nombre_empresa || '' ('' || e.cod_pais || '')'' AS display_value,',
+'       e.id_empresa AS return_value',
+'  FROM v_empresas_usuario e',
 ' WHERE e.estado = ''ACTIVO''',
-'   AND UPPER(u.username) = UPPER(:APP_USER)',
+'   AND UPPER(e.username) = UPPER(:APP_USER)',
 ' ORDER BY e.nombre_empresa'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_text=>'-- Seleccione Empresa --'
@@ -9606,9 +9642,7 @@ wwv_flow_imp_page.create_page_plug(
 '  FROM presupuestos_det d',
 ' WHERE d.id_presupuesto = :P5_ID_PRESUPUESTO',
 '   AND d.id_presupuesto IN (SELECT p.id_presupuesto FROM presupuestos p',
-'                            WHERE p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                                                    WHERE upper(u.username) = upper(:APP_USER)',
-'                                                      AND u.estado IN (''ACTIVO'', ''A'', ''1'')))',
+'                            WHERE p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))',
 ' ORDER BY d.id_detalle'))
 ,p_ajax_items_to_submit=>'P5_ID_PRESUPUESTO'
 ,p_plug_source_type=>'NATIVE_IR'
@@ -9787,9 +9821,7 @@ wwv_flow_imp_page.create_page_plug(
 '    ON c.id_cliente = p.id_cliente',
 '   AND c.id_empresa = p.id_empresa',
 ' WHERE p.estado NOT IN (''CANCELADO'')',
-'   AND p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                        WHERE upper(u.username) = upper(:APP_USER)',
-'                          AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' ORDER BY p.id_presupuesto DESC'))
 ,p_plug_source_type=>'NATIVE_IR'
 );
@@ -10681,8 +10713,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS_DET'
-,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'''
-||', ''A'', ''1'')))'
+,p_query_where=>'id_detalle = :P6_ID_DETALLE and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
@@ -10852,9 +10883,7 @@ wwv_flow_imp_page.create_page_item(
 '                 WHERE e.id_empresa = NVL((SELECT p.id_empresa',
 '                                             FROM presupuestos p',
 '                                            WHERE p.id_presupuesto = fn_clean_num(:P6_ID_PRESUPUESTO)),',
-'                                         (SELECT MIN(u.id_empresa)',
-'                                            FROM usuario u',
-'                                           WHERE upper(u.username) = upper(:APP_USER)))) AS cod_pais',
+'                                         (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) AS cod_pais',
 '          FROM dual) pais',
 ' WHERE i.estado = ''ACTIVO''',
 '   -- Solo los impuestos del pais de la empresa del presupuesto y, si todavia',
@@ -11440,7 +11469,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'PRESUPUESTOS'
-,p_query_where=>'id_presupuesto = :P7_ID_PRESUPUESTO and id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1''))'
+,p_query_where=>'id_presupuesto = :P7_ID_PRESUPUESTO and id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
@@ -11526,13 +11555,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_source_plug_id=>wwv_flow_imp.id(14428894790287801)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select nvl(max(p.moneda_local), ''USD'')',
-'  from usuario u',
-'  join empresas e on e.id_empresa = u.id_empresa',
-'  left join paises p on p.cod_pais = e.cod_pais',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select nvl(max(moneda_local), ''USD'') from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Moneda'
 ,p_source=>'COD_MONEDA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -11744,11 +11767,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_source_plug_id=>wwv_flow_imp.id(14428894790287801)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select min(u.id_empresa)',
-'  from usuario u',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select min(id_empresa)',
+'   from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Empresa'
 ,p_source=>'ID_EMPRESA'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -12222,11 +12242,19 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        setTimeout(autoHideSuccess, 100);',
 '    });',
 '',
-'    function spxProcesarFact(estado) {',
+'    function spxProcesarFact(estado, folio) {',
 '        var $b = $("[data-otel-label=\"BTN_PROCESAR\"]");',
+'        // El tipo se deduce del FOLIO (NC-1, ND-1, F-1041): asi no hace falta',
+'        // traer una columna nueva al informe solo para el texto del boton.',
+'        var f = (folio || "").toUpperCase();',
+'        var t = f.indexOf("NC-") === 0 ? "NC" : (f.indexOf("ND-") === 0 ? "ND" : "FAC");',
 '        var ok = (estado || "").toUpperCase() === "PENDIENTE";',
+'        var etiqueta = "Procesar factura";',
+'        if (t === "NC") { etiqueta = "Procesar nota de cr\u00E9dito"; }',
+'        if (t === "ND") { etiqueta = "Procesar nota de d\u00E9bito"; }',
 '        $b.prop("disabled", !ok);',
-'        $b.attr("title", ok ? "" : "Selecciona una factura PENDIENTE de la lista");',
+'        $b.attr("title", ok ? "" : "Selecciona un documento PENDIENTE de la lista");',
+'        $b.find(".t-Button-label").text(etiqueta);',
 '    }',
 '    function spxNuevaLineaFact(habilitado) {',
 '        var $b = $("[data-otel-label=\"BTN_NUEVO_DETALLE\"]");',
@@ -12240,7 +12268,7 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        }',
 '        apex.item("P8_ID_FACTURAS").setValue(invoiceId, null, true);',
 '        spxNuevaLineaFact(this.checked);',
-'        spxProcesarFact(this.checked ? this.getAttribute("data-estado") : null);',
+'        spxProcesarFact(this.checked ? this.getAttribute("data-estado") : null, this.checked ? this.getAttribute("data-folio") : null);',
 '        apex.region("R29979947211096273").refresh();',
 '        apex.region("R30554313608864005").refresh();',
 '    });',
@@ -12251,7 +12279,7 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '    });',
 '    spxNuevaLineaFact(!!selectedInvoiceId);',
 '    var $filaFact = $(".js-select-invoice:checked").first();',
-'    spxProcesarFact($filaFact.length ? $filaFact.attr("data-estado") : null);',
+'    spxProcesarFact($filaFact.length ? $filaFact.attr("data-estado") : null, $filaFact.length ? $filaFact.attr("data-folio") : null);',
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
@@ -12351,9 +12379,7 @@ wwv_flow_imp_page.create_page_plug(
 '    SELECT 1 FROM facturas f ',
 '    WHERE f.id_factura = :P8_ID_FACTURAS ',
 '      AND f.estado NOT IN (''CANCELADA'', ''ANULADA'', ''TIMBRADA'')',
-'      AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                            WHERE upper(u.username) = upper(:APP_USER)',
-'                              AND u.estado IN (''ACTIVO'', ''A'', ''1'')))'))
+'      AND f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'))
 ,p_include_rowid_column=>false
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P8_ID_FACTURAS'
@@ -12627,6 +12653,7 @@ wwv_flow_imp_page.create_page_plug(
 'SELECT f.id_factura AS detalle_link,',
 '       f.id_factura AS print_link,',
 '       f.id_factura,',
+'       f.tipo_documento,',
 '       c.razon_social,',
 '       f.rfc_receptor AS rif,',
 '       f.folio_factura AS folio,',
@@ -12645,15 +12672,26 @@ wwv_flow_imp_page.create_page_plug(
 '       END AS estado_css,',
 '       f.creado_por,',
 '       f.estado,',
-'       f.uuid_fiscal',
+'       f.uuid_fiscal,',
+'       -- Lo que ya esta acreditado por notas de credito no anuladas, y el saldo.',
+'       (SELECT NVL(SUM(n.monto_total), 0)',
+'          FROM facturas n',
+'         WHERE n.id_factura_origen = f.id_factura',
+'           AND n.id_empresa = f.id_empresa',
+'           AND n.tipo_documento = ''NC''',
+'           AND n.estado <> ''ANULADA'') AS notas_credito,',
+'       f.monto_total - (SELECT NVL(SUM(n.monto_total), 0)',
+'                          FROM facturas n',
+'                         WHERE n.id_factura_origen = f.id_factura',
+'                           AND n.id_empresa = f.id_empresa',
+'                           AND n.tipo_documento = ''NC''',
+'                           AND n.estado <> ''ANULADA'') AS saldo',
 '  FROM facturas f',
 '  JOIN clientes c ',
 '    ON f.id_cliente = c.id_cliente ',
 '   AND f.id_empresa = c.id_empresa',
 ' WHERE f.estado NOT IN (''CANCELADA'', ''ANULADA'', ''TIMBRADA'')',
-'   AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                        WHERE upper(u.username) = upper(:APP_USER)',
-'                          AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' ORDER BY f.id_factura DESC;'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_prn_content_disposition=>'ATTACHMENT'
@@ -12715,7 +12753,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>15
 ,p_column_identifier=>'Y'
 ,p_column_label=>'Seleccionar'
-,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" data-estado="#ESTADO#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
+,p_column_html_expression=>'<label class="invoice-select"><input type="checkbox" class="js-select-invoice" data-id="#DETALLE_LINK#" data-estado="#ESTADO#" data-folio="#FOLIO#" aria-label="Seleccionar factura #DETALLE_LINK#"></label>'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -12734,6 +12772,28 @@ wwv_flow_imp_page.create_worksheet_column(
 '</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000370)
+,p_db_column_name=>'NOTAS_CREDITO'
+,p_display_order=>75
+,p_column_identifier=>'M'
+,p_column_label=>'Notas de crédito'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000371)
+,p_db_column_name=>'SALDO'
+,p_display_order=>85
+,p_column_identifier=>'N'
+,p_column_label=>'Saldo'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
@@ -13204,6 +13264,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'procesar-factura'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
+'    v_folio varchar2(50);',
+'    v_tipo  varchar2(10);',
+'    v_tit   varchar2(40);',
 'BEGIN',
 'if not fn_factura_propio(:P8_ID_FACTURAS, :APP_USER) then',
 '    raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
@@ -13211,14 +13274,18 @@ wwv_flow_imp_page.create_page_process(
 'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
 '    raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
 'end if;',
+'    select folio_factura, tipo_documento into v_folio, v_tipo',
+'      from facturas where id_factura = :P8_ID_FACTURAS;',
 '    pkg_facturacion. prc_procesar_factura (',
 '        :P8_ID_FACTURAS,',
 '        :APP_USER);',
 '',
-'    apex_application.g_print_success_message := ''La Factura Fue Timbrada  exitosamente.'';',
+unistr('    v_tit := case upper(nvl(v_tipo, ''FAC'')) when ''NC'' then ''La nota de cr\00E9dito '' when ''ND'' then ''La nota de d\00E9bito '' else ''La factura '' end;'),
+unistr('    apex_application.g_print_success_message := v_tit || v_folio || '' qued\00F3 procesada.'';'),
 '',
 'EXCEPTION',
 '    WHEN OTHERS THEN',
+'        if sqlcode between -20999 and -20000 then raise; end if;',
 '        raise_application_error(-20003, SQLERRM);',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
@@ -13251,6 +13318,33 @@ wwv_flow_imp_page.create_page(
 ,p_page_mode=>'MODAL'
 ,p_step_title=>unistr('Gesti\00F3n de Facturacion')
 ,p_autocomplete_on_off=>'OFF'
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Nota de credito: casillas de las lineas de la factura que acredita.',
+'   El boton "Traer marcadas" envia la lista en el item oculto P9_LINEAS_SEL. */',
+'window.spxLineasSelActualiza = function () {',
+'    var ids = [];',
+'    document.querySelectorAll(".js-linea-sel:checked").forEach(function (c) {',
+'        ids.push(c.getAttribute("data-id"));',
+'    });',
+'    var it = apex.item("P9_LINEAS_SEL");',
+'    if (it) { it.setValue(ids.join(","), null, true); }',
+'    var b = [].slice.call(document.querySelectorAll("button")).filter(function (x) {',
+'        return /Traer marcadas/i.test(x.innerText);',
+'    })[0];',
+'    if (b) { b.disabled = ids.length === 0; }',
+'};',
+'window.spxMarcarTodas = function (ver) {',
+'    document.querySelectorAll(".js-linea-sel").forEach(function (c) { c.checked = !!ver; });',
+'    var t = document.getElementById("spx-todas");',
+'    if (t) { t.checked = !!ver; }',
+'    window.spxLineasSelActualiza();',
+'};',
+'document.addEventListener("change", function (e) {',
+'    if (e.target && e.target.classList && e.target.classList.contains("js-linea-sel")) {',
+'        window.spxLineasSelActualiza();',
+'    }',
+'});',
+'setTimeout(function () { window.spxLineasSelActualiza(); }, 800);'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 unistr('/* Cabecera uniforme en azul degradado sin sombras/recuadros extra\00F1os */'),
 '.t-DialogRegion-header,',
@@ -13305,11 +13399,65 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'FACTURAS'
-,p_query_where=>'id_factura = :P9_ID_FACTURA and id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1''))'
+,p_query_where=>'id_factura = :P9_ID_FACTURA and id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
 ,p_ajax_items_to_submit=>'P9_ID_FACTURA'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000343)
+,p_plug_name=>'Líneas de la factura que acredita'
+,p_static_id=>'lineas-factura-origen'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_html clob;',
+'begin',
+'    -- Se renderiza siempre para que la accion dinamica pueda refrescarla.',
+'    -- Si no es una nota con factura origen no devuelve nada.',
+'    if :P9_TIPO_DOCUMENTO not in (''NC'', ''ND'') or :P9_ID_FACTURA_ORIGEN is null then',
+'        return null;',
+'    end if;',
+'',
+'    v_html := ''<table class="t-Report-report" style="width:100%">''',
+'              || ''<thead><tr>''',
+'              || ''<th style="width:34px"><input type="checkbox" id="spx-todas" title="Marcar todas" onclick="spxMarcarTodas(this.checked)"></th>''',
+'              || ''<th>#</th><th>Descripci&oacute;n</th><th style="text-align:right">Cant.</th>''',
+'              || ''<th style="text-align:right">Precio</th><th style="text-align:right">Total</th>''',
+'              || ''</tr></thead><tbody>'';',
+'',
+'    for r in (select d.id_detalle, d.num_linea, d.descripcion, d.cantidad,',
+'                     d.precio_unitario, d.monto_total_linea,',
+'                     nvl(d.codigo_producto, ''-'') as codigo',
+'                from facturas_det d',
+'               where d.id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN)',
+'               order by d.num_linea)',
+'    loop',
+'        v_html := v_html',
+'            || ''<tr>''',
+'            || ''<td><input type="checkbox" class="js-linea-sel" data-id="'' || to_char(r.id_detalle) || ''"></td>''',
+'            || ''<td>'' || to_char(r.num_linea) || ''</td>''',
+'            || ''<td>'' || sys.htf.escape_sc(r.codigo) || '' - ''',
+'            || sys.htf.escape_sc(r.descripcion) || ''</td>''',
+'            || ''<td style="text-align:right">'' || to_char(r.cantidad) || ''</td>''',
+'            || ''<td style="text-align:right">'' || to_char(r.precio_unitario, ''FM999G999G990D00'') || ''</td>''',
+'            || ''<td style="text-align:right">'' || to_char(r.monto_total_linea, ''FM999G999G990D00'') || ''</td>''',
+'            || ''</tr>'';',
+'    end loop;',
+'',
+'    v_html := v_html || ''</tbody></table>''',
+'              || ''<p style="margin:8px 0 0"><a href="javascript:spxMarcarTodas(true)">Marcar todas</a>''',
+'              || '' &middot; <a href="javascript:spxMarcarTodas(false)">Desmarcar</a></p>'';',
+'',
+'    return v_html;',
+'end;'))
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_function_body_language=>'PLSQL'
+,p_ajax_items_to_submit=>'P9_ID_FACTURA_ORIGEN'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(18161478696230476)
@@ -13583,7 +13731,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>unistr('N\00B0 de Control')
 ,p_source=>'NRO_CONTROL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(u.id_empresa) from usuario u where upper(u.username) = upper(:APP_USER)))) = ''VE'''
+,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) = ''VE'''
 ,p_display_when_type=>'SQL_EXPRESSION'
 ,p_cSize=>30
 ,p_cMaxlength=>30
@@ -13785,9 +13933,7 @@ wwv_flow_imp_page.create_page_item(
 '  JOIN clientes c ON f.id_cliente = c.id_cliente AND c.id_empresa = f.id_empresa',
 ' WHERE f.tipo_documento = ''FAC''',
 '   AND f.estado <> ''ANULADA''',
-'   AND f.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                         WHERE upper(u.username) = upper(:APP_USER)',
-'                           AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 '   AND ( :P9_ID_EMPRESA IS NULL OR f.id_empresa = fn_clean_num(:P9_ID_EMPRESA) )',
 '   AND ( :P9_ID_FACTURA IS NULL OR f.id_factura <> fn_clean_num(:P9_ID_FACTURA) )',
 ' ORDER BY f.id_factura DESC'))
@@ -13798,6 +13944,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
+,p_read_only_when_type=>'PLSQL_EXPRESSION'
+,p_read_only_when=>'fn_nota_con_lineas(:P9_ID_FACTURA)'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'case_sensitive', 'N',
@@ -13810,6 +13958,26 @@ wwv_flow_imp_page.create_page_item(
   'min_chars', '0',
   'title', 'Factura que acredita',
   'width', '400')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000341)
+,p_name=>'P9_LINEAS_SEL'
+,p_item_sequence=>72
+,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000342)
+,p_name=>'P9_CABECERA_JSON'
+,p_item_sequence=>73
+,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(32592153243518285)
@@ -13827,9 +13995,7 @@ wwv_flow_imp_page.create_page_item(
 '  FROM presupuestos p',
 '  JOIN clientes c ON p.id_cliente = c.id_cliente AND c.id_empresa = p.id_empresa',
 ' WHERE p.estado IN (''ENVIADO'', ''APROBADO'')',
-'   AND p.id_empresa IN (SELECT u.id_empresa FROM usuario u',
-'                         WHERE upper(u.username) = upper(:APP_USER)',
-'                           AND u.estado IN (''ACTIVO'', ''A'', ''1''))',
+'   AND p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 '   AND ( :P9_ID_EMPRESA IS NULL OR p.id_empresa = fn_clean_num(:P9_ID_EMPRESA) )',
 ' ORDER BY p.id_presupuesto DESC'))
 ,p_lov_display_null=>'YES'
@@ -14074,7 +14240,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>unistr('UUID Fiscal (CFDI)')
 ,p_source=>'UUID_FISCAL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(u.id_empresa) from usuario u where upper(u.username) = upper(:APP_USER)))) = ''MX'''
+,p_display_when=>'nvl((select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P9_ID_EMPRESA)), (select e.cod_pais from empresas e where e.id_empresa = (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) = ''MX'''
 ,p_display_when_type=>'SQL_EXPRESSION'
 ,p_cSize=>30
 ,p_cMaxlength=>50
@@ -14523,9 +14689,12 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_elements=>'P9_TIPO_CAMBIO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'escape_special_characters', 'Y',
-  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA',
+  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA,P9_TIPO_DOCUMENTO,P9_ID_FACTURA_ORIGEN',
   'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
     'SELECT CASE',
+    '         WHEN :P9_TIPO_DOCUMENTO IN (''NC'', ''ND'') AND :P9_ID_FACTURA_ORIGEN IS NOT NULL THEN',
+    '             (SELECT tipo_cambio FROM facturas',
+    '               WHERE id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN))',
     '         WHEN UPPER(:P9_COD_MONEDA) IN (''VES'', ''BS'') THEN 1',
     '         ELSE (',
     '             SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
@@ -14565,9 +14734,12 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_affected_elements=>'P9_TIPO_CAMBIO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'escape_special_characters', 'Y',
-  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA',
+  'items_to_submit', 'P9_FECHA_EMISION,P9_COD_MONEDA,P9_TIPO_DOCUMENTO,P9_ID_FACTURA_ORIGEN',
   'sql_query', wwv_flow_string.join(wwv_flow_t_varchar2(
     'SELECT CASE',
+    '         WHEN :P9_TIPO_DOCUMENTO IN (''NC'', ''ND'') AND :P9_ID_FACTURA_ORIGEN IS NOT NULL THEN',
+    '             (SELECT tipo_cambio FROM facturas',
+    '               WHERE id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN))',
     '         WHEN UPPER(:P9_COD_MONEDA) IN (''VES'', ''BS'') THEN 1',
     '         ELSE (',
     '             SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
@@ -14582,6 +14754,88 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'N',
   'type', 'SQL_STATEMENT')).to_clob
 ,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000000345)
+,p_name=>'CARGA_FACTURA_ORIGEN'
+,p_static_id=>'carga-factura-origen'
+,p_event_sequence=>55
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P9_ID_FACTURA_ORIGEN'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000346)
+,p_event_id=>wwv_flow_imp.id(43000000000000345)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'Lee la cabecera de la factura que acredita'
+,p_static_id=>'lee-cabecera-factura-origen'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P9_ID_EMPRESA,P9_ID_CLIENTE,P9_COD_MONEDA,P9_TIPO_CAMBIO,P9_RFC_EMISOR,P9_RFC_RECEPTOR,P9_CONDICION_PAGO,P9_FORMA_PAGO,P9_FECHA_VENCIMIENTO,P9_OBSERVACIONES',
+  'items_to_submit', 'P9_ID_FACTURA_ORIGEN',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id number := fn_clean_num(:P9_ID_FACTURA_ORIGEN);',
+'    v_f facturas%rowtype;',
+'begin',
+'  -- Cinturon: esta accion es de apoyo (rellenar la cabecera). Si algo falla,',
+'  -- se ignora: nunca puede tumbar la pagina ni bloquear el guardado.',
+'  begin',
+'    -- Sin factura origen no hay nada que leer. Y si el id no existe, se sale',
+'    -- en silencio: esta accion no puede tumbar la pagina con ORA-01403.',
+'    if v_id is null or v_id = 0 then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select * into v_f from facturas where id_factura = v_id;',
+'    exception',
+'        when no_data_found then',
+'            return;',
+'    end;',
+'',
+'    -- Correlacion: la nota hereda la empresa, el cliente, la moneda y la TASA',
+'    -- de la factura que acredita, no las del dia en que se emite la nota.',
+'    :P9_ID_EMPRESA     := to_char(v_f.id_empresa);',
+'    :P9_ID_CLIENTE     := to_char(v_f.id_cliente);',
+'    :P9_COD_MONEDA     := v_f.cod_moneda;',
+'    :P9_TIPO_CAMBIO    := to_char(v_f.tipo_cambio);',
+'    :P9_RFC_EMISOR     := v_f.rfc_emisor;',
+'    :P9_RFC_RECEPTOR   := v_f.rfc_receptor;',
+'    :P9_CONDICION_PAGO := to_char(v_f.condicion_pago);',
+'    :P9_FORMA_PAGO     := v_f.forma_pago;',
+'    :P9_FECHA_VENCIMIENTO := case when v_f.fecha_vencimiento is null then null',
+'                                  else to_char(v_f.fecha_vencimiento, ''DD/MM/YYYY'') end;',
+'',
+'    -- Referencia que exige la providencia: factura, N. de control y fecha.',
+unistr('    :P9_OBSERVACIONES := case when :P9_TIPO_DOCUMENTO = ''ND'' then ''Nota de d\00E9bito de la factura '' else ''Nota de cr\00E9dito de la factura '' end || v_f.folio_factura'),
+'        || case when v_f.nro_control is not null then '', N. de Control '' || v_f.nro_control else '''' end',
+'        || '', del '' || to_char(v_f.fecha_emision, ''DD/MM/YYYY'');',
+'  exception',
+'    when others then null;',
+'  end;',
+'end;')))).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000000347)
+,p_event_id=>wwv_flow_imp.id(43000000000000345)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'Refresca las lineas de la factura'
+,p_static_id=>'refresca-lineas-factura-origen'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000000343)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(18564710010054501)
@@ -14676,33 +14930,24 @@ unistr('    -- Vista previa: el folio real lo asigna fn_asignar_folio al guardar
 ,p_client_condition_element=>'P9_ID_FACTURA'
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(43000000000000351)
-,p_process_sequence=>45
+ p_id=>wwv_flow_imp.id(43000000000000352)
+,p_process_sequence=>46
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Traer lineas de la factura'
-,p_static_id=>'traer-lineas-factura'
+,p_process_name=>'Traer todas las lineas'
+,p_static_id=>'traer-todas-las-lineas'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    v_origen number;',
 'BEGIN',
 '    if not fn_factura_propio(:P9_ID_FACTURA, :APP_USER) then',
 '        raise_application_error(-20003, ''No tiene permisos sobre este documento.'');',
 '    end if;',
 '',
-'    if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
-'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
-'    end if;',
-'',
-'    select id_factura_origen into v_origen',
-'      from facturas where id_factura = fn_clean_num(:P9_ID_FACTURA);',
-'',
 '    pkg_factura_detalle.copiar_desde_factura(',
 '        p_id_factura        => fn_clean_num(:P9_ID_FACTURA),',
-'        p_id_factura_origen => v_origen,',
+'        p_id_factura_origen => fn_clean_num(:P9_ID_FACTURA_ORIGEN),',
 '        p_usuario           => :APP_USER);',
 '',
-unistr('    apex_application.g_print_success_message := ''Se trajeron las lineas de la factura. Revisa la nota antes de guardar.'';'),
+unistr('    apex_application.g_print_success_message := ''Se trajeron todas las lineas de la factura.'';'),
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_process_error_message=>'#SQLERRM#'
@@ -14819,6 +15064,8 @@ wwv_flow_imp_page.create_page_process(
 '    v_usuario       VARCHAR2(100) := v(''APP_USER'');',
 '    v_fecha_emision DATE;',
 '    v_tipo_cambio   NUMBER;',
+'    v_fecha_ref     DATE;',
+'    v_tasa_origen   NUMBER;',
 '    v_total_lineas  PLS_INTEGER := 0;',
 '    v_subtotal      NUMBER := NVL(fn_clean_num(:P9_SUBTOTAL), 0);',
 '    v_impuesto      NUMBER := NVL(fn_clean_num(:P9_MONTO_IMPUESTO), 0);',
@@ -14836,7 +15083,29 @@ unistr('        raise_application_error(-20011, ''La moneda y la fecha de emisi\
 '    END IF;',
 '',
 '    v_fecha_emision := TO_DATE(:P9_FECHA_EMISION, ''DD/MM/YYYY'');',
-'    IF UPPER(TRIM(:P9_COD_MONEDA)) IN (''VES'', ''BS'') THEN',
+'    -- NOTA DE CREDITO: por correlacion la nota lleva la tasa y la fecha de la',
+'    -- factura que acredita, no las del dia en que se emite. Si esa factura no',
+'    -- tiene tasa valida (los datos historicos con tipo_cambio = 1), se usa la del',
+'    -- dia de la factura y se deja dicho en las observaciones.',
+'    IF :P9_TIPO_DOCUMENTO IN (''NC'', ''ND'') AND :P9_ID_FACTURA_ORIGEN IS NOT NULL THEN',
+'        SELECT tipo_cambio, fecha_emision INTO v_tasa_origen, v_fecha_ref',
+'          FROM facturas WHERE id_factura = fn_clean_num(:P9_ID_FACTURA_ORIGEN);',
+'        v_fecha_ref := NVL(v_fecha_ref, v_fecha_emision);',
+'        IF v_tasa_origen IS NOT NULL AND v_tasa_origen > 0',
+'           AND NOT (v_tasa_origen = 1 AND UPPER(TRIM(:P9_COD_MONEDA)) NOT IN (''VES'', ''BS'')) THEN',
+'            v_tipo_cambio := v_tasa_origen;',
+'        ELSE',
+'            SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
+'              INTO v_tipo_cambio',
+'              FROM tipo_cambio',
+'             WHERE moneda_origen = UPPER(TRIM(:P9_COD_MONEDA))',
+'               AND moneda_destino = ''VES''',
+'               AND tipo_tasa = ''REAL''',
+'               AND fecha_vigencia < TRUNC(v_fecha_ref) + 1;',
+'            :P9_OBSERVACIONES := SUBSTR('' (tasa del dia de la factura: la original no tenia tasa valida)''',
+'                                        || '' '' || NVL(:P9_OBSERVACIONES, ''''), 1, 4000);',
+'        END IF;',
+'    ELSIF UPPER(TRIM(:P9_COD_MONEDA)) IN (''VES'', ''BS'') THEN',
 '        v_tipo_cambio := 1;',
 '    ELSE',
 '        SELECT MAX(tasa_cambio) KEEP (DENSE_RANK LAST ORDER BY fecha_vigencia)',
@@ -14919,8 +15188,14 @@ unistr('        raise_application_error(-20013, ''El total debe ser igual al sub
 '        p_tipo_documento    => :P9_TIPO_DOCUMENTO,',
 '        p_nro_control       => :P9_NRO_CONTROL,',
 '        p_id_factura_origen => case when :P9_TIPO_DOCUMENTO in (''NC'', ''ND'')',
-'                                    then fn_clean_num(:P9_ID_FACTURA_ORIGEN) end',
+'                                    then fn_clean_num(:P9_ID_FACTURA_ORIGEN) end,',
+'        p_fecha_referencia  => v_fecha_ref',
 '    );',
+'',
+'    -- Si marco lineas de la factura que acredita, se copian al guardar.',
+'    if :P9_LINEAS_SEL is not null and :P9_TIPO_DOCUMENTO in (''NC'', ''ND'') and :P9_ID_FACTURA_ORIGEN is not null then',
+'        pkg_factura_detalle.copiar_lineas_de_factura(:P9_ID_FACTURA, fn_clean_num(:P9_ID_FACTURA_ORIGEN), :P9_LINEAS_SEL, v_usuario);',
+'    end if;',
 '',
 unistr('    -- El folio real lo asigno el contador de la empresa (FAC/NC/ND): se'),
 unistr('    -- refresca el item para no dejar en pantalla la vista previa.'),
@@ -15102,7 +15377,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'FACTURAS_DET'
-,p_query_where=>'id_detalle = :P10_ID_DETALLE and exists (select 1 from facturas f where f.id_factura = id_factura and f.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_query_where=>'id_detalle = :P10_ID_DETALLE and exists (select 1 from facturas f where f.id_factura = id_factura and f.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>true
 ,p_edit_operations=>'i:u:d'
@@ -15359,9 +15634,7 @@ wwv_flow_imp_page.create_page_item(
 '                 WHERE e.id_empresa = NVL((SELECT f.id_empresa',
 '                                             FROM facturas f',
 '                                            WHERE f.id_factura = fn_clean_num(:P10_ID_FACTURA)),',
-'                                         (SELECT MIN(u.id_empresa)',
-'                                            FROM usuario u',
-'                                           WHERE upper(u.username) = upper(:APP_USER)))) AS cod_pais',
+'                                         (select min(id_empresa) from v_empresas_usuario where upper(username) = upper(:APP_USER)))) AS cod_pais',
 '          FROM dual) pais',
 ' WHERE i.estado = ''ACTIVO''',
 '   AND NVL(i.es_retencion, ''N'') = ''N''',
@@ -16404,7 +16677,7 @@ wwv_flow_imp_page.create_page_plug(
 '       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
 '         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos'' AS valor',
 '  FROM facturas',
-' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+' WHERE id_empresa = :P13_ID_EMPRESA',
 '   AND cod_moneda = :P13_MONEDA',
 '   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
 '   AND estado <> ''ANULADA''',
@@ -16414,7 +16687,7 @@ wwv_flow_imp_page.create_page_plug(
 '       TO_CHAR(NVL(SUM(CASE WHEN tipo_documento=''NC'' THEN -monto_total ELSE monto_total END),0),''FM999,999,990.00'')',
 '         || '' '' || :P13_MONEDA || ''  -  '' || COUNT(*) || '' documentos''',
 '  FROM facturas',
-' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+' WHERE id_empresa = :P13_ID_EMPRESA',
 '   AND cod_moneda = :P13_MONEDA',
 '   AND tipo_documento IN (''FAC'',''NC'',''ND'')',
 '   AND estado IN (''PENDIENTE'',''TIMBRADA'')',
@@ -16422,7 +16695,7 @@ wwv_flow_imp_page.create_page_plug(
 'SELECT ''Presupuestos en juego'',',
 '       TO_CHAR(COUNT(*)) || ''  -  '' || :P13_MONEDA',
 '  FROM presupuestos',
-' WHERE id_empresa = NVL(:P13_ID_EMPRESA,1)',
+' WHERE id_empresa = :P13_ID_EMPRESA',
 '   AND cod_moneda = :P13_MONEDA',
 '   AND estado IN (''PENDIENTE'',''ENVIADO'',''APROBADO'')',
 'UNION ALL',
@@ -16445,8 +16718,9 @@ wwv_flow_imp_page.create_page_plug(
 '  FROM syn_error_log e',
 ' WHERE TRUNC(e.fecha) = TRUNC(SYSDATE)',
 '   AND EXISTS (SELECT 1 FROM usuario u',
-'                WHERE UPPER(u.username) = UPPER(e.usuario)',
-'                  AND u.id_empresa = NVL(:P13_ID_EMPRESA, 1))'))
+'                JOIN usuario_empresa ue ON ue.usuario_id = u.usuario_id',
+'               WHERE UPPER(u.username) = UPPER(e.usuario)',
+'                 AND ue.id_empresa = :P13_ID_EMPRESA)'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_CARDS'
 ,p_plug_query_num_rows_type=>'SCROLL'
@@ -16831,11 +17105,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select min(u.id_empresa)',
-'  from usuario u',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select min(id_empresa)',
+'   from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Empresa'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
@@ -16854,13 +17125,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(23600000000000001)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select nvl(max(p.moneda_local), ''USD'')',
-'  from usuario u',
-'  join empresas e on e.id_empresa = u.id_empresa',
-'  left join paises p on p.cod_pais = e.cod_pais',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select nvl(max(moneda_local), ''USD'') from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Moneda'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
@@ -16880,6 +17145,27 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000404)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>unistr('Valida empresa del panel')
+,p_static_id=>'valida-empresa-panel'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number := fn_clean_num(:P13_ID_EMPRESA);',
+'begin',
+'    -- El filtro del Panel es un ITEM: la LOV lo limita, pero un POST manipulado',
+'    -- puede mandar cualquier empresa y las regiones pintarian sus datos.',
+'    -- Si no es una empresa del usuario, se deja vacio y no se ve nada.',
+'    if v_emp is not null and not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        apex_util.set_session_state(''P13_ID_EMPRESA'', null);',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000404
 );
 end;
 /
@@ -17600,9 +17886,7 @@ wwv_flow_imp_page.create_page_plug(
 '  join presupuestos p',
 '    on p.id_presupuesto = g.id_presupuesto',
 ' where g.id_presupuesto = :P16_ID_PRESUPUESTO',
-'   and p.id_empresa in (select u.id_empresa from usuario u',
-'                         where upper(u.username) = upper(:APP_USER)',
-'                           and u.estado in (''ACTIVO'', ''A'', ''1''))',
+'   and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' order by g.fecha_gasto desc, g.id_gasto desc'))
 ,p_plug_source_type=>'NATIVE_IR'
 );
@@ -17705,7 +17989,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'TABLE'
 ,p_query_table=>'GASTO_REAL'
-,p_query_where=>'id_gasto = :P16_ID_GASTO and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select u.id_empresa from usuario u where upper(u.username) = upper(:APP_USER) and u.estado in (''ACTIVO'', ''A'', ''1'')))'
+,p_query_where=>'id_gasto = :P16_ID_GASTO and exists (select 1 from presupuestos p where p.id_presupuesto = id_presupuesto and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)))'
 ,p_include_rowid_column=>false
 ,p_is_editable=>false
 ,p_plug_source_type=>'NATIVE_FORM'
@@ -17739,9 +18023,7 @@ wwv_flow_imp_page.create_page_item(
 '       p.id_presupuesto as return_value',
 '  from presupuestos p',
 '  join clientes c on c.id_cliente = p.id_cliente and c.id_empresa = p.id_empresa',
-' where p.id_empresa in (select u.id_empresa from usuario u',
-'                         where upper(u.username) = upper(:APP_USER)',
-'                           and u.estado in (''ACTIVO'', ''A'', ''1''))',
+' where p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER))',
 ' order by p.id_presupuesto desc'))
 ,p_cSize=>30
 ,p_field_template=>1610598304472262251
@@ -17897,9 +18179,7 @@ wwv_flow_imp_page.create_page_process(
 '         where id_gasto = fn_clean_num(:P16_ID_GASTO)',
 '           and exists (select 1 from presupuestos p',
 '                        where p.id_presupuesto = gasto_real.id_presupuesto',
-'                          and p.id_empresa in (select u.id_empresa from usuario u',
-'                                                where upper(u.username) = upper(:APP_USER)',
-'                                                  and u.estado in (''ACTIVO'', ''A'', ''1'')));',
+'                          and p.id_empresa in (select id_empresa from v_empresas_usuario where upper(username) = upper(:APP_USER)));',
 '    exception',
 '        when no_data_found then return;',
 '    end;',
@@ -18040,6 +18320,12 @@ wwv_flow_imp_page.create_page_plug(
 'declare',
 '    v_html clob;',
 'begin',
+'    -- El logo es de la empresa del item: sin guarda, un POST manipulado pinta',
+'    -- el logo de otra empresa (hallazgo de la revision final del 2026-11-11).',
+'    if :P17_ID_EMPRESA is null',
+'       or not fn_usuario_empresa_valida(:APP_USER, fn_clean_num(:P17_ID_EMPRESA)) then',
+'        return null;',
+'    end if;',
 '    v_html := pkg_empresa_logo.fn_logo_img(:P17_ID_EMPRESA, ''max-height:120px'');',
 '    if v_html is null then',
 '        return ''<p class="u-color-50">Esta empresa no tiene logo cargado. Sus documentos salen sin imagen.</p>'';',
@@ -18155,11 +18441,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000088)
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select min(u.id_empresa)',
-'  from usuario u',
-' where upper(u.username) = upper(:APP_USER)',
-'   and u.estado in (''ACTIVO'', ''A'', ''1'')',
-' having count(*) = 1'))
+'select min(id_empresa)',
+'   from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1'))
 ,p_prompt=>'Empresa'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_POPUP_LOV'
@@ -18548,6 +18831,39 @@ wwv_flow_imp_page.create_page_item(
 ,p_begin_on_new_line=>'N'
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000360)
+,p_name=>'P18_TIPO_EMISION'
+,p_item_sequence=>15
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'Forma de emisión'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select ''Forma libre (imprenta autorizada)'' as display_value, ''FORMA_LIBRE'' as return_value from dual',
+'union all',
+'select ''Máquina fiscal'', ''MAQUINA_FISCAL'' from dual'))
+,p_lov_display_null=>'NO'
+,p_cSize=>30
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000361)
+,p_name=>'P18_NRO_REGISTRO_MAQUINA'
+,p_item_sequence=>16
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000121)
+,p_prompt=>'N° de registro de la máquina fiscal'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>60
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000135)
 ,p_name=>'P18_PROV_FECHA'
 ,p_item_sequence=>60
@@ -18627,12 +18943,9 @@ wwv_flow_imp_page.create_page_process(
 'begin',
 '    if :P18_ID_EMPRESA is null then',
 '        begin',
-'            select min(u.id_empresa)',
+'            select min(id_empresa)',
 '              into v_empresa',
-'              from usuario u',
-'             where upper(u.username) = upper(:APP_USER)',
-'               and u.estado in (''ACTIVO'', ''A'', ''1'')',
-'             having count(*) = 1;',
+'               from v_empresas_usuario where upper(username) = upper(:APP_USER) having count(*) = 1;',
 '        exception',
 '            when no_data_found then v_empresa := null;',
 '        end;',
@@ -18642,6 +18955,13 @@ wwv_flow_imp_page.create_page_process(
 '    end if;',
 '',
 '    if v_empresa is null then',
+'        return;',
+'    end if;',
+'',
+'    -- La empresa del item tiene que ser del usuario: sin esta guarda un POST',
+'    -- manipulado mostraba la direccion, la providencia y la imprenta de otro',
+'    -- cliente (hallazgo de la revision final del 2026-11-11).',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_empresa) then',
 '        return;',
 '    end if;',
 '',
@@ -18665,6 +18985,10 @@ wwv_flow_imp_page.create_page_process(
 '        apex_util.set_session_state(''P18_IMPRENTA_DIRECCION'', v_fila.imprenta_direccion);',
 '        apex_util.set_session_state(''P18_IMPRENTA_TELEFONO'', v_fila.imprenta_telefono);',
 '        apex_util.set_session_state(''P18_IMPRENTA_EMAIL'', v_fila.imprenta_email);',
+'        apex_util.set_session_state(''P18_TIPO_EMISION'', nvl(v_fila.tipo_emision, ''FORMA_LIBRE''));',
+'        apex_util.set_session_state(''P18_NRO_REGISTRO_MAQUINA'', v_fila.nro_registro_maquina);',
+'    else',
+'        apex_util.set_session_state(''P18_TIPO_EMISION'', ''FORMA_LIBRE'');',
 '    end if;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
@@ -18714,15 +19038,19 @@ wwv_flow_imp_page.create_page_process(
 '              t.imprenta_direccion = :P18_IMPRENTA_DIRECCION,',
 '              t.imprenta_telefono  = :P18_IMPRENTA_TELEFONO,',
 '              t.imprenta_email     = :P18_IMPRENTA_EMAIL',
+'              ,t.tipo_emision       = nvl(:P18_TIPO_EMISION, ''FORMA_LIBRE'')',
+'              ,t.nro_registro_maquina = :P18_NRO_REGISTRO_MAQUINA',
 '     when not matched then insert',
 '          (id_empresa, direccion_fiscal, telefono, email, nro_providencia, prov_fecha,',
 '           control_desde, control_hasta, imprenta_nombre, imprenta_rif,',
-'           imprenta_direccion, imprenta_telefono, imprenta_email)',
+'           imprenta_direccion, imprenta_telefono, imprenta_email,',
+'           tipo_emision, nro_registro_maquina)',
 '          values',
 '          (v_empresa, :P18_DIRECCION_FISCAL, :P18_TELEFONO, :P18_EMAIL,',
 '           :P18_NRO_PROVIDENCIA, v_fecha, :P18_CONTROL_DESDE, :P18_CONTROL_HASTA,',
 '           :P18_IMPRENTA_NOMBRE, :P18_IMPRENTA_RIF, :P18_IMPRENTA_DIRECCION,',
-'           :P18_IMPRENTA_TELEFONO, :P18_IMPRENTA_EMAIL);',
+'           :P18_IMPRENTA_TELEFONO, :P18_IMPRENTA_EMAIL,',
+'           nvl(:P18_TIPO_EMISION, ''FORMA_LIBRE''), :P18_NRO_REGISTRO_MAQUINA);',
 '',
 '    apex_application.g_print_success_message := ''Datos fiscales guardados.'';',
 'end;'))
@@ -18751,6 +19079,413 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'js_code', 'apex.submit({request:"CAMBIA_EMPRESA", showWait:true});')).to_clob
+);
+end;
+/
+
+prompt --application/pages/page_00019
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>19
+,p_name=>unistr('Administraci\00F3n')
+,p_alias=>'ADMINISTRACION'
+,p_step_title=>unistr('Administraci\00F3n')
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Mismo estandar de cabecera que la 3, 5 y 8 */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
+'    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
+'    border: none !important;',
+'    box-shadow: none !important;',
+'    padding: 16px 20px !important;',
+'}',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title {',
+'    color: #ffffff !important;',
+'    font-weight: 600 !important;',
+'    font-size: 1.25rem !important;',
+'}'))
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000380)
+,p_plug_name=>unistr('Administraci\00F3n')
+,p_static_id=>'admin-selector'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_source_type=>'NATIVE_DISPLAY_SELECTOR'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000381)
+,p_plug_name=>'Empresa'
+,p_static_id=>'admin-empresa'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000000396)
+,p_plug_name=>'Mis empresas'
+,p_static_id=>'admin-mis-empresas'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>15
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+ 'select id_empresa,',
+ '       nombre_empresa,',
+ '       cod_pais,',
+ '       rfc,',
+ '       estado',
+ '  from v_empresas_usuario',
+ ' where upper(username) = upper(:APP_USER)',
+ ' order by nombre_empresa'))
+,p_plug_source_type=>'NATIVE_IR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000000397)
+,p_no_data_found_message=>unistr('Todav\00EDa no tienes empresas asociadas. Crea una con el bot\00F3n \00ABNueva empresa\00BB.')
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_show_notify=>'Y'
+,p_internal_uid=>43000000000000397
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000398)
+,p_db_column_name=>'ID_EMPRESA'
+,p_display_order=>10
+,p_is_primary_key=>'Y'
+,p_column_identifier=>'A'
+,p_column_label=>'Editar'
+,p_column_link=>'f?p=&APP_ID.:19:&SESSION.::&DEBUG.:19:P19_ID_EMPRESA:#ID_EMPRESA#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Editar'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000399)
+,p_db_column_name=>'NOMBRE_EMPRESA'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Empresa'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000400)
+,p_db_column_name=>'COD_PAIS'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>unistr('Pa\00EDs')
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000401)
+,p_db_column_name=>'RFC'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'RIF / RFC'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000000402)
+,p_db_column_name=>'ESTADO'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Estado'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000382)
+,p_name=>'P19_ID_EMPRESA'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000395)
+,p_name=>'P19_MODO'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000383)
+,p_name=>'P19_NOMBRE_EMPRESA'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>unistr('Nombre de la empresa')
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_cSize=>40
+,p_cMaxlength=>150
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000384)
+,p_name=>'P19_COD_PAIS'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>unistr('Pa\00EDs')
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select ''Venezuela (VE)'' as display_value, ''VE'' as return_value from dual',
+'union all',
+'select ''Mxico (MX)'', ''MX'' from dual'))
+,p_lov_display_null=>'NO'
+,p_cSize=>20
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000385)
+,p_name=>'P19_TIPO_IDENT_FISCAL'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>unistr('Tipo de identificaci\00F3n fiscal')
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_colspan=>6
+,p_lov=>'STATIC2:RIF;RIF,RFC;RFC'
+,p_lov_display_null=>'NO'
+,p_cSize=>10
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000386)
+,p_name=>'P19_RFC'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>'RIF / RFC'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_cSize=>25
+,p_cMaxlength=>20
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000000387)
+,p_name=>'P19_ESTADO'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_prompt=>'Estado'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_colspan=>6
+,p_lov=>'STATIC2:ACTIVO;ACTIVO,INACTIVO;INACTIVO'
+,p_lov_display_null=>'NO'
+,p_cSize=>15
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000388)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_button_name=>'BTN_GUARDAR_EMPRESA'
+,p_static_id=>'btn-guardar-empresa'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar empresa'
+,p_icon_css_classes=>'fa-floppy-o'
+,p_button_condition_type=>'EXPRESSION'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000000393)
+,p_button_sequence=>190
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000381)
+,p_button_name=>'BTN_CREAR_EMPRESA'
+,p_static_id=>'btn-crear-empresa'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Nueva empresa'
+,p_icon_css_classes=>'fa-plus'
+,p_button_condition_type=>'EXPRESSION'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'')'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000389)
+,p_process_sequence=>9
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Carga la empresa del usuario'
+,p_static_id=>'carga-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number;',
+'    v_fila empresas%rowtype;',
+'begin',
+'    -- Con «Nueva empresa» el formulario queda libre (y con lo recien guardado, tras',
+'    -- guardar). Esta carga corre tambien en el render que sigue al submit, y sin',
+'    -- esta guarda volveria a poner la empresa del usuario encima: el formulario no',
+'    -- quedaria en blanco y «Guardar empresa» actualizaria su empresa en vez de',
+'    -- dar de alta una nueva.',
+'    if nvl(:P19_MODO, ''VER'') = ''LIBRE'' then',
+'        apex_util.set_session_state(''P19_MODO'', ''VER'');',
+'        return;',
+'    end if;',
+'',
+'    -- Si el listado trajo una empresa (P19_ID_EMPRESA), se carga esa.',
+'    -- Si no, se carga la empresa del usuario, pero SOLO si tiene una sola:',
+'    -- con varias hay que elegir, y no se elige por la cuenta.',
+'    v_emp := fn_clean_num(:P19_ID_EMPRESA);',
+'    if v_emp is null or v_emp = 0 then',
+'        -- OJO: el HAVING deja la consulta SIN filas si el usuario tiene',
+'        -- mas de una empresa, y eso es NO_DATA_FOUND (ORA-01403). Con',
+'        -- manejador, el formulario se abre en blanco y se elige desde el',
+'        -- listado.',
+'        begin',
+'            select min(id_empresa) into v_emp',
+'              from v_empresas_usuario',
+'             where upper(username) = upper(:APP_USER)',
+'             having count(*) = 1;',
+'        exception',
+'            when no_data_found then v_emp := null;',
+'        end;',
+'    end if;',
+'',
+'    if v_emp is null then return; end if;',
+'',
+'    -- La empresa tiene que ser una de las del usuario.',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then return; end if;',
+'',
+'    begin',
+'        select * into v_fila from empresas where id_empresa = v_emp;',
+'    exception',
+'        when no_data_found then return;',
+'    end;',
+'',
+'    apex_util.set_session_state(''P19_ID_EMPRESA'', to_char(v_fila.id_empresa));',
+'    apex_util.set_session_state(''P19_NOMBRE_EMPRESA'', v_fila.nombre_empresa);',
+'    apex_util.set_session_state(''P19_COD_PAIS'', v_fila.cod_pais);',
+'    apex_util.set_session_state(''P19_TIPO_IDENT_FISCAL'', nvl(v_fila.tipo_ident_fiscal, ''RIF''));',
+'    apex_util.set_session_state(''P19_RFC'', v_fila.rfc);',
+'    apex_util.set_session_state(''P19_ESTADO'', nvl(v_fila.estado, ''ACTIVO''));',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000394)
+,p_process_sequence=>8
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Crear empresa'
+,p_static_id=>'crear-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    -- No escribe nada: deja el formulario en blanco para dar de alta una empresa',
+'    -- nueva. Al guardar, sin id, el proceso de guardado inserta.',
+'    apex_util.set_session_state(''P19_ID_EMPRESA'', null);',
+'    apex_util.set_session_state(''P19_NOMBRE_EMPRESA'', null);',
+'    apex_util.set_session_state(''P19_COD_PAIS'', ''VE'');',
+'    apex_util.set_session_state(''P19_TIPO_IDENT_FISCAL'', ''RIF'');',
+'    apex_util.set_session_state(''P19_RFC'', null);',
+'    apex_util.set_session_state(''P19_ESTADO'', ''ACTIVO'');',
+'    -- Para que la carga del render siguiente no lo rellene otra vez.',
+'    apex_util.set_session_state(''P19_MODO'', ''LIBRE'');',
+'',
+unistr('    apex_application.g_print_success_message := ''Formulario en blanco: escribe la empresa nueva y pulsa Guardar empresa.'';'),
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000393)
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000390)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar empresa'
+,p_static_id=>'guardar-empresa'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number := fn_clean_num(:P19_ID_EMPRESA);',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'',
+'    if :P19_NOMBRE_EMPRESA is null then',
+'        raise_application_error(-20071, ''El nombre de la empresa es obligatorio.'');',
+'    end if;',
+'',
+'    if v_emp is null or v_emp = 0 then',
+'        -- ALTA. OJO: en esta base EMPRESAS.ID_EMPRESA no es identity y su default',
+'        -- es 1, asi que el id se calcula aqui o el insert choca con la clave.',
+'        select nvl(max(id_empresa), 0) + 1 into v_emp from empresas;',
+'',
+'        insert into empresas (id_empresa, nombre_empresa, cod_pais, tipo_ident_fiscal,',
+'                              rfc, estado, fecha_creacion)',
+'        values (v_emp, :P19_NOMBRE_EMPRESA, :P19_COD_PAIS, :P19_TIPO_IDENT_FISCAL,',
+'                :P19_RFC, nvl(:P19_ESTADO, ''ACTIVO''), systimestamp);',
+'',
+'        apex_util.set_session_state(''P19_ID_EMPRESA'', to_char(v_emp));',
+'        apex_util.set_session_state(''P19_MODO'', ''LIBRE'');',
+'',
+'        -- La empresa nueva se asocia al usuario que la crea: sin el par en',
+'        -- USUARIO_EMPRESA no veria su propia empresa en el listado.',
+'        insert into usuario_empresa (usuario_id, id_empresa)',
+'        select u.usuario_id, v_emp',
+'          from usuario u',
+'         where upper(u.username) = upper(:APP_USER)',
+'           and u.estado in (''ACTIVO'', ''A'', ''1'')',
+'           and not exists (select 1 from usuario_empresa ue',
+'                            where ue.usuario_id = u.usuario_id',
+'                              and ue.id_empresa = v_emp);',
+'',
+unistr('        apex_application.g_print_success_message := ''Empresa creada con el id '' || to_char(v_emp) || '' y asociada a tu usuario.'';'),
+'    else',
+'        if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'            raise_application_error(-20003, ''Solo puede editar su propia empresa.'');',
+'        end if;',
+'',
+'        update empresas',
+'           set nombre_empresa    = :P19_NOMBRE_EMPRESA,',
+'               cod_pais          = :P19_COD_PAIS,',
+'               tipo_ident_fiscal = :P19_TIPO_IDENT_FISCAL,',
+'               rfc               = :P19_RFC,',
+'               estado            = nvl(:P19_ESTADO, ''ACTIVO'')',
+'         where id_empresa = v_emp;',
+'',
+'        apex_util.set_session_state(''P19_MODO'', ''LIBRE'');',
+'        apex_application.g_print_success_message := ''Empresa guardada.'';',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000000388)
 );
 end;
 /

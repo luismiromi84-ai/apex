@@ -45,5 +45,20 @@ create or replace PACKAGE pkg_factura_detalle IS
         p_usuario           IN VARCHAR2
     );
 
+    -- Copia a la nota SOLO las lineas indicadas de la factura que acredita.
+    -- p_id_detalles es una lista de id_detalle de la factura origen separada por
+    -- comas ('3,7'). Copia importes e impuestos tal cual (la alicuota de IVA es
+    -- la de la factura, no la de hoy) y deja id_detalle_origen en cada linea.
+    -- Solo para notas de credito: la nota de debito suma a la deuda y su tope es
+    -- otro. Aplica dos topes sobre las notas de credito no anuladas:
+    --   -20048 si la cantidad acreditada de una linea supera la facturada
+    --   -20049 si la suma de las notas supera el total de la factura
+    PROCEDURE copiar_lineas_de_factura (
+        p_id_factura        IN NUMBER,
+        p_id_factura_origen IN NUMBER,
+        p_id_detalles       IN VARCHAR2,
+        p_usuario           IN VARCHAR2
+    );
+
 END pkg_factura_detalle;
 /
