@@ -151,13 +151,19 @@ def preparar():
     # El usuario A tiene pares en las empresas 1 y 3 (dos reales del dueño);
     # el B, solo en la 1.
     sql("""insert into usuario_empresa (usuario_id, id_empresa)
-           values (:u, 1)""", u=ID_USUARIO_A)
+           select :u, :e from dual where not exists
+           (select 1 from usuario_empresa where usuario_id = :u and id_empresa = :e)""",
+        u=ID_USUARIO_A, e=1)
     con.commit()
     sql("""insert into usuario_empresa (usuario_id, id_empresa)
-           values (:u, 3)""", u=ID_USUARIO_A)
+           select :u, :e from dual where not exists
+           (select 1 from usuario_empresa where usuario_id = :u and id_empresa = :e)""",
+        u=ID_USUARIO_A, e=3)
     con.commit()
     sql("""insert into usuario_empresa (usuario_id, id_empresa)
-           values (:u, 1)""", u=ID_USUARIO_B)
+           select :u, :e from dual where not exists
+           (select 1 from usuario_empresa where usuario_id = :u and id_empresa = :e)""",
+        u=ID_USUARIO_B, e=1)
     con.commit()
 
     sql("select u.usuario_id, ue.id_empresa from usuario_empresa ue "

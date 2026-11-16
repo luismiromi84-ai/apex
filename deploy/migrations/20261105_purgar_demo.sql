@@ -68,7 +68,19 @@ delete from producto_servicio   where id_producto_servicio between 1000 and 1999
 delete from clientes            where id_cliente           between 1000 and 1999;
 /
 
+-- Los pares de USUARIO_EMPRESA van antes y con commit en medio: la FK no tiene
+-- cascada y en esta ADB borrar hijo y padre en la misma transaccion da ORA-12860.
+delete from usuario_empresa     where usuario_id           between 1000 and 1999;
+/
+commit;
+/
+
 delete from usuario             where usuario_id           between 1000 and 1999;
+/
+
+delete from usuario_empresa     where usuario_id           between 9000 and 9999;
+/
+commit;
 /
 
 delete from usuario             where usuario_id           between 9000 and 9999;

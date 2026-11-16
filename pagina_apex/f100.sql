@@ -17146,6 +17146,27 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 );
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000000404)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>unistr('Valida empresa del panel')
+,p_static_id=>'valida-empresa-panel'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number := fn_clean_num(:P13_ID_EMPRESA);',
+'begin',
+'    -- El filtro del Panel es un ITEM: la LOV lo limita, pero un POST manipulado',
+'    -- puede mandar cualquier empresa y las regiones pintarian sus datos.',
+'    -- Si no es una empresa del usuario, se deja vacio y no se ve nada.',
+'    if v_emp is not null and not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        apex_util.set_session_state(''P13_ID_EMPRESA'', null);',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000000404
+);
 end;
 /
 prompt --application/pages/page_00014
@@ -18299,6 +18320,12 @@ wwv_flow_imp_page.create_page_plug(
 'declare',
 '    v_html clob;',
 'begin',
+'    -- El logo es de la empresa del item: sin guarda, un POST manipulado pinta',
+'    -- el logo de otra empresa (hallazgo de la revision final del 2026-11-11).',
+'    if :P17_ID_EMPRESA is null',
+'       or not fn_usuario_empresa_valida(:APP_USER, fn_clean_num(:P17_ID_EMPRESA)) then',
+'        return null;',
+'    end if;',
 '    v_html := pkg_empresa_logo.fn_logo_img(:P17_ID_EMPRESA, ''max-height:120px'');',
 '    if v_html is null then',
 '        return ''<p class="u-color-50">Esta empresa no tiene logo cargado. Sus documentos salen sin imagen.</p>'';',
@@ -18928,6 +18955,13 @@ wwv_flow_imp_page.create_page_process(
 '    end if;',
 '',
 '    if v_empresa is null then',
+'        return;',
+'    end if;',
+'',
+'    -- La empresa del item tiene que ser del usuario: sin esta guarda un POST',
+'    -- manipulado mostraba la direccion, la providencia y la imprenta de otro',
+'    -- cliente (hallazgo de la revision final del 2026-11-11).',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_empresa) then',
 '        return;',
 '    end if;',
 '',

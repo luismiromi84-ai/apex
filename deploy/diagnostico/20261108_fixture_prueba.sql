@@ -99,9 +99,12 @@ values (900003, 'prueba3', 'prueba3@synpex.local', sypex_hash_password('Prueba#2
 -- trata como 'pendiente sin empresa'. Se siembran los pares que
 -- corresponden a la empresa principal de cada usuario de prueba.
 insert into usuario_empresa (usuario_id, id_empresa)
-select 900001, 1 from dual
-union all select 900002, 2 from dual
-union all select 900003, 1 from dual;
+select u, e from (
+    select 900001 u, 1 e from dual
+    union all select 900002, 2 from dual
+    union all select 900003, 1 from dual) p
+ where not exists (select 1 from usuario_empresa x
+                    where x.usuario_id = p.u and x.id_empresa = p.e);
 /
 
 -- -----------------------------------------------------------------------------

@@ -49,7 +49,7 @@
 --      'tmp_multi_fallas.caso varchar2(300)' son 300 BYTES y
 --      'v_lista varchar2(2000)' son 2000 BYTES, mientras que 'substr(x,1,N)'
 --      recorta N CARACTERES. Con texto no ASCII un recorte por caracteres se
---      pasa de largo: 'substr(rpad(''x'',290,''x'')||rpad(''á'',10,''á''),1,300)'
+--      pasa de largo: 'substr(rpad(''x'',290,''x'')||rpad(''Ã¡'',10,''Ã¡''),1,300)'
 --      son 310 bytes contra 300 de la columna y revienta con ORA-12899.
 --      Por eso los recortes usan 'substrb(...)', que recorta bytes:
 --        - los 15 'insert into tmp_multi_fallas' (columna 'caso');
@@ -97,24 +97,24 @@
 --   M13 El mismo texto con un usuario que tiene un par en una empresa ACTIVA
 --       y otro en una INACTIVA: solo sale la ACTIVA.
 --
--- Casos (tarea 6: pagina 19 «Administracion»):
---   M14 (AMPLIADO por la tarea 6) Ninguna consulta guardada por APEX —regiones,
---       items, LOVs y TAMBIEN los procesos de pagina, ya incluida la pagina 19—
+-- Casos (tarea 6: pagina 19 Â«AdministracionÂ»):
+--   M14 (AMPLIADO por la tarea 6) Ninguna consulta guardada por APEX â€”regiones,
+--       items, LOVs y TAMBIEN los procesos de pagina, ya incluida la pagina 19â€”
 --       sigue leyendo la columna unica USUARIO.ID_EMPRESA.
---   M23 El listado «Mis empresas» de la pagina 19, ejecutado con el TEXTO
+--   M23 El listado Â«Mis empresasÂ» de la pagina 19, ejecutado con el TEXTO
 --       GUARDADO por APEX, devuelve las empresas del usuario: 2 para un usuario
 --       con 2 pares, 1 para uno con 1 par y 0 para uno sin pares.
---   M24 El proceso real «Guardar empresa» (ALTA) inserta la empresa Y deja el
+--   M24 El proceso real Â«Guardar empresaÂ» (ALTA) inserta la empresa Y deja el
 --       par en USUARIO_EMPRESA para el usuario que la creo.
---   M25 El proceso real «Guardar empresa» (EDICION) con una empresa que no es
+--   M25 El proceso real Â«Guardar empresaÂ» (EDICION) con una empresa que no es
 --       del usuario lanza -20003 y no cambia nada.
---   M26 El proceso real «Carga la empresa del usuario» (BEFORE_HEADER) NO
+--   M26 El proceso real Â«Carga la empresa del usuarioÂ» (BEFORE_HEADER) NO
 --       lanza NO_DATA_FOUND (ORA-01403) cuando el usuario tiene DOS empresas:
 --       el 'having count(*) = 1' deja la consulta sin filas y, sin manejador,
 --       tumbaba la pagina entera (medido el 2026-11-10).
 --
--- Casos (tarea 5: pagina 3 con la columna «Empresas»):
---   M21 La consulta GUARDADA de la region «Gestion de Usuarios» (pagina 3)
+-- Casos (tarea 5: pagina 3 con la columna Â«EmpresasÂ»):
+--   M21 La consulta GUARDADA de la region Â«Gestion de UsuariosÂ» (pagina 3)
 --       devuelve una columna EMPRESAS con las empresas COMPARTIDAS con el
 --       administrador que mira, separadas por ', ' y ordenadas por nombre.
 --       Ademas la columna EMPRESAS esta declarada en el informe por defecto.
@@ -244,7 +244,7 @@ select substrb('M2: falta V_EMPRESAS_USUARIO o no esta VALID', 1, 300) from dual
 -- manejador puede atrapar es un fallo real de la medicion (un 'listagg'
 -- interno que revienta, una vista INVALID en M4...). Si ahi se hiciera
 -- 'v_detalle := null', una medicion rota se convertiria en un PASS
--- silencioso y este archivo dejaria de ser la reja de regresión.
+-- silencioso y este archivo dejaria de ser la reja de regresiÃ³n.
 -- -----------------------------------------------------------------------------
 declare
     v_tiene_tabla number;
@@ -782,18 +782,18 @@ end;
 /
 
 -- =============================================================================
--- Tarea 6: pagina 19 «Administracion» — listado de empresas del usuario y
+-- Tarea 6: pagina 19 Â«AdministracionÂ» â€” listado de empresas del usuario y
 -- alta que asocia al creador.
 --
 --   M14 Ampliado: NINGUNA consulta guardada por APEX (regiones, items, LOVs,
 --       condiciones y TAMBIEN los procesos de pagina) sigue leyendo
 --       'id_empresa from usuario' ni 'min(u.id_empresa)'. La tarea 4 lo
---       excluia a proposito (el proceso «Carga la empresa del usuario» de la
+--       excluia a proposito (el proceso Â«Carga la empresa del usuarioÂ» de la
 --       pagina 19); aqui ya se incluye, porque la tarea 6 lo cambia.
 --   M23 Un usuario con DOS empresas ve las DOS en el listado de la pagina 19:
---       se ejecuta el TEXTO GUARDADO de la region «Mis empresas» con
+--       se ejecuta el TEXTO GUARDADO de la region Â«Mis empresasÂ» con
 --       ':APP_USER' sustituido.
---   M24 El proceso real «Guardar empresa» (alta) inserta la empresa Y deja el
+--   M24 El proceso real Â«Guardar empresaÂ» (alta) inserta la empresa Y deja el
 --       par en USUARIO_EMPRESA para ':APP_USER'.
 --   M25 Editar una empresa que NO es del usuario lanza -20003 y no cambia nada.
 --
@@ -804,7 +804,7 @@ end;
 -- 'execute immediate', de modo que un 'raise_application_error' se puede
 -- capturar con el manejador y comprobar el codigo (-20003).
 --
--- El proceso «Guardar empresa» llama a fn_tiene_rol, que mira
+-- El proceso Â«Guardar empresaÂ» llama a fn_tiene_rol, que mira
 -- apex_application.g_user: en una sesion SQL esa variable es nula y la
 -- funcion devuelve FALSE. Por eso, ANTES de ejecutarlo, se fija
 -- apex_application.g_user con el usuario de prueba (en el MISMO bloque, porque
@@ -889,7 +889,7 @@ end;
 /
 
 -- -----------------------------------------------------------------------------
--- M23: el listado de la pagina 19 (region «Mis empresas») devuelve TODAS las
+-- M23: el listado de la pagina 19 (region Â«Mis empresasÂ») devuelve TODAS las
 -- empresas del usuario.
 --
 -- Se mide el TEXTO GUARDADO por APEX (APEX_APPLICATION_PAGE_REGIONS.
@@ -912,7 +912,7 @@ begin
 
     if v_estado = 0 then
         insert into tmp_multi_fallas
-        values (substrb('M23: la pagina 19 no tiene la region «Mis empresas» (static_id admin-mis-empresas)', 1, 300));
+        values (substrb('M23: la pagina 19 no tiene la region Â«Mis empresasÂ» (static_id admin-mis-empresas)', 1, 300));
     else
         begin
             select region_source into v_texto
@@ -955,7 +955,7 @@ end;
 /
 
 -- -----------------------------------------------------------------------------
--- M24 y M25: el proceso real «Guardar empresa» (página 19).
+-- M24 y M25: el proceso real Â«Guardar empresaÂ» (pÃ¡gina 19).
 --
 -- El cuerpo sale de APEX_APPLICATION_PAGE_PROC (texto guardado) y se ejecuta
 -- con los binds sustituidos por literales. Se ejecuta con 'execute immediate'
@@ -988,7 +988,7 @@ declare
     v_nombre constant varchar2(50) := 'DIAG P19 ALTA';
     v_g_user_anterior varchar2(100);
 begin
-    -- El cuerpo guardado del proceso «Guardar empresa».
+    -- El cuerpo guardado del proceso Â«Guardar empresaÂ».
     begin
         select process_source into v_cuerpo
           from apex_application_page_proc
@@ -997,7 +997,7 @@ begin
     exception
         when no_data_found then
             insert into tmp_multi_fallas
-            values (substrb('M24-M25: no se encuentra el proceso «Guardar empresa» de la pagina 19', 1, 300));
+            values (substrb('M24-M25: no se encuentra el proceso Â«Guardar empresaÂ» de la pagina 19', 1, 300));
             v_cuerpo := null;
         when others then
             v_error := sqlerrm;
@@ -1051,8 +1051,8 @@ begin
          where e.nombre_empresa = v_nombre;
         if v_cuenta <> 1 then
             insert into tmp_multi_fallas
-            values (substrb('M24: el alta no dejo una empresa llamada «' || v_nombre
-                            || '» (se esperaba 1, se hallaron ' || v_cuenta || ')', 1, 300));
+            values (substrb('M24: el alta no dejo una empresa llamada Â«' || v_nombre
+                            || 'Â» (se esperaba 1, se hallaron ' || v_cuenta || ')', 1, 300));
         else
             select min(id_empresa) into v_id
               from empresas where nombre_empresa = v_nombre;
@@ -1127,13 +1127,13 @@ end;
 
 -- -----------------------------------------------------------------------------
 -- M26 (regresion, anadida el 2026-11-10 tras un fallo real): el proceso
--- «Carga la empresa del usuario» (BEFORE_HEADER de la pagina 19) NO puede
+-- Â«Carga la empresa del usuarioÂ» (BEFORE_HEADER de la pagina 19) NO puede
 -- lanzar NO_DATA_FOUND cuando el usuario tiene DOS empresas.
 --
 -- MEDIDO: el 'select min(id_empresa) ... having count(*) = 1' deja la consulta
 -- SIN filas si el usuario tiene mas de una empresa, y eso es NO_DATA_FOUND
 -- (ORA-01403). Sin manejador, el proceso tumbaba la pagina entera con la
--- pantalla de error «No se ha encontrado ningun dato».
+-- pantalla de error Â«No se ha encontrado ningun datoÂ».
 --
 -- Se ejecuta el CUERPO GUARDADO del proceso (no una copia) con los binds
 -- sustituidos:
@@ -1156,7 +1156,7 @@ begin
     exception
         when no_data_found then
             insert into tmp_multi_fallas
-            values (substrb('M26: no se encuentra el proceso «Carga la empresa del usuario» de la pagina 19', 1, 300));
+            values (substrb('M26: no se encuentra el proceso Â«Carga la empresa del usuarioÂ» de la pagina 19', 1, 300));
             v_cuerpo := null;
         when others then
             v_error := sqlerrm;
@@ -1322,7 +1322,7 @@ end;
 --       escanea TODOS, pero el M14b AFIRMA que el conjunto de procesos de la
 --       pagina 4 que leen la columna unica es EXACTAMENTE esa lista cerrada:
 --       si aparece un quinto, el caso falla. Lo que la cierra: la fase 3.
---   M15 Las listas «Lista de Presupuestos» (5) y «Lista de Facturas» (8),
+--   M15 Las listas Â«Lista de PresupuestosÂ» (5) y Â«Lista de FacturasÂ» (8),
 --       ejecutadas con el TEXTO GUARDADO por APEX como un usuario de DOS
 --       empresas: devuelven documentos de las DOS y NINGUNO de una tercera.
 --   M16 Lo mismo con un usuario de UNA empresa: solo los suyos (regresion: un
@@ -1330,7 +1330,7 @@ end;
 --   M17 Los defectos de empresa de P13_ID_EMPRESA, P7_ID_EMPRESA y
 --       P17_ID_EMPRESA: con un usuario de DOS empresas devuelven NULL (la app
 --       NO elige por su cuenta) y con uno de UNA devuelven esa empresa.
---   M18 La tarjeta «Errores registrados hoy» del Panel con :P13_ID_EMPRESA de
+--   M18 La tarjeta Â«Errores registrados hoyÂ» del Panel con :P13_ID_EMPRESA de
 --       una empresa AJENA no cuenta los errores de otra empresa.
 --   M19 La lista de usuarios de la pagina 3, ejecutada como el administrador
 --       A: INCLUYE a un usuario que solo comparte empresa con A, EXCLUYE a uno
@@ -1645,10 +1645,10 @@ end;
 --   con seleccion multiple de empresas), que este plan NO hace: ver
 --   '.superpowers/sdd/2026-11-10-multiempresa-usuario-empresa/task-7-brief.md',
 --   seccion 'Lo que este plan NO hace':
---     «los procesos de la pagina 4 fuerzan id_empresa = v_mia, donde v_mia es
+--     Â«los procesos de la pagina 4 fuerzan id_empresa = v_mia, donde v_mia es
 --       la empresa PRINCIPAL del administrador; un administrador con dos
 --       empresas solo podra asignar esa principal. Es el comportamiento de hoy
---       y no empeora.»
+--       y no empeora.Â»
 --   Lo que la cierra: la FASE 3 del spec (pagina 4 con asignacion multiple).
 --   Cuando se implemente, este caso tiene que cambiar.
 --
@@ -1712,8 +1712,8 @@ begin
         if v_ordenada <> v_esperada then
             insert into tmp_multi_fallas
             values (substrb('M14b: la excepcion de la pagina 4 no cuadra con la lista cerrada. '
-                            || 'Se esperaba «' || v_esperada || '» y hay «' || v_ordenada
-                            || '». Si es un proceso NUEVO, hay que decidir si entra en la '
+                            || 'Se esperaba Â«' || v_esperada || 'Â» y hay Â«' || v_ordenada
+                            || 'Â». Si es un proceso NUEVO, hay que decidir si entra en la '
                             || 'excepcion (fase 3) o si hay que cambiarlo.', 1, 300));
         end if;
     exception
@@ -2026,13 +2026,13 @@ begin
     v_cuenta := contar_region(11950647600514906, 'DIAG_M2');   -- Lista de Presupuestos
     if v_cuenta <> 2 then
         insert into tmp_multi_fallas
-        values (substrb('M15: «Lista de Presupuestos» devolvio ' || v_cuenta
+        values (substrb('M15: Â«Lista de PresupuestosÂ» devolvio ' || v_cuenta
                         || ' presupuestos para un usuario de 2 empresas (se esperaba 2)', 1, 300));
     end if;
     v_cuenta := contar_region(29963866505095675, 'DIAG_M2');   -- Lista de Facturas
     if v_cuenta <> 2 then
         insert into tmp_multi_fallas
-        values (substrb('M15: «Lista de Facturas» devolvio ' || v_cuenta
+        values (substrb('M15: Â«Lista de FacturasÂ» devolvio ' || v_cuenta
                         || ' facturas para un usuario de 2 empresas (se esperaba 2)', 1, 300));
     end if;
 
@@ -2040,13 +2040,13 @@ begin
     v_cuenta := contar_region(11950647600514906, 'DIAG_M1');
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M16: «Lista de Presupuestos» devolvio ' || v_cuenta
+        values (substrb('M16: Â«Lista de PresupuestosÂ» devolvio ' || v_cuenta
                         || ' presupuestos para un usuario de 1 empresa (se esperaba 1)', 1, 300));
     end if;
     v_cuenta := contar_region(29963866505095675, 'DIAG_M1');
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M16: «Lista de Facturas» devolvio ' || v_cuenta
+        values (substrb('M16: Â«Lista de FacturasÂ» devolvio ' || v_cuenta
                         || ' facturas para un usuario de 1 empresa (se esperaba 1)', 1, 300));
     end if;
 
@@ -2054,13 +2054,13 @@ begin
     v_cuenta := contar_region(11950647600514906, 'DIAG_M3');
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M20: «Lista de Presupuestos» devolvio ' || v_cuenta
+        values (substrb('M20: Â«Lista de PresupuestosÂ» devolvio ' || v_cuenta
                         || ' presupuestos para un usuario de la empresa ajena (se esperaba 1)', 1, 300));
     end if;
     v_cuenta := contar_region(29963866505095675, 'DIAG_M3');
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M20: «Lista de Facturas» devolvio ' || v_cuenta
+        values (substrb('M20: Â«Lista de FacturasÂ» devolvio ' || v_cuenta
                         || ' facturas para un usuario de la empresa ajena (se esperaba 1)', 1, 300));
     end if;
 
@@ -2075,7 +2075,7 @@ begin
     v_ids := ids_region(11950647600514906, 'DIAG_M2', 'id_presupuesto');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: «Lista de Presupuestos» devolvio el presupuesto de la empresa ajena: '
+        values (substrb('M20: Â«Lista de PresupuestosÂ» devolvio el presupuesto de la empresa ajena: '
                         || v_ids, 1, 300));
     end if;
 
@@ -2083,7 +2083,7 @@ begin
     v_ids := ids_region(11950647600514906, 'DIAG_M1', 'id_presupuesto');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: «Lista de Presupuestos» de un usuario de 1 empresa devolvio '
+        values (substrb('M20: Â«Lista de PresupuestosÂ» de un usuario de 1 empresa devolvio '
                         || 'el presupuesto de la empresa ajena: ' || v_ids, 1, 300));
     end if;
 
@@ -2094,7 +2094,7 @@ begin
     v_ids := ids_region(29963866505095675, 'DIAG_M2', 'id_factura');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: «Lista de Facturas» devolvio la factura de la empresa ajena: '
+        values (substrb('M20: Â«Lista de FacturasÂ» devolvio la factura de la empresa ajena: '
                         || v_ids, 1, 300));
     end if;
 
@@ -2102,7 +2102,7 @@ begin
     v_ids := ids_region(29963866505095675, 'DIAG_M1', 'id_factura');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: «Lista de Facturas» de un usuario de 1 empresa devolvio '
+        values (substrb('M20: Â«Lista de FacturasÂ» de un usuario de 1 empresa devolvio '
                         || 'la factura de la empresa ajena: ' || v_ids, 1, 300));
     end if;
 end;
@@ -2193,10 +2193,10 @@ end;
 /
 
 -- -----------------------------------------------------------------------------
--- M18: la tarjeta «Errores registrados hoy» del Panel (region «Indicadores»)
+-- M18: la tarjeta Â«Errores registrados hoyÂ» del Panel (region Â«IndicadoresÂ»)
 -- NO cuenta los errores de una empresa ajena.
 --
--- Se mide el TEXTO GUARDADO de la region «Indicadores»
+-- Se mide el TEXTO GUARDADO de la region Â«IndicadoresÂ»
 -- (APEX_APPLICATION_PAGE_REGIONS.REGION_SOURCE, region 23600000000000010) con
 -- ':P13_ID_EMPRESA' sustituido por la empresa ELEGIDA y ':APP_USER' por el
 -- usuario de prueba.
@@ -2215,7 +2215,7 @@ declare
     v_texto  clob;
     v_cuenta number;
 
-    -- Cuenta los errores que ve la tarjeta «Errores registrados hoy» con una
+    -- Cuenta los errores que ve la tarjeta Â«Errores registrados hoyÂ» con una
     -- empresa y un usuario dados.
     function contar_errores(p_texto clob, p_empresa number, p_usuario varchar2) return number is
         v_txt  varchar2(32000);
@@ -2318,7 +2318,7 @@ end;
 -- -----------------------------------------------------------------------------
 -- M19: la lista de usuarios de la pagina 3.
 --
--- Se mide el TEXTO GUARDADO de la region «Gestion de Usuarios»
+-- Se mide el TEXTO GUARDADO de la region Â«Gestion de UsuariosÂ»
 -- (APEX_APPLICATION_PAGE_REGIONS.REGION_SOURCE, region 10564941614198500) con
 -- ':APP_USER' sustituido por el administrador A (DIAG_ADM).
 --
@@ -2453,7 +2453,7 @@ end;
 /
 
 -- =============================================================================
--- TAREA 5: pagina 3 «Gestion de Usuarios» — columna «Empresas».
+-- TAREA 5: pagina 3 Â«Gestion de UsuariosÂ» â€” columna Â«EmpresasÂ».
 --
 --   M21 La consulta GUARDADA de la region (APEX_APPLICATION_PAGE_REGIONS.
 --       REGION_SOURCE de la region 10564941614198500) trae una columna EMPRESAS
@@ -2602,7 +2602,7 @@ end;
 /
 
 -- -----------------------------------------------------------------------------
--- M21 y M22: la columna «Empresas» de la lista de usuarios de la pagina 3.
+-- M21 y M22: la columna Â«EmpresasÂ» de la lista de usuarios de la pagina 3.
 --
 -- Se ejecuta el TEXTO GUARDADO de la region con ':APP_USER' sustituido por
 -- el administrador de prueba (DIAG_ADM3, que tiene pares en 900040 y 900041)
@@ -2634,7 +2634,7 @@ begin
            and column_alias = 'EMPRESAS';
         if v_cuenta <> 1 then
             insert into tmp_multi_fallas
-            values (substrb('M21: la region «Gestion de Usuarios» no declara la columna EMPRESAS', 1, 300));
+            values (substrb('M21: la region Â«Gestion de UsuariosÂ» no declara la columna EMPRESAS', 1, 300));
         end if;
     exception
         when others then
@@ -2699,15 +2699,15 @@ begin
             -- M21: las dos empresas COMPARTIDAS, separadas por ', ' y por nombre.
             if v_empresas <> 'DIAG EMP P, DIAG EMP Q' then
                 insert into tmp_multi_fallas
-                values (substrb('M21: EMPRESAS devolvio «' || v_empresas
-                                || '» (se esperaba «DIAG EMP P, DIAG EMP Q»)', 1, 300));
+                values (substrb('M21: EMPRESAS devolvio Â«' || v_empresas
+                                || 'Â» (se esperaba Â«DIAG EMP P, DIAG EMP QÂ»)', 1, 300));
             end if;
 
             -- M22: la empresa AJENA al administrador NO aparece.
             if v_empresas like '%DIAG EMP R%' then
                 insert into tmp_multi_fallas
-                values (substrb('M22: EMPRESAS incluye la empresa ajena al administrador: «'
-                                || v_empresas || '»', 1, 300));
+                values (substrb('M22: EMPRESAS incluye la empresa ajena al administrador: Â«'
+                                || v_empresas || 'Â»', 1, 300));
             end if;
         end if;
     exception
@@ -2787,6 +2787,48 @@ begin
 end;
 /
 
+-- -----------------------------------------------------------------------------
+-- M27-M29: el filtro por empresa tiene que estar EN EL SERVIDOR, no solo en la
+-- LOV. Medido en la revision final del 2026-11-11: el Panel (13) filtraba solo
+-- por el item P13_ID_EMPRESA (sin comprobar que sea del usuario) y las cargas
+-- de las paginas 17 y 18 leian la empresa del item sin la guarda; con un POST
+-- manipulado se veian la facturacion y los datos fiscales de otro cliente.
+-- Se comprueba el TEXTO GUARDADO por APEX (como M14), no una copia a mano.
+-- -----------------------------------------------------------------------------
+insert into tmp_multi_fallas
+select substrb('M27: el Panel (13) no valida que P13_ID_EMPRESA sea del usuario', 1, 300)
+  from dual
+ where not exists (select 1
+                     from apex_application_page_proc p
+                    where p.application_id = 100
+                      and p.page_id = 13
+                      and p.process_point_code = 'BEFORE_HEADER'
+                      and instr(upper(p.process_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0
+                      and instr(upper(p.process_source), 'P13_ID_EMPRESA') > 0);
+/
+
+insert into tmp_multi_fallas
+select substrb('M28: la carga de Datos Fiscales (18) no valida la empresa del item', 1, 300)
+  from dual
+ where not exists (select 1
+                     from apex_application_page_proc p
+                    where p.application_id = 100
+                      and p.page_id = 18
+                      and p.process_point_code = 'BEFORE_HEADER'
+                      and instr(upper(p.process_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0);
+/
+
+insert into tmp_multi_fallas
+select substrb('M29: el logo (17) pinta el de una empresa que no es del usuario', 1, 300)
+  from dual
+ where not exists (select 1
+                     from apex_application_page_regions r
+                    where r.application_id = 100
+                      and r.page_id = 17
+                      and r.region_static_id = 'logo-actual'
+                      and instr(upper(r.region_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0);
+/
+
 declare
     v_fallas number;
     v_lista  varchar2(2000);
@@ -2809,3 +2851,4 @@ begin
     raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || ' | ' || v_lista, 1, 2000));
 end;
 /
+
