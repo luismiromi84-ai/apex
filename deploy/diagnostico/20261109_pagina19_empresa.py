@@ -24,7 +24,7 @@ c = credenciales()
 con = oracledb.connect(user=c["DB_USER"], password=c["DB_PASSWORD"], dsn=CONNECT_STRING)
 cur = con.cursor()
 cur.execute("alter session set current_schema = WKSP_SYPEXWS")
-cur.execute("delete from usuario where upper(username)='DIAG.DISENO'")
+cur.execute("begin delete from usuario_empresa where usuario_id in (select usuario_id from usuario where upper(username)='DIAG.DISENO'); commit; delete from usuario where upper(username)='DIAG.DISENO'; commit; end;")
 cur.execute("""insert into usuario (username,email,password_hash,estado,id_empresa,rol_id,debe_cambiar_clave,reintentos_fallidos)
  values ('diag.diseno','diag.diseno@synpex.local',sypex_hash_password('Diag#2026'),'ACTIVO',1,
  (select id_rol from syn_roles where codigo_rol='ADMIN'),'N',0)""")
@@ -116,7 +116,7 @@ try:
             print("  MAL el formulario no trae la empresa")
 finally:
     proc.terminate()
-    cur.execute("delete from usuario where upper(username)='DIAG.DISENO'")
+    cur.execute("begin delete from usuario_empresa where usuario_id in (select usuario_id from usuario where upper(username)='DIAG.DISENO'); commit; delete from usuario where upper(username)='DIAG.DISENO'; commit; end;")
     con.commit()
     con.close()
 

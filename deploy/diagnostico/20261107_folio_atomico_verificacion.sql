@@ -81,11 +81,20 @@ begin
     falla('F3', 'ND devolvio ' || v_txt);
   end if;
 
-  -- F3d: series independientes
-  if num(fn_siguiente_folio(v_emp, 'NC')) <> num(fn_siguiente_folio(v_emp, 'ND')) then
-    falla('F3d', 'NC y ND comparten contador (' || fn_siguiente_folio(v_emp, 'NC')
-                 || ' / ' || fn_siguiente_folio(v_emp, 'ND') || ')');
-  end if;
+  -- F3d: series independientes. Mover el contador de NC no puede tocar el de ND
+  -- (antes se comparaban los dos valores, y eso fallaba justo cuando divergian,
+  -- que es lo correcto: cada tipo lleva su propia serie).
+  declare
+    v_nd_antes number;
+    v_nd_desp  number;
+  begin
+    v_nd_antes := num(fn_siguiente_folio(v_emp, 'ND'));
+    v_txt      := fn_asignar_folio(v_emp, 'NC');
+    v_nd_desp  := num(fn_siguiente_folio(v_emp, 'ND'));
+    if v_nd_desp <> v_nd_antes then
+      falla('F3d', 'mover NC cambio el contador de ND (' || v_nd_antes || ' -> ' || v_nd_desp || ')');
+    end if;
+  end;
 
   -- F4: el package ignora el folio de la pagina
   v_id := null;

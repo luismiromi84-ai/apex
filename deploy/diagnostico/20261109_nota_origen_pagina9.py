@@ -141,7 +141,7 @@ cur.execute("alter session set current_schema = WKSP_SYPEXWS")
 
 # usuario temporal (se borra al final)
 cur.execute("delete from syn_login_log where upper(usuario_intentado) = 'DIAG.DISENO'")
-cur.execute("delete from usuario where upper(username) = 'DIAG.DISENO'")
+cur.execute("begin delete from usuario_empresa where usuario_id in (select usuario_id from usuario where upper(username) = 'DIAG.DISENO'); commit; delete from usuario where upper(username) = 'DIAG.DISENO'; commit; end;")
 cur.execute("""insert into usuario (username, email, password_hash, estado, id_empresa, rol_id,
                                      debe_cambiar_clave, reintentos_fallidos)
                values ('diag.diseno', 'diag.diseno@synpex.local', sypex_hash_password('Diag#2026'),
@@ -274,7 +274,7 @@ finally:
                                            where f.id_empresa = folio_contador.id_empresa
                                              and f.tipo_documento = 'NC')""")
     cur.execute("delete from syn_login_log where upper(usuario_intentado) = 'DIAG.DISENO'")
-    cur.execute("delete from usuario where upper(username) = 'DIAG.DISENO'")
+    cur.execute("begin delete from usuario_empresa where usuario_id in (select usuario_id from usuario where upper(username) = 'DIAG.DISENO'); commit; delete from usuario where upper(username) = 'DIAG.DISENO'; commit; end;")
     conn.commit()
     conn.close()
 

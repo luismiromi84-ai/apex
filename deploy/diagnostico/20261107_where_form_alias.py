@@ -12,7 +12,7 @@ con alias, la forma calificada da ORA-00904 y la no calificada funciona.
 Este script comprueba, contra la app importada:
   1. Que los WHERE de las regiones form de las paginas 6, 10 y 16 no califiquen.
   2. Que cada WHERE, ejecutado con alias, es SQL valido y devuelve la fila.
-  3. Nada invalido y las 20 paginas.
+  3. Nada invalido y las 21 paginas.
 
 Uso:  python deploy/diagnostico/20261107_where_form_alias.py
 Sale con codigo 1 si algo falla.
@@ -88,7 +88,7 @@ def main():
     comprueba(n == 0, "cero objetos invalidos", str(n))
     cur.execute("select count(*) from apex_application_pages where application_id = 100")
     n = cur.fetchone()[0]
-    comprueba(n == 20, "siguen las 20 paginas", str(n))
+    comprueba(n == 21, "siguen las 21 paginas", str(n))
 
     print(f"\nRESULTADO: FALLAS={fallas}")
     con.close()

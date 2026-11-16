@@ -150,11 +150,10 @@ end;
 
 create table tmp_multi_fallas (caso varchar2(300));
 /
--- Tabla de AVISOS que NO cuentan como falla: la 'deuda' conocida (la
--- pagina 4 usa la empresa PRINCIPAL del administrador, que es la fase 3
--- del spec). Se deja anotada sin romper el RESULTADO.
-create table tmp_multi_notas (caso varchar2(300));
-/
+-- (La tabla de AVISOS 'tmp_multi_notas' se retiro el 2026-11-11: se creaba y
+-- nunca se escribia, y dejaba una tabla de trabajo en el esquema de produccion
+-- -- la detectaba 20261107_install_limpio_inventario.py. El bloque del principio
+-- sigue borrandola, para limpiar bases donde hubiera quedado.)
 
 -- -----------------------------------------------------------------------------
 -- M1: la tabla existe, con la PK compuesta, el indice y las dos FK.
@@ -635,11 +634,14 @@ begin
 
         execute immediate
             q'[insert into usuario_empresa (usuario_id, id_empresa)
-               select 900003, 1 from dual
-               union all select 900003, 2 from dual
-               union all select 900004, 1 from dual
-               union all select 900005, 1 from dual
-               union all select 900005, 900010 from dual]';
+               select u, e from (
+                   select 900003 u, 1 e from dual
+               union all select 900003 u, 2 e from dual
+               union all select 900004 u, 1 e from dual
+               union all select 900005 u, 1 e from dual
+               union all select 900005 u, 900010 e from dual) p
+                where not exists (select 1 from usuario_empresa x
+                                   where x.usuario_id = p.u and x.id_empresa = p.e)]';
         commit;
     exception
         when others then
@@ -870,9 +872,12 @@ begin
     begin
         execute immediate
             q'[insert into usuario_empresa (usuario_id, id_empresa)
-               select 900020, 1 from dual
-               union all select 900020, 3 from dual
-               union all select 900021, 1 from dual]';
+               select u, e from (
+                   select 900020 u, 1 e from dual
+               union all select 900020 u, 3 e from dual
+               union all select 900021 u, 1 e from dual) p
+                where not exists (select 1 from usuario_empresa x
+                                   where x.usuario_id = p.u and x.id_empresa = p.e)]';
         commit;
     exception
         when others then
@@ -1853,12 +1858,12 @@ begin
 
     -- Las asociaciones.
     begin
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900030, 900030)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900030, 900031)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900031, 900030)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900032, 900032)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900034, 900030)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900034, 900031)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900030, 900030 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900030 and x.id_empresa = 900030)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900030, 900031 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900030 and x.id_empresa = 900031)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900031, 900030 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900031 and x.id_empresa = 900030)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900032, 900032 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900032 and x.id_empresa = 900032)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900034, 900030 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900034 and x.id_empresa = 900030)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900034, 900031 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900034 and x.id_empresa = 900031)]';
         commit;
     exception
         when others then
@@ -2581,11 +2586,11 @@ begin
     end;
 
     begin
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900040, 900040)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900040, 900041)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900041, 900040)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900041, 900041)]';
-        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) values (900041, 900042)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900040, 900040 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900040 and x.id_empresa = 900040)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900040, 900041 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900040 and x.id_empresa = 900041)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900041, 900040 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900041 and x.id_empresa = 900040)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900041, 900041 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900041 and x.id_empresa = 900041)]';
+        execute immediate q'[insert into usuario_empresa (usuario_id, id_empresa) select 900041, 900042 from dual where not exists (select 1 from usuario_empresa x where x.usuario_id = 900041 and x.id_empresa = 900042)]';
         commit;
     exception
         when others then

@@ -59,7 +59,8 @@ declare
   end falla;
 
 begin
-  select min(id_presupuesto) into v_pre  from presupuestos where id_empresa = 1;
+  select min(id_presupuesto) into v_pre  from presupuestos
+   where id_empresa = 1 and estado not in ('CANCELADO','FACTURADO');
   select min(id_presupuesto) into v_pre2 from presupuestos where id_empresa = 2;
 
   if v_pre is null then
