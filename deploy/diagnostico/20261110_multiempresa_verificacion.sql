@@ -1023,6 +1023,7 @@ begin
         begin
             v_c := replace(v_c, ':P19_ID_EMPRESA', '<ID_VACIO>');
             v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', '''' || v_nombre || '''');
+    v_c := replace(v_c, ':P19_ES_SPE', '''N''');
             v_c := replace(v_c, ':P19_COD_PAIS', '''VE''');
             v_c := replace(v_c, ':P19_TIPO_IDENT_FISCAL', '''RIF''');
             v_c := replace(v_c, ':P19_RFC', '''DIAG-P19-RIF''');
@@ -1087,6 +1088,7 @@ begin
 
             v_c := replace(v_c, ':P19_ID_EMPRESA', to_char(v_ajena));
             v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', '''DIAG P19 AJENA''');
+    v_c := replace(v_c, ':P19_ES_SPE', '''N''');
             v_c := replace(v_c, ':P19_COD_PAIS', '''VE''');
             v_c := replace(v_c, ':P19_TIPO_IDENT_FISCAL', '''RIF''');
             v_c := replace(v_c, ':P19_RFC', '''DIAG-ALTERADO''');
@@ -1178,7 +1180,10 @@ begin
             v_c clob := v_cuerpo;
         begin
             v_c := replace(v_c, ':P19_ID_EMPRESA', 'null');
-            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_EDITANDO', '''N''');
+            v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', 'null');
+            v_c := replace(v_c, ':P19_RFC', 'null');
+            v_c := replace(v_c, ':REQUEST', 'null');
             v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
             v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
             begin
@@ -1201,7 +1206,10 @@ begin
             v_c clob := v_cuerpo;
         begin
             v_c := replace(v_c, ':P19_ID_EMPRESA', 'null');
-            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_EDITANDO', '''N''');
+            v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', 'null');
+            v_c := replace(v_c, ':P19_RFC', 'null');
+            v_c := replace(v_c, ':REQUEST', 'null');
             v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
             v_c := replace(v_c, ':APP_USER', '''DIAG_P19_B''');
             begin
@@ -1223,7 +1231,10 @@ begin
             v_c clob := v_cuerpo;
         begin
             v_c := replace(v_c, ':P19_ID_EMPRESA', '3');
-            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_EDITANDO', '''N''');
+            v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', 'null');
+            v_c := replace(v_c, ':P19_RFC', 'null');
+            v_c := replace(v_c, ':REQUEST', 'null');
             v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
             v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
             begin
@@ -1247,7 +1258,10 @@ begin
             v_c clob := v_cuerpo;
         begin
             v_c := replace(v_c, ':P19_ID_EMPRESA', '5');
-            v_c := replace(v_c, ':P19_MODO', '''VER''');
+            v_c := replace(v_c, ':P19_EDITANDO', '''N''');
+            v_c := replace(v_c, ':P19_NOMBRE_EMPRESA', 'null');
+            v_c := replace(v_c, ':P19_RFC', 'null');
+            v_c := replace(v_c, ':REQUEST', 'null');
             v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
             v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
             begin
@@ -1551,9 +1565,10 @@ begin
     --      p10 -> 2 (el p_query_where y la LOV de impuestos)
     --      p13 -> 2 (los dos defectos)
     --      p16 -> 4 (la lista, el p_query_where, la LOV y el proceso)
-    --      p17 -> 1 (el defecto)
-    --      p18 -> 1 (el proceso)
-    --      p19 -> 2 (la lista y el proceso; los cambio la tarea 6)
+    --      p17 -> 3 (la consulta del reporte, su LOV de clientes y la de totales)
+    --      p18 -> 2 (la consulta del libro y la de totales del mes)
+    --      p19 -> 3 (la lista, la carga de empresa, la carga fiscal y el defecto
+    --                de empresa del logo; bajo de 4 al nacer el formulario en blanco)
     --
     --    MEDIDO (2026-11-10): un 'for ... in (select ... union all ... from dual)'
     --    NO compila en PL/SQL (ORA-00928: SELECT keyword missing). Por eso la
@@ -1567,7 +1582,14 @@ begin
         v_esperado := case v_i when 1 then 0 when 2 then 2 when 3 then 2
                              when 4 then 3 when 5 then 2 when 6 then 5
                              when 7 then 2 when 8 then 2 when 9 then 4
-                             when 10 then 1 when 11 then 1 when 12 then 2 end;
+                             when 10 then 3 when 11 then 6 when 12 then 3 end;
+        -- La 19 paso de 2 a 4 el 2026-11-16 con las pestanas (carga fiscal, defecto
+        -- del logo y la carga de empresa). Baja a 3 al quitar de la carga de empresa
+        -- la eleccion por la cuenta: ahora la pestana «Empresa» nace en blanco y solo
+        -- carga con REQUEST=EDITAR, asi que ya no consulta la vista.
+        -- Las paginas 17 y 18 se retiraron en el Paso C, asi que ya no se miden: 0.
+        -- La 18 sube de 2 a 6 el 2026-11-17: el «Libro de compras y ventas» la usa en
+        -- cuatro regiones (Libro VE 2, Totales VE 2, Libro MX 1, Totales MX 1).
         v_n := 0;
         for r in (select region_source, where_clause
                     from apex_application_page_regions
@@ -2109,7 +2131,8 @@ end;
 
 -- -----------------------------------------------------------------------------
 -- M17: los defectos de empresa de P13_ID_EMPRESA, P7_ID_EMPRESA y
--- P17_ID_EMPRESA.
+-- P19L_ID_EMPRESA (el logo, que era P17_ID_EMPRESA hasta que la 17 paso a ser
+-- una pestana de la 19).
 --
 -- Se mide el TEXTO GUARDADO (APEX_APPLICATION_PAGE_ITEMS.ITEM_DEFAULT), no una
 -- copia a mano. Con un usuario de DOS empresas el defecto tiene que devolver
@@ -2182,12 +2205,12 @@ begin
     -- Con DOS empresas: NULL en los tres.
     medir_defecto('P13_ID_EMPRESA', 'DIAG_M2', null, 'M17');
     medir_defecto('P7_ID_EMPRESA',  'DIAG_M2', null, 'M17');
-    medir_defecto('P17_ID_EMPRESA', 'DIAG_M2', null, 'M17');
+    medir_defecto('P19L_ID_EMPRESA', 'DIAG_M2', null, 'M17');
 
     -- Con UNA empresa: esa empresa (900030).
     medir_defecto('P13_ID_EMPRESA', 'DIAG_M1', 900030, 'M17');
     medir_defecto('P7_ID_EMPRESA',  'DIAG_M1', 900030, 'M17');
-    medir_defecto('P17_ID_EMPRESA', 'DIAG_M1', 900030, 'M17');
+    medir_defecto('P19L_ID_EMPRESA', 'DIAG_M1', 900030, 'M17');
 end;
 /
 
@@ -2807,24 +2830,25 @@ select substrb('M27: el Panel (13) no valida que P13_ID_EMPRESA sea del usuario'
 /
 
 insert into tmp_multi_fallas
-select substrb('M28: la carga de Datos Fiscales (18) no valida la empresa del item', 1, 300)
+select substrb('M28: la carga de Datos Fiscales (pestana de la 19) no valida la empresa del item', 1, 300)
   from dual
  where not exists (select 1
                      from apex_application_page_proc p
                     where p.application_id = 100
-                      and p.page_id = 18
+                      and p.page_id = 19
                       and p.process_point_code = 'BEFORE_HEADER'
-                      and instr(upper(p.process_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0);
+                      and instr(upper(p.process_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0
+                      and instr(upper(p.process_source), 'P19F_ID_EMPRESA') > 0);
 /
 
 insert into tmp_multi_fallas
-select substrb('M29: el logo (17) pinta el de una empresa que no es del usuario', 1, 300)
+select substrb('M29: el logo (pestana de la 19) pinta el de una empresa que no es del usuario', 1, 300)
   from dual
  where not exists (select 1
                      from apex_application_page_regions r
                     where r.application_id = 100
-                      and r.page_id = 17
-                      and r.region_static_id = 'logo-actual'
+                      and r.page_id = 19
+                      and r.region_static_id = 'admin-logo'
                       and instr(upper(r.region_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0);
 /
 
@@ -3082,6 +3106,178 @@ select substrb('M36: la pagina 4 no sincroniza las empresas con el procedimiento
                       and p.process_name in ('Crear Usuario', 'update usuario')
                       and p.process_source is not null
                       and instr(upper(p.process_source), 'PRC_EMPRESAS_USUARIO') > 0);
+/
+
+-- ===========================================================================
+-- M43/M44: Datos fiscales (18) vive como pestana dentro de Administracion (19).
+-- Paso A del plan docs/superpowers/plans/2026-11-11-administracion-pestanas.md
+-- ===========================================================================
+
+-- M43a: la region tiene que estar DENTRO del selector de regiones. Con
+-- DISPLAY_REGION_SELECTOR = 'No' se pinta siempre y no aparece como pestana.
+insert into tmp_multi_fallas
+select substrb('M43: la 19 no tiene la region admin-fiscal dentro del selector', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_regions r
+                    where r.application_id = 100 and r.page_id = 19
+                      and r.region_static_id = 'admin-fiscal'
+                      and r.display_region_selector = 'Yes');
+/
+
+-- M43b: los items fiscales se trasladan con el prefijo P19F_. Son 15 (los que
+-- tenia la pagina 18 antes de retirarse en el Paso C).
+insert into tmp_multi_fallas
+select substrb('M43: la 19 tiene '
+               || to_char((select count(*) from apex_application_page_items
+                            where application_id = 100 and page_id = 19
+                              and item_name like 'P19F\_%' escape '\'))
+               || ' items P19F_ (se esperan 15)', 1, 300)
+  from dual
+ where (select count(*) from apex_application_page_items
+         where application_id = 100 and page_id = 19
+           and item_name like 'P19F\_%' escape '\') <> 15;
+/
+
+-- M43c: la carga de la pestana lee EMPRESA_FISCAL con el item nuevo.
+insert into tmp_multi_fallas
+select substrb('M43: la 19 no carga los datos fiscales de P19F_ID_EMPRESA', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_proc p
+                    where p.application_id = 100 and p.page_id = 19
+                      and p.process_name = 'Carga datos fiscales'
+                      and instr(upper(p.process_source), 'EMPRESA_FISCAL') > 0
+                      and instr(upper(p.process_source), 'P19F_ID_EMPRESA') > 0);
+/
+
+-- M43d: el guardado conserva la guarda de empresa y el MERGE.
+insert into tmp_multi_fallas
+select substrb('M43: el guardado de la pestana no valida la empresa o no hace MERGE', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_proc p
+                    where p.application_id = 100 and p.page_id = 19
+                      and p.process_name like 'Guardar datos fiscales%'
+                      and instr(upper(p.process_source), 'MERGE INTO EMPRESA_FISCAL') > 0
+                      and instr(upper(p.process_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0);
+/
+
+-- M43e: los dos botones (uno por pestana) comparten proceso: sin la condicion
+-- sobre :REQUEST, el guardado correria en cualquier submit de la pagina.
+insert into tmp_multi_fallas
+select substrb('M43: el guardado fiscal no esta condicionado a sus dos botones', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_proc p
+                    where p.application_id = 100 and p.page_id = 19
+                      and p.process_name like 'Guardar datos fiscales%'
+                      and instr(p.condition_expression1, 'BTN_GUARDAR_FISCAL') > 0
+                      and instr(p.condition_expression1, 'BTN_GUARDAR_IMPRENTA') > 0);
+/
+
+-- M43f: con varias empresas la carga no elige por su cuenta (having count(*) = 1).
+insert into tmp_multi_fallas
+select substrb('M43: la carga fiscal no usa having count(*) = 1', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_proc p
+                    where p.application_id = 100 and p.page_id = 19
+                      and p.process_name = 'Carga datos fiscales'
+                      and instr(lower(p.process_source), 'having count(*) = 1') > 0);
+/
+
+-- M44: el numero 18 se reutilizo para el libro de compras y ventas (la antigua
+-- pagina 18 de Datos fiscales se retiro). Se vigila que sea esa pagina y no la vieja.
+insert into tmp_multi_fallas
+select substrb('M44: la pagina 18 no es el libro de compras y ventas (alias '
+               || nvl((select page_alias from apex_application_pages
+                        where application_id = 100 and page_id = 18), '?') || ')', 1, 300)
+  from dual
+ where nvl((select upper(page_alias) from apex_application_pages
+             where application_id = 100 and page_id = 18), '#') <> 'LIBRO-COMPRAS-VENTAS';
+/
+
+-- M45: el logo de empresa (17) vive como pestana dentro de la 19 (Paso B).
+insert into tmp_multi_fallas
+select substrb('M45: la 19 no tiene la region admin-logo dentro del selector', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_regions r
+                    where r.application_id = 100 and r.page_id = 19
+                      and r.region_static_id = 'admin-logo'
+                      and r.display_region_selector = 'Yes');
+/
+
+insert into tmp_multi_fallas
+select substrb('M45: la 19 tiene '
+               || to_char((select count(*) from apex_application_page_items
+                            where application_id = 100 and page_id = 19
+                              and item_name like 'P19L\_%' escape '\'))
+               || ' items P19L_ (se esperan 4)', 1, 300)
+  from dual
+ where (select count(*) from apex_application_page_items
+         where application_id = 100 and page_id = 19
+           and item_name like 'P19L\_%' escape '\') <> 4;
+/
+
+insert into tmp_multi_fallas
+select substrb('M45: la pestana del logo no llama a pkg_empresa_logo', 1, 300)
+  from dual
+ where (select count(*) from apex_application_page_proc p
+         where p.application_id = 100 and p.page_id = 19
+           and p.process_name in ('Subir logo', 'Quitar logo')
+           and p.process_source is not null
+           and instr(upper(p.process_source), 'PKG_EMPRESA_LOGO') > 0) < 2;
+/
+
+insert into tmp_multi_fallas
+select substrb('M45: la region del logo no valida la empresa del usuario', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_regions r
+                    where r.application_id = 100 and r.page_id = 19
+                      and r.region_static_id = 'admin-logo'
+                      and instr(upper(r.region_source), 'FN_USUARIO_EMPRESA_VALIDA') > 0
+                      and instr(upper(r.region_source), 'P19L_ID_EMPRESA') > 0);
+/
+
+-- M45e: una region de contenido dinamico sin lenguaje de cuerpo da HTTP 400 y
+-- el log solo dice «No se ha encontrado la opcion CASE» (trampa del 2026-11-06).
+insert into tmp_multi_fallas
+select substrb('M45: la region admin-logo no declara el lenguaje PL/SQL', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_regions r
+                    where r.application_id = 100 and r.page_id = 19
+                      and r.region_static_id = 'admin-logo'
+                      and upper(nvl(r.function_body_language, '#')) = 'PLSQL');
+/
+
+-- M46: la 19 queda con las cuatro pestanas de contenido en el selector y sin
+-- los botones que llevaban a las paginas retiradas.
+insert into tmp_multi_fallas
+select substrb('M46: falta la pestana ' || t.static_id || ' en el selector de la 19', 1, 300)
+  from (select 'admin-fiscal' static_id from dual union all
+        select 'admin-imprenta' from dual union all
+        select 'admin-logo' from dual union all
+        select 'admin-logo-subir' from dual) t
+ where not exists (select 1 from apex_application_page_regions r
+                    where r.application_id = 100 and r.page_id = 19
+                      and r.region_static_id = t.static_id
+                      and r.display_region_selector = 'Yes');
+/
+
+insert into tmp_multi_fallas
+select substrb('M46: sigue el boton ' || button_name || ' a una pagina retirada', 1, 300)
+  from apex_application_page_buttons
+ where application_id = 100 and page_id = 19
+   and button_name in ('BTN_FISCAL_ADMIN', 'BTN_LOGO_ADMIN');
+/
+
+-- M47: al retirar las paginas 17 y 18 se fueron sus dos guardas de rol (ADMIN,
+-- GERENCIA, PRUEBA). La 19 tiene que tener la suya: es la pantalla de
+-- administracion del emisor y sus pestanas muestran datos fiscales y el logo.
+insert into tmp_multi_fallas
+select substrb('M47: la pagina 19 no tiene guarda de rol', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_proc p
+                    where p.application_id = 100 and p.page_id = 19
+                      and p.process_point_code = 'BEFORE_HEADER'
+                      and upper(p.process_name) like 'VALIDA ROL%'
+                      and instr(upper(p.process_source), 'ADMIN,GERENCIA,PRUEBA') > 0);
 /
 
 declare

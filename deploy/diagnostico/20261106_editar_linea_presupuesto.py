@@ -153,7 +153,7 @@ invalidos = cur.execute("select count(*) from all_objects where owner = 'WKSP_SY
                         "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')").fetchone()[0]
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = cur.execute("select count(*) from apex_application_pages where application_id = 100").fetchone()[0]
-comprobar("siguen las 20 paginas", paginas == 20, f"({paginas})")
+comprobar("siguen las 25 paginas", paginas == 25, f"({paginas})")
 boton = cur.execute("select count(*) from apex_application_page_buttons "
                     "where application_id = 100 and page_id = 5 "
                     "and button_name = 'BTN_NUEVO_DETALLE'").fetchone()[0]

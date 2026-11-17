@@ -298,7 +298,9 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_tipo_documento     IN VARCHAR2 DEFAULT 'FAC',
         p_nro_control        IN VARCHAR2 DEFAULT NULL,
         p_id_factura_origen  IN NUMBER DEFAULT NULL,
-        p_fecha_referencia   IN DATE DEFAULT NULL
+        p_fecha_referencia   IN DATE DEFAULT NULL,
+        p_porcentaje_retencion       IN NUMBER DEFAULT NULL,
+        p_nro_comprobante_retencion  IN VARCHAR2 DEFAULT NULL
     ) AS
         v_tipo_cambio    NUMBER;
         v_tipo_doc       VARCHAR2(10) := NVL(UPPER(TRIM(p_tipo_documento)), 'FAC');
@@ -309,6 +311,9 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_id_empresa     NUMBER := NVL(p_id_empresa, 1);
         v_existe         NUMBER := 0;
         v_fecha          DATE;
+        v_nro_control    VARCHAR2(60);
+        v_pct_retencion  NUMBER;
+        v_ret_bs         NUMBER;
     BEGIN
     -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
     if apex_application.g_user is not null
@@ -388,6 +393,24 @@ create or replace PACKAGE BODY pkg_facturacion AS
              WHERE id_factura = p_id_factura;
         END IF;  
 
+        -- Numero de control: en las facturas sale del rango de la providencia
+        -- (EMPRESA_FISCAL). Si se teclea, se valida contra el rango; si no, se
+        -- asigna el siguiente y se consume el contador atomico. Las notas llevan
+        -- el que se teclee (cada serie de notas se controla aparte).
+        IF v_tipo_doc = 'FAC' THEN
+            IF p_nro_control IS NOT NULL THEN
+                v_nro_control := fn_control_en_rango(v_id_empresa, p_nro_control);
+            ELSIF v_existe > 0 THEN
+                SELECT nro_control INTO v_nro_control
+                  FROM facturas WHERE id_factura = p_id_factura;
+            ELSE
+                v_nro_control := fn_asignar_control(v_id_empresa);
+            END IF;
+        ELSE
+            v_nro_control := p_nro_control;
+        END IF;
+
+
         IF v_existe > 0 THEN
             prc_actualizar(
                 p_id_factura        => p_id_factura,
@@ -412,7 +435,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 p_cod_moneda        => p_cod_moneda,
                 p_tipo_cambio       => v_tipo_cambio,
                 p_tipo_documento    => v_tipo_doc,
-                p_nro_control       => p_nro_control,
+                p_nro_control       => v_nro_control,
                 p_id_factura_origen => p_id_factura_origen
             );
         ELSE
@@ -444,10 +467,48 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 p_tipo_cambio       => v_tipo_cambio,
                 p_usuario           => p_usuario,
                 p_tipo_documento    => v_tipo_doc,
-                p_nro_control       => p_nro_control,
+                p_nro_control       => v_nro_control,
                 p_id_factura_origen => p_id_factura_origen
             );
         END IF;
+
+        -- Retencion de IVA del cliente (2026-11-16). El porcentaje sale del
+        -- cliente si la pagina no manda uno; el monto se guarda en bolivares
+        -- porque es lo que se declara y lo que dice el comprobante del cliente.
+        BEGIN
+            IF p_porcentaje_retencion IS NULL THEN
+                SELECT CASE WHEN NVL(es_agente_retencion, 'N') = 'S'
+                            THEN NVL(porcentaje_retencion, 75) ELSE 0 END
+                  INTO v_pct_retencion
+                  FROM clientes WHERE id_cliente = p_id_cliente;
+            ELSE
+                v_pct_retencion := p_porcentaje_retencion;
+            END IF;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                v_pct_retencion := 0;
+        END;
+
+        IF v_pct_retencion IS NULL OR v_pct_retencion < 0 OR v_pct_retencion > 100 THEN
+            raise_application_error(-20082,
+                'El porcentaje de retencion debe estar entre 0 y 100.');
+        END IF;
+
+        IF p_nro_comprobante_retencion IS NOT NULL
+           AND NOT REGEXP_LIKE(TRIM(p_nro_comprobante_retencion), '^[0-9]{14}$') THEN
+            raise_application_error(-20081,
+                'El comprobante de retencion del cliente debe tener 14 digitos (AAAAMM + 8).');
+        END IF;
+
+        -- El monto se calcula sobre el IVA (sin IGTF) y del detalle real, no del
+        -- monto_impuesto que manda la pantalla: en un alta la cabecera llega en 0
+        -- porque los totales los pone el detalle (pagina 10).
+        v_ret_bs := fn_iva_retenido_bs(p_id_factura, v_pct_retencion, v_tipo_cambio);
+
+        UPDATE facturas SET porcentaje_retencion = v_pct_retencion,
+               retencion_iva_bs = v_ret_bs,
+               nro_comprobante_retencion = NVL(p_nro_comprobante_retencion, nro_comprobante_retencion)
+         WHERE id_factura = p_id_factura;
 
     EXCEPTION
         WHEN DUP_VAL_ON_INDEX THEN
@@ -465,7 +526,26 @@ create or replace PACKAGE BODY pkg_facturacion AS
     ) IS
         v_id_factura     NUMBER := fn_clean_num(TO_CHAR(p_id_factura));
         v_id_presupuesto NUMBER := fn_clean_num(TO_CHAR(p_id_presupuesto));
+        v_folio          VARCHAR2(30);
+        v_cobros         NUMBER;
     BEGIN
+        -- Con dinero cobrado no se anula el documento: el cobro queda colgando de
+        -- una factura muerta y el arqueo no cuadra. Primero se anulan los cobros
+        -- (misma regla que «anula la factura antes de cancelar el presupuesto»).
+        SELECT folio_factura,
+               (SELECT COUNT(*) FROM recibos r
+                 WHERE r.id_factura = v_id_factura AND r.estado = 'ACTIVO')
+          INTO v_folio, v_cobros
+          FROM facturas
+         WHERE id_factura = v_id_factura;
+
+        IF v_cobros > 0 THEN
+            RAISE_APPLICATION_ERROR(-20091,
+                'La factura ' || v_folio || ' tiene ' || v_cobros
+                || CASE WHEN v_cobros = 1 THEN ' cobro registrado' ELSE ' cobros registrados' END
+                || ': anula primero los cobros y despues la factura.');
+        END IF;
+
         UPDATE facturas SET
                estado             = 'ANULADA',
                observaciones      = observaciones || ' [ANULADA EL ' || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:MI') || ']',

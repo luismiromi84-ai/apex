@@ -72,12 +72,18 @@ begin
     falla('C3', 'no existe el indice IX_FACT_DET_ORIGEN');
   end if;
 
-  -- C4: las lineas que ya existian no traen valor
+  -- C4: las lineas con origen tienen que apuntar a una linea que existe.
+  -- Originalmente la columna nacia vacia y el caso exigia cero filas informadas;
+  -- desde que hay notas de credito reales (2026-11-16) eso ya no es cierto: lo
+  -- que hay que vigilar es que no queden origenes huerfanos.
   begin
-    execute immediate 'select count(*) from facturas_det where id_detalle_origen is not null'
-      into v_n;
+    select count(*) into v_n
+      from facturas_det d
+     where d.id_detalle_origen is not null
+       and not exists (select 1 from facturas_det o
+                        where o.id_detalle = d.id_detalle_origen);
     if v_n > 0 then
-      falla('C4', v_n || ' linea(s) con id_detalle_origen ya informado');
+      falla('C4', v_n || ' linea(s) con id_detalle_origen huerfano');
     end if;
   exception
     when others then

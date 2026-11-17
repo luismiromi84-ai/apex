@@ -17,17 +17,24 @@ create or replace function fn_factura_editable (p_id_factura number)
     return boolean
 is
     v_estado facturas.estado%type;
+    v_comprobante facturas.nro_comprobante_retencion%type;
 begin
     if p_id_factura is null or p_id_factura <= 0 then
         return true;
     end if;
 
-    select estado
-      into v_estado
+    select estado, nro_comprobante_retencion
+      into v_estado, v_comprobante
       from facturas
      where id_factura = p_id_factura;
 
-    return nvl(upper(trim(v_estado)), 'PENDIENTE') not in ('PAGADA', 'ANULADA');
+    -- Registrar el comprobante que entrego el cliente cierra la factura: si
+    -- despues cambiaran las lineas, el papel y la factura dirian cosas distintas.
+    if v_comprobante is not null then
+        return false;
+    end if;
+
+    return nvl(upper(trim(v_estado)), 'PENDIENTE') not in ('PARCIAL', 'PAGADA', 'ANULADA');
 exception
     when no_data_found then
         return true;

@@ -31,6 +31,18 @@ except Exception as ex:
     fallas += 1
     print("  MAL la consulta de la lista no corre:", str(ex)[:160])
 
+# Las dos columnas tienen que salir con formato numerico (como Subtotal y Total).
+cur.execute("""select column_alias, nvl(format_mask, '#')
+                 from apex_application_page_ir_col
+                where application_id = 100 and page_id = 8
+                  and column_alias in ('NOTAS_CREDITO', 'SALDO')""")
+mascaras = dict(cur.fetchall())
+for col in ("NOTAS_CREDITO", "SALDO"):
+    print("  %-14s formato %r" % (col, mascaras.get(col)))
+    if mascaras.get(col) != "999G999G999G999G990D00":
+        fallas += 1
+        print("    MAL la columna no tiene el formato numerico de la lista")
+
 con.close()
 print("RESULTADO: FALLAS=%d" % fallas)
 sys.exit(1 if fallas else 0)

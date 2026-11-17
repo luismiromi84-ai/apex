@@ -13,7 +13,8 @@ begin
         raise_application_error(-20070,
             'No se puede pasar una factura de ' || :old.estado
             || ' a ' || :new.estado
-            || '. Una factura ANULADA ya no se mueve, y una PAGADA solo puede pasar a ANULADA.');
+            || '. Una factura ANULADA ya no se mueve, y una PAGADA solo puede volver a'
+            || ' TIMBRADA o PARCIAL (cuando se anula un cobro) o anularse.');
     end if;
 end;
 /

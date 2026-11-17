@@ -45,9 +45,11 @@ declare
     end;
 begin
     espera('C1',  fn_rif_cliente_valido('J-30123456-0',  'VE', 'J'), true);
-    espera('C13', fn_rif_cliente_valido('V76554445677',  'VE', 'N'), true);
-    espera('C14', fn_rif_cliente_valido('v76554445-6',   'VE', 'N'), true);
-    espera('C15', fn_rif_cliente_valido('J76554445677',  'VE', 'N'), false);
+    espera('C13', fn_rif_cliente_valido('V12345678-9',   'VE', 'N'), true);
+    espera('C14', fn_rif_cliente_valido('v12345678-9',   'VE', 'N'), true);
+    espera('C15', fn_rif_cliente_valido('J12345678-9',   'VE', 'N'), false);
+    espera('C16', fn_rif_cliente_valido('J-6454545',     'VE', 'J'), false);
+    espera('C17', fn_rif_cliente_valido('V76554445677',  'VE', 'N'), false);
     espera('C2',  fn_rif_cliente_valido('V-12345678-9',  'VE', 'N'), true);
     espera('C3',  fn_rif_cliente_valido('E-12345678-9',  'VE', 'N'), true);
     espera('C4',  fn_rif_cliente_valido('J-30123456-0',  'VE', 'N'), false);

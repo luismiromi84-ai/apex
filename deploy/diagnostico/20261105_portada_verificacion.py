@@ -108,8 +108,8 @@ with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as c
         cur.execute(sql)
         return cur.fetchone()[0]
 
-    comprobar("la app tiene 20 paginas",
-              uno("select count(*) from apex_application_pages where application_id = 100") == 20)
+    comprobar("la app tiene 23 paginas",
+              uno("select count(*) from apex_application_pages where application_id = 100") == 25)
 
     cur.execute("""select source_type, source_type_code
                    from apex_application_page_regions
@@ -125,10 +125,10 @@ with oracledb.connect(user=d["DB_USER"], password=d["DB_PASSWORD"], dsn=CS) as c
     comprobar("la pagina 15 es publica", requiere_auth == "No", f"({proteccion})")
     comprobar("la pagina 15 usa la plantilla Blank", plantilla == "Blank", f"({plantilla})")
 
-    comprobar("siguen las 13 guardas de rol",
+    comprobar("siguen las 18 guardas de rol",
               uno("""select count(*) from apex_application_page_proc
                      where application_id = 100
-                       and upper(process_name) like 'VALIDA ROL%'""") == 13)
+                       and upper(process_name) like 'VALIDA ROL%'""") == 18)
     comprobar("siguen las 8 guardas de propiedad de documento",
               uno("""select count(*) from apex_application_page_proc
                      where application_id = 100

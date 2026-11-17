@@ -39,6 +39,15 @@ prompt ============================================================
 @@../tabla/empresa_fiscal.sql
 @@../tabla/empresa_logo.sql
 @@../tabla/FACTURAS_DET.sql
+-- Compras (libro de compras y ventas, 2026-11-16): proveedores antes que compras
+-- por la FK, y las notas de compra despues de la cabecera.
+@@../tabla/proveedores.sql
+@@../tabla/compras.sql
+@@../tabla/compras_det.sql
+@@../tabla/retenciones_iva.sql
+@@../tabla/retencion_contador.sql
+-- Cobros (2026-11-17): recibos por factura; despues de FACTURAS y FORMA_PAGO por las FK.
+@@../tabla/recibos.sql
 @@../tabla/gasto_real.sql
 @@../tabla/folio_contador.sql
 @@../tabla/syn_parametros.sql
@@ -71,10 +80,17 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_nota_traible.sql
 @@../funciones/fn_nota_con_lineas.sql
 @@../funciones/fn_rif_cliente_valido.sql
+@@../funciones/fn_rif_empresa_valido.sql
+@@../funciones/fn_iva_retenido_bs.sql
+-- Cobros e IGTF (2026-11-17): saldo de la factura y alicuota configurada.
+@@../funciones/fn_saldo_factura.sql
+@@../funciones/fn_alicuota_igtf.sql
 @@../funciones/fn_transicion_estado_valida.sql
 -- Folio atomico por empresa (lo llaman pkg_presupuestos y pkg_facturacion).
-@@../funciones/fn_asignar_folio.sql
+@@../funciones/fn_asignar_folio.sql  
 @@../funciones/fn_siguiente_folio.sql
+@@../funciones/fn_control_en_rango.sql
+@@../funciones/fn_asignar_control.sql
 
 -- Monitoreo de errores: el procedimiento va antes porque fn_error_handler lo llama.
 @@../procedimientos/prc_log_error.sql
@@ -96,6 +112,11 @@ prompt ============================================================
 @@../package/pkg_empresa_logo.sql
 @@../package/pkg_reportes_presupuesto.sql
 @@../package/pkg_reportes_factura.sql
+@@../package/pkg_retenciones.sql
+@@../package/pkg_compras.sql
+@@../package/pkg_compra_detalle.sql
+-- Cobros (2026-11-17)
+@@../package/pkg_cobros.sql
 
 prompt ============================================================
 prompt 5/8 Triggers de estado
@@ -103,6 +124,8 @@ prompt ============================================================
 prompt    Van despues de fn_transicion_estado_valida (bloque 3).
 @@../trigger/trg_valida_estado_presupuesto.sql
 @@../trigger/trg_valida_estado_factura.sql
+-- Compras: los totales de la cabecera salen del detalle.
+@@../trigger/trg_actualiza_totales_compra.sql
 -- Multiempresa: la empresa "principal" del usuario queda siempre asociada.
 @@../trigger/trg_usuario_empresa_principal.sql
 
