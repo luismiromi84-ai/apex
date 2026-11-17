@@ -10009,20 +10009,6 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(43000000000000898)
-,p_db_column_name=>'COBRAR_LINK'
-,p_display_order=>130
-,p_column_identifier=>'N'
-,p_column_label=>unistr('Impresi\00F3n')
-,p_column_link=>'f?p=&APP_ID.:25:&APP_SESSION.::&DEBUG.:25:P25_ID_FACTURA:#COBRAR_LINK#'
-,p_column_linktext=>'<span class="fa fa-money" aria-hidden="true"></span> Cobrar'
-,p_column_link_attr=>'target="_blank"'
-,p_column_type=>'NUMBER'
-,p_column_alignment=>'CENTER'
-,p_use_as_row_header=>'N'
-,p_available_clientside=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(430000000000000200)
 ,p_db_column_name=>'GASTOS_LINK'
 ,p_display_order=>125
@@ -12743,7 +12729,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT f.id_factura AS detalle_link,',
 '       f.id_factura AS print_link,',
-'       f.id_factura AS cobrar_link,',
 '       f.id_factura,',
 '       f.tipo_documento,',
 '       c.razon_social,',
