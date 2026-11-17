@@ -117,6 +117,7 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
         v_subtotal        NUMBER := 0;
         v_iva             NUMBER := 0;
         v_total           NUMBER := 0;
+        v_retencion_bs    NUMBER := 0;
         v_desc_total      NUMBER := 0;
 
         v_html            CLOB;
@@ -133,12 +134,14 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
                    nvl(cp.descripcion, 'Contado'),
                    f.tipo_cambio,
                    nvl(f.subtotal, 0), nvl(f.monto_impuesto, 0), nvl(f.monto_total, 0),
+                   nvl(f.retencion_iva_bs, 0),
                    nvl(e.tipo_ident_fiscal, 'RIF'), nvl(e.cod_pais, 'VE'),
                    nvl(pa.moneda_local, 'USD'), f.cod_moneda, f.fecha_emision
               INTO v_id_empresa, v_empresa, v_ident_empresa, v_folio, v_control,
                    v_fecha, v_cliente, v_rif_cliente,
                    v_condicion, v_tasa,
                    v_subtotal, v_iva, v_total,
+                   v_retencion_bs,
                    v_ident_label, v_cod_pais, v_moneda_local, v_moneda_doc, v_fecha_doc
               FROM facturas f
               JOIN empresas e
@@ -337,6 +340,22 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
           <td><strong>TOTAL ~' || v_moneda_doc || q'~:</strong></td>
           <td class="text-right"><strong>~' || v_simbolo_doc || ' ' || fn_num(v_total, 'FM999,999,990.00') || q'~</strong></td>
         </tr>~';
+
+        -- Retencion que practico el cliente (2026-11-16): el TOTAL sigue siendo
+        -- el bruto del documento; aqui se dice cuanto retuvo y cuanto se cobra.
+        IF NVL(v_retencion_bs, 0) > 0 THEN
+            v_html := v_html || q'~
+        <tr style="border-top: 1px solid #ddd;">
+          <td>IVA retenido (agente de retenci&oacute;n):</td>
+          <td class="text-right">Bs. ~' || fn_num_ve(v_retencion_bs, 'FM999G999G999G990D00') || q'~</td>
+        </tr>
+        <tr style="background: #eef6fc;">
+          <td><strong>Neto a cobrar (Bs):</strong></td>
+          <td class="text-right" style="color: #005b96;"><strong>Bs. ~'
+          || fn_num_ve(ROUND(NVL(v_total, 0) * NVL(v_tasa, 1), 2) - v_retencion_bs,
+                        'FM999G999G999G990D00') || q'~</strong></td>
+        </tr>~';
+        END IF;
 
         IF UPPER(v_moneda_doc) <> 'USD' THEN
             v_html := v_html || q'~
@@ -644,7 +663,32 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
       <td>TOTAL</td>
       <td class="num">Bs. ~' || fn_num_ve(v_total_bs, 'FM999G999G999G990D00') || q'~</td>
     </tr>
-  </table>
+  </table>~';
+
+        -- Retencion que practico el cliente (2026-11-16): el TOTAL sigue siendo
+        -- el bruto; aqui se dice cuanto retuvo y cuanto se cobra de verdad.
+        DECLARE
+            v_ret_bs NUMBER;
+        BEGIN
+            SELECT NVL(retencion_iva_bs, 0) INTO v_ret_bs
+              FROM facturas WHERE id_factura = p_id_factura;
+
+            IF v_ret_bs > 0 THEN
+                v_html := v_html || q'~
+  <table class="fe-totales" style="width:100%">
+    <tr class="total">
+      <td>IVA retenido (agente de retenci&oacute;n)</td>
+      <td class="num">Bs. ~' || fn_num_ve(v_ret_bs, 'FM999G999G999G990D00') || q'~</td>
+    </tr>
+    <tr class="total">
+      <td>Neto a cobrar (Bs)</td>
+      <td class="num">Bs. ~' || fn_num_ve(v_total_bs - v_ret_bs, 'FM999G999G999G990D00') || q'~</td>
+    </tr>
+  </table>~';
+            END IF;
+        END;
+
+        v_html := v_html || q'~
 
   <div class="fe-obs">~' || sys.htf.escape_sc(v_obs) || q'~</div>
 

@@ -1,0 +1,114 @@
+2026-11-17 — "Component ... cannot be rendered as the grid settings ... Column 13"
+===================================================================================
+
+SINTOMA (dueño, página 9, usuario BIVEGA, 2026-11-17 00:18:59)
+---------------------------------------------------------------
+  Component P9_RETENCION_IVA_BS cannot be rendered as the grid settings for this
+  component are invalid. It is set to be displayed at Column 13 with a Column
+  Span of 3. ... the grid on this page only supports 12 Columns.
+  is_internal_error: true
+
+Registrado en SYN_ERROR_LOG id 1041 (usuario BIVEGA, página 9).
+La página 9 no abría para nadie: la factura quedaba inaccesible.
+
+CAUSA RAÍZ
+----------
+APEX calcula la columna de cada ítem al pintar la región, en orden de secuencia:
+suma `p_colspan` (1 si no se indica) y solo empieza fila nueva cuando el ítem
+lleva `p_begin_on_new_line` distinto de 'N'. Las condiciones de servidor SÍ se
+respetan para el espacio: de P9_NRO_CONTROL (VE) y P9_UUID_FISCAL (MX) solo se
+pinta uno.
+
+En la página 9 la primera fila quedaba:
+
+  P9_TIPO_DOCUMENTO            seq 20  span 3  nueva fila  -> 1..3
+  P9_FOLIO_FACTURA             seq 30  span 3  continúa    -> 4..6
+  P9_NRO_CONTROL | UUID_FISCAL seq 40/41 span 3 continúa  -> 7..9
+  P9_PORCENTAJE_RETENCION      seq 42  span 3  continúa    -> 10..12   (llena)
+
+y P9_RETENCION_IVA_BS (seq 43) pasaba a la columna 13. Los tres campos de
+retención se habían añadido el 2026-11-16 con `p_begin_on_new_line=>'N'` sobre
+una fila que ya estaba completa.
+
+`GRID_COLUMN` está NULL en los ítems (posición automática), así que el fallo se
+produce al pintar, no al importar: el import pasa en verde.
+
+SEGUNDO FALLO DEL MISMO TIPO, LATENTE: PÁGINA 4
+-----------------------------------------------
+Al medir con navegador se descubrió que **el diálogo «Editar Usuario» también
+estaba roto**: HTTP 400 y SYN_ERROR_LOG id 1042
+"Component P4_ROL_ID ... Column 13". Lo dejó así el cambio de multiempresa del
+2026-11-15 (commit 2c3549f): P4_ID_EMPRESA pasó de combo (colspan 4) a grupo de
+casillas con `p_colspan=>12`, y P4_ROL_ID seguía encadenado con 'N'.
+Nadie lo había abierto desde entonces (0 visitas a la página 4 en 3 días).
+
+ARREGLO (solo cambia la rejilla, ningún proceso ni consulta)
+-----------------------------------------------------------
+pagina_apex/f100.sql:
+
+  P9_PORCENTAJE_RETENCION   p_begin_on_new_line  'N' -> 'Y'
+  P4_ROL_ID                 p_begin_on_new_line  'N' -> 'Y'
+  P4_PASSWORD               se le añade          p_begin_on_new_line=>'N'
+  P4_EMAIL                  p_begin_on_new_line  'N' -> 'Y'
+
+Layout resultante:
+
+  Página 9   Tipo Documento · N° Factura · N° Control (o UUID)
+             % Retención Iva · IVA retenido (Bs) · N° comprobante · Estado
+
+  Página 4   Empresas (fila completa)
+             Rol · Usuario · Password
+             Correo · Estado
+
+Import: 74 sentencias en 5,0 s. 23 páginas, 0 objetos inválidos.
+
+VERIFICACIÓN
+------------
+1. Estática (nueva, reutilizable), recorre las 23 páginas del export y avisa de
+   cualquier fila de región que pase de 12 columnas contando todos los ítems
+   (peor caso, incluidas las parejas exclusivas por condición):
+
+     python deploy/diagnostico/20261117_grid_paginas_verificacion.py
+     ANTES:   FALLAS=3  (p9: 24 columnas, p4: 20, p19 falso positivo por no
+                         agrupar por región → corregido agrupando)
+     DESPUÉS: RESULTADO: FALLAS=0
+
+2. Navegador real (Edge headless por CDP, usuario temporal diag.rejilla):
+
+     python deploy/diagnostico/20261117_grid_dialogos_navegador.py
+     ANTES (con la base sin arreglar, no archivado): p9 y p4 daban 400.
+     DESPUÉS: RESULTADO: FALLAS=0
+       OK el diálogo de la factura (9) abre
+       OK la 9 no muestra el error de rejilla
+       OK se pintan P9_PORCENTAJE_RETENCION, P9_RETENCION_IVA_BS,
+          P9_NRO_COMPROBANTE_RETENCION
+       OK el diálogo de editar usuario (4) abre
+       OK la 4 no muestra el error de rejilla
+     Capturas: deploy/resultados/20261117_rejilla_p9.png
+                deploy/resultados/20261117_rejilla_p4.png
+
+3. Regresión:
+     python deploy/diagnostico/20261109_compilar_procesos_pagina.py
+       procesos PL/SQL de pagina: 56 — RESULTADO: FALLAS=0
+     python deploy/diagnostico/20261105_portada_verificacion.py  → FALLAS=0
+     20261110_multiempresa_verificacion.sql → FALLAS=0
+
+DOS CASOS DESFASADOS DE LA VERIFICACIÓN MULTIEMPRESA (no era la app)
+-------------------------------------------------------------------
+La verificación daba FALLAS=2, de antes de este cambio, porque no se había
+actualizado tras el commit 502dc97 («libro de compras y ventas unificado»):
+
+  M14  esperaba 2 menciones de V_EMPRESAS_USUARIO en la página 18; hoy son 6
+       (Libro VE 2, Totales VE 2, Libro MX 1, Totales MX 1). Se ajusta a 6.
+  M44  esperaba el alias 'LIBRO-VENTAS'; la página 18 es ahora
+       'LIBRO-COMPRAS-VENTAS'. Se ajusta el alias y el texto del caso.
+
+Nada de esto toca la app: los dos son expectativas de la verificación.
+
+REGLA PARA NO REPETIRLO
+-----------------------
+Una fila de región admite como máximo 12 columnas de `p_colspan`. Si a la fila
+ya le quedan libres menos columnas que el span del ítem, el render muere con
+HTTP 400 y el mensaje real solo aparece en SYN_ERROR_LOG (no en el import).
+Antes de dar por buena un import que toque ítems, correr
+`deploy/diagnostico/20261117_grid_paginas_verificacion.py`.

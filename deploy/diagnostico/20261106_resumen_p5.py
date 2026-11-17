@@ -102,6 +102,11 @@ fila = cur.execute(
 
 pid, id_det = fila
 try:
+    # El dato de prueba puede traer descuento en cualquier linea: para el caso
+    # «sin descuento» se ponen todas a cero dentro de la transaccion (rollback al
+    # final). Con el fixture del 2026-11-08 el presupuesto 12 ya traia 37,50.
+    cur.execute("update presupuestos_det set monto_descuento = 0 where id_presupuesto = :p",
+                {"p": pid})
     html = tarjeta(pid)
     faltan = [x for x in ETIQUETAS if x not in html]
     comprobar(f"sin descuento: salen las ocho lineas (presupuesto {pid})", not faltan,
@@ -129,7 +134,7 @@ invalidos = cur.execute("select count(*) from all_objects where owner = 'WKSP_SY
                         "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')").fetchone()[0]
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = cur.execute("select count(*) from apex_application_pages where application_id = 100").fetchone()[0]
-comprobar("siguen las 20 paginas", paginas == 20, f"({paginas})")
+comprobar("siguen las 25 paginas", paginas == 25, f"({paginas})")
 
 conn.close()
 print()

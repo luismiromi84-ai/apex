@@ -15,7 +15,8 @@
 --
 --   FACTURA
 --     ANULADA    -> nada. Es terminal.
---     PAGADA     -> solo ANULADA.
+--     PAGADA     -> ANULADA, y tambien PARCIAL o TIMBRADA cuando se anula un
+--                   cobro (2026-11-17: el dinero devuelve la factura a deber).
 --     el resto  -> libre.
 --
 -- Escotilla: si la sesion tiene CLIENT_INFO = 'SYPEX_FORZAR_ESTADO' se permite
@@ -54,7 +55,9 @@ begin
         if v_antes = 'ANULADA' then
             return false;
         end if;
-        if v_antes = 'PAGADA' and v_despues <> 'ANULADA' then
+        -- De PAGADA solo se sale para anular, o para volver a PARCIAL/TIMBRADA
+        -- cuando el cobro se anula (pkg_cobros).
+        if v_antes = 'PAGADA' and v_despues not in ('ANULADA', 'PARCIAL', 'TIMBRADA') then
             return false;
         end if;
     end if;

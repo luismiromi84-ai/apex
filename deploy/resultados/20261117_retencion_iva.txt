@@ -1,0 +1,129 @@
+2026-11-17 — Retencion de IVA del cliente: por que estaba vacia y como quedo
+===========================================================================
+
+SINTOMA (dueno)
+---------------
+En el libro (pagina 18) las siete filas del periodo salen con
+"N Comp. retencion" en "-" y "IVA retenido Bs" en 0.00.
+
+No era el libro: lee FACTURAS.RETENCION_IVA_BS y NRO_COMPROBANTE_RETENCION, y las
+siete filas estaban guardadas en 0 / NULL:
+
+  F-1041, F-1042, F-1044, F-1045, NC-1, NC-2, ND-1 -> 0.00 / NULL
+  clientes de la empresa 1                        -> ES_AGENTE_RETENCION = 'N'
+
+CAUSA RAIZ (tres defectos encadenados, medidos)
+-----------------------------------------------
+1. La pagina 21 "Cliente" NO guardaba el flag: el proceso "Guardar cliente"
+   insertaba y actualizaba sin ES_AGENTE_RETENCION ni PORCENTAJE_RETENCION,
+   aunque los dos items existian (seq 105 y 110). Todo cliente quedaba en el
+   valor por defecto de la tabla: 'N' y 75.
+2. La pagina 9 no traia el % del cliente y mandaba siempre el valor del item
+   (0 de arranque). Como no era NULL, pkg_facturacion no consultaba al cliente.
+3. Al CREAR una factura la retencion salia siempre 0: la pagina fuerza
+   monto_impuesto = 0 (los totales los pone el detalle) y el monto se calculaba
+   como monto_impuesto * tipo_cambio * pct / 100. La verificacion anterior
+   (20261116_retencion_ventas) pasaba porque llamaba al package con
+   p_monto_impuesto => 16, cosa que la pantalla nunca hace en un alta.
+
+Cuarto detalle: la base de la retencion era MONTO_IMPUESTO completo, que incluye
+el IGTF 3 %. El IGTF no se retiene: en F-1042, al 75 %, daba 87,53 USD en vez de
+85,50 (IVA 114,00 x 75 %).
+
+HALLAZGOS EXTRA, DEL MISMO CAMBIO (2026-11-16), QUE DEJABAN EL MODULO ROTO
+--------------------------------------------------------------------------
+* Pagina 20 "Clientes": la consulta de la lista tenia una coma de mas dentro
+  del CASE de la columna nueva ->
+      then 'Si (' || nvl(porcentaje_retencion,75) || ' %)',   <-- coma
+  El informe respondia "falta la palabra clave END" y NO mostraba ninguna fila.
+  Era invisible desde que se creo la columna (no habia clientes que mirar en la
+  prueba del 2026-11-11).
+* Pagina 21 "Cliente": la LOV del campo nuevo era 'Si;S,No;N' SIN el prefijo
+  STATIC2:, asi que APEX la interpretaba como SQL. El dialogo entero devolvia
+  HTTP 400 con
+      ORA-06550 / PLS-00103: se ha encontrado el simbolo "," ...
+  (SYN_ERROR_LOG 1050-1058). O sea: no se podia abrir el cliente ni para mirarlo.
+
+ARREGLO
+-------
+Funcion nueva `funciones/fn_iva_retenido_bs.sql`
+    IVA retenido en bolivares = 75 % (o el % que sea) del IVA del detalle,
+    linea por linea, con la tasa de la linea y SIN las lineas de IGTF.
+    No lee FACTURAS: la llama el trigger de totales mientras esa cabecera se
+    esta actualizando y leerla daria ORA-04091; la tasa de respaldo va como
+    parametro.
+
+`trigger/trg_actualiza_totales_factura.sql`
+    Recalcula retencion_iva_bs en cada cambio del detalle. Antes no lo hacia:
+    agregar una linea despues de crear la factura dejaba el importe viejo.
+    (El archivo del repo estaba desfasado: la base ya tenia una linea que
+    calculaba la retencion con SUM(monto_impuesto) completo, sin el filtro de
+    IGTF. Ahora el repo y la base dicen lo mismo.)
+
+`package_bodies/pkg_facturacion.sql`
+    prc_guardar_factura usa la funcion en vez de la cuenta con monto_impuesto.
+
+`pagina_apex/f100.sql`
+    * Pagina 21, proceso "Guardar cliente": guarda ES_AGENTE_RETENCION y
+      PORCENTAJE_RETENCION en el alta y en la edicion; valida 0..100 (-20023).
+    * Pagina 21, LOV de P21_ES_AGENTE_RETENCION: 'STATIC2:Si;S,No;N'.
+    * Pagina 20, consulta de la lista: fuera la coma del CASE.
+    * Pagina 9: accion dinamica CARGAR_RETENCION_CLIENTE (al cambiar
+      P9_ID_CLIENTE trae 75 % si el cliente es agente, 0 si no), refresco del
+      IVA retenido despues de guardar y aviso (no bloqueante) cuando el cliente
+      retiene y falta el numero del comprobante (14 digitos).
+
+`deploy/install.sql` carga la funcion nueva.
+Migracion para bases existentes: `deploy/migrations/20261117_retencion_iva_sobre_el_iva.sql`
+(funcion + trigger + body + compile_schema).
+
+Los documentos ya guardados NO se tocan: la validacion y el recalculo son al
+guardar y al mover el detalle.
+
+VERIFICACION
+------------
+* `deploy/diagnostico/20261117_retencion_iva_verificacion.sql` — 8 casos:
+    R1  75 % solo del IVA (16,00 -> 12,00) y el IGTF no entra
+    R2  editar una linea del detalle recalcula (32,00 -> 24,00)
+    R3  alta con cabecera en 0 y lineas despues -> 8,00 al 50 %
+    R4  cliente que no retiene -> 0
+    R5  la pagina 21 guarda el flag en alta y edicion
+    R6  la pagina 9 tiene el evento sobre P9_ID_CLIENTE
+    R7  el proceso refresca P9_RETENCION_IVA_BS y avisa del comprobante
+    R8  el comprobante sigue validado a 14 digitos (-20081)
+  ANTES: FALLAS=6 (R1, R2, R5 x2, R6, R7). DESPUES: FALLAS=0.
+
+* `deploy/diagnostico/20261117_retencion_iva_pagina.py` — navegador real
+  (Edge por CDP), usuario temporal `diag.retiva`:
+    T1 la lista de la 20 muestra los clientes; el dialogo de la 21 abre sin
+       error; el campo "Retiene IVA" ofrece Si/No; al guardar queda 'S' / 80
+    T2 al elegir ese cliente en una factura nueva, la 9 pone 80 %
+  RESULTADO: FALLAS=0. Capturas: 20261117_retencion_p21.png y
+  20261117_retencion_p9.png (esta ultima con "% Retencion IVA = 80").
+
+* Regresion (con el fixture cargado y limpiado despues):
+    20261116_retencion_ventas_verificacion.sql      FALLAS=0 (se le agregaron
+        las lineas de IVA: ahora el monto sale del detalle, es el cambio)
+    20261116_impreso_retencion_verificacion.sql     FALLAS=0
+    20261105_documentos_cerrados_verificacion.sql   FALLAS=0 de 24
+    20261116_reporte_documentos_verificacion.sql    FALLAS=0
+    20261116_control_factura_verificacion.sql       FALLAS=0
+    20261116_libro_compras_ventas_verificacion.sql  FALLAS=0
+    20261107_folio_atomico_verificacion.sql         FALLAS=0
+    20261111_clientes_verificacion.sql              FALLAS=0
+    20261105_propiedad_documentos_verificacion.sql  FALLAS=0
+    20261105_reportes_verificacion.sql              FALLAS=0
+    20261109_compilar_procesos_pagina.py            FALLAS=0 (56 procesos)
+    20261117_grid_paginas_verificacion.py           FALLAS=0
+  Import de la app: 74 sentencias, 23 paginas, 0 objetos invalidos.
+
+NOTA SOBRE F-1042 (analisis que llego del dueno)
+------------------------------------------------
+El "descuadre" de Total Bs no existe: la linea 1 de esa factura es un servicio
+real de 90 USD ("Revision general de 10 puntos") al que se le aplico IGTF 3 %,
+no un campo de base suelto. Por eso el cuadre es
+638.487,28 (base 16) + 102.157,97 (IVA) + 80.651,03 (base IGTF) + 2.419,53
+(IGTF) = 823.715,81 = 919,20 USD x 896,1225.
+Queda como decision del dueno si el IGTF debe ser 3 % sobre todo el pago en
+divisas (serian 27,58 USD en vez de 2,70): es alcance fiscal, no un bug de
+formula.

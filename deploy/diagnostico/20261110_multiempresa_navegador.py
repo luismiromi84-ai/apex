@@ -329,17 +329,19 @@ try:
                     falla("«Editar» cargo %r en vez de %r" % (real[0] if real else None, filas[1]))
 
     # -----------------------------------------------------------------------
-    # 3) «Nueva empresa» deja el formulario en blanco.
+    # 3) El alta: al entrar de nuevo el formulario esta en blanco. El boton
+    #    «Nueva empresa» se elimino el 2026-11-16 (el formulario ya nace vacio).
     # -----------------------------------------------------------------------
-    print("\n== «Nueva empresa» ==")
-    if clic("Nueva empresa") != "clic":
-        falla("no encontre el boton «Nueva empresa»")
-    elif not esperar('document.body.innerText.indexOf("Formulario en blanco") >= 0', 60):
-        falla("no salio el mensaje «Formulario en blanco»; texto: " + texto()[:250])
+    print("\n== formulario en blanco (con «Nueva empresa») ==")
+    if js("document.querySelector('[data-otel-label=\"BTN_CREAR_EMPRESA\"]') === null"):
+        falla("no esta el boton «Nueva empresa»")
+    js('window.location.href="%s/f?p=100:19:%s"' % (BASE, ses))
+    if not esperar('document.readyState === "complete" && !!document.getElementById("P19_NOMBRE_EMPRESA")', 60):
+        falla("no recargo la pagina 19")
     time.sleep(2)
     id_vacio = js('apex.item("P19_ID_EMPRESA").getValue()')
     nom_vacio = js('apex.item("P19_NOMBRE_EMPRESA").getValue()')
-    print("  tras «Nueva empresa»: id=%r nombre=%r" % (id_vacio, nom_vacio))
+    print("  al entrar de nuevo: id=%r nombre=%r" % (id_vacio, nom_vacio))
     if id_vacio:
         falla("el id no se limpio: con id, «Guardar empresa» ACTUALIZA en vez de dar de alta")
     if nom_vacio:
@@ -397,10 +399,11 @@ try:
         print("  AVISO: no se pudo guardar la captura: %s" % str(ex)[:120])
 
     # -----------------------------------------------------------------------
-    # 5) Usuario de UNA empresa: el listado muestra una y el formulario la
-    #    trae por defecto (regresion).
+    # 5) Usuario de UNA empresa: el listado muestra una y el formulario tambien
+    #    nace EN BLANCO (alta). Desde el 2026-11-16 no se elige la empresa por la
+    #    cuenta: la carga el «Editar» del listado.
     # -----------------------------------------------------------------------
-    print("\n== usuario con UNA empresa (regresion) ==")
+    print("\n== usuario con UNA empresa ==")
     ses = entrar(USUARIO_B)
     js('window.location.href="%s/f?p=100:19:%s"' % (BASE, ses))
     if not esperar('document.readyState === "complete" && !!document.getElementById("R43000000000000396_worksheet_region")', 60):
@@ -413,8 +416,8 @@ try:
             falla("el listado mostro %r filas para un usuario de 1 empresa (se esperaba 1)" % (filas3,))
         nom_uno = js('apex.item("P19_NOMBRE_EMPRESA").getValue()')
         print("  nombre en el formulario al abrir: %r" % nom_uno)
-        if not nom_uno:
-            falla("con una sola empresa el formulario deberia traerla por defecto")
+        if nom_uno:
+            falla("con una sola empresa el formulario tambien debe nacer en blanco")
 finally:
     proc.terminate()
     borrar_todo()

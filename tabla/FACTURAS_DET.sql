@@ -75,6 +75,8 @@ COMPOUND TRIGGER
                SET f.subtotal        = (SELECT NVL(SUM(subtotal_linea), 0) FROM facturas_det WHERE id_factura = v_id),
                    f.monto_impuesto  = (SELECT NVL(SUM(monto_impuesto), 0) FROM facturas_det WHERE id_factura = v_id),
                    f.monto_total     = (SELECT NVL(SUM(monto_total_linea), 0) FROM facturas_det WHERE id_factura = v_id),
+                   f.retencion_iva_bs = ROUND((SELECT NVL(SUM(monto_impuesto), 0) FROM facturas_det WHERE id_factura = v_id)
+                                              * NVL(f.tipo_cambio, 1) * NVL(f.porcentaje_retencion, 0) / 100, 2),
                    f.fecha_modificacion = SYSTIMESTAMP,
                    f.modificado_por     = USER
              WHERE f.id_factura = v_id;

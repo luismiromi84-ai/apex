@@ -18,5 +18,9 @@ whenever sqlerror exit sql.sqlcode rollback
 @@../package_bodies/pkg_empresa_logo.sql
 @@../package_bodies/pkg_reportes_presupuesto.sql
 @@../package_bodies/pkg_reportes_factura.sql
+@@../package_bodies/pkg_retenciones.sql
+@@../package_bodies/pkg_compras.sql
+@@../package_bodies/pkg_compra_detalle.sql
+@@../package_bodies/pkg_cobros.sql
 
 prompt Bodies compilados. Ejecutar @deploy/verify.sql

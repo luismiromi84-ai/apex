@@ -141,6 +141,29 @@ def main():
     comprueba(intenta("usuario.inventado", id_emp1) == 20003,
               "un usuario que no existe en USUARIO no puede tocar nada")
 
+    print("== Correo con formato en la pagina 4 ==")
+    cur.execute("select process_source from apex_application_page_proc where application_id = 100 "
+                "and page_id = 4 and static_id = 'update-usuario'")
+    bloque_upd = cur.fetchone()[0].read()
+
+    def con_correo(email):
+        try:
+            cur.execute(bloque_upd, {"APP_USER": "prueba1", "P4_USUARIO_ID": None,
+                                     "P4_USERNAME": "x", "P4_EMAIL": email,
+                                     "P4_ESTADO": "ACTIVO", "P4_ROL_ID": None,
+                                     "P4_PASSWORD": None, "P4_ID_EMPRESA": None})
+            return 0
+        except oracledb.DatabaseError as ex:
+            error, = ex.args
+            return abs(error.code)
+        finally:
+            con.rollback()
+
+    comprueba(con_correo("jdahdh") == 20015,
+              "un correo sin formato se rechaza (-20015)")
+    comprueba(con_correo("ana@ejemplo.com") == 20003,
+              "un correo valido pasa a la guarda de empresa")
+
     print("== Estado general ==")
     cur.execute("""select count(*) from all_objects where owner = 'WKSP_SYPEXWS'
                     and status <> 'VALID'
@@ -149,7 +172,7 @@ def main():
     comprueba(n == 0, "cero objetos invalidos", str(n))
     cur.execute("select count(*) from apex_application_pages where application_id = 100")
     n = cur.fetchone()[0]
-    comprueba(n == 23, "siguen las 23 paginas", str(n))
+    comprueba(n == 25, "siguen las 25 paginas", str(n))
 
     print(f"\nRESULTADO: FALLAS={fallas}")
     con.close()

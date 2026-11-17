@@ -97,7 +97,9 @@ create or replace PACKAGE pkg_facturacion AS
         p_id_factura_origen  IN NUMBER   DEFAULT NULL,
         -- Fecha de la factura que se acredita: la nota lleva la tasa de ESE dia
         -- (correlacion). Se pasa tal cual a fn_validar_tasa_documento.
-        p_fecha_referencia   IN DATE     DEFAULT NULL
+        p_fecha_referencia   IN DATE     DEFAULT NULL,
+        p_porcentaje_retencion        IN NUMBER   DEFAULT NULL,
+        p_nro_comprobante_retencion   IN VARCHAR2 DEFAULT NULL
     );
 
     PROCEDURE prc_anular_factura (

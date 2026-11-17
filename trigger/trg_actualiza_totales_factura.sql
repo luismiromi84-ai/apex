@@ -19,10 +19,15 @@ COMPOUND TRIGGER
     BEGIN
         v_id := g_facturas.FIRST;
         WHILE v_id IS NOT NULL LOOP
-            UPDATE facturas f
-               SET f.subtotal        = (SELECT NVL(SUM(subtotal_linea), 0) FROM facturas_det WHERE id_factura = v_id),
+            UPDATE facturas f SET
+                   f.subtotal        = (SELECT NVL(SUM(subtotal_linea), 0) FROM facturas_det WHERE id_factura = v_id),
                    f.monto_impuesto  = (SELECT NVL(SUM(monto_impuesto), 0) FROM facturas_det WHERE id_factura = v_id),
                    f.monto_total     = (SELECT NVL(SUM(monto_total_linea), 0) FROM facturas_det WHERE id_factura = v_id),
+                   -- La retencion de IVA se recalcula con el detalle, sobre el IVA
+                   -- (sin el IGTF). El cliente puede fijar el porcentaje en la
+                   -- cabecera o venir del maestro de clientes.
+                   f.retencion_iva_bs = fn_iva_retenido_bs(v_id, f.porcentaje_retencion,
+                                                           f.tipo_cambio),
                    f.fecha_modificacion = SYSTIMESTAMP,
                    f.modificado_por     = USER
              WHERE f.id_factura = v_id;
