@@ -23832,7 +23832,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
 ,p_prompt=>'Tasa (Bs por unidad)'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
-,p_format_mask=>'FM999G999G999G990D00'
 ,p_cSize=>20
 ,p_colspan=>6
 ,p_field_template=>1610598304472262251
@@ -24059,6 +24058,53 @@ unistr('            apex_util.set_session_state(''P28_FECHA_EMISION'', to_char(r
 ,p_internal_uid=>43000000000001039
 );
 wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001116)
+,p_process_sequence=>30
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Sugiere compra'
+,p_static_id=>'sugiere-compra'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id     number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
+'    v_moneda varchar2(3) := upper(trim(nvl(:P28_COD_MONEDA, ''#'')));',
+'    v_tasa   number := nvl(fn_clean_num(:P28_TIPO_CAMBIO), 0);',
+'    v_pct    varchar2(10) := trim(nvl(:P28_PORCENTAJE_RETENCION, ''#''));',
+'    v_prov   number := nullif(fn_clean_num(:P28_ID_PROVEEDOR), 0);',
+'    v_fecha  date   := nvl(to_date(:P28_FECHA_EMISION, ''DD/MM/YYYY''), trunc(sysdate));',
+'begin',
+'    -- Solo al abrir una compra NUEVA: al editar se respeta lo que hay guardado.',
+'    if v_id is not null then',
+'        return;',
+'    end if;',
+'',
+'    -- La moneda local del pais de la empresa (o USD si el pais no tiene).',
+'    if v_moneda = ''#'' then',
+'        begin',
+'            select upper(p.moneda_local) into v_moneda',
+'              from empresas e join paises p on p.cod_pais = e.cod_pais',
+'             where e.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA);',
+'        exception when others then v_moneda := ''VES'';',
+'        end;',
+'        apex_util.set_session_state(''P28_COD_MONEDA'', v_moneda);',
+'    end if;',
+'',
+'    -- La tasa es la de la FECHA DE EMISION, en bolivares por unidad (1 en Bs).',
+'    if v_tasa <= 0 then',
+'        apex_util.set_session_state(''P28_TIPO_CAMBIO'',',
+'            to_char(fn_tasa_ves(trunc(v_fecha), v_moneda)));',
+'    end if;',
+'',
+'    -- El % de retencion sale del maestro del proveedor (75/100/0).',
+'    if v_pct = ''#'' and v_prov is not null then',
+'        apex_util.set_session_state(''P28_PORCENTAJE_RETENCION'',',
+'            pkg_retenciones.fn_porcentaje(v_prov));',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001116
+);
+wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000001040)
 ,p_process_sequence=>10
 ,p_process_point=>'AFTER_SUBMIT'
@@ -24172,6 +24218,126 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_when_button_id=>wwv_flow_imp.id(43000000000001036)
 ,p_branch_sequence=>20
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001110)
+,p_name=>'CALCULA-TASA-MONEDA'
+,p_static_id=>'calcula-tasa-moneda'
+,p_event_sequence=>10
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P28_COD_MONEDA'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001111)
+,p_event_id=>wwv_flow_imp.id(43000000000001110)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'CALCULA-TASA-MONEDA'
+,p_static_id=>'calcula-tasa-moneda'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P28_TIPO_CAMBIO',
+  'items_to_submit', 'P28_COD_MONEDA,P28_FECHA_EMISION',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_moneda varchar2(3) := upper(trim(nvl(:P28_COD_MONEDA, ''#'')));',
+'    v_fecha  date := nvl(to_date(:P28_FECHA_EMISION, ''DD/MM/YYYY''), trunc(sysdate));',
+'begin',
+'    if v_moneda = ''#'' then',
+'        return;',
+'    end if;',
+'    :P28_TIPO_CAMBIO := fn_tasa_ves(trunc(v_fecha), v_moneda);',
+'exception',
+'    when others then null;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'N')).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001112)
+,p_name=>'CALCULA-TASA-FECHA'
+,p_static_id=>'calcula-tasa-fecha'
+,p_event_sequence=>20
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P28_FECHA_EMISION'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001113)
+,p_event_id=>wwv_flow_imp.id(43000000000001112)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'CALCULA-TASA-FECHA'
+,p_static_id=>'calcula-tasa-fecha'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P28_TIPO_CAMBIO',
+  'items_to_submit', 'P28_COD_MONEDA,P28_FECHA_EMISION',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_moneda varchar2(3) := upper(trim(nvl(:P28_COD_MONEDA, ''#'')));',
+'    v_fecha  date := nvl(to_date(:P28_FECHA_EMISION, ''DD/MM/YYYY''), trunc(sysdate));',
+'begin',
+'    if v_moneda = ''#'' then',
+'        return;',
+'    end if;',
+'    :P28_TIPO_CAMBIO := fn_tasa_ves(trunc(v_fecha), v_moneda);',
+'exception',
+'    when others then null;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'N')).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001114)
+,p_name=>'SUGIERE-RETENCION'
+,p_static_id=>'sugiere-retencion'
+,p_event_sequence=>30
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P28_ID_PROVEEDOR'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001115)
+,p_event_id=>wwv_flow_imp.id(43000000000001114)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'SUGIERE-RETENCION'
+,p_static_id=>'sugiere-retencion'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P28_PORCENTAJE_RETENCION',
+  'items_to_submit', 'P28_ID_PROVEEDOR',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_prov number := nullif(fn_clean_num(:P28_ID_PROVEEDOR), 0);',
+'begin',
+'    if v_prov is null then',
+'        :P28_PORCENTAJE_RETENCION := 0;',
+'    else',
+'        :P28_PORCENTAJE_RETENCION := pkg_retenciones.fn_porcentaje(v_prov);',
+'    end if;',
+'exception',
+'    when others then null;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'N')).to_clob
+,p_wait_for_result=>'Y'
 );
 end;
 /

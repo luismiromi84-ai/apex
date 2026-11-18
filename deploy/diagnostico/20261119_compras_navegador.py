@@ -1,7 +1,8 @@
 """Modulo de Compras (27 lista, 28 compra, 29 linea), con navegador real.
 
   C1  la lista (27) abre con el boton de alta y el menu trae Compras
-  C2  «Nueva compra» guarda la cabecera
+  C2  «Nueva compra» guarda la cabecera; la moneda, la tasa y el % de retencion
+      se proponen solos (moneda local, tasa del dia, 75 del proveedor)
   C3  «Nueva linea» abre la linea, y al guardarla la compra cuadra (100 + 16 = 116)
   C4  «Registrar compra» la deja REGISTRADA, emite el comprobante y vuelve a la lista
   C5  la retencion es el 75 % del IVA en bolivares
@@ -168,14 +169,64 @@ try:
     # C2
     boton("BTN_NUEVA_COMPRA")
     time.sleep(6)
+
+    # C2a: la moneda se propone sola (la local de la empresa 1) y en bolivares la tasa es 1
+    moneda0 = js('apex.item("P28_COD_MONEDA").getValue()')
+    tasa0 = js('apex.item("P28_TIPO_CAMBIO").getValue()')
+    print("  al abrir: moneda=%r tasa=%r" % (moneda0, tasa0))
+    comprobar("C2 la moneda se propone sola", str(moneda0) == "VES", moneda0)
+    try:
+        ok_t0 = abs(float(str(tasa0).replace(",", "")) - 1) < 0.0001
+    except Exception:
+        ok_t0 = False
+    comprobar("C2 en bolivares la tasa es 1", ok_t0, tasa0)
+
+    # C2b: el % de retencion sale del maestro del proveedor (75)
     js('(function(){apex.item("P28_ID_PROVEEDOR").setValue(' + json.dumps(str(prov[0])) + ');'
-       'apex.item("P28_FOLIO_FACTURA").setValue(' + json.dumps(FOLIO) + ');'
-       'apex.item("P28_COD_MONEDA").setValue("VES");'
-       'apex.item("P28_TIPO_CAMBIO").setValue(1);'
-       'apex.item("P28_PORCENTAJE_RETENCION").setValue(75);return "OK";})()')
-    time.sleep(2)
+       'apex.item("P28_ID_PROVEEDOR").element.dispatchEvent(new Event("change",{bubbles:true}));'
+       'return "OK";})()')
+    time.sleep(4)
+    pct = js('apex.item("P28_PORCENTAJE_RETENCION").getValue()')
+    print("  % retencion propuesto:", pct)
+    try:
+        ok_pct = abs(float(str(pct).replace(",", "")) - 75) < 0.0001
+    except Exception:
+        ok_pct = False
+    comprobar("C2 el % de retencion sale del proveedor", ok_pct, pct)
+
+    # C2c: en divisa trae la tasa del dia (y no 1)
+    js('(function(){apex.item("P28_COD_MONEDA").setValue("USD");'
+       'apex.item("P28_COD_MONEDA").element.dispatchEvent(new Event("change",{bubbles:true}));'
+       'return "OK";})()')
+    time.sleep(4)
+    tasa_usd = js('apex.item("P28_TIPO_CAMBIO").getValue()')
+    print("  tasa en USD:", tasa_usd)
+    try:
+        ok_usd = float(str(tasa_usd).replace(",", "")) > 1
+    except Exception:
+        ok_usd = False
+    comprobar("C2 en divisa trae la tasa del dia", ok_usd, tasa_usd)
+
+    # se vuelve a bolivares para que el resto de la prueba siga en Bs
+    js('(function(){apex.item("P28_COD_MONEDA").setValue("VES");'
+       'apex.item("P28_COD_MONEDA").element.dispatchEvent(new Event("change",{bubbles:true}));'
+       'return "OK";})()')
+    time.sleep(4)
+    # el folio se escribe DESPUES de que la accion dinamica termine: si se pone en
+    # el mismo instante, la respuesta de la accion lo pisa (2026-11-18).
+    js('apex.item("P28_FOLIO_FACTURA").setValue(' + json.dumps(FOLIO) + ')')
+    time.sleep(1)
+    print("  items antes de guardar:", js('(function(){return {prov:apex.item("P28_ID_PROVEEDOR").getValue(),'
+                                          ' folio:apex.item("P28_FOLIO_FACTURA").getValue(),'
+                                          ' mon:apex.item("P28_COD_MONEDA").getValue(),'
+                                          ' tasa:apex.item("P28_TIPO_CAMBIO").getValue(),'
+                                          ' pct:apex.item("P28_PORCENTAJE_RETENCION").getValue()};})()'))
     boton("BTN_GUARDAR_COMPRA")
     time.sleep(9)
+    print("  avisos tras guardar:", js('(function(){var o=[];'
+                                       'document.querySelectorAll(".a-Notification, .t-Alert")'
+                                       '.forEach(function(e){o.push((e.innerText||"").replace(/\\s+/g," ").trim());});'
+                                       'return o;})()'))
 
     con = oracledb.connect(user=c["DB_USER"], password=c["DB_PASSWORD"], dsn=CONNECT_STRING)
     cur = con.cursor()
