@@ -2,8 +2,10 @@
 
   C1  la lista (27) abre con el boton de alta y el menu trae Compras
   C2  «Nueva compra» guarda la cabecera; la moneda, la tasa y el % de retencion
-      se proponen solos (moneda local, tasa del dia, 75 del proveedor)
-  C3  «Nueva linea» abre la linea, y al guardarla la compra cuadra (100 + 16 = 116)
+      se proponen solos (moneda local, tasa del dia, 75 del proveedor) y los DOS
+      numeros del proveedor (N. de factura y N. de control) salen de su serie
+  C3  «Nueva linea» abre la linea, y al guardarla la compra cuadra (100 + 16 = 116).
+      C3a: al elegir el producto se traen descripcion, precio e impuesto del catalogo
   C4  «Registrar compra» la deja REGISTRADA, emite el comprobante y vuelve a la lista
   C5  la retencion es el 75 % del IVA en bolivares
   C6  la lista trae la compra, «Editar» la abre y un documento REGISTRADA no ofrece Guardar
@@ -69,6 +71,12 @@ if not prov:
     cur.execute("select id_proveedor, razon_social from proveedores where id_empresa=1 and rownum=1")
     prov = cur.fetchone()
     prov_creado = True
+# la serie del proveedor se lee ANTES de abrir el navegador (la conexion se cierra
+# aqui): es la propuesta que la pagina 28 debe pintar al abrir una compra nueva
+cur.execute("""select fn_siguiente_folio(1, 'FAC_PROV'),
+                      fn_siguiente_folio(1, 'CONTROL_PROV')
+                 from dual""")
+serie_folio, serie_control = cur.fetchone()
 print("  proveedor de prueba:", prov)
 con.close()
 
@@ -181,6 +189,18 @@ try:
         ok_t0 = False
     comprobar("C2 en bolivares la tasa es 1", ok_t0, tasa0)
 
+    # C2d (2026-11-18): los DOS numeros del proveedor se proponen solos desde su
+    # serie en FOLIO_CONTADOR (FAC_PROV y CONTROL_PROV), sin teclearlos.
+    folio_pant = str(js('apex.item("P28_FOLIO_FACTURA").getValue()') or "")
+    control_pant = str(js('apex.item("P28_NRO_CONTROL").getValue()') or "")
+    print("  numeros propuestos: factura=%r control=%r" % (folio_pant, control_pant))
+    comprobar("C2 el N. de factura del proveedor viene propuesto",
+              folio_pant == str(serie_folio), (folio_pant, serie_folio))
+    comprobar("C2 el N. de control del proveedor viene propuesto",
+              control_pant == str(serie_control), (control_pant, serie_control))
+    comprobar("C2 el control tiene la forma 00-000001",
+              bool(re.match(r"^\d{2}-\d{6}$", control_pant)), control_pant)
+
     # C2b: el % de retencion sale del maestro del proveedor (75)
     js('(function(){apex.item("P28_ID_PROVEEDOR").setValue(' + json.dumps(str(prov[0])) + ');'
        'apex.item("P28_ID_PROVEEDOR").element.dispatchEvent(new Event("change",{bubbles:true}));'
@@ -242,10 +262,46 @@ try:
     # APEX sirve la pagina como URL amigable (linea-de-compra), no como f?p=100:29
     en29 = js("window.location.href") or ""
     en29 = en29 + " " + (js("document.title") or "")
+    # el titulo lleva tilde desde el 2026-11-19 («Línea de compra»): comparar sin acentos
+    plano = (en29.lower().replace("í", "i").replace("á", "a").replace("é", "e")
+             .replace("ó", "o").replace("ú", "u"))
     comprobar("C3 «Nueva linea» abre la pagina 29",
-              ":29:" in en29 or "linea-de-compra" in en29.lower()
-              or "linea de compra" in en29.lower(), en29[-60:])
+              ":29:" in en29 or "linea-de-compra" in plano or "linea de compra" in plano, en29[-60:])
     if "linea" in en29.lower():
+        # C3a (2026-11-19): al elegir el producto, el catalogo trae descripcion,
+        # precio sugerido e impuesto. Antes el precio habia que teclearlo.
+        cur.execute("""select id_producto_servicio, nombre, precio_sugerido, impuesto_aplicable
+                         from producto_servicio
+                        where nvl(estado, 'ACTIVO') = 'ACTIVO'
+                        order by codigo""")
+        prod = cur.fetchone()
+        cur.execute("""select min(i.id_impuesto)
+                         from impuestos i join empresas e on e.cod_pais = i.cod_pais
+                        where e.id_empresa = 1 and i.estado = 'ACTIVO'
+                          and nvl(i.aplica_en, 'LINEA') = 'LINEA'
+                          and i.porcentage = :p""", p=prod[3])
+        imp_esperado = cur.fetchone()[0]
+
+        js('(function(){apex.item("P29_ID_PRODUCTO_SERVICIO").setValue("%d");'
+           'var el=document.getElementById("P29_ID_PRODUCTO_SERVICIO");'
+           'if(el){el.dispatchEvent(new Event("change",{bubbles:true}));}return "OK";})()' % prod[0])
+        time.sleep(6)
+        precio_pant = js('apex.item("P29_PRECIO_UNITARIO").getValue()')
+        desc_pant = js('apex.item("P29_DESCRIPCION").getValue()')
+        imp_pant = js('apex.item("P29_ID_IMPUESTO").getValue()')
+        print("  al elegir %s: precio=%r desc=%r impuesto=%r"
+              % (prod[1], precio_pant, desc_pant, imp_pant))
+        try:
+            ok_precio = abs(float(str(precio_pant).replace(",", ".")) - float(prod[2])) < 0.01
+        except Exception:
+            ok_precio = False
+        comprobar("C3a el precio unitario se trae del catalogo", ok_precio,
+                  (precio_pant, prod[2]))
+        comprobar("C3a la descripcion se trae del catalogo",
+                  (desc_pant or "").strip() == (prod[1] or "").strip(), (desc_pant, prod[1]))
+        comprobar("C3a el impuesto se propone con el % del producto",
+                  str(imp_pant) == str(imp_esperado), (imp_pant, imp_esperado))
+
         js('(function(){apex.item("P29_DESCRIPCION").setValue("Servicio de prueba");'
            'apex.item("P29_CANTIDAD").setValue(2);'
            'apex.item("P29_PRECIO_UNITARIO").setValue(50);'
@@ -351,6 +407,21 @@ finally:
                    when matched then update set t.ultimo = s.ultimo
                    when not matched then insert (id_empresa, periodo, ultimo)
                         values (s.id_empresa, s.periodo, s.ultimo)""")
+    con.commit()
+    # la serie CONTROL_PROV de las compras se devuelve a su maximo real: la prueba
+    # deja la compra con el control propuesto y, al borrarla, no debe quedar el
+    # contador por delante (el dueño pidio correlativos sin saltos, 2026-11-18).
+    cur.execute("""merge into folio_contador f
+                   using (select 1 as id_empresa, 'CONTROL_PROV' as tipo,
+                                 nvl(max(to_number(regexp_substr(nro_control, '[0-9]+$'))), 0) as ultimo
+                            from compras
+                           where id_empresa = 1
+                             and nro_control is not null
+                             and regexp_like(trim(nro_control), '^[0-9]{2}-[0-9]{6}$')) s
+                      on (f.id_empresa = s.id_empresa and f.tipo = s.tipo)
+                   when matched then update set f.ultimo = s.ultimo
+                   when not matched then insert (id_empresa, tipo, ultimo)
+                        values (s.id_empresa, s.tipo, s.ultimo)""")
     con.commit()
     if prov_creado:
         cur.execute("delete from proveedores where id_proveedor = :p", p=prov[0])

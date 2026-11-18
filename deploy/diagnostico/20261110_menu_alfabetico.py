@@ -27,7 +27,7 @@ import oracledb
 from verificar_conexion import CONNECT_STRING, credenciales
 
 USUARIO, CLAVE = "diag.menu3", "Diag#2026"
-ESPERADO = ["Home", "Administración", "Compras", "Clientes", "Facturación", "Cobros",
+ESPERADO = ["Home", "Administración", "Compras", "Clientes", "Facturación", "Recibos",
             "Reportes Factura y Notas C/D", "Libro de compras y ventas",
             "Gestión de Usuarios", "Panel general", "Presupuestos"]
 HIJOS = ["Facturas de compras", "Proveedores"]

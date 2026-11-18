@@ -26,27 +26,9 @@ create or replace package body pkg_compras as
         v_tasa      number;
         v_pct       number;
         v_fecha     date;
+        v_folio     varchar2(50);
+        v_control   varchar2(50);
     begin
-        if p_folio_factura is null or trim(p_folio_factura) is null then
-            raise_application_error(-20087,
-                'El numero de factura del proveedor es obligatorio.');
-        end if;
-
-        -- Un numero suelto de uno o dos digitos es casi seguro un error de captura
-        -- (el N° de factura del proveedor no se numera asi). 2026-11-18.
-        if length(trim(p_folio_factura)) < 3 then
-            raise_application_error(-20088,
-                'El numero de factura no puede ser un numero suelto de 1 o 2 digitos. '
-                || 'Escribelo como aparece en la factura del proveedor (por ejemplo F-45 o 00045).');
-        end if;
-
-        if p_nro_control is not null and trim(p_nro_control) is not null
-           and length(trim(p_nro_control)) < 3 then
-            raise_application_error(-20089,
-                'El numero de control del proveedor no puede ser un numero suelto de 1 o 2 digitos. '
-                || 'Escribelo como aparece en la factura (por ejemplo 00-000045).');
-        end if;
-
         if p_id_proveedor is null then
             raise_application_error(-20087, 'La compra necesita un proveedor.');
         end if;
@@ -85,6 +67,34 @@ create or replace package body pkg_compras as
             v_pct := p_porcentaje_retencion;
         end if;
 
+        -- Numeracion del PROVEEDOR (2026-11-18): la serie vive en FOLIO_CONTADOR
+        -- (FAC_PROV y CONTROL_PROV) para que la pantalla la proponga sola. Al dar de
+        -- alta se CONSUME solo si se dejo la propuesta (o vacio); si el usuario
+        -- escribio otro numero, se respeta el suyo y la serie no se mueve.
+        v_folio := trim(p_folio_factura);
+        v_control := trim(p_nro_control);
+
+        if p_id_compra is null then
+            if v_folio is null
+               or upper(v_folio) = upper(fn_siguiente_folio(p_id_empresa, 'FAC_PROV')) then
+                v_folio := fn_asignar_folio(p_id_empresa, 'FAC_PROV');
+            end if;
+            if v_control is null
+               or upper(v_control) = upper(fn_siguiente_folio(p_id_empresa, 'CONTROL_PROV')) then
+                v_control := fn_asignar_folio(p_id_empresa, 'CONTROL_PROV');
+            end if;
+        end if;
+
+        if v_folio is null then
+            raise_application_error(-20087,
+                'El numero de factura del proveedor es obligatorio.');
+        end if;
+        if v_control is not null and length(v_control) < 3 then
+            raise_application_error(-20089,
+                'El numero de control del proveedor no puede ser un numero suelto de 1 o 2 digitos. '
+                || 'Escribelo como aparece en la factura (por ejemplo 00-000045).');
+        end if;
+
         if p_id_compra is null then
             begin
                 insert into compras (id_empresa, id_proveedor, tipo_documento, folio_factura,
@@ -92,14 +102,14 @@ create or replace package body pkg_compras as
                                      porcentaje_retencion, estado, observaciones,
                                      id_compra_origen, creado_por)
                 values (p_id_empresa, p_id_proveedor, nvl(p_tipo_documento, 'FAC'),
-                        trim(p_folio_factura), p_nro_control, v_fecha, nvl(p_cod_moneda, 'VES'),
+                        v_folio, v_control, v_fecha, nvl(p_cod_moneda, 'VES'),
                         v_tasa, v_pct, 'BORRADOR', p_observaciones,
                         p_id_compra_origen, p_usuario)
                 returning id_compra into p_id_compra;
             exception
                 when dup_val_on_index then
                     raise_application_error(-20080,
-                        'Ya existe la factura ' || trim(p_folio_factura) || ' de este proveedor.');
+                        'Ya existe la factura ' || v_folio || ' de este proveedor.');
             end;
         else
             begin
@@ -115,7 +125,7 @@ create or replace package body pkg_compras as
             begin
                 update compras set id_proveedor = p_id_proveedor,
                        tipo_documento = nvl(p_tipo_documento, 'FAC'),
-                       folio_factura = trim(p_folio_factura), nro_control = p_nro_control,
+                       folio_factura = v_folio, nro_control = v_control,
                        fecha_emision = v_fecha, cod_moneda = nvl(p_cod_moneda, 'VES'),
                        tipo_cambio = v_tasa, porcentaje_retencion = v_pct,
                        observaciones = p_observaciones, id_compra_origen = p_id_compra_origen,
@@ -124,7 +134,7 @@ create or replace package body pkg_compras as
             exception
                 when dup_val_on_index then
                     raise_application_error(-20080,
-                        'Ya existe la factura ' || trim(p_folio_factura) || ' de este proveedor.');
+                        'Ya existe la factura ' || v_folio || ' de este proveedor.');
             end;
         end if;
     end prc_guardar_compra;

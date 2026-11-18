@@ -40,7 +40,7 @@ cur = conn.cursor()
 cur.execute("alter session set current_schema = WKSP_SYPEXWS")
 
 # P1
-for pagina, nombre, alias in ((24, "Cobros", "COBROS"), (25, "Cobro", "COBRO")):
+for pagina, nombre, alias in ((24, "Recibos", "COBROS"), (25, "Recibo", "COBRO")):
     fila = cur.execute("""select page_name, page_alias, page_mode, page_access_protection
                             from apex_application_pages
                            where application_id = 100 and page_id = :p""", p=pagina).fetchone()
@@ -58,9 +58,9 @@ regiones24 = cur.execute("""select region_name, source_type_plugin_static_id
                              where application_id = 100 and page_id = 24""").fetchall()
 nombres24 = [r[0] for r in regiones24]
 comprobar("P2 la 24 tiene la region de filtros", "Filtros" in nombres24, f"({nombres24})")
-comprobar("P2 la 24 tiene la lista de cobros", "Cobros" in nombres24)
+comprobar("P2 la 24 tiene la lista de recibos", "Recibos" in nombres24)
 comprobar("P2 la lista es un Interactive Report",
-          any(r[0] == "Cobros" and (r[1] or "") == "NATIVE_IR" for r in regiones24),
+          any(r[0] == "Recibos" and (r[1] or "") == "NATIVE_IR" for r in regiones24),
           f"({[r[1] for r in regiones24]})")
 n = cur.execute("""select count(*) from apex_application_page_buttons
                     where application_id = 100 and page_id = 24 and button_name = 'BTN_NUEVO_COBRO'""").fetchone()[0]
@@ -68,7 +68,7 @@ comprobar("P2 el boton Registrar cobro esta", n == 1, f"({n})")
 
 # P3
 fila_lista = cur.execute("""select to_clob(region_source) from apex_application_page_regions
-                             where application_id = 100 and page_id = 24 and region_name = 'Cobros'""").fetchone()
+                             where application_id = 100 and page_id = 24 and region_name = 'Recibos'""").fetchone()
 lista = fila_lista[0] if fila_lista else ""
 if hasattr(lista, "read"):
     lista = lista.read()
@@ -168,8 +168,29 @@ comprobar("P11 el buscador filtra la lista de cobros",
 # P8
 n = cur.execute("""select count(*) from apex_application_list_entries
                     where application_id = 100 and list_name = 'Navigation Menu'
-                      and upper(entry_text) = 'COBROS'""").fetchone()[0]
-comprobar("P8 el menu trae Cobros", n == 1, f"({n})")
+                      and upper(entry_text) = 'RECIBOS'""").fetchone()[0]
+comprobar("P8 el menu trae Recibos", n == 1, f"({n})")
+
+# P12 (2026-11-18): el «Too Many Requests» (429) lo disparaba el Popup LOV de la
+# factura, que pedia una busqueda por cada tecla. Pasa a lista de seleccion: una
+# sola peticion al elegir. Ademas la retencion recalcula el neto al teclearla.
+n = cur.execute("""select display_as from apex_application_page_items
+                    where application_id = 100 and page_id = 25
+                      and item_name = 'P25_ID_FACTURA'""").fetchone()
+comprobar("P12 la factura del cobro es lista de seleccion (no Popup LOV)",
+          bool(n) and n[0] == "Select List", f"({n[0] if n else 'sin item'})")
+
+n = cur.execute("""select count(*) from apex_260100.apex_application_page_da
+                    where application_id = 100 and page_id = 25
+                      and static_id = 'calcula-cobro-retencion'
+                      and when_event_name = 'Change'
+                      and when_element = 'P25_RETENCION'""").fetchone()[0]
+comprobar("P12 la retencion dispara el recalculo del neto", n == 1, f"({n})")
+
+i_da = export3.find("p_static_id=>'calcula-cobro-retencion'")
+bloque_da = export3[i_da:i_da + 2600] if i_da > 0 else ""
+comprobar("P12 esa accion escribe el neto",
+          i_da > 0 and "set_session_state" not in bloque_da and ":P25_NETO :=" in bloque_da)
 
 conn.close()
 print()

@@ -6,10 +6,9 @@
 -- y ademas hace imposible cruzar la factura con el Libro de Compras.
 --
 -- Ahora prc_guardar_compra rechaza:
---   -20088  N° de factura de 1 o 2 digitos
 --   -20089  N° de control de 1 o 2 digitos
--- La regla es la minima que pidio el dueño (2026-11-18): no se exige un patron
--- estricto, porque cada proveedor numera distinto (F-45, 00045, A-001...).
+-- El N° de FACTURA **no** se valida: es la numeracion del proveedor y puede ser
+-- «1», «F-45» o «00045» (decision del dueño, 2026-11-18).
 --
 -- Solo cambia el body; la spec no cambia.
 -- Reversa: volver al body anterior (sin los dos bloques de -20088 / -20089).
@@ -53,14 +52,11 @@ create or replace package body pkg_compras as
                 'El numero de factura del proveedor es obligatorio.');
         end if;
 
-        -- Un numero suelto de uno o dos digitos es casi seguro un error de captura
-        -- (el N° de factura del proveedor no se numera asi). 2026-11-18.
-        if length(trim(p_folio_factura)) < 3 then
-            raise_application_error(-20088,
-                'El numero de factura no puede ser un numero suelto de 1 o 2 digitos. '
-                || 'Escribelo como aparece en la factura del proveedor (por ejemplo F-45 o 00045).');
-        end if;
-
+        -- El N° de factura es la numeracion DEL PROVEEDOR y no sigue la forma de
+        -- nuestras facturas de venta: puede ser "1", "F-45" o "00045". No se valida
+        -- el formato (decision del dueño, 2026-11-18).
+        -- El N° de control si es fiscal (formato de la providencia) y no puede ser
+        -- un numero suelto de 1 o 2 digitos.
         if p_nro_control is not null and trim(p_nro_control) is not null
            and length(trim(p_nro_control)) < 3 then
             raise_application_error(-20089,

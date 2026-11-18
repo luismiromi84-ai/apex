@@ -5,6 +5,10 @@
 -- previa: NO incrementa el contador y no bloquea nada, asi que si otro usuario
 -- guarda primero el folio real sera distinto. El que manda es el que devuelve
 -- fn_asignar_folio() al insertar.
+--
+-- Tambien sirve para las series del PROVEEDOR en las compras (2026-11-18):
+-- FAC_PROV -> '45' y CONTROL_PROV -> '00-000045'. Esas series son internas del
+-- sistema para no teclearlas a mano; el papel del proveedor sigue mandando.
 -- =============================================================================
 
 create or replace function fn_siguiente_folio (
@@ -21,10 +25,12 @@ begin
        and tipo       = v_tipo;
 
     return case v_tipo
-             when 'PRESUPUESTO' then to_char(v_num)
-             when 'FAC'         then 'F-'  || v_num
-             when 'NC'          then 'NC-' || v_num
-             when 'ND'          then 'ND-' || v_num
+             when 'PRESUPUESTO'  then to_char(v_num)
+             when 'FAC'          then 'F-'  || v_num
+             when 'NC'           then 'NC-' || v_num
+             when 'ND'           then 'ND-' || v_num
+             when 'FAC_PROV'     then to_char(v_num)
+             when 'CONTROL_PROV' then '00-' || lpad(to_char(v_num), 6, '0')
              else to_char(v_num)
            end;
 end fn_siguiente_folio;
