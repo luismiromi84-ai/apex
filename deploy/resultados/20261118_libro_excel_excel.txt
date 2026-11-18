@@ -1,0 +1,46 @@
+Archivo: 20261118_libro_excel.xls  (6580 bytes) abierto con Excel 16.0
+rango usado: $A$1:$W$12
+A1 (membrete) = Empresa Principal
+A2 (RIF y periodo) = RIF: J-12345678-9    Libro de compras y ventas - 11/2026    Documentos: compras y ventas
+cabecera en fila 3 | fila TOTALES en 11 | documentos: 7
+cabecera: Libro | Fecha | RIF | Razón social | Tipo | Nº factura | Nº control | Moneda | Tasa BCV | Total en divisa | Base 16% | IVA 16% | Exento | Base IGTF | IGTF 3% | Otras base | Otras IVA | Total Bs | Nº comp. retención | IVA retenido Bs | Neto Bs | Estado | Documento afectado
+celdas con contenido -> cabecera: 23 | totales: 12 (la fila de totales trae la etiqueta y las 11 columnas de dinero)
+
+--- cada columna de dinero: suma de Excel contra la celda TOTALES ---
+  Total en divisa      suma=        4,163.42  TOTALES=        4,163.42  cuadra=True
+  Base 16%             suma=    2,346,833.84  TOTALES=    2,346,833.84  cuadra=True
+  IVA 16%              suma=      375,493.42  TOTALES=      375,493.42  cuadra=True
+  Exento               suma=        1,035.00  TOTALES=        1,035.00  cuadra=True
+  Base IGTF            suma=       80,651.03  TOTALES=       80,651.03  cuadra=True
+  IGTF 3%              suma=        2,419.53  TOTALES=        2,419.53  cuadra=True
+  Otras base           suma=            0.00  TOTALES=            0.00  cuadra=True
+  Otras IVA            suma=            0.00  TOTALES=            0.00  cuadra=True
+  Total Bs             suma=    2,806,432.82  TOTALES=    2,806,432.82  cuadra=True
+  IVA retenido Bs      suma=            0.00  TOTALES=            0.00  cuadra=True
+  Neto Bs              suma=    2,806,432.82  TOTALES=    2,806,432.82  cuadra=True
+TODOS LOS TOTALES CUADRAN: True
+
+--- tipo y formato de cada celda (primera fila de datos) ---
+  Libro                [Ventas] formato=@ tipo=String
+  Fecha                [07/11/2026] formato=dd/mm/aaaa tipo=Double
+  RIF                  [J-40987654-3] formato=@ tipo=String
+  Razón social         [Servicios Automotrices del Centro S.R.L.] formato=@ tipo=String
+  Tipo                 [Factura] formato=@ tipo=String
+  Nº factura           [F-1041] formato=@ tipo=String
+  Nº control           [00-000123] formato=@ tipo=String
+  Moneda               [USD] formato=@ tipo=String
+  Tasa BCV             [896.12] formato=#,##0.00 tipo=Double
+  Total en divisa      [1,658.22] formato=#,##0.00 tipo=Double
+  Base 16%             [1,281,007.11] formato=#,##0.00 tipo=Double
+  IVA 16%              [204,961.14] formato=#,##0.00 tipo=Double
+  Exento               [0.00] formato=#,##0.00 tipo=Double
+  Base IGTF            [0.00] formato=#,##0.00 tipo=Double
+  IGTF 3%              [0.00] formato=#,##0.00 tipo=Double
+  Otras base           [0.00] formato=#,##0.00 tipo=Double
+  Otras IVA            [0.00] formato=#,##0.00 tipo=Double
+  Total Bs             [1,485,968.25] formato=#,##0.00 tipo=Double
+  Nº comp. retención   [-] formato=@ tipo=String
+  IVA retenido Bs      [0.00] formato=#,##0.00 tipo=Double
+  Neto Bs              [1,485,968.25] formato=#,##0.00 tipo=Double
+  Estado               [PENDIENTE] formato=@ tipo=String
+  Documento afectado   [] formato=@ tipo=vacio

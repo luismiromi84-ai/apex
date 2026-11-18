@@ -1,0 +1,18 @@
+﻿20261110_multiempresa_verificacion.sql: 16 sentencias
+FALLO en la sentencia 16 (codigo 20100): ORA-20100: RESULTADO: FALLAS=4 | M11: la LOV EMPRESA no lee V_EMPRESAS_USUARIO: SELECT e.nombre_empresa || ' (' || e.cod_pais || ')' AS display_value,
+       e.id_empresa     AS return_value
+  FROM empresas e
+  JOIN usuario u 
+    ON e.id_empresa = u.id_empresa  -- Verifica si en | M12: la LOV devolvio 1 empresas para un usuario con 2 pares (se esperaba 2) | M12: la LOV devolvio las empresas 1 para un usuario con pares en la 1 y la 2 (se esperaba 1|2) | M13: la LOV devolvio 0 empresas para un usuario con un par ACTIVO y otro INACTIVO (se esperaba 1, solo la ACTIVA)
+ORA-06512: at line 10
+--- inicio de la sentencia ---
+
+declare
+    v_fallas number;
+    v_lista  varchar2(2000);
+begin
+    select count(*) into v_fallas from tmp_multi_fallas;
+    select substrb(listagg(caso, ' | ' on overflow truncate) within group (order by caso), 1, 2000)
+      into v_lista
+      from tmp_multi_fallas;
+    execute immediate 'drop table tmp_multi_fallas purge';

@@ -49,7 +49,7 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 raise_application_error(-20001, 'La factura especificada no existe.');
         END;
 
-        IF UPPER(v_estado_factura) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+        IF UPPER(v_estado_factura) IN ('TIMBRADA', 'PARCIAL', 'PAGADA', 'ANULADA', 'FACTURADO') THEN
             raise_application_error(-20002,
                 'No se pueden modificar ni agregar líneas a una factura en estado '
                 || UPPER(v_estado_factura) || ': es un documento cerrado.');
@@ -160,7 +160,7 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 raise_application_error(-20001, 'La factura especificada no existe.');
         END;
 
-        IF UPPER(v_estado_factura) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+        IF UPPER(v_estado_factura) IN ('TIMBRADA', 'PARCIAL', 'PAGADA', 'ANULADA', 'FACTURADO') THEN
             raise_application_error(-20002,
                 'No se pueden eliminar líneas de una factura en estado '
                 || UPPER(v_estado_factura) || ': es un documento cerrado.');
@@ -223,7 +223,7 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 raise_application_error(-20001, 'La factura especificada no existe.');
         END;
 
-        IF UPPER(v_estado) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+        IF UPPER(v_estado) IN ('TIMBRADA', 'PARCIAL', 'PAGADA', 'ANULADA', 'FACTURADO') THEN
             raise_application_error(-20002,
                 'No se puede reemplazar el detalle de una factura en estado '
                 || UPPER(v_estado) || ': es un documento cerrado.');
@@ -322,7 +322,7 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
                 'Solo una nota de credito o de debito puede traer lineas de su factura.');
         END IF;
 
-        IF UPPER(v_estado) IN ('PAGADA', 'ANULADA', 'FACTURADO') THEN
+        IF UPPER(v_estado) IN ('TIMBRADA', 'PARCIAL', 'PAGADA', 'ANULADA', 'FACTURADO') THEN
             raise_application_error(-20002,
                 'No se puede modificar el detalle de una nota en estado '
                 || UPPER(v_estado) || ': es un documento cerrado.');

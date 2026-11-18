@@ -1,0 +1,82 @@
+Empresa activa por sesión · tarea 2: el combo en la barra
+=========================================================
+Fecha: 2026-11-17. Rama `feat/empresa-activa`.
+
+
+1. Qué se buscaba
+-----------------
+El combo con el que el usuario elige la empresa con la que trabaja, visible en la barra de
+todas las páginas, que escriba el ítem de sesión que lee el proceso de la tarea 1.
+
+
+2. Medición previa: dónde puede vivir el combo
+----------------------------------------------
+La página global (0) **sí pinta sus regiones** en las páginas normales, pero **no emite su
+CSS ni ejecuta sus procesos** de página. Medido otra vez hoy:
+
+  pagina 1:  --synpex-teal=0  financial-summary=0     (el CSS de la página 0 no llega)
+  pagina 5:  --synpex-teal=0  financial-summary=0
+  pagina 13: --synpex-teal=0  financial-summary=0
+  region de prueba en la página 0 -> «GLOBAL-MARK-BODY» aparece en el HTML de la 5   (sí pinta)
+
+Por eso el combo va en una **región de la página 0** y su CSS, si algún día hace falta, tiene
+que ir en otro sitio (la 0 no lo emite).
+
+Posiciones de región de la página 0, probadas una a una (diez regiones con marca y mirando el
+HTML de la página 5). El código del import es `REGION_POSITION_nn`:
+
+  01 -> `t-Body-title` (barra de breadcrumb)   02 -> no existe
+  03 -> no existe (en los diálogos es el pie)  04 -> `t-Body-inlineDialogs` (abajo del todo)
+  05 -> `t-Footer`                             06 -> **`t-Header-nav` (la barra, debajo del azul)**
+  07 -> dentro de `t-Header`, antes del logo   08 -> `t-Body-fullContent` (sobre el contenido)
+  09, 10 -> no existen
+
+`'NAVIGATION_BAR'` y `'Navigation Bar'` **no pintan nada** (no son códigos válidos).
+Elegido **06**.
+
+Intentos descartados, medidos: darle a la página 0 la plantilla «Standard»
+(`p_step_template`), que no cambia nada porque la 0 no se pinta como página; y
+`p_plug_display_point=>'NAVIGATION_BAR'`, que se guarda pero no renderiza.
+
+
+3. Lo implementado
+------------------
+- Región **«Empresa activa»** (`43000000000000970`, `static_id barra-empresa`) en la **página 0**,
+  posición `REGION_POSITION_06`, plantilla «Blank with Attributes», sin cabecera.
+- Ítem **`P0_EMPRESA_ACTIVA`** (`43000000000000980`), lista de selección con
+  `page_action_on_selection = SUBMIT` (al cambiar, APEX envía la página con
+  `request=P0_EMPRESA_ACTIVA`), etiqueta a la izquierda y opción vacía «— Elige empresa —».
+  LOV: `v_empresas_usuario` filtrada por `upper(username) = upper(:APP_USER)`, ordenada por nombre.
+- El proceso de aplicación de la tarea 1 pasa a leer **`v('P0_EMPRESA_ACTIVA')`** (APEX nombra los
+  ítems con el prefijo de su página; el nombre sin prefijo del plan no existe).
+
+
+4. Verificación
+---------------
+`deploy/diagnostico/20261117_empresa_activa_barra_verificacion.sql` (7 casos, FALLAS=0):
+  B1 el ítem existe y es lista de selección de la página global
+  B2 su región está en `REGION_POSITION_06`
+  B3 la LOV lee `v_empresas_usuario`
+  B4 la LOV se filtra por `:APP_USER`
+  B5 `page_action_on_selection = SUBMIT`
+  B6 la LOV, ejecutada con un usuario de varias empresas, devuelve sus empresas
+  B7 el proceso de aplicación lee `P0_EMPRESA_ACTIVA`
+
+Antes del cambio daba `FALLAS=7` (los siete motivos correctos).
+
+`deploy/diagnostico/20261117_empresa_activa_barra_navegador.py` (navegador real, FALLAS=0):
+  N1 el combo se pinta dentro de `t-Header-nav` (la barra), no en el cuerpo
+  N2 trae la opción vacía y las dos empresas del usuario de prueba
+  N3 al elegir la empresa 2 la página se reenvía y el combo queda en 2
+  N4 en el Panel General (13) el combo sigue en 2: la elección vive en la sesión
+Captura: `deploy/resultados/20261117_empresa_activa_barra.png` (se ve «Empresa [Empresa México (MX)]»
+en la franja de la barra, debajo del azul).
+
+Regresión: `20261117_grid_paginas_verificacion.py` y `20261109_compilar_procesos_pagina.py`
+(63 procesos) en `FALLAS=0`; 0 objetos inválidos; 24 páginas + la global.
+
+**Hallazgo de paso:** `deploy/diagnostico/20261117_empresa_activa_verificacion.sql` (la de la
+tarea 1) **no compilaba** como estaba versionada: usa una subconsulta escalar dentro de una
+llamada a función (`PLS-00103: Encountered the symbol "SELECT"`) y leía `PROCESS_SOURCE`, que en
+`APEX_APPLICATION_PROCESSES` se llama `PROCESS`. Corregida la verificación (no la app); hoy
+`FALLAS=0`.

@@ -1,5 +1,65 @@
 create or replace PACKAGE BODY pkg_facturacion AS
 
+    ---------------------------------------------------------------------------
+    -- El saldo de la factura cambia cuando se procesa o se anula una NOTA sobre
+    -- ella; su estado tiene que decirlo: PAGADA si no queda saldo, TIMBRADA si no
+    -- hay cobros y vuelve a haber saldo, PARCIAL si hay cobros parciales. Es un
+    -- recalculo del SISTEMA, no del usuario, asi que al revertir un PAGADA usa la
+    -- escotilla del trigger de transiciones (SYPEX_FORZAR_ESTADO).
+    ---------------------------------------------------------------------------
+    PROCEDURE actualiza_estado_origen (p_id_factura IN NUMBER, p_usuario IN VARCHAR2) IS
+        v_estado facturas.estado%TYPE;
+        v_saldo  NUMBER;
+        v_cobros NUMBER;
+        v_nuevo  facturas.estado%TYPE;
+    BEGIN
+        IF p_id_factura IS NULL THEN RETURN; END IF;
+
+        BEGIN
+            SELECT UPPER(estado) INTO v_estado FROM facturas WHERE id_factura = p_id_factura;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN RETURN;
+        END;
+        IF v_estado = 'ANULADA' THEN RETURN; END IF;
+
+        v_saldo := NVL(fn_saldo_factura(p_id_factura), 0);
+        SELECT COUNT(*) INTO v_cobros
+          FROM recibos
+         WHERE id_factura = p_id_factura AND estado = 'ACTIVO';
+
+        v_nuevo := CASE WHEN v_saldo <= 0.01 THEN 'PAGADA'
+                        WHEN v_cobros = 0      THEN 'TIMBRADA'
+                        ELSE 'PARCIAL' END;
+        IF v_nuevo = v_estado THEN RETURN; END IF;
+
+        dbms_application_info.set_client_info('SYPEX_FORZAR_ESTADO');
+        UPDATE facturas SET
+               estado             = v_nuevo,
+               fecha_modificacion = SYSDATE,
+               modificado_por     = NVL(p_usuario, v('APP_USER'))
+         WHERE id_factura = p_id_factura;
+        dbms_application_info.set_client_info(NULL);
+    END actualiza_estado_origen;
+
+    -- Si el documento es una nota con factura de origen, recalcula el estado de esa
+    -- factura. Nunca tumba la operacion: es un remate, no el objetivo del proceso.
+    PROCEDURE remata_origen (p_id_factura IN NUMBER, p_usuario IN VARCHAR2) IS
+        v_origen NUMBER;
+    BEGIN
+        BEGIN
+            SELECT id_factura_origen INTO v_origen
+              FROM facturas WHERE id_factura = p_id_factura;
+        EXCEPTION
+            WHEN OTHERS THEN RETURN;
+        END;
+        IF v_origen IS NOT NULL THEN
+            actualiza_estado_origen(v_origen, p_usuario);
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END remata_origen;
+
 --------------------------------------------------------------------------------
 -- 1. IMPLEMENTACIÓN DE INSERCIÓN
 --------------------------------------------------------------------------------
@@ -31,6 +91,22 @@ create or replace PACKAGE BODY pkg_facturacion AS
         p_id_factura_origen IN NUMBER DEFAULT NULL
     ) IS
     BEGIN
+        -- El cliente tiene que ser de la MISMA empresa que la factura.
+        if p_id_cliente is not null then
+            declare
+                v_hay number;
+            begin
+                select count(*) into v_hay
+                  from clientes c
+                 where c.id_cliente = p_id_cliente
+                   and c.id_empresa = p_id_empresa;
+                if v_hay = 0 then
+                    raise_application_error(-20029,
+                        'El cliente no es de la empresa de la factura.');
+                end if;
+            end;
+        end if;
+
         INSERT INTO facturas (
             id_empresa, folio_factura, id_cliente, id_presupuesto, rfc_emisor, 
             rfc_receptor, uuid_fiscal, uso_cfdi, forma_pago, metodo_pago, 
@@ -83,6 +159,30 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_folio  facturas.folio_factura%type;
         v_estado facturas.estado%type;
     BEGIN
+        -- Seguridad: la factura existente tiene que ser de una empresa del usuario. Sin esto
+        -- un POST con un id ajeno la reescribiria y le cambiaria la empresa.
+        if apex_application.g_user is not null
+           and not fn_factura_propio(p_id_factura, apex_application.g_user) then
+            raise_application_error(-20003,
+                'Esa factura no es de una empresa suya: no se puede modificar.');
+        end if;
+
+        -- El cliente tiene que ser de la MISMA empresa que la factura.
+        if p_id_cliente is not null then
+            declare
+                v_hay number;
+            begin
+                select count(*) into v_hay
+                  from clientes c
+                 where c.id_cliente = p_id_cliente
+                   and c.id_empresa = p_id_empresa;
+                if v_hay = 0 then
+                    raise_application_error(-20029,
+                        'El cliente no es de la empresa de la factura.');
+                end if;
+            end;
+        end if;
+
         -- Un documento cerrado no se edita: PAGADA y ANULADA son estados finales.
         -- Para corregirlo hay que anular la factura y emitir otra.
         IF NOT fn_factura_editable(p_id_factura) THEN
@@ -314,6 +414,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_nro_control    VARCHAR2(60);
         v_pct_retencion  NUMBER;
         v_ret_bs         NUMBER;
+        v_nro_comp       VARCHAR2(60);
     BEGIN
     -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
     if apex_application.g_user is not null
@@ -500,6 +601,30 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 'El comprobante de retencion del cliente debe tener 14 digitos (AAAAMM + 8).');
         END IF;
 
+        -- Si el cliente retiene IVA, el comprobante es OBLIGATORIO en la factura:
+        -- sin el numero el libro de ventas queda sin el respaldo de la retencion.
+        -- Se mira tambien el que ya tenga guardada la factura, para que editar sin
+        -- volver a teclearlo no bloquee.
+        IF v_tipo_doc = 'FAC' AND NVL(v_pct_retencion, 0) > 0 THEN
+            v_nro_comp := TRIM(NVL(p_nro_comprobante_retencion, '#'));
+            IF v_nro_comp = '#' AND p_id_factura IS NOT NULL AND p_id_factura > 0 THEN
+                BEGIN
+                    SELECT TRIM(NVL(nro_comprobante_retencion, '#'))
+                      INTO v_nro_comp
+                      FROM facturas
+                     WHERE id_factura = p_id_factura;
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN v_nro_comp := '#';
+                END;
+            END IF;
+            IF v_nro_comp = '#' OR v_nro_comp IS NULL THEN
+                raise_application_error(-20064,
+                    'El cliente retiene IVA (' || v_pct_retencion
+                    || ' %). Debe ingresar el Nro. de comprobante de retencion'
+                    || ' de 14 digitos para guardar.');
+            END IF;
+        END IF;
+
         -- El monto se calcula sobre el IVA (sin IGTF) y del detalle real, no del
         -- monto_impuesto que manda la pantalla: en un alta la cabecera llega en 0
         -- porque los totales los pone el detalle (pagina 10).
@@ -560,6 +685,9 @@ create or replace PACKAGE BODY pkg_facturacion AS
                    MODIFICADO_POR     = NVL(p_usuario, v('APP_USER'))
              WHERE id_presupuesto     = v_id_presupuesto;
         END IF;
+
+        -- Al anular una nota, la factura que acreditaba recupera su saldo.
+        remata_origen(v_id_factura, p_usuario);
     EXCEPTION
         WHEN OTHERS THEN
             -- Los errores de negocio (-20xxx) se propagan tal cual: envolverlos
@@ -624,6 +752,9 @@ create or replace PACKAGE BODY pkg_facturacion AS
                    MODIFICADO_POR     = NVL(p_usuario, v('APP_USER'))
              WHERE id_presupuesto     = v_id_presupuesto;
         END IF;
+
+        -- Si lo procesado es una nota, la factura que acredita cambia de saldo.
+        remata_origen(v_id_factura, p_usuario);
     EXCEPTION
         WHEN OTHERS THEN
             -- Sin ROLLBACK, igual que en prc_anular_factura, y con los errores
@@ -640,5 +771,7 @@ create or replace PACKAGE BODY pkg_facturacion AS
             raise_application_error(-20003,
                 'No se pudo procesar la factura. Avisa al administrador.');
     END prc_procesar_factura;
+
+
 END pkg_facturacion;
 /

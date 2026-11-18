@@ -50,6 +50,7 @@ declare
   v_fallas number := 0;
   v_lista  varchar2(3000) := '';
   v_emp1   number;
+  v_emp2   number;
   v_doc_p  number;
   v_doc_f  number;
   v_user1  varchar2(100);
@@ -79,11 +80,13 @@ declare
   end cierra;
 
   -- Ejecuta el WHERE real de la region con los binds sustituidos por literales.
+  -- Desde el plan empresa-activa (tarea 3) el filtro es :F_EMPRESA_ACTIVA, no el usuario.
   function cuenta (p_tabla in varchar2, p_where in varchar2, p_bind_id in varchar2,
-                   p_id in number, p_usuario in varchar2) return number is
+                   p_id in number, p_usuario in varchar2, p_empresa in number) return number is
     l_sql varchar2(4000) := 'select count(*) from ' || p_tabla || ' where ' || p_where;
   begin
     l_sql := replace(l_sql, ':APP_USER', '''' || replace(p_usuario, '''', '''''') || '''');
+    l_sql := replace(l_sql, ':F_EMPRESA_ACTIVA', to_char(nvl(p_empresa, 0)));
     l_sql := replace(l_sql, p_bind_id, to_char(p_id));
     execute immediate l_sql into v_cnt;
     return v_cnt;
@@ -108,6 +111,8 @@ begin
     from usuario u where u.id_empresa = v_emp1 and u.estado in ('ACTIVO', 'A', '1');
   select min(u.username) into v_user2
     from usuario u where u.id_empresa <> v_emp1 and u.estado in ('ACTIVO', 'A', '1');
+  select min(u.id_empresa) into v_emp2
+    from usuario u where upper(u.username) = upper(v_user2);
 
   if v_doc_p is null or v_doc_f is null then
     falla('PRE', 'la empresa ' || v_emp1 || ' no tiene presupuesto y factura');
@@ -149,7 +154,7 @@ begin
     falla('C2', 'no existe la guarda de la pagina 9');
   end;
 
-  -- C5 y C6: las regiones filtran por la empresa del usuario.
+  -- C5 y C6: las regiones filtran por la empresa (activa desde el 2026-11-17).
   begin
     select where_clause into v_w7
       from apex_260100.apex_application_page_regions
@@ -165,35 +170,32 @@ begin
     v_w9 := null;
   end;
 
-  -- MEDIDO (2026-11-10, tarea 4 del plan de multiempresa): el filtro de
-  -- empresa de las regiones de formulario de las paginas 7 y 9 ya NO lee la
-  -- columna unica USUARIO.ID_EMPRESA: lee la vista V_EMPRESAS_USUARIO (la
-  -- tabla de asociacion USUARIO_EMPRESA), para que un usuario con VARIAS
-  -- empresas vea y edite lo de todas las suyas. El chequeo era LITERAL, asi
-  -- que se acepta las DOS formas. Lo que el caso quiere decir -«la region
-  -- filtra por empresa del usuario»- sigue siendo cierto en las dos, y lo
-  -- comprueban de verdad C7 y C8, con el WHERE real ejecutado contra datos
-  -- reales.
+  -- El filtro acepta las tres formas historicas, pero desde el plan
+  -- empresa-activa (2026-11-17) la buena es F_EMPRESA_ACTIVA: la empresa de la
+  -- barra. Lo que el caso quiere decir -«la region no deja leer un documento de
+  -- otra empresa»- lo comprueban de verdad C7 y C8 ejecutando el WHERE.
   if v_w7 is null
-     or (instr(upper(v_w7), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0
+     or (instr(upper(v_w7), 'F_EMPRESA_ACTIVA') = 0
+         and instr(upper(v_w7), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0
          and instr(upper(v_w7), 'V_EMPRESAS_USUARIO') = 0) then
     falla('C5', 'la region de la pagina 7 no filtra por empresa');
   end if;
   if v_w9 is null
-     or (instr(upper(v_w9), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0
+     or (instr(upper(v_w9), 'F_EMPRESA_ACTIVA') = 0
+         and instr(upper(v_w9), 'ID_EMPRESA IN (SELECT U.ID_EMPRESA FROM USUARIO U') = 0
          and instr(upper(v_w9), 'V_EMPRESAS_USUARIO') = 0) then
     falla('C6', 'la region de la pagina 9 no filtra por empresa');
   end if;
 
-  -- C7 y C8: el WHERE real de cada pagina, con el usuario de la empresa duena
-  -- y con el de otra empresa.
+  -- C7 y C8: el WHERE real de cada pagina. Con la empresa duena activa se ve el
+  -- documento; con OTRA empresa activa no se ve.
   if v_w7 is not null then
     begin
-      if cuenta('presupuestos', v_w7, ':P7_ID_PRESUPUESTO', v_doc_p, v_user1) <> 1 then
-        falla('C7', 'el usuario ' || v_user1 || ' no ve su propio presupuesto ' || v_doc_p);
+      if cuenta('presupuestos', v_w7, ':P7_ID_PRESUPUESTO', v_doc_p, v_user1, v_emp1) <> 1 then
+        falla('C7', 'con la empresa ' || v_emp1 || ' activa no se ve el presupuesto ' || v_doc_p);
       end if;
-      if cuenta('presupuestos', v_w7, ':P7_ID_PRESUPUESTO', v_doc_p, v_user2) <> 0 then
-        falla('C7', 'el usuario ' || v_user2 || ' ve el presupuesto ' || v_doc_p || ' de otra empresa');
+      if cuenta('presupuestos', v_w7, ':P7_ID_PRESUPUESTO', v_doc_p, v_user2, v_emp2) <> 0 then
+        falla('C7', 'con la empresa ' || v_emp2 || ' activa se ve el presupuesto ' || v_doc_p);
       end if;
     exception when others then
       falla('C7', 'el WHERE de la pagina 7 no se puede ejecutar: ' || sqlerrm);
@@ -202,11 +204,11 @@ begin
 
   if v_w9 is not null then
     begin
-      if cuenta('facturas', v_w9, ':P9_ID_FACTURA', v_doc_f, v_user1) <> 1 then
-        falla('C8', 'el usuario ' || v_user1 || ' no ve su propia factura ' || v_doc_f);
+      if cuenta('facturas', v_w9, ':P9_ID_FACTURA', v_doc_f, v_user1, v_emp1) <> 1 then
+        falla('C8', 'con la empresa ' || v_emp1 || ' activa no se ve la factura ' || v_doc_f);
       end if;
-      if cuenta('facturas', v_w9, ':P9_ID_FACTURA', v_doc_f, v_user2) <> 0 then
-        falla('C8', 'el usuario ' || v_user2 || ' ve la factura ' || v_doc_f || ' de otra empresa');
+      if cuenta('facturas', v_w9, ':P9_ID_FACTURA', v_doc_f, v_user2, v_emp2) <> 0 then
+        falla('C8', 'con la empresa ' || v_emp2 || ' activa se ve la factura ' || v_doc_f);
       end if;
     exception when others then
       falla('C8', 'el WHERE de la pagina 9 no se puede ejecutar: ' || sqlerrm);

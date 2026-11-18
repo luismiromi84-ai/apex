@@ -59,8 +59,8 @@ regiones24 = cur.execute("""select region_name, source_type_plugin_static_id
 nombres24 = [r[0] for r in regiones24]
 comprobar("P2 la 24 tiene la region de filtros", "Filtros" in nombres24, f"({nombres24})")
 comprobar("P2 la 24 tiene la lista de cobros", "Cobros" in nombres24)
-comprobar("P2 la lista es un informe SQL",
-          any(r[0] == "Cobros" and (r[1] or "") == "NATIVE_SQL_REPORT" for r in regiones24),
+comprobar("P2 la lista es un Interactive Report",
+          any(r[0] == "Cobros" and (r[1] or "") == "NATIVE_IR" for r in regiones24),
           f"({[r[1] for r in regiones24]})")
 n = cur.execute("""select count(*) from apex_application_page_buttons
                     where application_id = 100 and page_id = 24 and button_name = 'BTN_NUEVO_COBRO'""").fetchone()[0]
@@ -73,8 +73,8 @@ lista = fila_lista[0] if fila_lista else ""
 if hasattr(lista, "read"):
     lista = lista.read()
 comprobar("P3 la lista lee RECIBOS", "from recibos" in (lista or "").lower())
-comprobar("P3 filtra por las empresas del usuario", "v_empresas_usuario" in lista.lower())
-comprobar("P3 respeta los filtros", all(f in lista.upper() for f in ("P24_DESDE", "P24_HASTA", "P24_ESTADO")))
+comprobar("P3 filtra por la empresa activa", "f_empresa_activa" in lista.lower())
+comprobar("P3 respeta los filtros", all(f in lista.upper() for f in ("P24_DESDE", "P24_HASTA", "P24_ESTADO", "P24_CONCILIADO")))
 comprobar("P3 la lista tiene el selector para abrir un cobro",
           "P25_ID_RECIBO" in (lista or "") or "id_recibo" in (lista or "").lower())
 
@@ -146,15 +146,15 @@ for nombre in ("BTN_GUARDAR_COBRO", "BTN_ANULAR_COBRO", "BTN_CONCILIAR"):
     comprobar("P9 el boton %s exige rol" % nombre, "fn_tiene_rol" in bloque,
               f"({bloque[:0]})")
 
-# P10: el cobro se abre desde el selector de la lista (el enlace de fila de un
-# informe clasico no se pinta).
+# P10: el cobro se abre desde la columna «Abrir» del Interactive Report.
 export2 = io.open(os.path.join(RAIZ, 'pagina_apex', 'f100.sql'), encoding='utf-8',
                   errors='replace').read()
-comprobar('P10 la lista tiene el selector de cobros',
-          'P24_ID_RECIBO' in export2)
-comprobar('P10 y el boton de abrir con el id',
-          "p_button_redirect_url=>'f?p=&APP_ID.:25:&APP_SESSION.::&DEBUG.:25:P25_ID_RECIBO:&P24_ID_RECIBO.'"
-          in export2)
+comprobar('P10 la lista trae la columna Abrir',
+          "p_db_column_name=>'ID_RECIBO'" in export2)
+comprobar('P10 y enlaza a la 25 con el id',
+          "P25_ID_RECIBO:#ID_RECIBO#" in export2)
+comprobar('P10 ya no queda el selector ni el boton de abrir',
+          "p_name=>'P24_ID_RECIBO'" not in export2 and "BTN_ABRIR_COBRO" not in export2)
 
 # P11: la lista se puede buscar por texto (referencia, factura, control o RIF).
 export3 = io.open(os.path.join(RAIZ, "pagina_apex", "f100.sql"), encoding="utf-8",
@@ -162,8 +162,8 @@ export3 = io.open(os.path.join(RAIZ, "pagina_apex", "f100.sql"), encoding="utf-8
 comprobar("P11 la lista tiene el campo Buscar", "p_name=>'P24_BUSCAR'" in export3)
 comprobar("P11 y filtra por referencia, factura, control y RIF",
           all(t in export3 for t in ("nvl(r.referencia", "f.folio_factura", "f.nro_control", "c.rif")))
-comprobar("P11 el buscador tambien filtra la lista de «Abrir un cobro»",
-          export3.count("nvl(:P24_BUSCAR") == 2, f"({export3.count('nvl(:P24_BUSCAR')})")
+comprobar("P11 el buscador filtra la lista de cobros",
+          export3.count("nvl(:P24_BUSCAR") == 1, f"({export3.count('nvl(:P24_BUSCAR')})")
 
 # P8
 n = cur.execute("""select count(*) from apex_application_list_entries

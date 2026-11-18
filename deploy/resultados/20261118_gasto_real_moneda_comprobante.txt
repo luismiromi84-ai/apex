@@ -1,0 +1,65 @@
+Gasto real (16): moneda del presupuesto, tasa obligatoria y comprobante
+=======================================================================
+Fecha: 2026-11-18. Rama `main`.
+
+
+1. La moneda del gasto
+----------------------
+`P16_MONEDA_ORIGEN` era una lista fija (`USD, VES, MXN`). Ahora ofrece **la moneda del
+presupuesto**, **la local del país de la empresa** y **USD** (SQL, con cascada sobre
+`P16_ID_PRESUPUESTO`), y arranca en la **del presupuesto**:
+con el presupuesto 1054 (USD, empresa VE) la lista es **USD, VES**; MXN ya no aparece.
+
+No se bloquea el campo: un proveedor puede cobrar en bolívares un presupuesto en dólares, y
+para eso está la tasa. Lo que se impide es elegir una moneda que no tiene nada que ver.
+
+
+2. La tasa deja de ser opcional cuando hace falta
+-------------------------------------------------
+Si la moneda del gasto **no es** la del presupuesto, la tasa es **obligatoria**:
+`pkg_gasto_real.prc_guardar_gasto` la exige y lanza **`-20055`** («Indica la tasa: el gasto está
+en VES y el presupuesto en USD…»). Antes se tomaba la de la tabla en silencio y el equivalente en
+dólares no cuadraba con el comprobante del proveedor. En la pantalla el campo se rotula
+**«Tasa (Bs por unidad)»** (ya no dice «opcional») y tiene máscara numérica.
+
+
+3. Formato del monto
+--------------------
+`P16_MONTO_ORIGEN` lleva la máscara **`999G999G999G999G990D00`** (miles y dos decimales, la
+misma del presupuesto) y la tasa `999G999G990D0000`. La moneda se ve en el campo de al lado, que
+ahora es la del documento.
+
+
+4. N° de comprobante del proveedor
+----------------------------------
+Columna nueva **`GASTO_REAL.NRO_COMPROBANTE`** (`varchar2(40)`), ítem **`P16_NRO_COMPROBANTE`** en
+la pantalla, parámetro nuevo `p_nro_comprobante` en `prc_guardar_gasto` y columna
+**«Comprobante»** en la lista de gastos. Es lo que permite demostrar que el gasto existió cuando se
+cierra el presupuesto.
+
+Migración: `deploy/migrations/20261118_gasto_real_moneda_comprobante.sql` (columna + spec + body +
+`compile_schema` + validación). Los canónicos (`package/`, `package_bodies/`) quedaron al día.
+
+
+5. Verificación
+---------------
+- **Nueva:** `20261118_gasto_real_moneda_verificacion.sql` — **G1–G6, `FALLAS=0`**: misma moneda sin
+  tasa se guarda; otra moneda sin tasa → **`-20055`**; otra moneda con tasa se guarda y convierte;
+  el comprobante se guarda y se lee; la LOV no ofrece MXN; monto y tasa tienen máscara.
+- **Actualizada:** `20261105_gasto_real_verificacion.sql` (12 casos) — **`FALLAS=0`**. Cuatro casos
+  cambiaron por la regla nueva, y son cambios **del test, no de la app**: G1 y G5 ahora pasan la
+  tasa del día (el presupuesto es en VES y el gasto en USD); **G4** espera **`-20055`** en vez de
+  «toma la de la tabla»; **G11** acepta `-20055` o `-20060` según falte la tasa tecleada o la de la
+  tabla para convertir a dólares. El total de G6 y el conteo de G5 bajan a 3 gastos.
+- Rejilla de 12 columnas `FALLAS=0`; 69 procesos compilan; 0 objetos inválidos; 24 páginas + la
+  global.
+
+6. Trampas medidas
+------------------
+- **Id repetido:** `43000000000000930` ya lo usaba `P24_BUSCAR` → el import murió con
+  `ORA-00001` en `WWV_FLOW_STEP_ITEMS_PK`. El ítem nuevo usa **`…995`**. Antes de inventar un id hay
+  que comprobar que no existe.
+- **`p_prompt` con `unistr`** en el export: hay que doblar la barra (`\\00BA`) y comprobar que no
+  quede ningún byte NUL.
+- `importar_export.py` **revierte todo** si una sentencia falla, así que un id repetido no deja la
+  app a medias.

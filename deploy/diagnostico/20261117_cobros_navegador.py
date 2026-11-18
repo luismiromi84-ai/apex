@@ -310,12 +310,14 @@ try:
     texto = nav.js("document.body.innerText") or ""
     comprobar("P6 la lista muestra el cobro", FOLIO in texto or "116" in texto)
 
-    # P7: el cobro se abre desde la lista con el selector «Abrir un cobro» y su
-    # boton (que solo se pinta cuando hay uno elegido). Aqui se comprueba el
-    # selector; el boton y su enlace los vigila 20261117_cobros_paginas.py.
+    # P7: el cobro se abre desde la columna «Abrir» del Interactive Report.
     texto = nav.js('document.body.innerText') or ''
-    comprobar('P7 la lista trae el selector de cobros', 'Abrir un cobro' in texto,
+    comprobar('P7 la lista trae la columna Abrir', 'Abrir' in texto,
               f"({[l for l in texto.splitlines() if 'Abrir' in l][:1]})")
+    enlace = nav.js('(function(){var a=document.querySelector(\'a[href*="p25_id_recibo"]\');'
+                    'return a ? a.getAttribute("href") : "SIN ENLACE";})()')
+    comprobar('P7 la columna Abrir enlaza a la 25',
+              'p25_id_recibo' in str(enlace).lower(), f"({enlace})")
 
 finally:
     nav.cerrar()

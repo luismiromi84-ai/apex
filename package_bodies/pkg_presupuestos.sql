@@ -26,6 +26,32 @@ create or replace PACKAGE BODY pkg_presupuestos AS
         raise_application_error(-20003, 'No tiene acceso a la empresa indicada.');
     end if;
 
+    -- Un documento existente solo se toca si es de una empresa del usuario: sin esto, un
+    -- POST con el id de un presupuesto ajeno lo reescribiria y le cambiaria la empresa.
+    if p_id_presupuesto is not null
+       and apex_application.g_user is not null
+       and not fn_presupuesto_propio(p_id_presupuesto, apex_application.g_user) then
+        raise_application_error(-20003,
+            'Ese presupuesto no es de una empresa suya: no se puede modificar.');
+    end if;
+
+    -- El cliente tiene que ser de la MISMA empresa que el documento, o la factura
+    -- quedaria apuntando a un cliente de otra cartera y desapareceria de las listas.
+    if p_id_cliente is not null then
+        declare
+            v_hay number;
+        begin
+            select count(*) into v_hay
+              from clientes c
+             where c.id_cliente = p_id_cliente
+               and c.id_empresa = p_id_empresa;
+            if v_hay = 0 then
+                raise_application_error(-20029,
+                    'El cliente no es de la empresa del presupuesto.');
+            end if;
+        end;
+    end if;
+
         -- La tasa es obligatoria y se guarda en bolivares por unidad de la moneda
         -- del documento. Sin ella los montos en bolivares salen mal.
         v_tasa := fn_validar_tasa_documento(p_cod_moneda, p_fecha_emision, p_tipo_cambio);

@@ -32,6 +32,8 @@ create table proveedores (
     estado               varchar2(10)  default 'ACTIVO',
     retener_iva          char(1)       default 'S' not null enable,
     porcentaje_retencion number(5,2)   default 75 not null enable,
+    es_spe               char(1)       default 'N' not null enable,
+    dias_credito         number(3)     default 0 not null enable,
     fecha_creacion       date          default sysdate,
     constraint pk_proveedores primary key (id_proveedor)
         using index enable,
@@ -44,7 +46,9 @@ create table proveedores (
     constraint chk_proveedores_estado check (estado in ('ACTIVO','INACTIVO')) enable,
     constraint chk_proveedores_persona check (tipo_persona in ('J','N')) enable,
     constraint chk_proveedores_retiene check (retener_iva in ('S','N')) enable,
-    constraint chk_proveedores_pct check (porcentaje_retencion between 0 and 100) enable
+    constraint chk_proveedores_pct check (porcentaje_retencion between 0 and 100) enable,
+    constraint chk_proveedores_spe check (es_spe in ('S','N')) enable,
+    constraint chk_proveedores_credito check (dias_credito between 0 and 365) enable
 );
 
 create index ix_proveedores_empresa on proveedores (id_empresa);
@@ -52,3 +56,5 @@ create index ix_proveedores_empresa on proveedores (id_empresa);
 comment on column proveedores.rif is 'RIF (Venezuela) o RFC (Mexico) del proveedor; texto libre si es de un tercer pais';
 comment on column proveedores.retener_iva is 'S = al registrar sus facturas se le retiene IVA; N = no se retiene';
 comment on column proveedores.porcentaje_retencion is 'Porcentaje de IVA a retener: 75 domiciliado, 100 no domiciliado, 0 desactiva';
+comment on column proveedores.es_spe is 'S = Sujeto Pasivo Especial: sus pagos en divisa causan IGTF';
+comment on column proveedores.dias_credito is 'Dias de credito con los que factura el proveedor (vencimiento)';

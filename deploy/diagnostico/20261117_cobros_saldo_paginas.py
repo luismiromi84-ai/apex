@@ -88,6 +88,7 @@ if "fn_saldo_factura" in consulta.lower():
     comienzo = consulta.lower().index("select")
     sql = consulta[comienzo:].strip().rstrip(";").strip()
     for bind, valor in ((":APP_USER", "'ADMIN'"), (":P8_ID_EMPRESA", "null"),
+                        (":F_EMPRESA_ACTIVA", "1"),
                         (":P8_ID_FACTURAS", "null"), (":P8_ESTADO_FILTRO", "null")):
         sql = sql.replace(bind, valor)
     try:

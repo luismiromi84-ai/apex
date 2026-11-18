@@ -36,6 +36,7 @@ declare
     v_pct     number;
     v_ret     number;
     v_periodo char(6) := to_char(sysdate, 'YYYYMM');
+    v_base    number;   -- ultimo comprobante del periodo antes de la prueba
     v_otro    char(6) := to_char(add_months(sysdate, 1), 'YYYYMM');
 
     procedure falla(p_texto varchar2) is
@@ -77,11 +78,18 @@ begin
     values (1, 'X-TESTRET-2', 'Proveedor del exterior', 'MX')
     returning id_proveedor into v_prov_mx;
 
-    -- R1: la vista previa da ...00000001 y NO mueve el contador.
+    -- la numeracion es correlativa por empresa y periodo: se parte del ultimo emitido
+    -- (los comprobantes reales de la empresa 1 avanzan el contador)
+    select nvl(max(ultimo), 0) into v_base
+      from retencion_contador
+     where id_empresa = 1 and periodo = v_periodo;
+
+    -- R1: la vista previa da el siguiente numero y NO mueve el contador.
     v_num  := pkg_retenciones.fn_siguiente_numero(1, sysdate);
     v_num2 := pkg_retenciones.fn_siguiente_numero(1, sysdate);
-    if v_num <> v_periodo || '00000001' or v_num2 <> v_num or length(v_num) <> 14 then
-        falla('R1: vista previa ' || v_num || ' / ' || v_num2 || ' (esperado ' || v_periodo || '00000001 dos veces)');
+    if v_num <> v_periodo || lpad(v_base + 1, 8, '0') or v_num2 <> v_num or length(v_num) <> 14 then
+        falla('R1: vista previa ' || v_num || ' / ' || v_num2 || ' (esperado '
+              || v_periodo || lpad(v_base + 1, 8, '0') || ' dos veces)');
     end if;
 
     -- R5: porcentaje por pais.
@@ -103,8 +111,8 @@ begin
     -- R2: emitir numera ...00000001.
     pkg_retenciones.prc_emitir(v_a, v_idret, 'TEST');
     select numero_comprobante into v_num from retenciones_iva where id_retencion = v_idret;
-    if v_num <> v_periodo || '00000001' or length(v_num) <> 14 then
-        falla('R2: numero ' || v_num || ' en vez de ' || v_periodo || '00000001');
+    if v_num <> v_periodo || lpad(v_base + 1, 8, '0') or length(v_num) <> 14 then
+        falla('R2: numero ' || v_num || ' en vez de ' || v_periodo || lpad(v_base + 1, 8, '0'));
     end if;
 
     -- R3: la siguiente emision da ...00000002.
@@ -112,8 +120,8 @@ begin
     linea(v_b, 1, 1000, 160, 16, 1);
     pkg_retenciones.prc_emitir(v_b, v_idret, 'TEST');
     select numero_comprobante into v_num from retenciones_iva where id_retencion = v_idret;
-    if v_num <> v_periodo || '00000002' then
-        falla('R3: segundo numero ' || v_num || ' en vez de ' || v_periodo || '00000002');
+    if v_num <> v_periodo || lpad(v_base + 2, 8, '0') then
+        falla('R3: segundo numero ' || v_num || ' en vez de ' || v_periodo || lpad(v_base + 2, 8, '0'));
     end if;
 
     -- R4: otro mes arranca en 1.
@@ -163,8 +171,9 @@ begin
     linea(v_c, 1, 1000, 160, 16, 1);
     pkg_retenciones.prc_emitir(v_c, v_idret, 'TEST');
     select numero_comprobante into v_num from retenciones_iva where id_retencion = v_idret;
-    if v_num <> v_periodo || '00000003' then
-        falla('R10: tras anular el numero fue ' || v_num || ' en vez de ' || v_periodo || '00000003');
+    if v_num <> v_periodo || lpad(v_base + 3, 8, '0') then
+        falla('R10: tras anular el numero fue ' || v_num || ' en vez de '
+              || v_periodo || lpad(v_base + 3, 8, '0'));
     end if;
 
     rollback to sp_ret;

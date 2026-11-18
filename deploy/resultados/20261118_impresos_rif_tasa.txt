@@ -1,0 +1,59 @@
+Impresos: RIF con guiones, nombre del cliente y tasa con su unidad
+==================================================================
+Fecha: 2026-11-18. Rama `main`.
+
+
+1. RIF sin guiones en el papel
+------------------------------
+La base tiene RIF cargados sin separadores (`J123456789`, `J-171403189`) y el impreso los
+sacaba tal cual. Ahora los dos paquetes de reportes tienen un `fn_rif` privado que, cuando el
+valor es **letra + 9 dígitos** (J/V/E/G/P/C), lo imprime **`J-12345678-9`**; cualquier otra
+forma (un RFC mexicano, por ejemplo) se saca intacta. Se aplica al **emisor** y al **cliente**
+en el presupuesto (11/12) y en la factura (11), incluidas la forma libre venezolana y la
+genérica. No se toca el dato en la base.
+
+Medido con `fn_imprimir_presupuesto`:
+| documento | antes | ahora |
+|---|---|---|
+| 1054 (USD) | `RIF: J123456789` | **`RIF: J-12345678-9`** |
+| 1049 (VES) | `J-50112233-4` | `J-50112233-4` |
+| cliente lopez | `J-171403189` | **`J-17140318-9`** |
+
+
+2. «Tasa BCV: 914.0218 USD» → **«Tasa BCV: 914,0218 Bs/USD»**
+------------------------------------------------------------
+La tasa se guarda en **bolívares por unidad de la moneda del documento**; el impreso la
+rotulaba con la moneda del documento al lado, que se lee como si la tasa fuera en dólares.
+Ahora se dice la unidad y se usa el formato venezolano (coma decimal):
+
+| documento | antes | ahora |
+|---|---|---|
+| 1054 (USD) | `Tasa BCV: 914.0218 USD` | **`Tasa BCV: 914,0218 Bs/USD`** |
+| 1047 (USD) | `896.1225 USD` | **`896,1225 Bs/USD`** |
+| 1049 (VES) | `1.0000 VES` | **`1,0000 Bs/VES`** |
+
+
+3. Nombre del cliente con inicial mayúscula
+-------------------------------------------
+`INITCAP` sobre la razón social en el papel (no en la base): `lopez` → **`Lopez`**;
+`Inversiones & Suministros Maracaibo C.A.` queda igual y `Servicios Automotrices Del Centro
+S.R.L.` también. Aplicado en el presupuesto y en las dos plantillas de factura.
+
+
+4. Lo que NO era un error
+-------------------------
+La matemática del presupuesto está bien, y lo verifiqué documento a documento: las tres
+líneas del 1054 suman 2.616,35 USD, que es exactamente el total del recuadro
+(2.493,00 − 21,25 + 144,60). La ilusión venía de que la línea 2 no tiene IVA ni descuento y su
+total coincide con el subtotal.
+
+
+5. Verificación
+---------------
+- `20261107_imprimir_presupuesto.py` (cuatro casos: MXN de empresa VE, MXN de Empresa México,
+  USD y VES) — **`FALLAS=0`**.
+- `20261105_reportes_verificacion.sql` y `20261116_impreso_retencion_verificacion.sql` con el
+  fixture — **`FALLAS=0`**.
+- Comprobado a mano con el HTML real de `fn_imprimir_presupuesto` (1054, 1049, 1048, 1047) y de
+  `fn_imprimir_factura` (16): RIF, cliente y tasa salen como en las tablas de arriba.
+- 0 objetos inválidos; los dos bodies compilan con `compilar_objeto.py`.

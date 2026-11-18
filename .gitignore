@@ -35,4 +35,12 @@ instalacion y migracion/f100*.sql
 instalacion y migracion/*(1)*
 *(1).*
 
+# Respaldos del export: el canonico es pagina_apex/f100.sql y el respaldo del
+# dueno (2026-11-09) pesa 2,1 MB; se guarda en el equipo, no en Git.
+pagina_apex/f100_backup_*.sql
+
+# Material personal del dueno dentro de la carpeta del repo (CV y variantes).
+# No es parte de la entrega; se queda fuera de Git para no ensuciar el estado.
+cv/
+
 __pycache__/

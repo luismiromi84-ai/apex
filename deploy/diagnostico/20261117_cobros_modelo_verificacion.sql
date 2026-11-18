@@ -96,14 +96,28 @@ begin
             falla('M2: FACTURAS no admite el estado PARCIAL: ' || substrb(sqlerrm, 1, 160));
     end;
 
-    -- M3: SPE de la empresa
+    -- M3: SPE de la empresa. Se mira el DEFECTO de la columna, no los datos: la
+    -- empresa 1 esta marcada como SPE a proposito (la configuro el dueno para el
+    -- IGTF), asi que exigir 'N' en todas las filas es una prueba que miente.
+    -- Ojo: data_default es LONG, no admite LIKE ni funciones en el WHERE.
     select count(*) into v_n from all_tab_columns
      where owner = 'WKSP_SYPEXWS' and table_name = 'EMPRESAS' and column_name = 'ES_SPE';
     if v_n = 0 then
         falla('M3: falta EMPRESAS.ES_SPE');
     else
-        execute immediate 'select nvl(max(es_spe), ''#'') from empresas' into v_txt;
-        if v_txt <> 'N' then falla('M3: ES_SPE deberia arrancar en N y vale ' || v_txt); end if;
+        begin
+            select data_default into v_txt from all_tab_columns
+             where owner = 'WKSP_SYPEXWS' and table_name = 'EMPRESAS' and column_name = 'ES_SPE';
+        exception
+            when others then v_txt := null;
+        end;
+        if v_txt is null
+           or replace(replace(trim(v_txt), '''', ''), ' ', '') <> 'N' then
+            falla('M3: EMPRESAS.ES_SPE no arranca en N (defecto: ' || nvl(v_txt, '(nulo)') || ')');
+        end if;
+        execute immediate 'select count(*) from empresas where nvl(es_spe, ''N'') not in (''S'', ''N'')'
+          into v_n;
+        if v_n > 0 then falla('M3: ES_SPE tiene ' || v_n || ' fila(s) fuera de S/N'); end if;
     end if;
 
     -- M4: alicuota configurable

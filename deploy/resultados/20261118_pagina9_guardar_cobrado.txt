@@ -1,0 +1,42 @@
+Sesion 2026-11-18 - «El identificador de elemento (P9_COBRADO) no corresponde a ningun elemento
+definido en la pagina actual.» al pulsar Guardar en la factura (pagina 9).
+
+SINTOMA REPRODUCIDO (usuario de diagnostico ADMIN de la empresa 1)
+  - abrir una factura desde la lista (boton Editar de la pagina 8)
+  - pulsar Guardar -> aviso amarillo dentro del dialogo con ese mensaje; el documento NO se guarda
+  - registros previos en SYN_ERROR_LOG: id 1131 (BIVEGA, 17/11 15:01) y 1190 (BIVEGA, 17/11 20:54).
+    Es ANTERIOR al cambio de rejilla de esta sesion (los imports son de las 20:4x), o sea que no lo
+    introdujo ese cambio.
+
+MEDIDO EN EL POST (wwv_flow.accept, p_flow_step_id=9, p_request=BTN_GUARDAR)
+  itemsToSubmit incluye P9_COBRADO (v="0.00 VES", ck=...) y P9_SALDO (ck=...)
+  protected  = P9_ID_FACTURA:P9_ESTADO:P9_ID_FACTURA_ORIGEN:P9_ID_EMPRESA:P9_COBRADO:P9_SALDO
+  respuesta  = {"error":"El identificador de elemento (P9_COBRADO) no corresponde a ningun
+                elemento definido en la pagina actual."}
+
+INSTRUMENTACION (dos procesos sonda que escribian en SYN_ERROR_LOG, retirados despues)
+  - al ABRIR el dialogo: corre la sonda del BEFORE_HEADER y el proceso «Carga cobrado y saldo»
+    deja los valores -> "cobrado=0.00 VES saldo=1,035.00 VES"
+  - al pulsar Guardar: NO corre ninguna sonda; el POST se rechaza antes de cualquier proceso de
+    pagina. No es un apex_util.set_session_state del proceso (ese va con "when others then null" y
+    ademas funciona al pintar la pagina).
+
+CAUSA RAIZ: los dos items se crearon por import SIN atributos de plugin
+  P9_COBRADO / P9_SALDO  -> attributes = {}                      <- sin send_on_page_submit
+  P9_ESTADO (funciona)   -> {"based_on":"VALUE","format":"PLAIN",
+                             "send_on_page_submit":"Y","show_line_breaks":"Y"}
+Un «Display Only» sin send_on_page_submit se pinta igual (campo oculto con checksum) y el navegador
+lo manda como item protegido, pero el servidor no lo tiene por item de la pagina en ese envio y
+aborta el POST entero.
+
+ARREGLO (pagina_apex/f100.sql): los dos items declaran los atributos del plugin, los mismos que
+P9_ESTADO -> based_on=VALUE, format=PLAIN, send_on_page_submit=Y, show_line_breaks=Y.
+
+VERIFICADO DESPUES DEL IMPORT (85 sentencias)
+  - Guardar la factura desde el dialogo: se cierra sin aviso y el documento queda guardado;
+    SYN_ERROR_LOG no recibe ninguna fila nueva.
+  - deploy/diagnostico/20261118_pagina9_guardar_verificacion.sql -> RESULTADO: FALLAS=0 (G1-G6)
+  - deploy/diagnostico/20261118_pagina9_rejilla.py              -> FALLAS=0 (12 columnas, Cobrado y
+    Saldo a media fila)
+  - deploy/diagnostico/20261117_grid_paginas_verificacion.py    -> FALLAS=0
+  - deploy/diagnostico/20261109_compilar_procesos_pagina.py     -> 73 procesos, FALLAS=0

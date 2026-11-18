@@ -12,6 +12,24 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
 
     -- Igual que fn_num pero con el formato de Venezuela: punto de miles y coma decimal,
     -- que es como va la factura fiscal (el generico usa el formato de EE.UU.).
+    -- El RIF venezolano se imprime con guiones (J-12345678-9) aunque en la base
+    -- este sin ellos. Lo que no encaja con esa forma (un RFC mexicano) va tal cual.
+    FUNCTION fn_rif (p_valor IN VARCHAR2) RETURN VARCHAR2 IS
+        v_limpio VARCHAR2(50);
+    BEGIN
+        IF p_valor IS NULL THEN
+            RETURN NULL;
+        END IF;
+        v_limpio := REPLACE(REPLACE(UPPER(TRIM(p_valor)), '-', ''), ' ', '');
+        IF LENGTH(v_limpio) = 10
+           AND SUBSTR(v_limpio, 1, 1) IN ('J', 'V', 'E', 'G', 'P', 'C')
+           AND REGEXP_LIKE(SUBSTR(v_limpio, 2), '^[0-9]{9}$') THEN
+            RETURN SUBSTR(v_limpio, 1, 1) || '-' || SUBSTR(v_limpio, 2, 8) || '-'
+                   || SUBSTR(v_limpio, 10, 1);
+        END IF;
+        RETURN p_valor;
+    END fn_rif;
+
     FUNCTION fn_num_ve (p_valor IN NUMBER, p_mascara IN VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
         RETURN TO_CHAR(p_valor, p_mascara, 'NLS_NUMERIC_CHARACTERS='',.''');
@@ -250,8 +268,8 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
 
   <table style="width: 100%; margin-bottom: 20px; font-size: 13px; background: #f9f9f9; padding: 10px; border-radius: 4px;">
     <tr>
-      <td><strong>Cliente:</strong> ~' || sys.htf.escape_sc(v_cliente) || q'~</td>
-      <td><strong>~' || v_cliente_label || q'~:</strong> ~' || sys.htf.escape_sc(v_rif_cliente) || q'~</td>
+      <td><strong>Cliente:</strong> ~' || sys.htf.escape_sc(INITCAP(v_cliente)) || q'~</td>
+      <td><strong>~' || v_cliente_label || q'~:</strong> ~' || sys.htf.escape_sc(fn_rif(v_rif_cliente)) || q'~</td>
     </tr>
     <tr>
       <td><strong>Condici&oacute;n de Pago:</strong> ~' || sys.htf.escape_sc(v_condicion) || q'~</td>
@@ -550,7 +568,7 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
     <div class="fe-nombre">~' || sys.htf.escape_sc(v_empresa) || q'~</div>
     <div class="fe-datos">~' || sys.htf.escape_sc(v_dir_emp) || q'~<br>
       Telefono: ~' || sys.htf.escape_sc(v_tel_emp) || q'~ / email: ~' || sys.htf.escape_sc(v_mail_emp) || q'~</div>
-    <div class="fe-rif">~' || sys.htf.escape_sc(v_rif_emp) || q'~</div>
+    <div class="fe-rif">~' || sys.htf.escape_sc(fn_rif(v_rif_emp)) || q'~</div>
   </div>
 
   <table class="fe-cab">
@@ -572,8 +590,8 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
            ELSE '' END || q'~
   <div class="fe-cliente">
     <div class="fe-cliente-tit">Datos del cliente</div>
-    <div><strong>Raz&oacute;n social:</strong> ~' || sys.htf.escape_sc(v_cliente) || q'~
-         &nbsp;&nbsp;<strong>R.I.F.:</strong> ~' || sys.htf.escape_sc(v_rif_cli) || q'~</div>
+    <div><strong>Raz&oacute;n social:</strong> ~' || sys.htf.escape_sc(INITCAP(v_cliente)) || q'~
+         &nbsp;&nbsp;<strong>R.I.F.:</strong> ~' || sys.htf.escape_sc(fn_rif(v_rif_cli)) || q'~</div>
     <div><strong>Direcci&oacute;n fiscal:</strong> ~' || sys.htf.escape_sc(v_dir_cli) || q'~</div>
     <div><strong>Tel&eacute;fono:</strong> ~' || sys.htf.escape_sc(v_tel_cli) || q'~
          &nbsp;&#8901;&nbsp; <strong>E-mail:</strong> ~' || sys.htf.escape_sc(v_mail_cli) || q'~</div>

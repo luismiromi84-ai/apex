@@ -1,0 +1,107 @@
+Clientes: empresa en la lista, RIF inválido y blindaje del documento
+=====================================================================
+Fecha: 2026-11-18. Rama `feat/empresa-activa`.
+
+
+1. Lo que reportó el dueño y qué era verdad
+-------------------------------------------
+- **«El RIF inválido (J-6454545) sigue ahí, la validación no está activa»** — La validación **sí
+  está activa**: `fn_rif_cliente_valido('J-6454545','VE','J')` devuelve *false* y el proceso
+  «Guardar cliente» la llama (`-20021`). Lo que había era **dato viejo**, cargado antes del
+  2026-11-17 (cuando la regla aceptaba 6 a 12 dígitos). Se comprobó y se corrigió el dato (§2).
+- **«No hay columna de Empresa y el cliente no debería seguir apareciendo al cambiar el selector»** —
+  El filtro por empresa **ya funcionaba** (tarea 3 de la empresa activa: la lista filtra por
+  `F_EMPRESA_ACTIVA`), pero **no se veía a qué empresa pertenece cada cliente** porque la columna no
+  existía. Se agregó (§3).
+- **«El nombre es un correo»** — Cierto: la base tenía clientes con `razon_social` = `bianca`,
+  `jose`, y el dueño vio uno con un correo. El formulario **no** lo validaba. Se agregó (§4).
+- **País y Tipo sobraban; el Estado se veía agresivo** — Se quitaron del informe por defecto (siguen
+  disponibles desde Acciones) y el Estado pasó a insignia verde/roja (§3).
+
+
+2. Datos: los RIF que la regla vigente rechaza
+----------------------------------------------
+`deploy/migrations/20261118_clientes_rif_invalido.sql` (informe + desactivación + validación, todo
+idempotente). Regla aplicada con **`CLIENTES.TIPO_PERSONA`**, no con la letra del RIF: los RFC
+mexicanos empiezan por la letra de la razón social y tomarlos por «natural» desactivaba clientes
+**válidos** (pasó en la primera pasada con 201, 202 y 203; se revirtió en el acto y la regla quedó
+corregida en el archivo).
+
+Resultado medido: quedan **2 clientes** con RIF que la regla no acepta —
+`jose` (`E-4668799`, empresa 1) y `bianca` (`J-6454545`, empresa 6)—: **no se inventa el número que
+falta**, se dejan **INACTIVO** para que no se les pueda facturar (la lista de cliente de la página 9
+solo ofrece los ACTIVO) y el dueño los corrige y reactiva cuando tenga el RIF real. Los tres clientes
+de México (`MXE850101AB1`, `MXE900202CD3`, `MXE920303EF5`) son válidos y siguen ACTIVO.
+
+
+3. Pantalla 20 «Clientes»
+-------------------------
+- La consulta trae `c.id_empresa` y **`e.nombre_empresa as empresa`** (`join empresas`), y hay una
+  columna **«Empresa»** después de RIF.
+- **Informe por defecto** (`create_worksheet_rpt` primario): `ID_CLIENTE:RIF:EMPRESA:RAZON_SOCIAL:
+  EMAIL:TELEFONO:ESTADO:RETENCION`. **Sin País ni Tipo** (las columnas siguen definidas: se pueden
+  reactivar desde *Acciones › Seleccionar columnas*).
+- **Estado como insignia**: `p_column_html_expression` con `status-badge`/`status-dot`
+  (verde ACTIVO, rojo INACTIVO) y el CSS añadido al `p_inline_css` **de la propia página 20** (la
+  página global no emite CSS).
+- Verificado por HTTP con un usuario de una empresa: 4 filas (las 4 de su empresa), 4 insignias,
+  cabecera «Empresa» presente y «País»/«Tipo» ausentes.
+
+
+4. Validación del nombre (nueva)
+--------------------------------
+En «Guardar cliente» (página 21), después de exigir el nombre, se rechaza con **`-20028`** cualquier
+nombre que:
+- lleve `@` (un correo), o
+- sea solo dígitos y signos de teléfono (`^[0-9+() -]+$`), o
+- no tenga ninguna letra (`[[:alpha:]]`).
+
+
+5. Blindaje que encontró la revisión del código (dos agujeros reales, cerrados)
+-------------------------------------------------------------------------------
+La revisión independiente de la rama encontró dos formas de tocar documentos de otra empresa. Las dos
+se cerraron en los packages (`package_bodies/pkg_presupuestos.sql`, `package_bodies/pkg_facturacion.sql`,
+compilados con `compilar_objeto.py`):
+
+- **Actualizar un documento ajeno.** `prc_guardar_presupuesto` y `prc_actualizar` (facturas) hacían
+  `UPDATE … WHERE id = :id` sin mirar de quién era el documento: un POST con `P7_ID_PRESUPUESTO` de
+  otra empresa (ese ítem no está protegido) **reescribía el presupuesto ajeno y le cambiaba la
+  empresa**. Ahora se comprueba `fn_presupuesto_propio` / `fn_factura_propio` → **`-20003`**.
+- **Cliente de otra cartera.** Nada validaba que el `id_cliente` fuera de la empresa del documento: se
+  podía grabar una factura con un cliente de otra empresa y el documento **desaparecía de todas las
+  listas** (las listas cruzan factura y cliente por empresa). Ahora es **`-20029`**.
+- **Los ítems ocultos de empresa eran obligatorios** (`P7/P9/P13_ID_EMPRESA`). Con un usuario de 2+
+  empresas y sin elegir, valen NULL y APEX bloqueaba el guardado con «Empresa debe tener algún valor»
+  señalando un campo que no se ve: el mismo bug que ya obligó a quitar `p_is_required` de
+  `P19F_ID_EMPRESA`. Quitado en los tres.
+- **El combo de la barra no tenía defecto ni filtraba empresas inactivas**: con **una** empresa el
+  filtro ya funcionaba pero la barra mostraba «— Elige empresa —» (mentía). Ahora el defecto es su
+  única empresa ACTIVA y la LOV solo lista las ACTIVO.
+
+
+6. Verificación
+---------------
+- `deploy/diagnostico/20261118_documentos_empresa_verificacion.sql` (**nuevo**) — **D1–D6,
+  `FALLAS=0`**: mover un presupuesto ajeno → `-20003` y el documento **intacto**; lo mismo con una
+  factura; cliente de otra empresa → `-20029` en presupuesto y en factura; el alta legítima sigue
+  funcionando; los ítems ocultos ya no son obligatorios.
+- `20261111_clientes_verificacion.sql` ampliada — **C18a–C18d, C19, C20, `FALLAS=0`**: la lista filtra
+  por la empresa activa y trae la empresa; el informe por defecto muestra Empresa y no País/Tipo; el
+  estado se pinta como insignia; el guardado rechaza un correo como nombre; **ningún cliente ACTIVO
+  tiene RIF inválido**; los ítems ocultos no son obligatorios.
+- Regresión con el fixture: las 18 verificaciones SQL en **`FALLAS=0`** (documentos cerrados 24 casos,
+  reportes, reporte de documentos, libro, clientes, control de factura, folio, páginas 7/9, cobros ×5,
+  retención de IVA, autenticación, empresa activa ×3). Rejilla de 12 columnas `FALLAS=0`; 69 procesos
+  compilan; 0 objetos inválidos; 24 páginas + la global y 18 guardas.
+
+
+7. Trampas medidas otra vez
+---------------------------
+- `update clientes c set …`: el runner descarta las líneas que empiezan por `set `, así que el `SET`
+  va en la misma línea que el `UPDATE` (y sin alias, para no repetirlo).
+- `prc_actualizar` de facturación **no tiene `p_usuario`** (lo pone el propio cuerpo): pasar ese
+  argumento da `PLS-00306` engañoso.
+- Un `(?:.*\n)*?` sobre el export de 2,5 MB cuelga el proceso: para insertar bloques se corta por
+  índices, no con regex perezosa.
+- `APEX_APPLICATION_PAGE_IR_RPT` **no tiene `IS_DEFAULT`**: el informe por defecto se identifica por
+  `APPLICATION_USER = 'APXWS_DEFAULT'` y su `REPORT_COLUMNS`.

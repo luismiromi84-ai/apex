@@ -1,0 +1,70 @@
+Facturación (9): RIF con guiones, control validado y condición de pago legible
+==============================================================================
+Fecha: 2026-11-18. Rama `main`.
+
+
+1. «El N° de Control es inválido (3)» — la validación **sí está activa**
+-------------------------------------------------------------
+Comprobado ejecutando el guardado real con `p_nro_control => '3'`:
+
+```
+pkg_facturacion.prc_guardar_factura(... p_nro_control => '3')
+  -> ORA-20063: El numero de control debe empezar por 00- (rango 00-000001 a 00-010000)
+```
+
+La factura **F-1050 no existe** en la base (ni ninguna con control `3`): lo que se vio en la
+pantalla era un valor **tecleado en el formulario antes de guardar**, y el guardado lo rechaza. El
+campo se deja editable a propósito (hay talonarios que se teclean) pero no entra si no encaja con la
+providencia.
+
+
+2. RIF Emisor sin guiones — arreglado en los tres sitios
+--------------------------------------------------------
+- **Función nueva `fn_formato_rif(valor)`**: `J123456789` → **`J-12345678-9`**, `J-171403189` →
+  `J-17140318-9`, recorta espacios y **no toca** lo que no tiene esa forma (un RFC mexicano, el
+  relleno `EMP123456789`). Cargada por `install.sql` y por la migración
+  `deploy/migrations/20261118_formato_rif.sql`.
+- **Datos normalizados**: `EMPRESAS.RFC`, `CLIENTES.RIF`, `FACTURAS.RFC_EMISOR` y `RFC_RECEPTOR`.
+  Los `RFC_EMISOR` históricos que guardaban el relleno `EMP123456789` se alinearon con el RIF que la
+  empresa tiene hoy.
+- **Al guardar** (página 9) el emisor y el receptor pasan por `fn_formato_rif`, y el alta de cliente
+  (página 21) guarda el RIF ya canónico en vez de `J-123456789`.
+- **En el impreso** ya se formateaba (sesión anterior); ahora el dato también está bien, así que la
+  pantalla y el papel coinciden.
+
+Medido en el diálogo de la factura: **`P9_RFC_EMISOR = J-12345678-9`**.
+
+
+3. La condición de pago se veía cortada
+---------------------------------------
+La LOV componía `descripcion || ' (' || dias_credito || ' días)'` → «Crédito 7 Días (7 días)», que
+no cabía en un campo de un cuarto de fila y se recortaba por la izquierda («o 7 Días (7 días)»). La
+descripción ya dice los días, así que la LOV devuelve **solo la descripción** («Crédito 7 Días») y
+el campo pasa a media fila (`colspan 3`).
+De paso, la etiqueta **«Rif Emisor»** pasa a **«RIF Emisor»** (sin espacios ni minúsculas de más).
+
+
+4. «Cobrado y Saldo vacíos»
+---------------------------
+Están bien calculados: en una factura **guardada** muestran `0.00 VES` y `1.035,00 VES` (medido en el
+diálogo). Salen vacíos cuando la factura **todavía no existe** (alta), porque los dos son consultas
+sobre `id_factura`. No es un fallo de la vista: `fn_saldo_factura` devuelve el total menos notas y
+cobros en el momento.
+
+
+5. Verificación
+---------------
+- `deploy/diagnostico/20261118_cobrado_saldo_navegador.py` (ampliada): el diálogo abre, `Cobrado`
+  0.00 VES, `Saldo` 1.035,00 VES y **`P9_RFC_EMISOR` con guiones** — `FALLAS=0`.
+- `20261118_libro_notas_verificacion.sql` (V4 guarda con control `876` → `-20063`) — `FALLAS=0`.
+- Rejilla de 12 columnas `FALLAS=0`; 69 procesos compilan; 0 objetos inválidos.
+
+6. Trampas
+----------
+- El ítem del RIF es un campo de formulario con `p_source=>'RFC_EMISOR'`: no se puede «formatear al
+  pintar» sin cambiar el tipo de ítem (y el proceso lo lee). La vía que funciona es **formatear el
+  dato** (función + normalización + guardado).
+- Un **Popup LOV no es un `<select>`**: leer sus opciones con `options[...]` en la prueba da
+  `TypeError`; hay que mirar el valor del ítem o el texto que pinta APEX.
+- Las líneas del export son literales de un `join`: el ancla para reemplazar tiene que incluir la
+  comilla inicial y las comillas dobladas (`''-''`), no lo que se ve en pantalla.

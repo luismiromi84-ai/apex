@@ -45,6 +45,8 @@ begin
     values (1, 'J-TESTIMP-2', 'Cliente normal', 'N', 75)
     returning id_cliente into v_cli2;
 
+    -- El cliente que retiene necesita su comprobante desde el 2026-11-19 (el
+    -- package lo exige al guardar cuando el porcentaje es mayor que cero).
     pkg_facturacion.prc_guardar_factura(
         p_id_factura => v_fac, p_id_empresa => 1, p_folio_factura => 'IMP-1',
         p_id_cliente => v_cli, p_id_presupuesto => null,
@@ -54,7 +56,9 @@ begin
         p_fecha_vencimiento => null, p_estado => 'PENDIENTE',
         p_subtotal => 100, p_monto_impuesto => 16, p_monto_total => 116,
         p_observaciones => null, p_cod_moneda => 'VES', p_tipo_cambio => 1,
-        p_usuario => 'test_imp', p_tipo_documento => 'FAC');
+        p_usuario => 'test_imp', p_tipo_documento => 'FAC',
+        p_porcentaje_retencion => 75,
+        p_nro_comprobante_retencion => '20261100000002');
 
     pkg_facturacion.prc_guardar_factura(
         p_id_factura => v_fac2, p_id_empresa => 1, p_folio_factura => 'IMP-2',
