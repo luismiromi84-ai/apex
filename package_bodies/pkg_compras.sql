@@ -32,6 +32,21 @@ create or replace package body pkg_compras as
                 'El numero de factura del proveedor es obligatorio.');
         end if;
 
+        -- Un numero suelto de uno o dos digitos es casi seguro un error de captura
+        -- (el N° de factura del proveedor no se numera asi). 2026-11-18.
+        if length(trim(p_folio_factura)) < 3 then
+            raise_application_error(-20088,
+                'El numero de factura no puede ser un numero suelto de 1 o 2 digitos. '
+                || 'Escribelo como aparece en la factura del proveedor (por ejemplo F-45 o 00045).');
+        end if;
+
+        if p_nro_control is not null and trim(p_nro_control) is not null
+           and length(trim(p_nro_control)) < 3 then
+            raise_application_error(-20089,
+                'El numero de control del proveedor no puede ser un numero suelto de 1 o 2 digitos. '
+                || 'Escribelo como aparece en la factura (por ejemplo 00-000045).');
+        end if;
+
         if p_id_proveedor is null then
             raise_application_error(-20087, 'La compra necesita un proveedor.');
         end if;
