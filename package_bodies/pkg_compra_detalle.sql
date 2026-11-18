@@ -45,6 +45,12 @@ create or replace package body pkg_compra_detalle as
         v_iva   := round(v_base * nvl(p_porcentaje_impuesto, 0) / 100, 2);
         v_total := v_base + v_iva;
 
+        -- La columna es NOT NULL: sin esto, guardar una linea en blanco daba
+        -- ORA-01400 en vez de un mensaje entendible (2026-11-18).
+        if p_descripcion is null or trim(p_descripcion) is null then
+            raise_application_error(-20086, 'La descripcion de la linea es obligatoria.');
+        end if;
+
         if p_id_detalle is null then
             select nvl(max(num_linea), 0) + 1 into v_num
               from compras_det where id_compra = p_id_compra;

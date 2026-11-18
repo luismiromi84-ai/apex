@@ -19,6 +19,7 @@ from verificar_conexion import CONNECT_STRING, credenciales
 
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 BASE = "https://gfd7e2575d251ae-sypexsql.adb.mx-monterrey-1.oraclecloudapps.com/ords"
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 USUARIO, CLAVE = "diag.compra", "Diag#2026"
 FOLIO = "CMP-ZZ-1"
 fallas = 0
@@ -211,6 +212,26 @@ try:
         print("  cabecera tras la linea:", t2)
         comprobar("C3 la linea entra y la cabecera cuadra",
                   t2 and t2[3] == 1 and float(t2[0]) == 100 and float(t2[1]) == 16 and float(t2[2]) == 116, t2)
+
+        # C3b: la region «Lineas de la compra» se PINTA como tabla, no como codigo.
+        # El 2026-11-18 estaba guardada como contenido ESTATICO y la pagina mostraba
+        # el PL/SQL entero (declare ... v_html ... end).
+        cuerpo = js("document.body.innerText") or ""
+        comprobar("C3b la pagina no muestra el codigo de la region",
+                  "fn_clean_num" not in cuerpo and "v_html" not in cuerpo, cuerpo[:150])
+        comprobar("C3b la linea se ve en la tabla",
+                  "Servicio de prueba" in cuerpo, cuerpo[:200])
+
+        # captura de la region ya pintada, como evidencia para el dueno
+        try:
+            import base64 as b64
+            png = cmd("Page.captureScreenshot", format="png")["data"]
+            ruta = os.path.join(REPO, "deploy", "resultados", "20261118_compra_lineas.png")
+            with open(ruta, "wb") as f:
+                f.write(b64.b64decode(png))
+            print("  captura:", ruta)
+        except Exception as e:
+            print("  (sin captura:", e, ")")
 
         # C4: registrar (el boton pide confirmacion)
         boton("BTN_REGISTRAR_COMPRA")

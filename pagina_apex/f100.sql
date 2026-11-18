@@ -18761,7 +18761,6 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000056)
 ,p_name=>'P16_ID_PRESUPUESTO'
 ,p_source_data_type=>'NUMBER'
-,p_is_required=>true
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
@@ -18785,7 +18784,6 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000057)
 ,p_name=>'P16_FECHA_GASTO'
 ,p_source_data_type=>'DATE'
-,p_is_required=>true
 ,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
@@ -18802,7 +18800,6 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000058)
 ,p_name=>'P16_MONTO_ORIGEN'
 ,p_source_data_type=>'NUMBER'
-,p_is_required=>true
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
@@ -18820,7 +18817,6 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000059)
 ,p_name=>'P16_MONEDA_ORIGEN'
 ,p_source_data_type=>'VARCHAR2'
-,p_is_required=>true
 ,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000062)
 ,p_item_source_plug_id=>wwv_flow_imp.id(43000000000000062)
@@ -23427,9 +23423,9 @@ prompt --application/pages/page_00027
 begin
 wwv_flow_imp_page.create_page(
  p_id=>27
-,p_name=>'Compras'
+,p_name=>'Facturas de Compras'
 ,p_alias=>'COMPRAS'
-,p_step_title=>'Compras'
+,p_step_title=>'Facturas de Compras'
 ,p_warn_on_unsaved_changes=>'N'
 ,p_autocomplete_on_off=>'OFF'
 ,p_step_template=>4073832297226169690
@@ -23448,7 +23444,7 @@ wwv_flow_imp_page.create_page(
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000001000)
-,p_plug_name=>'Compras'
+,p_plug_name=>'Facturas de Compras'
 ,p_static_id=>'compras-lista'
 ,p_region_css_classes=>'card-3d'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
@@ -23745,7 +23741,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_colspan=>6
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_required=>true
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001024)
@@ -23773,7 +23768,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_colspan=>6
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_required=>true
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001026)
@@ -23916,6 +23910,8 @@ wwv_flow_imp_page.create_page_plug(
 '    v_html := v_html || ''</tbody></table>'';',
 '    return v_html;',
 'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001033)
@@ -24262,7 +24258,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_colspan=>12
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_required=>true
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001066)
