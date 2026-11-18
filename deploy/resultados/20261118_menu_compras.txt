@@ -55,6 +55,11 @@ despliega antes de mirar dentro.
 Rotulo de la hija: «Facturas de compras» desde el 2026-11-18 (antes «Compras»,
 que se repetia con el nombre del grupo). El static_id sigue siendo 'compras'.
 
+Titulo de la pagina 27: «Facturas de Compras» (antes «Compras»). Se cambiaron
+PAGE_NAME, PAGE_TITLE y el nombre de la region; el alias COMPRAS (la URL) NO
+cambia. Captura del resultado: deploy/resultados/20261118_p27_titulo.png
+(document.title = «Facturas de Compras», una sola cabecera).
+
 5. Regresión
 ------------------------------------------------------------------------------
   import del export ...................... 93 sentencias, OK

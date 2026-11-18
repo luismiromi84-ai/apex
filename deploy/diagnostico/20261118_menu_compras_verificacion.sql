@@ -124,6 +124,17 @@ begin
         falla('V7', 'Ver Compras y Ver Proveedores ya no tienen los mismos roles');
     end if;
 
+    -- V8: la pagina 27 se titula «Facturas de Compras» (antes «Compras», que se
+    -- repetia con el nombre del grupo del menu). La URL (alias COMPRAS) no cambia.
+    select count(*) into v_n
+      from apex_application_pages
+     where application_id = 100 and page_id = 27
+       and page_name = 'Facturas de Compras'
+       and page_title = 'Facturas de Compras';
+    if v_n <> 1 then
+        falla('V8', 'la pagina 27 no se titula Facturas de Compras');
+    end if;
+
     raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || v_lista, 1, 3000));
 end;
 /
