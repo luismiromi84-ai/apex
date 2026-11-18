@@ -68,8 +68,9 @@ begin
 
     -- V1: el porcentaje sale del cliente y la retencion es el 75 % del IVA en Bs.
     -- Desde el 2026-11-17 el monto se calcula del detalle (el IGTF no se retiene),
-    -- asi que la factura necesita su linea de IVA.
-    v_fac := nueva_factura(v_cli_con, 'RETV-1', null, null);
+    -- asi que la factura necesita su linea de IVA. Y desde el 2026-11-19, retener
+    -- sin comprobante de 14 digitos no se puede guardar: V3 cubre ese rechazo.
+    v_fac := nueva_factura(v_cli_con, 'RETV-1', '20261100000001', null);
     insert into facturas_det (id_factura, num_linea, descripcion, cantidad, precio_unitario,
                               id_impuesto, porcentaje_impuesto, monto_impuesto,
                               subtotal_linea, monto_total_linea, tasa_cambio_aplicada,

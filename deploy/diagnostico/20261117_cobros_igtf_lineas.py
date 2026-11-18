@@ -96,6 +96,7 @@ if hasattr(lov, "read"):
     lov = lov.read()
 consulta = (lov.replace(":P10_ID_FACTURA", "null")
                .replace(":APP_USER", "'ADMIN'")
+               .replace(":F_EMPRESA_ACTIVA", "1")
                .replace("fn_clean_num(null)", "null"))
 cur.execute(consulta)
 nombres = [f[0] for f in cur.fetchall()]

@@ -1,0 +1,110 @@
+Empresa activa por sesión · tarea 3: las pantallas leen la empresa activa
+=========================================================================
+Fecha: 2026-11-17. Rama `feat/empresa-activa`. Commit de la tarea anterior: `3d08a26`.
+
+
+1. Qué se cambió
+----------------
+**Los filtros.** 28 sitios que leían «todas mis empresas» pasan a leer el ítem de aplicación
+`F_EMPRESA_ACTIVA`:
+
+- La subconsulta `(select id_empresa from v_empresas_usuario where upper(username) =
+  upper(:APP_USER))` → `(select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)` (14 casos) y su
+  variante partida en dos literales del export (14 casos). Con la empresa activa nula
+  `fn_clean_num` devuelve 0 y **no hay empresa 0**: las listas salen vacías, nunca «todas».
+- Los defectos de empresa y moneda de las páginas 7 y 13 y el del logo de la 19 →
+  `fn_clean_num(:F_EMPRESA_ACTIVA)` y la moneda local del país de esa empresa.
+- El país de las LOV de impuestos (6 y 10) y de las condiciones de país de la 9: el respaldo
+  «empresa del usuario» pasa a ser la empresa activa.
+
+**Los ítems de empresa de las pantallas ya no se eligen a mano.** `P7_ID_EMPRESA`,
+`P9_ID_EMPRESA`, `P13_ID_EMPRESA`, `P17_ID_EMPRESA`, `P18_ID_EMPRESA`, `P21_ID_EMPRESA` y
+`P24_ID_EMPRESA` pasan a `NATIVE_HIDDEN` (a `P21` y `P24` se les quitó además la LOV, que ya no
+servía, y a `P24` el `p_is_persistent=>'N'`, que no dejaría conservar el valor) y cada una de
+esas páginas gana un proceso `BEFORE_HEADER` **«Fija la empresa activa»** (secuencia 1,
+`static_id fija-empresa-activa`) que los rellena con `v('F_EMPRESA_ACTIVA')`.
+
+Por qué así y no borrando los ítems: el folio, las LOV en cascada (cliente, moneda, impuesto),
+los `p_query_where` de los formularios y las acciones dinámicas siguen leyendo el `Pn_*`; si el
+ítem existe y vale siempre la empresa activa, **todo eso sigue funcionando sin tocarlo** y no
+queda ninguna forma de emitir un documento con otra empresa. La pantalla pierde el combo, que es
+lo que pedía el diseño.
+
+**Los procesos que guardan** documentos usan `fn_clean_num(:F_EMPRESA_ACTIVA)`:
+`pkg_presupuestos.prc_guardar_presupuesto` (7) y `pkg_facturacion.prc_guardar_factura` (9). El
+«Guardar gasto» de la 16 gana una guarda: si el presupuesto no es de la empresa activa,
+**`-20003`** («El presupuesto no es de la empresa activa.»).
+
+**La guarda del Panel (13)** ya no deja el ítem vacío: si la empresa del ítem no es del usuario,
+pone la activa.
+
+
+2. Un fallo de la app que salió de paso (corregido)
+---------------------------------------------------
+`Guardar empresa` (página 19) validaba el **RIF antes** de comprobar la propiedad. Editando una
+empresa ajena respondía `-20072` («el RIF no tiene la forma del país») en vez de `-20003`: eso
+filtra un dato de una empresa que no es del usuario y confunde el motivo. Ahora la propiedad se
+comprueba primero (y la comprobación interna del `update` se queda como segunda capa).
+
+
+3. Verificación
+---------------
+`deploy/diagnostico/20261117_empresa_activa_filtros_verificacion.sql` — **L1–L6, `FALLAS=0`**
+(antes del cambio: `FALLAS=27`):
+  L1 solo las páginas 0, 4 y 19 leen `v_empresas_usuario` (el combo, el alta de usuarios y la
+     administración de empresas)
+  L2 las listas de 5, 8, 16, 17, 18, 20 y 24 filtran por `F_EMPRESA_ACTIVA`
+  L3 ningún ítem de empresa se puede elegir en pantalla (los siete son ocultos)
+  L4 los procesos que guardan (7, 9, 16) usan `F_EMPRESA_ACTIVA`
+  L5 cada página con el ítem oculto tiene su proceso que lo fija
+  L6 comportamiento de la lista de Presupuestos con el texto **guardado** en APEX: con la empresa
+     activa nula devuelve 0 filas; con una empresa del usuario devuelve exactamente las suyas
+     (la lista excluye `CANCELADO` y cruza con clientes) y **ninguna fila de otra empresa**.
+
+`deploy/diagnostico/20261117_empresa_activa_filtros_navegador.py` (Edge headless por CDP, usuario
+temporal de dos empresas) — **N1–N6, `FALLAS=0`**:
+  N1 sin empresa elegida, las listas de Presupuestos (5) y Facturas (8) salen **vacías**
+  N2 con la empresa 1 activa, la lista de Presupuestos trae exactamente 5 (las suyas)
+  N3 al cambiar a la empresa 2 cambia a 2
+  N4 la lista de Clientes (20) trae los 4 de la empresa activa
+  N5 el diálogo de la factura (9) abre y su `P9_ID_EMPRESA` es la activa
+  N6 el Panel (13) toma la empresa activa y pinta sus tarjetas con la moneda de esa empresa
+Captura: `deploy/resultados/20261117_empresa_activa_filtros.png`.
+
+**Regresión** (con el fixture `20261108_fixture_prueba.sql`, y limpiado después) — las 15
+verificaciones en `FALLAS=0`: documentos cerrados (24 casos), reportes, reporte de documentos,
+libro de compras y ventas, clientes, control de factura, folio atómico, páginas 7/9, cobros
+(modelo, saldo, registrar, anular, estados), retención de IVA y autenticación. Más
+multiempresa (`20261110_multiempresa_verificacion.sql`) en `FALLAS=0`, la rejilla de 12 columnas
+`FALLAS=0`, **69 procesos** de página compilando y 0 objetos inválidos. La app queda con 24
+páginas + la global y 18 guardas de rol.
+
+
+4. Pruebas que estaban midiendo el modelo viejo (corregidas; no era la app)
+---------------------------------------------------------------------------
+- `20261110_multiempresa_verificacion.sql`: **M14** (menciones de la vista por página) pasa a
+  esperar 0 en las pantallas y 2 en la 19; **M15/M15b/M16/M20** ejecutan las listas con
+  `:F_EMPRESA_ACTIVA` sustituido en el texto y afirman el modelo nuevo (una empresa activa →
+  solo la suya; **nula → cero filas**); **M17** pasa a exigir que los tres defectos de empresa
+  lean `F_EMPRESA_ACTIVA`; el fixture de M24 usa un RIF válido (`J-12345678-9`) porque desde el
+  2026-11-17 se valida.
+- `20261105_paginas_7_9_verificacion.sql`: C5/C6 aceptan `F_EMPRESA_ACTIVA` y C7/C8 ejecutan el
+  WHERE real con la empresa activa (dueña → 1 fila; otra empresa → 0), que es la regla nueva.
+- `20261116_reporte_documentos_verificacion.sql` y `20261116_libro_compras_ventas_verificacion.sql`:
+  sustituyen también `:F_EMPRESA_ACTIVA` al ejecutar el texto guardado y esperan
+  `F_EMPRESA_ACTIVA` en la consulta.
+
+
+5. Trampas medidas
+------------------
+- **`EXISTS` no se puede usar en un `IF` de PL/SQL** (`PLS-00204`): la guarda del gasto real es un
+  bloque con `select count(*) into`. Lo cazó `20261109_compilar_procesos_pagina.py`, no el import
+  (los procesos de página no se compilan al importar).
+- **`l_sql := '...' || v || ' into v_x from tabla'`**: en `EXECUTE IMMEDIATE` el `INTO` va pegado
+  al texto, no después de un `FROM`.
+- Un `in (select ... from v_empresas_usuario` partido en dos literales del export **no** se
+  reemplaza si se busca sin la indentación: la línea siguiente empieza por ` '` (espacio + comilla)
+  en las regiones dinámicas y por `'` en las estáticas. El patrón tiene que admitir `\s*'`.
+- **La página 3 (usuarios) no se tocó**: sigue listando los usuarios de todas las empresas que
+  comparte el administrador, porque su filtro es `USUARIO_EMPRESA` y el plan no la incluye. Si se
+  quiere que siga a la empresa activa, es otra tarea (anotado en el ledger).

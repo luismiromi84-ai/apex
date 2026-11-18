@@ -77,8 +77,9 @@ begin
     if not fn_factura_editable(nueva_factura('PENDIENTE')) then
         falla('E1: una factura PENDIENTE deberia ser editable');
     end if;
-    if not fn_factura_editable(nueva_factura('TIMBRADA')) then
-        falla('E1: una factura TIMBRADA deberia ser editable');
+    -- Desde el 2026-11-19 un documento emitido es inmutable: TIMBRADA ya no se edita.
+    if fn_factura_editable(nueva_factura('TIMBRADA')) then
+        falla('E1: una factura TIMBRADA ya no deberia ser editable');
     end if;
     if not fn_factura_editable(null) or not fn_factura_editable(-1) then
         falla('E1: el alta (id nulo o inexistente) deberia ser editable');

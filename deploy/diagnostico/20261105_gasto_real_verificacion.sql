@@ -71,11 +71,13 @@ begin
     falla('G0', 'faltan tasas en tipo_cambio (USD=' || v_rusd || ', MXN=' || v_rmxn || ')');
   end if;
 
-  -- G1: USD 100 -> 100 USD, y la tasa guardada es la del dolar en bolivares
+  -- G1: USD 100 -> 100 USD, y la tasa guardada es la del dolar en bolivares.
+  -- Desde el 2026-11-18 la tasa es OBLIGATORIA cuando el gasto no esta en la moneda
+  -- del presupuesto (aqui el presupuesto es en VES), asi que se pasa.
   pkg_gasto_real.prc_guardar_gasto(
       p_id_gasto => v_g1, p_id_presupuesto => v_pre,
       p_fecha_gasto => sysdate, p_monto_origen => 100,
-      p_moneda_origen => 'USD');
+      p_moneda_origen => 'USD', p_tasa_real => v_rusd);
 
   if v_g1 is null then
     falla('G1', 'no devolvio id_gasto');
@@ -127,37 +129,32 @@ begin
     falla('G3', 'los bolivares se siguen guardando como dolares: ' || v_usd);
   end if;
 
-  -- G4: MXN sin tasa -> la de TIPO_CAMBIO
-  pkg_gasto_real.prc_guardar_gasto(
-      p_id_gasto => v_g4, p_id_presupuesto => v_pre,
-      p_fecha_gasto => sysdate, p_monto_origen => 100,
-      p_moneda_origen => 'MXN');
-
-  v_esperado := round(100 * v_rmxn / v_rusd, 2);
-
-  select monto_base_usd, tasa_real into v_usd, v_tasa
-    from gasto_real where id_gasto = v_g4;
-
-  if abs(v_usd - v_esperado) > 0.01 then
-    falla('G4', 'MXN 100 a la tasa del dia deben ser ' || v_esperado
-                || ' USD y guardo ' || v_usd);
-  end if;
-  if abs(v_tasa - v_rmxn) > 0.000001 then
-    falla('G4', 'no tomo la tasa de la tabla: ' || v_tasa);
-  end if;
+  -- G4 (2026-11-18): en OTRA moneda que la del presupuesto, sin tasa -> -20055.
+  -- Antes se tomaba la de la tabla; ahora la tasa la teclea el usuario porque el
+  -- equivalente en dolares tiene que cuadrar con lo que dice el comprobante.
+  begin
+    pkg_gasto_real.prc_guardar_gasto(
+        p_id_gasto => v_g4, p_id_presupuesto => v_pre,
+        p_fecha_gasto => sysdate, p_monto_origen => 100,
+        p_moneda_origen => 'MXN');
+    falla('G4', 'acepto un gasto en MXN sin tasa');
+  exception
+    when others then
+      if sqlcode <> -20055 then falla('G4', 'fallo con ' || sqlcode || ' (se esperaba -20055)'); end if;
+  end;
 
   -- G5: editar el primero a 250 USD: no duplica
   pkg_gasto_real.prc_guardar_gasto(
       p_id_gasto => v_g1, p_id_presupuesto => v_pre,
       p_fecha_gasto => sysdate, p_monto_origen => 250,
-      p_moneda_origen => 'USD');
+      p_moneda_origen => 'USD', p_tasa_real => v_rusd);
 
   declare
     v_n number;
   begin
     select count(*) into v_n from gasto_real where id_presupuesto = v_pre;
-    if v_n <> 4 then
-      falla('G5', 'esperaba 4 gastos y hay ' || v_n);
+    if v_n <> 3 then
+      falla('G5', 'esperaba 3 gastos y hay ' || v_n);
     end if;
   end;
 
@@ -170,8 +167,7 @@ begin
   v_total    := pkg_gasto_real.fn_total_gasto_usd(v_pre);
   v_esperado := 250
               + round(50 * (v_rmxn * 2) / v_rusd, 2)
-              + round(100 / v_rusd, 2)
-              + round(100 * v_rmxn / v_rusd, 2);
+              + round(100 / v_rusd, 2);
 
   if abs(v_total - v_esperado) > 0.02 then
     falla('G6', 'esperaba ' || v_esperado || ' y dio ' || v_total);
@@ -234,7 +230,9 @@ begin
     falla('G11', 'acepto GBP sin tasa de cambio');
   exception
     when others then
-      if sqlcode <> -20060 then falla('G11', 'fallo con ' || sqlcode); end if;
+      -- -20055: falta la tasa porque el gasto no esta en la moneda del presupuesto;
+      -- -20060: hay tasa tecleada pero no la del dia para convertir a dolares.
+      if sqlcode not in (-20055, -20060) then falla('G11', 'fallo con ' || sqlcode); end if;
   end;
 
   -- G12: baja

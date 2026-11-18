@@ -1,0 +1,15 @@
+﻿Verificacion: deploy/diagnostico/20261118_pagina9_guardar_verificacion.sql
+Fecha: 2026-11-18 (tras el import del arreglo de los atributos de P9_COBRADO/P9_SALDO)
+
+  python deploy/conexion/importar_export.py deploy/diagnostico/20261118_pagina9_guardar_verificacion.sql
+
+  G1  P9_COBRADO y P9_SALDO existen, son Display Only y estan en la region del formulario
+  G2  los dos declaran send_on_page_submit  (la causa del error al guardar)
+  G3  ningun item Display Only de la app queda sin send_on_page_submit
+  G4  el proceso «Carga cobrado y saldo» sigue rellenando los dos items
+  G5  Cobrado y Saldo ocupan 6 columnas (media fila)
+  G6  no quedan procesos de sonda en la app
+
+  ORA-20100: RESULTADO: FALLAS=0 |
+
+(el runner sale con codigo 1 a proposito: la verificacion termina lanzando -20100 con el resultado)

@@ -1,0 +1,38 @@
+=============================================================================
+20261118_suite_completa.txt
+Suite de verificaciones SQL de deploy/diagnostico (2026-11-18, cierre del menú)
+=============================================================================
+
+Cómo se corrió
+---------------
+  1. Carga del fixture:  python deploy/conexion/importar_export.py deploy/diagnostico/20261108_fixture_prueba.sql
+                         -> 44 sentencias, OK
+  2. Las 44 verificaciones *_verificacion.sql (todas menos multiempresa, que va aparte
+     porque chocan los ids del fixture).
+  3. Limpieza:           deploy/diagnostico/20261108_limpiar_fixture.sql -> 18 sentencias, OK
+  4. Multiempresa sola:  20261110_multiempresa_verificacion.sql -> FALLAS=0
+
+Resultado
+---------
+  FALLAS totales: 0
+  20261104_folio_5_8_verificacion.sql es solo SELECT (0 filas = sin fallas), no devuelve RESULTADO.
+
+Cuatro pruebas estaban en rojo ANTES de esta tanda y NO eran del menú. Se corrigieron
+sus expectativas (no la app):
+
+  20261116_retencion_ventas_verificacion.sql   V1  creaba una factura con un cliente que
+      retiene IVA y sin comprobante; desde el 2026-11-19 eso lo rechaza el package
+      (-20064 «El cliente retiene IVA (75 %)»). Ahora pasa un comprobante de 14 digitos.
+  20261116_impreso_retencion_verificacion.sql  lo mismo en su factura IMP-1.
+  20261117_cobros_estados_verificacion.sql     E1  exigia que una factura TIMBRADA fuera
+      editable; desde el 2026-11-19 un documento emitido es inmutable. Ahora exige lo contrario.
+  20261117_cobros_modelo_verificacion.sql      M3  exigia que TODAS las empresas tuvieran
+      ES_SPE='N'; la empresa 1 esta marcada como SPE a proposito (la configuro el dueño para
+      el IGTF). Ahora comprueba el DEFECTO de la columna ('N') y que los valores sean S/N.
+      Ojo: data_default es LONG, no admite LIKE; se lee a una variable.
+
+Estado de la base al cerrar
+---------------------------
+  usuarios diag./prueba: 0 | folios de prueba: 0 | proveedores de prueba: 0
+  clientes de prueba: 0 | compras de prueba: 0 | tablas TMP_: 0 | objetos invalidos: 0
+  facturas: 13 | proveedores: 2   (los datos reales del dueño, intactos)

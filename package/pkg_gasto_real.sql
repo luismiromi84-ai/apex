@@ -10,6 +10,7 @@ create or replace PACKAGE pkg_gasto_real AS
         p_monto_origen    IN  NUMBER,
         p_moneda_origen   IN  VARCHAR2,
         p_tasa_real       IN  NUMBER   DEFAULT NULL,
+        p_nro_comprobante IN  VARCHAR2 DEFAULT NULL,
         p_usuario         IN  VARCHAR2 DEFAULT NULL);
 
     PROCEDURE prc_eliminar_gasto (

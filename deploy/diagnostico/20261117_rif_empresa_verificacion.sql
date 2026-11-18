@@ -50,6 +50,13 @@ begin
     exige('J-97364742',   'VE', false, 'F1 juridica de 8 digitos (ahora se exigen 9)');
     exige('J-6454545',    'VE', false, 'F1 juridica de 7 digitos (el caso reportado)');
 
+    -- F7 (2026-11-19): el emisor puede ser persona natural, y su RIF es la cedula
+    -- (6 a 8 digitos) mas el verificador: 7 a 9 digitos, no solo 9.
+    exige('V-4666778-9',  'VE', true,  'F7 emisor natural con cedula de 7 digitos');
+    exige('V-9877766',    'VE', true,  'F7 emisor natural sin verificador');
+    exige('V1234567-8',   'VE', true,  'F7 emisor natural de 8 digitos sin guiones');
+    exige('J-1234567-8',  'VE', false, 'F7 juridica de 8 digitos sigue rechazada');
+
     -- F2
     exige('EMP123456789', 'VE', false, 'F2 el relleno del PDF');
     exige('123456789',    'VE', false, 'F2 solo numeros');

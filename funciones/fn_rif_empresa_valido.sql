@@ -10,8 +10,10 @@
 --
 -- Reglas (las mismas que fn_rif_cliente_valido, adaptadas al emisor):
 --   * Venezuela: una letra J (juridica), V o E (persona natural), G (gobierno),
---     P (pasaporte) o C (consejo comunal) y despues solo digitos. Los guiones y
---     espacios dan igual: 'J-12345678-9' y 'J123456789' valen lo mismo.
+--     P (pasaporte) o C (consejo comunal) y despues solo digitos. J, G y C llevan
+--     9 digitos; V y E de 7 a 9, porque su RIF es la cedula (6 a 8 digitos) mas
+--     el verificador (2026-11-19: exigir 9 rechazaba «V-4666778-9»). Los guiones
+--     y espacios dan igual: 'J-12345678-9' y 'J123456789' valen lo mismo.
 --   * Mexico: RFC de 12 (moral) o 13 (fisica), alfanumerico.
 --   * Otro pais: de 5 a 30 caracteres.
 --
@@ -38,7 +40,8 @@ begin
     end if;
 
     if v_pais = 'VE' then
-        return regexp_like(v_rif, '^[JVEGPC][0-9]{9}$');
+        return regexp_like(v_rif, '^[JGCP][0-9]{9}$')
+            or regexp_like(v_rif, '^[VE][0-9]{7,9}$');
     elsif v_pais = 'MX' then
         return regexp_like(v_rif, '^[A-Z&Ñ0-9]{12,13}$');
     end if;

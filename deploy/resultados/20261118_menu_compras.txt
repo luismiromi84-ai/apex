@@ -1,0 +1,71 @@
+=============================================================================
+20261118_menu_compras.txt  —  Menú «Compras» con «Proveedores» como subentrada
+=============================================================================
+Plan:    docs/superpowers/plans/2026-11-18-menu-compras.md
+Diseño:  docs/superpowers/specs/2026-11-18-menu-compras-design.md
+
+1. Verificación de metadatos (deploy/diagnostico/20261118_menu_compras_verificacion.sql)
+------------------------------------------------------------------------------
+ANTES del cambio:  FALLAS=4
+  V1: no existe la entrada padre compras-grupo
+  V2: cuelgan del padre 0 de 2 entradas
+  V5: el padre no apunta a la 27, no usa Ver Compras o lleva resaltado propio
+  V6: hay 0 entradas con padre (se esperaban 2)
+
+DESPUÉS:          FALLAS=0
+
+2. Parámetro del padre (medido)
+------------------------------------------------------------------------------
+Con `p_list_item_parent_id`   -> import OK, 0 entradas con padre  (FALLAS=2: V2, V6)
+Con `p_parent_list_item_id`   -> FALLAS=0
+
+El primero se acepta y se ignora. El segundo es el que guarda PARENT_LIST_ITEM_ID.
+
+3. Resaltado de la página actual (medido en navegador, 2026-11-18)
+------------------------------------------------------------------------------
+Con el padre sin `current_type` (APEX lo dejaba en TARGET_PAGE):
+  página 22 -> ['Proveedores@2']                       OK
+  página 27 -> ['Compras@1', 'Compras@2']              MAL: el grupo se marcaba también
+
+Con `p_list_item_current_type=>'NEVER'` en el padre:
+  página 22 -> ['Proveedores@2']                       OK
+  página 27 -> ['Compras@2']                           OK
+
+La verificación V5 ahora exige `current_for_pages_type_code = 'NEVER'` y la prueba de
+navegador tiene N6/N7 para las dos páginas.
+
+4. Navegador real (deploy/diagnostico/20261118_menu_compras_navegador.py)
+------------------------------------------------------------------------------
+  OK  el login entra
+  OK  N1 el menu trae «Compras»
+  OK  N2 el menu trae «Proveedores»
+  hijos del grupo: ['Facturas de compras', 'Proveedores']
+  OK  N2b «Facturas de compras» y «Proveedores» estan anidados (nivel 2)
+  OK  N3 «Proveedores» abre la 22
+  OK  N6 en la 22 se marca solo «Proveedores» y no el grupo
+  OK  N4 «Facturas de compras» abre la 27
+  OK  N7 en la 27 se marca la hija «Facturas de compras» y no el grupo
+  OK  N5 captura guardada (deploy/resultados/20261118_menu_compras.png)
+  RESULTADO: FALLAS=0
+
+Nota: la plantilla pinta el grupo PLEGADO por defecto (el padre sale como nodo
+expandible y los hijos no están en el HTML hasta desplegarlo). La prueba lo
+despliega antes de mirar dentro.
+
+Rotulo de la hija: «Facturas de compras» desde el 2026-11-18 (antes «Compras»,
+que se repetia con el nombre del grupo). El static_id sigue siendo 'compras'.
+
+5. Regresión
+------------------------------------------------------------------------------
+  import del export ...................... 93 sentencias, OK
+  procesos de página ..................... 88, FALLAS=0
+  objetos inválidos ...................... 0
+  menu alfabetico (20261110_menu_alfabetico.py) ... FALLAS=0
+  proveedores navegador (20261119_...) ............ FALLAS=0
+  compras navegador (20261119_...) ................ FALLAS=0
+  cobro tasa fecha (20261119_cobro_tasa_fecha_verificacion.sql) ... FALLAS=0
+
+6. Limpieza
+------------------------------------------------------------------------------
+Las verificaciones de esta sesión ya no crean tablas temporales.
+Borradas de la base: TMP_MENUCOMP_FALLAS y TMP_COBTASA_FALLAS.

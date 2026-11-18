@@ -66,6 +66,7 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_password_es_legado.sql
 @@../funciones/fn_autenticar_usuario.sql
 @@../funciones/fn_login_aviso.sql
+@@../funciones/fn_formato_rif.sql
 @@../funciones/fn_clean_num.sql
 @@../funciones/fn_tasa_ves.sql
 @@../funciones/fn_validar_tasa_documento.sql
@@ -76,11 +77,14 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_presupuesto_propio.sql
 @@../funciones/fn_factura_propio.sql
 @@../funciones/fn_factura_editable.sql
+@@../funciones/fn_factura_cobrable.sql
+@@../funciones/fn_forma_pago_pide_ref.sql
 @@../funciones/fn_presupuesto_editable.sql
 @@../funciones/fn_nota_traible.sql
 @@../funciones/fn_nota_con_lineas.sql
 @@../funciones/fn_rif_cliente_valido.sql
 @@../funciones/fn_rif_empresa_valido.sql
+@@../funciones/fn_empresa_activa.sql
 @@../funciones/fn_iva_retenido_bs.sql
 -- Cobros e IGTF (2026-11-17): saldo de la factura y alicuota configurada.
 @@../funciones/fn_saldo_factura.sql
@@ -91,6 +95,8 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_siguiente_folio.sql
 @@../funciones/fn_control_en_rango.sql
 @@../funciones/fn_asignar_control.sql
+-- Excel fiscal del libro de compras y ventas (lo usa el proceso de la pagina 26).
+@@../funciones/fn_libro_excel.sql
 
 -- Monitoreo de errores: el procedimiento va antes porque fn_error_handler lo llama.
 @@../procedimientos/prc_log_error.sql
@@ -138,6 +144,7 @@ prompt ============================================================
 @@../procedimientos/prc_job_tasas_bcv.sql
 @@../procedimientos/prc_log_reset_password.sql
 @@../procedimientos/prc_purgar_logs.sql
+@@../procedimientos/prc_anular_factura_nc.sql
 
 prompt ============================================================
 prompt 7/8 Jobs y datos mínimos

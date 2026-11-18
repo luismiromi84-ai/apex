@@ -1,0 +1,58 @@
+Cobro (25) y Cliente (21): moneda por país, tasa y botones
+==========================================================
+Fecha: 2026-11-18. Rama `feat/empresa-activa`. Commit anterior: `ef843da`.
+
+
+1. Lo que reportó el dueño y qué se hizo
+----------------------------------------
+**Cobro (25)**
+- **«No filtra por país del usuario»** — «Moneda del cobro» era una lista **fija**
+  (`STATIC2:USD;USD,VES;VES,MXN;MXN`): ofrecía MXN a una empresa venezolana. Ahora es SQL, la misma
+  regla que el Panel y las páginas 5 y 8: **la moneda local del país de la empresa activa + USD**
+  (`paises.moneda_local`). Medido en el diálogo: `,USD,VES` para la empresa 1 (VE).
+- **«La tasa está fija (1,00)»** — Dos causas, las dos corregidas:
+  1. La acción que recalcula al cambiar la moneda partía de la tasa **ya puesta** y solo la recalculaba
+     si era 0 o nula; al pasar de VES (1) a USD **se quedaba en 1**. Ahora esa acción **empieza en
+     cero** (`v_tasa number := 0;`), así que cualquier cambio de moneda vuelve a leer `TIPO_CAMBIO`.
+  2. Red de seguridad en el servidor: proceso `BEFORE_HEADER` **«Ajusta la tasa del cobro»**
+     (`ajusta-tasa-cobro`, secuencia 15): si la moneda **no** es VES/BS y la tasa es **1 o menos**,
+     pone `fn_tasa_ves(trunc(sysdate), moneda)`. Así no puede verse «USD + 1,00» ni al abrir el cobro.
+     Medido con una factura en USD: **914,02** (antes 1,00).
+- **Botones** — «Guardar cobro» a la izquierda y **«Salir» a la derecha** (`u-pullRight`).
+
+**Cliente (21)**
+- **«Tiene mucho espacio»** — la rejilla tenía los cinco campos que van en pareja empezando fila nueva,
+  así que cada pareja ocupaba dos filas y dejaba media pantalla vacía. Rejilla nueva, 12 columnas:
+  Tipo de RIF + RIF · Nombre + País · Correo + Teléfono · Dirección + Estado · Retiene IVA + % ·
+  Sujeto Pasivo Especial a todo el ancho.
+- **Botones** — «Guardar» a la izquierda y **«Volver» a la derecha**.
+
+
+2. Trampas medidas (otra vez la misma familia)
+-----------------------------------------------
+- **`u-pull-right` no existe en Universal Theme**: la clase correcta es **`u-pullRight`**. Con guiones
+  no hace nada y parece que «el cambio no se aplicó». (Ya estaba anotado del combo; volvió a pasar.)
+- **Un elemento de `wwv_flow_string.join` sin coma final rompe el import entero** (`PLS-00103` en el
+  `join`, no en la línea del error): al partir un comentario en dos literales se perdió la coma.
+- **`(?:.*\n){0,N}?` con `re.S` cuelga el proceso** sobre el export de 2,5 MB (backtracking
+  catastrófico). Los patrones que recorren líneas se escriben `(?:[^\n]*\n)`, y para insertar bloques se
+  corta por índices.
+- **Los eventos sintéticos (`dispatchEvent('change')`) no disparan las acciones dinámicas de APEX 26**
+  en estas pruebas: la tasa se verificó abriendo el cobro y eligiendo la factura (914,02), no con un
+  `change` inyectado. Para probar una DA hay que hacer clic de verdad o mirar el resultado al cargar.
+- **`apex_application_page_proc` no contiene las acciones dinámicas** (solo los procesos): para mirar
+  una DA hay que leer el export o `APEX_APPLICATION_PAGE_DA*`.
+
+
+3. Verificación
+---------------
+- Diálogo de cobro en navegador real: monedas `VES, USD` (sin MXN), **tasa 914,02** con factura en
+  USD, «Guardar cobro» a la izquierda y «Salir» a la derecha. Captura
+  `deploy/resultados/20261118_cobro.png`.
+- Diálogo de cliente en navegador real: dos columnas (33 y 368 px), «Guardar» a la izquierda y
+  «Volver» a la derecha. Captura `deploy/resultados/20261118_cliente.png`. En la lista de atrás se ve
+  la columna **Empresa**, las insignias ACTIVO/INACTIVO y el cliente INACTIVO en rojo.
+- Regresión (con el fixture y limpiado después): cobros ×5, clientes, documentos de otra empresa,
+  documentos cerrados (24 casos) y empresa activa, todas en **`FALLAS=0`**; rejilla de 12 columnas
+  `FALLAS=0`; 69 procesos compilan; 0 objetos inválidos; 24 páginas + la global, 18 guardas.
+- Prueba reutilizable: `deploy/diagnostico/20261118_ui_cobro_cliente.py`.

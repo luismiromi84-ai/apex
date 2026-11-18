@@ -61,6 +61,15 @@ begin
     espera('C9',  fn_rif_cliente_valido('MXE850101AB',   'MX', 'J'), false);
     espera('C10', fn_rif_cliente_valido('MXEA850101AB1', 'MX', 'N'), true);
 
+    -- 2026-11-19: el RIF de persona natural es la cedula (6 a 8 digitos) mas el
+    -- digito verificador, asi que despues de la letra puede haber 7, 8 o 9
+    -- digitos. Exigir exactamente 9 rechazaba cedulas de 7 digitos con
+    -- verificador (V-4666778-9, reportado por el dueno en Proveedores).
+    espera('C21', fn_rif_cliente_valido('V-4666778-9',   'VE', 'N'), true);
+    espera('C22', fn_rif_cliente_valido('V-9877766',     'VE', 'N'), true);
+    espera('C23', fn_rif_cliente_valido('J-1234567-8',   'VE', 'J'), false);
+    espera('C24', fn_rif_cliente_valido('E-31234567-4',  'VE', 'N'), true);
+
     -- C11: alta y edicion con el tipo de persona
     insert into clientes (id_empresa, rif, razon_social, tipo_persona, cod_pais, estado)
     values (1, 'V-90000001-1', 'CLIENTE DE PRUEBA', 'N', 'VE', 'ACTIVO')
@@ -105,6 +114,75 @@ begin
        and instr(upper(process_source), 'NULLIF(FN_CLEAN_NUM(:P21_ID_CLIENTE)') > 0;
     if v_n <> 1 then
         falla('C17', 'el guardado no usa nullif(fn_clean_num(:P21_ID_CLIENTE),0)');
+    end if;
+
+    -- C18 (2026-11-18): la pantalla de clientes (20) — el dueño reportó que no se veía
+    -- a qué empresa pertenece cada cliente y que el RIF inválido seguía en la base.
+    --  (a) la lista filtra por la empresa activa y trae la empresa en la consulta
+    select count(*) into v_n
+      from apex_application_page_regions
+     where application_id = 100 and page_id = 20
+       and region_id = 43000000000000501
+       and instr(upper(region_source), 'F_EMPRESA_ACTIVA') > 0
+       and instr(upper(region_source), 'NOMBRE_EMPRESA AS EMPRESA') > 0;
+    if v_n <> 1 then
+        falla('C18a', 'la lista de clientes no filtra por la empresa activa o no trae la empresa');
+    end if;
+
+    --  (b) la columna «Empresa» está en el informe por defecto, y «País» y «Tipo» no
+    select count(*) into v_n
+      from apex_application_page_ir_rpt
+     where application_id = 100 and region_id = 43000000000000501
+       and application_user = 'APXWS_DEFAULT'
+       and instr(upper(report_columns), 'EMPRESA') > 0
+       and instr(upper(report_columns), 'COD_PAIS') = 0
+       and instr(upper(report_columns), 'TIPO') = 0;
+    if v_n = 0 then
+        falla('C18b', 'el informe por defecto de clientes no muestra Empresa o sigue mostrando País/Tipo');
+    end if;
+
+    --  (c) el estado se pinta como insignia
+    select count(*) into v_n
+      from apex_application_page_ir_col
+     where application_id = 100 and region_id = 43000000000000501
+       and column_alias = 'ESTADO'
+       and instr(html_expression, 'status-badge') > 0;
+    if v_n <> 1 then
+        falla('C18c', 'el estado de la lista de clientes no se pinta como insignia');
+    end if;
+
+    --  (d) el guardado rechaza un correo o un teléfono como nombre (-20028)
+    select count(*) into v_n
+      from apex_application_page_proc
+     where application_id = 100 and page_id = 21
+       and static_id = 'guardar-cliente'
+       and instr(process_source, '-20028') > 0
+       and instr(process_source, '@') > 0;
+    if v_n <> 1 then
+        falla('C18d', 'el guardado de cliente no rechaza un correo como nombre');
+    end if;
+
+    -- C19: no queda ningún cliente ACTIVO con un RIF que hoy no pase la regla
+    select count(*) into v_n
+      from clientes c
+     where c.estado = 'ACTIVO'
+       and not fn_rif_cliente_valido(
+               c.rif,
+               nvl(c.cod_pais, (select e.cod_pais from empresas e where e.id_empresa = c.id_empresa)),
+               nvl(c.tipo_persona, 'J'));
+    if v_n > 0 then
+        falla('C19', v_n || ' cliente(s) ACTIVO con RIF invalido');
+    end if;
+
+    -- C20: los ítems ocultos de empresa no son obligatorios (con 2+ empresas y sin
+    -- elegir valen NULL y APEX bloquearía el guardado con «Empresa debe tener algún valor»)
+    select count(*) into v_n
+      from apex_application_page_items
+     where application_id = 100
+       and item_name in ('P7_ID_EMPRESA', 'P9_ID_EMPRESA', 'P13_ID_EMPRESA')
+       and is_required = 'Yes';
+    if v_n > 0 then
+        falla('C20', v_n || ' item(s) de empresa ocultos siguen siendo obligatorios');
     end if;
 
     raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || v_lista, 1, 2000));

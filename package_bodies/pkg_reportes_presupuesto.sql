@@ -12,6 +12,26 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
         RETURN TO_CHAR(p_valor, p_mascara, 'NLS_NUMERIC_CHARACTERS=''.,''');
     END fn_num;
 
+    -- El RIF venezolano se imprime con guiones (J-12345678-9) aunque en la base
+    -- este sin ellos: los datos historicos se cargaron como 'J123456789' y el
+    -- papel tiene que salir como lo pide el SENIAT. Lo que no encaja con la forma
+    -- (un RFC mexicano, por ejemplo) se imprime tal cual.
+    FUNCTION fn_rif (p_valor IN VARCHAR2) RETURN VARCHAR2 IS
+        v_limpio VARCHAR2(50);
+    BEGIN
+        IF p_valor IS NULL THEN
+            RETURN NULL;
+        END IF;
+        v_limpio := REPLACE(REPLACE(UPPER(TRIM(p_valor)), '-', ''), ' ', '');
+        IF LENGTH(v_limpio) = 10
+           AND SUBSTR(v_limpio, 1, 1) IN ('J', 'V', 'E', 'G', 'P', 'C')
+           AND REGEXP_LIKE(SUBSTR(v_limpio, 2), '^[0-9]{9}$') THEN
+            RETURN SUBSTR(v_limpio, 1, 1) || '-' || SUBSTR(v_limpio, 2, 8) || '-'
+                   || SUBSTR(v_limpio, 10, 1);
+        END IF;
+        RETURN p_valor;
+    END fn_rif;
+
     -- Sustituye al reporte cuando falta el documento. Antes se devolvia un
     -- reporte vacio con "Sypex Systems" como empresa, que parecia valido.
     FUNCTION fn_aviso (p_texto IN VARCHAR2) RETURN CLOB IS
@@ -225,7 +245,7 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
       || q'~
         <h2>~' || sys.htf.escape_sc(v_empresa) || q'~</h2>
         <p><strong>~' || sys.htf.escape_sc(v_ident_label) || q'~:</strong> ~'
-        || sys.htf.escape_sc(v_ident_empresa) || q'~<br>
+        || sys.htf.escape_sc(fn_rif(v_ident_empresa)) || q'~<br>
             Sistema de Presupuestos B2B</p>
       </td>
       <td style="width: 40%;">
@@ -241,14 +261,20 @@ create or replace PACKAGE BODY pkg_reportes_presupuesto AS
 
   <table style="width: 100%; margin-bottom: 20px; font-size: 13px; background: #f9f9f9; padding: 10px; border-radius: 4px;">
     <tr>
-      <td><strong>Cliente:</strong> ~' || sys.htf.escape_sc(v_cliente) || q'~</td>
+      <td><strong>Cliente:</strong> ~' || sys.htf.escape_sc(INITCAP(v_cliente)) || q'~</td>
       <td><strong>~' || v_cliente_label || q'~:</strong> ~'
-      || sys.htf.escape_sc(v_rif_cliente) || q'~</td>
+      || sys.htf.escape_sc(fn_rif(v_rif_cliente)) || q'~</td>
     </tr>
     <tr>
       <td><strong>Estado:</strong> ~' || sys.htf.escape_sc(v_estado) || q'~</td>
-      <td><strong>~' || v_tasa_label || q'~:</strong> ~' || fn_num(nvl(v_tasa, 1), 'FM999,999,99990.0000')
-      || ' ' || v_moneda_doc || q'~</td>
+      <td><strong>~' || v_tasa_label || q'~:</strong> ~' ||
+      -- Se imprime en bolivares por unidad de la moneda del documento y se dice la
+      -- unidad: «914,0218 Bs/USD» (antes decia «914.0218 USD», que parece una tasa
+      -- en dolares). En un documento en bolivares la tasa es 1: «1,0000 Bs/VES».
+      CASE WHEN v_moneda_doc IN ('VES', 'BS') THEN '1,0000'
+           ELSE TO_CHAR(nvl(v_tasa, 1), 'FM999G999G990D0000',
+                        'NLS_NUMERIC_CHARACTERS='',.''') END
+      || ' Bs/' || v_moneda_doc || q'~</td>
     </tr>
   </table>
 

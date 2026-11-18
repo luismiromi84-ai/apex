@@ -44,7 +44,7 @@ select substrb('R2: la region rep-documentos no es un IR con la consulta esperad
                       and r.source_type_plugin_static_id = 'NATIVE_IR'
                       and instr(r.region_source, 'id_factura_origen') > 0
                       and instr(r.region_source, 'ANULADA') > 0
-                      and instr(r.region_source, 'v_empresas_usuario') > 0
+                      and instr(upper(r.region_source), 'F_EMPRESA_ACTIVA') > 0
                       and instr(r.region_source, ':P17_TIPO') > 0
                       and instr(r.region_source, ':P17_INCLUIR_ANULADAS') > 0);
 /
@@ -55,6 +55,7 @@ declare
     v_sql    clob;
     v_n      number;
     v_mal    number;
+    v_emp    number;
     v_error  varchar2(300);
 begin
     begin
@@ -70,6 +71,10 @@ begin
     end;
 
     if v_sql is not null then
+        -- La empresa activa manda (plan empresa-activa, tarea 3): la consulta ya no
+        -- filtra por «todas mis empresas» sino por el ítem de aplicación.
+        select min(id_empresa) into v_emp from facturas;
+        v_sql := replace(v_sql, ':F_EMPRESA_ACTIVA', to_char(nvl(v_emp, 0)));
         v_sql := replace(v_sql, ':P17_ID_EMPRESA', 'null');
         v_sql := replace(v_sql, ':P17_CLIENTE', 'null');
         v_sql := replace(v_sql, ':P17_TIPO', '''TODOS''');
@@ -158,13 +163,13 @@ select substrb('R8: el filtro de empresa no valida la empresa del usuario', 1, 3
                       and instr(upper(p.process_source), 'P17_ID_EMPRESA') > 0);
 /
 
--- R9: entrada de menu «Facturas y notas».
+-- R9: entrada de menu «Reportes Factura y Notas C/D» (antes «Facturas y notas»).
 insert into tmp_rep_fallas
 select substrb('R9: falta la entrada de menu del reporte', 1, 300)
   from dual
  where not exists (select 1 from apex_application_list_entries
                     where application_id = 100 and entry_target like '%:17:%'
-                      and upper(entry_text) like '%FACTURAS Y NOTAS%');
+                      and upper(entry_text) like '%REPORTES FACTURA Y NOTAS C/D%');
 /
 
 -- R10: «Ver» abre la factura en modo consulta y la pagina 9 lo respeta.

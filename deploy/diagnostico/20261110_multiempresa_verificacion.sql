@@ -1026,7 +1026,7 @@ begin
     v_c := replace(v_c, ':P19_ES_SPE', '''N''');
             v_c := replace(v_c, ':P19_COD_PAIS', '''VE''');
             v_c := replace(v_c, ':P19_TIPO_IDENT_FISCAL', '''RIF''');
-            v_c := replace(v_c, ':P19_RFC', '''DIAG-P19-RIF''');
+            v_c := replace(v_c, ':P19_RFC', '''J-12345678-9''');
             v_c := replace(v_c, ':P19_ESTADO', '''ACTIVO''');
             v_c := replace(v_c, ':APP_USER', '''DIAG_P19_A''');
             v_c := replace(v_c, '<ID_VACIO>', 'null');
@@ -1579,17 +1579,15 @@ begin
                            when 4 then 7  when 5 then 8  when 6 then 9
                            when 7 then 10 when 8 then 13 when 9 then 16
                            when 10 then 17 when 11 then 18 when 12 then 19 end;
-        v_esperado := case v_i when 1 then 0 when 2 then 2 when 3 then 2
-                             when 4 then 3 when 5 then 2 when 6 then 5
-                             when 7 then 2 when 8 then 2 when 9 then 4
-                             when 10 then 3 when 11 then 6 when 12 then 3 end;
-        -- La 19 paso de 2 a 4 el 2026-11-16 con las pestanas (carga fiscal, defecto
-        -- del logo y la carga de empresa). Baja a 3 al quitar de la carga de empresa
-        -- la eleccion por la cuenta: ahora la pestana «Empresa» nace en blanco y solo
-        -- carga con REQUEST=EDITAR, asi que ya no consulta la vista.
+        v_esperado := case v_i when 1 then 0 when 2 then 0 when 3 then 0
+                             when 4 then 0 when 5 then 0 when 6 then 0
+                             when 7 then 0 when 8 then 0 when 9 then 0
+                             when 10 then 0 when 11 then 0 when 12 then 2 end;
+        -- Desde el 2026-11-17 (plan empresa-activa, tarea 3) las pantallas ya NO
+        -- leen V_EMPRESAS_USUARIO: filtran por el item de aplicacion
+        -- F_EMPRESA_ACTIVA. Solo la pagina 19 (administracion de empresas) sigue
+        -- leyendo la vista, porque su trabajo es listar las empresas del usuario.
         -- Las paginas 17 y 18 se retiraron en el Paso C, asi que ya no se miden: 0.
-        -- La 18 sube de 2 a 6 el 2026-11-17: el «Libro de compras y ventas» la usa en
-        -- cuatro regiones (Libro VE 2, Totales VE 2, Libro MX 1, Totales MX 1).
         v_n := 0;
         for r in (select region_source, where_clause
                     from apex_application_page_regions
@@ -1994,9 +1992,12 @@ declare
     v_ids    varchar2(2000);
 
     -- Cuenta las filas que devuelve el texto guardado de la region indicada
-    -- para un usuario dado. Si la consulta no se puede ejecutar, devuelve -1
-    -- para que el caso lo reporte como fallo.
-    function contar_region(p_region_id number, p_usuario varchar2) return number is
+    -- para un usuario y una empresa activa dados. Los binds se sustituyen en el
+    -- texto (:F_EMPRESA_ACTIVA es la empresa de la barra y :APP_USER el usuario).
+    -- Si la consulta no se puede ejecutar, devuelve -1 para que el caso lo
+    -- reporte como fallo.
+    function contar_region(p_region_id number, p_usuario varchar2,
+                           p_empresa number) return number is
         v_txt varchar2(32000);
         v_cnt number;
     begin
@@ -2004,7 +2005,9 @@ declare
           from apex_application_page_regions
          where application_id = 100 and region_id = p_region_id;
         v_txt := rtrim(rtrim(v_txt), ';');
-        execute immediate 'select count(*) from (' || v_txt || ')' into v_cnt using p_usuario;
+        v_txt := replace(v_txt, ':F_EMPRESA_ACTIVA', to_char(p_empresa));
+        v_txt := replace(v_txt, ':APP_USER', '''' || p_usuario || '''');
+        execute immediate 'select count(*) from (' || v_txt || ')' into v_cnt;
         return v_cnt;
     exception
         when others then
@@ -2017,7 +2020,7 @@ declare
     -- FIX ROUND 1 (2026-11-10): la columna de id depende de la region: la
     -- lista de presupuestos la trae como 'id_presupuesto' y la de facturas
     -- como 'id_factura'. Se pasa el nombre de la columna.
-    function ids_region(p_region_id number, p_usuario varchar2,
+    function ids_region(p_region_id number, p_usuario varchar2, p_empresa number,
                         p_columna varchar2) return varchar2 is
         v_txt varchar2(32000);
         v_lis varchar2(2000);
@@ -2027,6 +2030,8 @@ declare
           from apex_application_page_regions
          where application_id = 100 and region_id = p_region_id;
         v_txt := rtrim(rtrim(v_txt), ';');
+        v_txt := replace(v_txt, ':F_EMPRESA_ACTIVA', to_char(p_empresa));
+        v_txt := replace(v_txt, ':APP_USER', '''' || p_usuario || '''');
         -- MEDIDO (2026-11-10): con la concatenacion directa el literal
         -- PL/SQL queda ambiguo (la comilla de despues de '|| p_columna ||'
         -- abre un literal que no se cierra) y python-oracledb lo rechaza con
@@ -2036,94 +2041,105 @@ declare
         v_sql := 'select listagg(to_char(t.' || p_columna || q'{), '|'}) within group (order by t.}'
                   || p_columna || ')'
                   || ' from (' || v_txt || ') t';
-        execute immediate v_sql into v_lis using p_usuario;
+        execute immediate v_sql into v_lis;
         return v_lis;
     exception
         when others then
             return 'ERROR';
     end ids_region;
 begin
-    -- M15: el usuario de DOS empresas ve las DOS.
-    v_cuenta := contar_region(11950647600514906, 'DIAG_M2');   -- Lista de Presupuestos
-    if v_cuenta <> 2 then
+    -- M15: con la empresa 900030 activa, el usuario de DOS empresas ve SOLO las de
+    -- 900030 (la empresa activa manda: ya no hay «todas mis empresas»).
+    v_cuenta := contar_region(11950647600514906, 'DIAG_M2', 900030);   -- Lista de Presupuestos
+    if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M15: Ã‚Â«Lista de PresupuestosÃ‚Â» devolvio ' || v_cuenta
-                        || ' presupuestos para un usuario de 2 empresas (se esperaba 2)', 1, 300));
+        values (substrb('M15: «Lista de Presupuestos» devolvio ' || v_cuenta
+                        || ' presupuestos con la empresa 900030 activa (se esperaba 1)', 1, 300));
     end if;
-    v_cuenta := contar_region(29963866505095675, 'DIAG_M2');   -- Lista de Facturas
-    if v_cuenta <> 2 then
+    v_cuenta := contar_region(29963866505095675, 'DIAG_M2', 900030);   -- Lista de Facturas
+    if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M15: Ã‚Â«Lista de FacturasÃ‚Â» devolvio ' || v_cuenta
-                        || ' facturas para un usuario de 2 empresas (se esperaba 2)', 1, 300));
+        values (substrb('M15: «Lista de Facturas» devolvio ' || v_cuenta
+                        || ' facturas con la empresa 900030 activa (se esperaba 1)', 1, 300));
     end if;
 
-    -- M16: el usuario de UNA empresa ve SOLO la suya (regresion).
-    v_cuenta := contar_region(11950647600514906, 'DIAG_M1');
+    -- M15b: sin empresa activa las listas salen VACIAS (nunca «todas»).
+    v_cuenta := contar_region(11950647600514906, 'DIAG_M2', 0);
+    if v_cuenta <> 0 then
+        insert into tmp_multi_fallas
+        values (substrb('M15b: «Lista de Presupuestos» devolvio ' || v_cuenta
+                        || ' presupuestos SIN empresa activa (se esperaba 0)', 1, 300));
+    end if;
+    v_cuenta := contar_region(29963866505095675, 'DIAG_M2', 0);
+    if v_cuenta <> 0 then
+        insert into tmp_multi_fallas
+        values (substrb('M15b: «Lista de Facturas» devolvio ' || v_cuenta
+                        || ' facturas SIN empresa activa (se esperaba 0)', 1, 300));
+    end if;
+
+    -- M16: el usuario de UNA empresa ve la suya (regresion).
+    v_cuenta := contar_region(11950647600514906, 'DIAG_M1', 900030);
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M16: Ã‚Â«Lista de PresupuestosÃ‚Â» devolvio ' || v_cuenta
+        values (substrb('M16: «Lista de Presupuestos» devolvio ' || v_cuenta
                         || ' presupuestos para un usuario de 1 empresa (se esperaba 1)', 1, 300));
     end if;
-    v_cuenta := contar_region(29963866505095675, 'DIAG_M1');
+    v_cuenta := contar_region(29963866505095675, 'DIAG_M1', 900030);
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M16: Ã‚Â«Lista de FacturasÃ‚Â» devolvio ' || v_cuenta
+        values (substrb('M16: «Lista de Facturas» devolvio ' || v_cuenta
                         || ' facturas para un usuario de 1 empresa (se esperaba 1)', 1, 300));
     end if;
 
     -- El usuario de la empresa ajena ve SOLO la suya (no la de los demas).
-    v_cuenta := contar_region(11950647600514906, 'DIAG_M3');
+    v_cuenta := contar_region(11950647600514906, 'DIAG_M3', 900032);
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M20: Ã‚Â«Lista de PresupuestosÃ‚Â» devolvio ' || v_cuenta
+        values (substrb('M20: «Lista de Presupuestos» devolvio ' || v_cuenta
                         || ' presupuestos para un usuario de la empresa ajena (se esperaba 1)', 1, 300));
     end if;
-    v_cuenta := contar_region(29963866505095675, 'DIAG_M3');
+    v_cuenta := contar_region(29963866505095675, 'DIAG_M3', 900032);
     if v_cuenta <> 1 then
         insert into tmp_multi_fallas
-        values (substrb('M20: Ã‚Â«Lista de FacturasÃ‚Â» devolvio ' || v_cuenta
+        values (substrb('M20: «Lista de Facturas» devolvio ' || v_cuenta
                         || ' facturas para un usuario de la empresa ajena (se esperaba 1)', 1, 300));
     end if;
 
     -- M20: el documento de la empresa ajena (id 900032 en las dos tablas)
-    -- NO puede salir en la lista del usuario de dos empresas, NI en la del
-    -- usuario de una.
+    -- NO puede salir en la lista cuando la empresa activa es otra.
     --
     -- Se comprueba POR ID, no solo por conteo de filas: un conteo de 2
     -- podria pasar devolviendo las dos facturas equivocadas.
     --
     -- (a) El PRESUPUESTO de la empresa ajena (id 900032).
-    v_ids := ids_region(11950647600514906, 'DIAG_M2', 'id_presupuesto');
+    v_ids := ids_region(11950647600514906, 'DIAG_M2', 900030, 'id_presupuesto');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: Ã‚Â«Lista de PresupuestosÃ‚Â» devolvio el presupuesto de la empresa ajena: '
+        values (substrb('M20: «Lista de Presupuestos» devolvio el presupuesto de la empresa ajena: '
                         || v_ids, 1, 300));
     end if;
 
     -- (b) Y la lista de DIAG_M1 (una sola empresa) tampoco puede traerlo.
-    v_ids := ids_region(11950647600514906, 'DIAG_M1', 'id_presupuesto');
+    v_ids := ids_region(11950647600514906, 'DIAG_M1', 900030, 'id_presupuesto');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: Ã‚Â«Lista de PresupuestosÃ‚Â» de un usuario de 1 empresa devolvio '
+        values (substrb('M20: «Lista de Presupuestos» de un usuario de 1 empresa devolvio '
                         || 'el presupuesto de la empresa ajena: ' || v_ids, 1, 300));
     end if;
 
-    -- (c) La FACTURA de la empresa ajena (id 900032), para el usuario de
-    -- DOS empresas. FIX ROUND 1: antes solo se comprobaba el presupuesto, y
-    -- el conteo de filas del M15 (de facturas) podia pasar devolviendo las
-    -- dos facturas equivocadas.
-    v_ids := ids_region(29963866505095675, 'DIAG_M2', 'id_factura');
+    -- (c) La FACTURA de la empresa ajena (id 900032), con la empresa 900030 activa.
+    v_ids := ids_region(29963866505095675, 'DIAG_M2', 900030, 'id_factura');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: Ã‚Â«Lista de FacturasÃ‚Â» devolvio la factura de la empresa ajena: '
+        values (substrb('M20: «Lista de Facturas» devolvio la factura de la empresa ajena: '
                         || v_ids, 1, 300));
     end if;
 
     -- (d) Y para el usuario de UNA empresa.
-    v_ids := ids_region(29963866505095675, 'DIAG_M1', 'id_factura');
+    v_ids := ids_region(29963866505095675, 'DIAG_M1', 900030, 'id_factura');
     if v_ids like '%900032%' then
         insert into tmp_multi_fallas
-        values (substrb('M20: Ã‚Â«Lista de FacturasÃ‚Â» de un usuario de 1 empresa devolvio '
+        values (substrb('M20: «Lista de Facturas» de un usuario de 1 empresa devolvio '
                         || 'la factura de la empresa ajena: ' || v_ids, 1, 300));
     end if;
 end;
@@ -2132,85 +2148,50 @@ end;
 -- -----------------------------------------------------------------------------
 -- M17: los defectos de empresa de P13_ID_EMPRESA, P7_ID_EMPRESA y
 -- P19L_ID_EMPRESA (el logo, que era P17_ID_EMPRESA hasta que la 17 paso a ser
--- una pestana de la 19).
+-- una pestana de la 19) ya NO eligen una empresa por su cuenta: leen el item de
+-- aplicacion F_EMPRESA_ACTIVA (plan empresa-activa, tarea 3).
 --
 -- Se mide el TEXTO GUARDADO (APEX_APPLICATION_PAGE_ITEMS.ITEM_DEFAULT), no una
--- copia a mano. Con un usuario de DOS empresas el defecto tiene que devolver
--- NULL (la app NO elige por su cuenta: review focus 4 del plan) y con uno de
--- UNA empresa tiene que devolver esa empresa.
---
--- OJO: el defecto es un 'select min(...) ... having count(*) = 1'. Con dos
--- empresas NO DEVOLVE FILAS, asi que un 'execute immediate ... into' da
--- NO_DATA_FOUND: eso es exactamente el resultado que se espera para el caso
--- de dos empresas (el defecto es NULL), y lo que NO se espera para el caso de
--- una empresa.
+-- copia a mano.
 -- -----------------------------------------------------------------------------
 declare
-    v_error  varchar2(300);
-    v_codigo number;
-
-    procedure medir_defecto(p_item varchar2, p_usuario varchar2,
-                            p_esperado number, p_caso varchar2) is
-        v_txt varchar2(32000);
-        v_val number;
-        v_cod number;
-    begin
-        v_txt := null;
-        select item_default into v_txt
-          from apex_application_page_items
-         where application_id = 100 and item_name = p_item;
-        v_cod := 0;
-        v_val := null;
-        begin
-            execute immediate v_txt into v_val using p_usuario;
-        exception
-            when no_data_found then
-                v_cod := 1;   -- sin filas: el defecto es NULL
-            when others then
-                v_cod := sqlcode;
-        end;
-        if p_esperado is null then
-            -- Se espera NULL: con dos empresas el defecto no devuelve filas.
-            if v_cod = 0 and v_val is not null then
-                insert into tmp_multi_fallas
-                values (substrb(p_caso || ': el defecto de ' || p_item
-                                || ' devolvio ' || v_val
-                                || ' para un usuario de 2 empresas (se esperaba NULL)', 1, 300));
-            elsif v_cod not in (0, 1) then
-                insert into tmp_multi_fallas
-                values (substrb(p_caso || ': el defecto de ' || p_item
-                                || ' dio el codigo ' || v_cod, 1, 300));
-            end if;
-        else
-            if v_cod <> 0 then
-                insert into tmp_multi_fallas
-                values (substrb(p_caso || ': el defecto de ' || p_item
-                                || ' dio el codigo ' || v_cod
-                                || ' para un usuario de 1 empresa (se esperaba 900030)', 1, 300));
-            elsif v_val <> p_esperado then
-                insert into tmp_multi_fallas
-                values (substrb(p_caso || ': el defecto de ' || p_item
-                                || ' devolvio ' || v_val
-                                || ' para un usuario de 1 empresa (se esperaba ' || p_esperado || ')', 1, 300));
-            end if;
-        end if;
-    exception
-        when others then
-            v_error := sqlerrm;
-            insert into tmp_multi_fallas
-            values (substrb(p_caso || ': error al medir el defecto de ' || p_item
-                            || ': ' || v_error, 1, 300));
-    end medir_defecto;
+    v_txt varchar2(4000);
+    v_val number;
+    v_err varchar2(200);
+    v_n   number := 0;
 begin
-    -- Con DOS empresas: NULL en los tres.
-    medir_defecto('P13_ID_EMPRESA', 'DIAG_M2', null, 'M17');
-    medir_defecto('P7_ID_EMPRESA',  'DIAG_M2', null, 'M17');
-    medir_defecto('P19L_ID_EMPRESA', 'DIAG_M2', null, 'M17');
-
-    -- Con UNA empresa: esa empresa (900030).
-    medir_defecto('P13_ID_EMPRESA', 'DIAG_M1', 900030, 'M17');
-    medir_defecto('P7_ID_EMPRESA',  'DIAG_M1', 900030, 'M17');
-    medir_defecto('P19L_ID_EMPRESA', 'DIAG_M1', 900030, 'M17');
+    for r in (select item_name, item_default
+                from apex_application_page_items
+               where application_id = 100
+                 and item_name in ('P13_ID_EMPRESA', 'P7_ID_EMPRESA',
+                                   'P19L_ID_EMPRESA', 'P19F_ID_EMPRESA')) loop
+        v_txt := lower(nvl(r.item_default, ' '));
+        if instr(v_txt, 'f_empresa_activa') = 0 or instr(v_txt, 'v_empresas_usuario') > 0 then
+            insert into tmp_multi_fallas
+            values (substrb('M17: el defecto de ' || r.item_name
+                            || ' no toma la empresa activa: ' || substr(r.item_default, 1, 120), 1, 300));
+        end if;
+        -- y el defecto, ejecutado con la empresa activa 900030, devuelve 900030
+        begin
+            execute immediate r.item_default into v_val using 900030;
+            if v_val <> 900030 then
+                insert into tmp_multi_fallas
+                values (substrb('M17: el defecto de ' || r.item_name || ' devolvio '
+                                || v_val || ' con la empresa activa 900030', 1, 300));
+            end if;
+        exception
+            when others then
+                v_err := substr(sqlerrm, 1, 120);
+                insert into tmp_multi_fallas
+                values (substrb('M17: el defecto de ' || r.item_name
+                                || ' no se puede ejecutar: ' || v_err, 1, 300));
+        end;
+        v_n := v_n + 1;
+    end loop;
+    if v_n <> 4 then
+        insert into tmp_multi_fallas
+        values ('M17: se midieron ' || v_n || ' defectos de empresa (se esperaban 4)');
+    end if;
 end;
 /
 

@@ -38,7 +38,7 @@ select substrb('L2: la region libro-ve no tiene la consulta esperada', 1, 300)
                       and instr(upper(r.region_source), 'PROVEEDORES') > 0
                       and instr(upper(r.region_source), 'RETENCION_IVA_BS') > 0
                       and instr(r.region_source, ':P18_LIBRO') > 0
-                      and instr(upper(r.region_source), 'V_EMPRESAS_USUARIO') > 0);
+                      and instr(upper(r.region_source), 'F_EMPRESA_ACTIVA') > 0);
 /
 
 -- L3: la region de Mexico trae el 8 % y NO la retencion.
@@ -82,7 +82,8 @@ begin
         p_fecha_vencimiento => null, p_estado => 'PENDIENTE',
         p_subtotal => 100, p_monto_impuesto => 16, p_monto_total => 116,
         p_observaciones => null, p_cod_moneda => 'VES', p_tipo_cambio => 1,
-        p_usuario => 'admin', p_tipo_documento => 'FAC');
+        p_usuario => 'admin', p_tipo_documento => 'FAC',
+        p_nro_comprobante_retencion => '20261100000003');
 
     insert into facturas_det (id_factura, num_linea, descripcion, cantidad, precio_unitario,
                               id_impuesto, porcentaje_impuesto, monto_impuesto, subtotal_linea,
@@ -93,6 +94,7 @@ begin
       from apex_application_page_regions
      where application_id = 100 and page_id = 18 and region_static_id = 'libro-ve';
 
+    v_sql := replace(v_sql, ':F_EMPRESA_ACTIVA', '1');
     v_sql := replace(v_sql, ':P18_ID_EMPRESA', 'null');
     v_sql := replace(v_sql, ':P18_LIBRO', '''TODOS''');
     v_sql := replace(v_sql, ':P18_MES', '11');
@@ -141,6 +143,7 @@ begin
     select region_source into v_sql
       from apex_application_page_regions
      where application_id = 100 and page_id = 18 and region_static_id = 'libro-ve';
+    v_sql := replace(v_sql, ':F_EMPRESA_ACTIVA', '1');
     v_sql := replace(v_sql, ':P18_ID_EMPRESA', 'null');
     v_sql := replace(v_sql, ':P18_LIBRO', '''TODOS''');
     v_sql := replace(v_sql, ':P18_MES', '11');

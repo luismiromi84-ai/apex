@@ -27,6 +27,7 @@ create or replace PACKAGE BODY pkg_gasto_real AS
         p_monto_origen    IN  NUMBER,
         p_moneda_origen   IN  VARCHAR2,
         p_tasa_real       IN  NUMBER   DEFAULT NULL,
+        p_nro_comprobante IN  VARCHAR2 DEFAULT NULL,
         p_usuario         IN  VARCHAR2 DEFAULT NULL
     ) IS
         v_moneda    varchar2(5);
@@ -37,6 +38,7 @@ create or replace PACKAGE BODY pkg_gasto_real AS
         v_existe    number;
         v_fecha     date;
         v_estado    presupuestos.estado%type;
+        v_mon_pres  presupuestos.cod_moneda%type;
     begin
         if p_id_presupuesto is null then
             raise_application_error(-20040, 'El gasto necesita un presupuesto.');
@@ -46,7 +48,8 @@ create or replace PACKAGE BODY pkg_gasto_real AS
             raise_application_error(-20041, 'El monto del gasto debe ser mayor que cero.');
         end if;
 
-        select count(*), max(estado) into v_existe, v_estado
+        select count(*), max(estado), max(cod_moneda)
+          into v_existe, v_estado, v_mon_pres
           from presupuestos where id_presupuesto = p_id_presupuesto;
 
         if v_existe = 0 then
@@ -67,6 +70,16 @@ create or replace PACKAGE BODY pkg_gasto_real AS
 
         v_moneda := upper(nvl(p_moneda_origen, 'USD'));
         v_fecha  := nvl(p_fecha_gasto, sysdate);
+
+        -- Si el gasto no esta en la moneda del presupuesto, la tasa es OBLIGATORIA:
+        -- sin ella el equivalente en dolares sale mal y la rentabilidad del
+        -- presupuesto suma peras con manzanas. (Decision del duenio, 2026-11-18.)
+        if v_moneda <> upper(nvl(v_mon_pres, v_moneda)) and p_tasa_real is null then
+            raise_application_error(-20055,
+                'Indica la tasa: el gasto esta en ' || v_moneda
+                || ' y el presupuesto en ' || nvl(v_mon_pres, 'otra moneda')
+                || '. Sin tasa no se puede calcular el gasto en dolares.');
+        end if;
 
         if v_moneda = 'USD' then
             -- El dolar es la moneda base: el factor es 1 por definicion. La
@@ -100,9 +113,10 @@ create or replace PACKAGE BODY pkg_gasto_real AS
 
         if p_id_gasto is null then
             insert into gasto_real (id_presupuesto, fecha_gasto, monto_origen,
-                                    moneda_origen, tasa_real, monto_base_usd)
+                                    moneda_origen, tasa_real, monto_base_usd,
+                                    nro_comprobante)
             values (p_id_presupuesto, v_fecha, p_monto_origen,
-                    v_moneda, v_tasa, v_usd)
+                    v_moneda, v_tasa, v_usd, p_nro_comprobante)
             returning id_gasto into p_id_gasto;
         else
             update gasto_real set
@@ -111,7 +125,8 @@ create or replace PACKAGE BODY pkg_gasto_real AS
                    monto_origen   = p_monto_origen,
                    moneda_origen  = v_moneda,
                    tasa_real      = v_tasa,
-                   monto_base_usd = v_usd
+                   monto_base_usd = v_usd,
+                   nro_comprobante = p_nro_comprobante
              where id_gasto = p_id_gasto;
 
             if sql%rowcount = 0 then
