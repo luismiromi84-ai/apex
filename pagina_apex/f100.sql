@@ -23846,6 +23846,13 @@ wwv_flow_imp_page.create_page_item(
   'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001203)
+,p_name=>'P28_URL_RETENCION'
+,p_item_sequence=>16
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_display_as=>'NATIVE_HIDDEN'
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001022)
 ,p_name=>'P28_ESTADO'
 ,p_item_sequence=>15
@@ -24183,6 +24190,23 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-arrow-left'
 ,p_grid_new_row=>'N'
 );
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001204)
+,p_button_sequence=>230
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_button_name=>'BTN_IMPRIMIR_RETENCION'
+,p_static_id=>'btn-imprimir-retencion'
+,p_button_action=>'REDIRECT_URL'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Imprimir comprobante'
+,p_icon_css_classes=>'fa-print'
+,p_button_redirect_url=>'&P28_URL_RETENCION.'
+,p_button_condition_type=>'EXPRESSION'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'') and nvl(:P28_ESTADO, ''#'') = ''REGISTRADA'''
+,p_button_condition2=>'PLSQL'
+);
+
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000001038)
 ,p_process_sequence=>10
@@ -24227,6 +24251,9 @@ unistr('            apex_util.set_session_state(''P28_FECHA_EMISION'', to_char(r
 '            apex_util.set_session_state(''P28_TIPO_CAMBIO'', r.tipo_cambio);',
 '            apex_util.set_session_state(''P28_PORCENTAJE_RETENCION'', r.porcentaje_retencion);',
 '            apex_util.set_session_state(''P28_OBSERVACIONES'', r.observaciones);',
+'            apex_util.set_session_state(''P28_URL_RETENCION'',',
+'                apex_page.get_url(p_page => 31, p_items => ''P31_ID_COMPRA'',',
+'                                  p_values => v_id));',
 '            apex_util.set_session_state(''P28_ID_COMPRA_ORIGEN'', r.id_compra_origen);',
 '            apex_util.set_session_state(''P28_ID_FORMA_PAGO'', r.id_forma_pago);',
 '        end loop;',
@@ -26833,6 +26860,61 @@ wwv_flow_imp_page.create_page_process(
 );
 end;
 /
+prompt --application/pages/page_00031
+
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>31
+,p_name=>unistr('Comprobante de retenci\00F3n')
+,p_alias=>'COMPROBANTE-RETENCION'
+,p_step_title=>unistr('Comprobante de retenci\00F3n')
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001201)
+,p_plug_name=>'Comprobante de retencion'
+,p_static_id=>'retencion-print'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>1557215235004102827
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>'RETURN fn_imprimir_retencion(:P31_ID_COMPRA);'
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_ajax_items_to_submit=>'P31_ID_COMPRA'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001200)
+,p_name=>'P31_ID_COMPRA'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001201)
+,p_display_as=>'NATIVE_HIDDEN'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001202)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>unistr('Valida rol: comprobante de retenci\00F3n')
+,p_static_id=>'valida-rol-retencion-print'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001202
+);
+end;
+/
+
 prompt --application/pages/page_00030
 begin
 wwv_flow_imp_page.create_page(
