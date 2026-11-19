@@ -150,6 +150,12 @@ try:
         comprobar("A1 el dialogo del recibo abre desde la lista", abierto == "CLIC" and hay is True,
                   (abierto, hay))
 
+        # A1b (2026-11-19): al abrir un recibo guardado, el neto en bolivares viene lleno
+        neto_bs = nav.js('(function(){var w=document.querySelector("iframe").contentWindow;'
+                         'return w.apex.item("P25_NETO_BS").getValue();})()')
+        comprobar("A1b el neto en bolivares se carga al abrir", str(neto_bs).strip() != "",
+                  neto_bs)
+
         # A2: anular
         nav.js('(function(){var f=document.querySelector("iframe");'
                'var b=[...f.contentDocument.querySelectorAll("button")].find(function(x){'

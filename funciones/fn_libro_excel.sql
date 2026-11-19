@@ -95,7 +95,9 @@ begin
            || '</style>'
            || case when upper(nvl(p_imprimir, 'N')) = 'S' then
                   '<title>Libro de compras y ventas</title>'
-                  || '<script>window.addEventListener("load", function () { window.print(); });</script>'
+                  || '<script>window.addEventListener("load", function () {'
+                  || '  window.addEventListener("afterprint", function () { window.history.back(); });'
+                  || '  window.print();});</script>'
               else '' end
            || '</head><body>'
            || '<div class="titulo">' || sys.htf.escape_sc(v_empresa) || '</div>'
