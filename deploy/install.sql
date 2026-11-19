@@ -79,6 +79,7 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_factura_editable.sql
 @@../funciones/fn_factura_cobrable.sql
 @@../funciones/fn_estado_factura.sql
+@@../funciones/fn_imprimir_retencion.sql
 @@../funciones/fn_forma_pago_pide_ref.sql
 @@../funciones/fn_presupuesto_editable.sql
 @@../funciones/fn_nota_traible.sql

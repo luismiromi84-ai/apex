@@ -390,6 +390,16 @@ try:
                               "IVA retenido", "Neto a pagar") if c not in texto28]
         comprobar("C7 el resumen de la compra sale con sus cinco conceptos",
                   not faltan, faltan)
+
+        # C8 (2026-11-19): el boton «Imprimir comprobante» lleva al comprobante
+        clic_imp = js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'
+                      'return (x.getAttribute("data-otel-label")||"")==="BTN_IMPRIMIR_RETENCION";});'
+                      'if(!b) return "NO"; b.click(); return "CLIC";})()')
+        time.sleep(10)
+        cuerpo_ret = js("document.body.innerText") or ""
+        comprobar("C8 el comprobante de retención se imprime",
+                  clic_imp == "CLIC" and "COMPROBANTE DE RETENCION" in cuerpo_ret,
+                  (clic_imp, cuerpo_ret[:120]))
     con.close()
 finally:
     proc.terminate()
