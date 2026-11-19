@@ -24481,6 +24481,81 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'N')).to_clob
 ,p_wait_for_result=>'Y'
 );
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001170)
+,p_plug_name=>'Resumen de la compra'
+,p_static_id=>'compra-resumen'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id     number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
+'    v_mon    varchar2(5);',
+'    v_tasa   number;',
+'    v_base   number := 0;',
+'    v_exento number := 0;',
+'    v_iva    number := 0;',
+'    v_tot    number := 0;',
+'    v_ret_bs number := 0;',
+'    v_ret    number := 0;',
+'    v_pct    number := 0;',
+'    v_neto   number := 0;',
+'    v_html   clob;',
+'begin',
+'    if v_id is null then return null; end if;',
+'',
+'    select cod_moneda, nvl(tipo_cambio, 1), nvl(porcentaje_retencion, 0),',
+'           nvl(retencion_iva_bs, -1)',
+'      into v_mon, v_tasa, v_pct, v_ret_bs',
+'      from compras where id_compra = v_id;',
+'',
+'    select nvl(sum(case when nvl(porcentaje_impuesto, 0) > 0 then subtotal_linea end), 0),',
+'           nvl(sum(case when nvl(porcentaje_impuesto, 0) = 0 then subtotal_linea end), 0),',
+'           nvl(sum(monto_impuesto), 0),',
+'           nvl(sum(subtotal_linea), 0)',
+'      into v_base, v_exento, v_iva, v_tot',
+'      from compras_det where id_compra = v_id;',
+'',
+'    -- La retencion se calcula en vivo hasta registrar la compra; despues',
+'    -- manda la foto guardada (la que dice el comprobante).',
+'    if v_ret_bs < 0 then',
+'        v_ret_bs := nvl(pkg_retenciones.fn_retencion_bs(v_id), 0);',
+'    end if;',
+'    v_ret := case when nvl(v_tasa, 0) > 0 then round(v_ret_bs / v_tasa, 2) else 0 end;',
+'    v_neto := v_tot - v_ret;',
+'',
+'    v_html := ''<table class="a-Report-table" style="width:100%">''',
+'           || ''<thead><tr><th>Concepto</th><th class="spx-num">'' || v_mon || ''</th>''',
+'           || ''<th class="spx-num">Bolivares</th></tr></thead><tbody>'';',
+'',
+'    v_html := v_html || ''<tr><td>Base imponible</td>''',
+'        || ''<td align="right">'' || to_char(v_base, ''FM999G999G999G990D00'') || ''</td>''',
+'        || ''<td align="right">'' || to_char(v_base * v_tasa, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'    v_html := v_html || ''<tr><td>Monto exento</td>''',
+'        || ''<td align="right">'' || to_char(v_exento, ''FM999G999G999G990D00'') || ''</td>''',
+'        || ''<td align="right">'' || to_char(v_exento * v_tasa, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'    v_html := v_html || ''<tr><td>IVA</td>''',
+'        || ''<td align="right">'' || to_char(v_iva, ''FM999G999G999G990D00'') || ''</td>''',
+'        || ''<td align="right">'' || to_char(v_iva * v_tasa, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'    v_html := v_html || ''<tr><td><b>Total de la factura</b></td>''',
+'        || ''<td align="right"><b>'' || to_char(v_tot, ''FM999G999G999G990D00'') || ''</b></td>''',
+'        || ''<td align="right"><b>'' || to_char(v_tot * v_tasa, ''FM999G999G999G990D00'') || ''</b></td></tr>'';',
+'    v_html := v_html || ''<tr><td>IVA retenido ('' || to_char(v_pct) || '' %)</td>''',
+'        || ''<td align="right">-'' || to_char(v_ret, ''FM999G999G999G990D00'') || ''</td>''',
+'        || ''<td align="right">-'' || to_char(v_ret_bs, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'    v_html := v_html || ''<tr><td><b>Neto a pagar</b></td>''',
+'        || ''<td align="right"><b>'' || to_char(v_neto, ''FM999G999G999G990D00'') || ''</b></td>''',
+'        || ''<td align="right"><b>'' || to_char(v_neto * v_tasa, ''FM999G999G999G990D00'') || ''</b></td></tr>'';',
+'',
+'    return v_html || ''</tbody></table>'';',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
 end;
 /
 
@@ -24496,6 +24571,37 @@ wwv_flow_imp_page.create_page(
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
+,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Descuento de la linea: el % y el monto se calculan el uno del otro. */',
+'function spxNumero(v) {',
+'    if (v === null || v === undefined) return 0;',
+'    var t = String(v).replace(/\s/g, "");',
+'    if (t.indexOf(",") >= 0 && t.indexOf(".") >= 0) {',
+'        t = t.replace(/\./g, "").replace(",", ".");',
+'    } else {',
+'        t = t.replace(",", ".");',
+'    }',
+'    var n = parseFloat(t);',
+'    return isNaN(n) ? 0 : n;',
+' }',
+'function spxDescuento(origen) {',
+'    if (window.spxDescLock) return;',
+'    var cant  = spxNumero(apex.item("P29_CANTIDAD").getValue());',
+'    var prec  = spxNumero(apex.item("P29_PRECIO_UNITARIO").getValue());',
+'    var bruto = cant * prec;',
+'    var pct   = apex.item("P29_PORCENTAJE_DESCUENTO").getValue();',
+'    var monto = apex.item("P29_MONTO_DESCUENTO").getValue();',
+'    window.spxDescLock = origen;',
+'    try {',
+'        if (origen === "pct" && String(pct).trim() !== "") {',
+'            apex.item("P29_MONTO_DESCUENTO").setValue(Math.round(bruto * spxNumero(pct)) / 100);',
+'        } else if (origen === "mon" && String(monto).trim() !== "") {',
+'            var p = bruto > 0 ? (spxNumero(monto) / bruto) * 100 : 0;',
+'            apex.item("P29_PORCENTAJE_DESCUENTO").setValue(Math.round(p * 100) / 100);',
+'        }',
+'    } catch (e) {}',
+'    setTimeout(function () { window.spxDescLock = null; }, 80);',
+' }'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
 '.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
@@ -24964,6 +25070,52 @@ wwv_flow_imp_page.create_page_da_action(
   'show_processing', 'N',
   'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001165)
+,p_name=>'DESCUENTO_PCT'
+,p_static_id=>'descuento-pct'
+,p_event_sequence=>30
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P29_PORCENTAJE_DESCUENTO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001166)
+,p_event_id=>wwv_flow_imp.id(43000000000001165)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'DESCUENTO_PCT'
+,p_static_id=>'descuento-pct'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'spxDescuento("pct");')).to_clob
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001167)
+,p_name=>'DESCUENTO_MONTO'
+,p_static_id=>'descuento-monto'
+,p_event_sequence=>40
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P29_MONTO_DESCUENTO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001168)
+,p_event_id=>wwv_flow_imp.id(43000000000001167)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'DESCUENTO_MONTO'
+,p_static_id=>'descuento-monto'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'spxDescuento("mon");')).to_clob
 );
 end;
 /
@@ -25507,6 +25659,30 @@ wwv_flow_imp_page.create_page_process(
 '-- y el item queda como el eco que leen las LOV, el folio y los procesos de guardado.',
 'apex_util.set_session_state(''P24_ID_EMPRESA'', v(''F_EMPRESA_ACTIVA''));'))
 ,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001175)
+,p_name=>'REFRESCA_RECIBOS'
+,p_static_id=>'refresca-recibos'
+,p_event_sequence=>90
+,p_triggering_element_type=>'REGION'
+,p_triggering_region_id=>wwv_flow_imp.id(43000000000000801)
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'apexafterclosedialog'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001176)
+,p_event_id=>wwv_flow_imp.id(43000000000001175)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh-recibos'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000000801)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'Y')).to_clob
 );
 end;
 /

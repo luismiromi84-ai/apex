@@ -225,6 +225,26 @@ try:
     time.sleep(5)
     pct = nav.js('apex.item("P29_PORCENTAJE_IMPUESTO").getValue()')
     comprobar("E8 el impuesto exento deja el % en 0", str(pct) in ("0", "0.00"), pct)
+
+    # E9 (2026-11-19): el descuento se calcula — 30 x 30 al 5 % son 45.00
+    nav.js('(function(){apex.item("P29_CANTIDAD").setValue(30);'
+           'apex.item("P29_PRECIO_UNITARIO").setValue(30);'
+           'apex.item("P29_PORCENTAJE_DESCUENTO").setValue(5);'
+           'var el=document.getElementById("P29_PORCENTAJE_DESCUENTO");'
+           'if(el){el.dispatchEvent(new Event("change",{bubbles:true}));}return "OK";})()')
+    time.sleep(4)
+    monto_desc = nav.js('apex.item("P29_MONTO_DESCUENTO").getValue()')
+    comprobar("E9 el 5 % de 900 son 45.00 de descuento",
+              str(monto_desc).replace(",", ".") in ("45", "45.0", "45.00"), monto_desc)
+
+    # E10: al reves, teclear 90 de descuento deja el % en 10
+    nav.js('(function(){apex.item("P29_MONTO_DESCUENTO").setValue(90);'
+           'var el=document.getElementById("P29_MONTO_DESCUENTO");'
+           'if(el){el.dispatchEvent(new Event("change",{bubbles:true}));}return "OK";})()')
+    time.sleep(4)
+    pct_desc = nav.js('apex.item("P29_PORCENTAJE_DESCUENTO").getValue()')
+    comprobar("E10 90 de 900 son el 10 %",
+              str(pct_desc).replace(",", ".") in ("10", "10.0", "10.00"), pct_desc)
     print("  captura:", nav.captura(os.path.join(REPO, "deploy", "resultados",
                                                 "20261119_compras_29.png")))
 finally:
