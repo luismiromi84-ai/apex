@@ -20,6 +20,7 @@ create or replace package body pkg_compras as
         p_porcentaje_retencion in number default null,
         p_id_compra_origen     in number default null,
         p_observaciones        in varchar2 default null,
+        p_id_forma_pago        in number default null,
         p_usuario              in varchar2) is
         v_estado    varchar2(20);
         v_prov_emp  number;
@@ -67,6 +68,30 @@ create or replace package body pkg_compras as
             v_pct := p_porcentaje_retencion;
         end if;
 
+        -- Una nota (NC/ND) tiene que decir que factura de compra afecta: es lo que
+        -- pide la providencia del SENIAT y lo que cruza el libro de compras.
+        if upper(nvl(p_tipo_documento, 'FAC')) in ('NC', 'ND') then
+            if p_id_compra_origen is null then
+                raise_application_error(-20097,
+                    'Una nota de credito o debito necesita la factura de compra que afecta.');
+            end if;
+            declare
+                v_tipo_origen varchar2(10);
+                v_emp_origen  number;
+            begin
+                select tipo_documento, id_empresa
+                  into v_tipo_origen, v_emp_origen
+                  from compras where id_compra = p_id_compra_origen;
+                if v_tipo_origen <> 'FAC' or v_emp_origen <> p_id_empresa then
+                    raise_application_error(-20097,
+                        'La factura afectada tiene que ser una factura de compra de esta empresa.');
+                end if;
+            exception
+                when no_data_found then
+                    raise_application_error(-20097, 'La factura afectada no existe.');
+            end;
+        end if;
+
         -- Numeracion del PROVEEDOR (2026-11-18): la serie vive en FOLIO_CONTADOR
         -- (FAC_PROV y CONTROL_PROV) para que la pantalla la proponga sola. Al dar de
         -- alta se CONSUME solo si se dejo la propuesta (o vacio); si el usuario
@@ -100,11 +125,11 @@ create or replace package body pkg_compras as
                 insert into compras (id_empresa, id_proveedor, tipo_documento, folio_factura,
                                      nro_control, fecha_emision, cod_moneda, tipo_cambio,
                                      porcentaje_retencion, estado, observaciones,
-                                     id_compra_origen, creado_por)
+                                     id_compra_origen, id_forma_pago, creado_por)
                 values (p_id_empresa, p_id_proveedor, nvl(p_tipo_documento, 'FAC'),
                         v_folio, v_control, v_fecha, nvl(p_cod_moneda, 'VES'),
                         v_tasa, v_pct, 'BORRADOR', p_observaciones,
-                        p_id_compra_origen, p_usuario)
+                        p_id_compra_origen, p_id_forma_pago, p_usuario)
                 returning id_compra into p_id_compra;
             exception
                 when dup_val_on_index then
@@ -129,6 +154,7 @@ create or replace package body pkg_compras as
                        fecha_emision = v_fecha, cod_moneda = nvl(p_cod_moneda, 'VES'),
                        tipo_cambio = v_tasa, porcentaje_retencion = v_pct,
                        observaciones = p_observaciones, id_compra_origen = p_id_compra_origen,
+                       id_forma_pago = p_id_forma_pago,
                        modificado_por = p_usuario, fecha_modificacion = systimestamp
                  where id_compra = p_id_compra;
             exception
