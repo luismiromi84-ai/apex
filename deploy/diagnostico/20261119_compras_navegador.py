@@ -383,6 +383,13 @@ try:
         sin_guardar = js('(function(){return ![...document.querySelectorAll("button")].some(function(b){'
                          'return (b.getAttribute("data-otel-label")||"")==="BTN_GUARDAR_COMPRA";});})()')
         comprobar("C6 una compra REGISTRADA no ofrece Guardar", sin_guardar is True)
+
+        # C7 (2026-11-19): el resumen de la compra (base, exento, IVA, retención, neto)
+        texto28 = js("document.body.innerText") or ""
+        faltan = [c for c in ("Base imponible", "Monto exento", "IVA", "Total de la factura",
+                              "IVA retenido", "Neto a pagar") if c not in texto28]
+        comprobar("C7 el resumen de la compra sale con sus cinco conceptos",
+                  not faltan, faltan)
     con.close()
 finally:
     proc.terminate()
