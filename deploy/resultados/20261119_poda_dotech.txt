@@ -1,0 +1,43 @@
+Poda de empresas sin uso (dotech) - 2026-11-19
+======================================================================
+
+Estado ANTES: filas que se van a borrar (reversa manual al final)
+
+EMPRESAS
+  3 | dotech | VE | ACTIVO | R34356447 | 2026-11-10 01:02
+  4 | dotech | VE | ACTIVO | R928328 | 2026-11-10 01:03
+  5 | dotech | VE | ACTIVO | R3356666 | 2026-11-10 01:04
+  7 | dotecha | VE | ACTIVO | 9778 | 2026-11-16 15:57
+
+USUARIO_EMPRESA
+  empresa 3 -> usuario_id 9
+  empresa 4 -> usuario_id 9
+  empresa 5 -> usuario_id 9
+  empresa 7 -> usuario_id 42
+
+FOLIO_CONTADOR
+  empresa 3 | CONTROL_PROV | ultimo 0
+  empresa 3 | FAC_PROV | ultimo 0
+  empresa 4 | CONTROL_PROV | ultimo 0
+  empresa 4 | FAC_PROV | ultimo 0
+  empresa 5 | CONTROL_PROV | ultimo 0
+  empresa 5 | FAC_PROV | ultimo 0
+  empresa 7 | CONTROL_PROV | ultimo 0
+  empresa 7 | FAC_PROV | ultimo 0
+
+Comprobacion: ninguna de esas empresas tiene clientes, proveedores, presupuestos,
+facturas, compras, gastos, logo, datos fiscales ni recibos.
+
+usuario_empresa borradas: 4
+folio_contador borradas: 8
+empresas borradas: 4
+
+Estado DESPUES
+
+  1 | Empresa Principal | VE | 7 | 5 | 8 | 5
+  2 | Empresa México | MX | 2 | 3 | 1 | 1
+  6 | dotech | VE | 1 | 2 | 4 | 0
+
+Reversa (si alguna se necesitara): volver a crearla desde Administracion > Empresa
+con los datos de la tabla de arriba (nombre, pais, RFC). Los contadores de folio
+se recrean solos al emitir el primer documento.

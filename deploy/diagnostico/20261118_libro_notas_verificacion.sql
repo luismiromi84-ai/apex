@@ -59,12 +59,16 @@ begin
         v_libro := replace(v_libro, ':P18_LIBRO', '''TODOS''');
         v_libro := replace(v_libro, ':P18_MES', v_mes);
         v_libro := replace(v_libro, ':P18_ANIO', v_anio);
+        -- el filtro de periodo (quincenas) se agrego el 2026-11-18
+        v_libro := replace(v_libro, ':P18_PERIODO', '''MES''');
         v_libro := replace(v_libro, ':APP_USER', '''ADMIN''');
         execute immediate 'select round(sum(total_bs), 2) from (' || to_char(v_libro) || ')' into v_suma;
 
-        -- lo que suma el bloque de «Totales del mes» (cabecera x tasa, mismo filtro)
+        -- Lo que suma el bloque de «Totales del mes»: ventas y compras por
+        -- cabecera a la tasa del documento, mas el IGTF de cabecera de las
+        -- compras que lo causan (2026-11-19).
         execute immediate '
-            select round(sum(sg * tot), 2) from (
+            select round(nvl(sum(sg * tot), 0), 2) from (
               select case when f.estado = ''ANULADA'' then 0 else 1 end
                        * case when f.tipo_documento = ''NC'' then -1 else 1 end as sg,
                      nvl(f.monto_total,0) * nvl(f.tipo_cambio,1) as tot
@@ -72,6 +76,23 @@ begin
                where f.id_empresa = ' || v_emp || '
                  and f.fecha_emision >= to_date(''01/' || v_mes || '/' || v_anio || ''',''DD/MM/YYYY'')
                  and f.fecha_emision <  add_months(to_date(''01/' || v_mes || '/' || v_anio || ''',''DD/MM/YYYY''), 1)
+              union all
+              select case when co.estado = ''ANULADA'' then 0 else 1 end
+                       * case when co.tipo_documento = ''NC'' then -1 else 1 end,
+                     nvl(co.monto_total,0) * nvl(co.tipo_cambio,1)
+                       + case when nvl(co.cod_moneda, ''VES'') not in (''VES'', ''BS'')
+                               and nvl(e.es_spe, ''N'') = ''S''
+                               and nvl(fp.genera_igtf, ''N'') = ''S''
+                              then round(round(nvl(co.monto_total,0)
+                                         * nvl(fn_alicuota_igtf(co.id_empresa),0) / 100, 2)
+                                         * nvl(co.tipo_cambio,1), 2)
+                              else 0 end as tot
+                from compras co
+                join empresas e on e.id_empresa = co.id_empresa
+                left join forma_pago fp on fp.id_forma_pago = co.id_forma_pago
+               where co.id_empresa = ' || v_emp || '
+                 and co.fecha_emision >= to_date(''01/' || v_mes || '/' || v_anio || ''',''DD/MM/YYYY'')
+                 and co.fecha_emision <  add_months(to_date(''01/' || v_mes || '/' || v_anio || ''',''DD/MM/YYYY''), 1)
             )' into v_totbs;
 
         if abs(nvl(v_suma, 0) - nvl(v_totbs, 0)) > 0.05 then
@@ -83,6 +104,7 @@ begin
             v_err := substr(sqlerrm, 1, 150);
             insert into tmp_libnot_fallas values ('V1: ' || v_err);
     end;
+    commit;
 end;
 /
 
@@ -93,10 +115,18 @@ declare
     v_est varchar2(20);
     v_cli number;
     v_err varchar2(200);
+    v_f2  varchar2(300);
+    v_f3  varchar2(300);
 begin
-    select min(id_cliente) into v_cli from clientes where id_empresa = 1;
+    savepoint sp_v23;
+    -- Un cliente que NO sea agente de retencion: con uno que retiene, guardar la
+    -- factura exige el comprobante de 14 digitos (-20064) y esta prueba no va de eso.
+    select min(id_cliente) into v_cli
+      from clientes
+     where id_empresa = 1 and nvl(es_agente_retencion, 'N') <> 'S';
     if v_cli is null then
-        insert into tmp_libnot_fallas values ('V2: la empresa 1 no tiene clientes');
+        insert into tmp_libnot_fallas values ('V2: la empresa 1 no tiene clientes sin retencion');
+        commit;
         return;
     end if;
 
@@ -118,7 +148,9 @@ begin
         p_uso_cfdi => null, p_forma_pago => null, p_metodo_pago => null,
         p_condicion_pago => null, p_fecha_emision => to_char(sysdate, 'DD/MM/YYYY'),
         p_fecha_vencimiento => null, p_estado => 'PENDIENTE',
-        p_subtotal => -100, p_monto_impuesto => 0, p_monto_total => -100,
+        -- La nota va en POSITIVO: fn_saldo_factura resta el monto de las NC, y
+        -- pkg_facturacion.copiar_desde_factura copia las lineas tal cual (2026-11-20).
+        p_subtotal => 100, p_monto_impuesto => 0, p_monto_total => 100,
         p_observaciones => null, p_cod_moneda => 'VES', p_tipo_cambio => 1,
         p_usuario => 'admin', p_tipo_documento => 'NC', p_id_factura_origen => v_fac);
 
@@ -126,24 +158,33 @@ begin
 
     select estado into v_est from facturas where id_factura = v_fac;
     if v_est <> 'PAGADA' then
-        insert into tmp_libnot_fallas
-        values ('V2: la factura quedo ' || v_est || ' con una NC que cubre su total (se esperaba PAGADA)');
+        v_f2 := 'V2: la factura quedo ' || v_est
+             || ' con una NC que cubre su total (se esperaba PAGADA)';
     end if;
 
     -- V3: al anular la nota, la factura recupera su saldo
     pkg_facturacion.prc_anular_factura(v_nc, null, 'admin');
     select estado into v_est from facturas where id_factura = v_fac;
     if v_est <> 'TIMBRADA' then
-        insert into tmp_libnot_fallas
-        values ('V3: al anular la NC la factura quedo ' || v_est || ' (se esperaba TIMBRADA)');
+        v_f3 := 'V3: al anular la NC la factura quedo ' || v_est || ' (se esperaba TIMBRADA)';
     end if;
 
-    rollback;
+    -- Los fallos se anotan DESPUES del rollback: si no, el rollback se los lleva
+    -- (paso hasta el 2026-11-19 y dejaba V2/V3 en verde sin medir nada).
+    rollback to sp_v23;
+    if v_f2 is not null then
+        insert into tmp_libnot_fallas values (substrb(v_f2, 1, 300));
+    end if;
+    if v_f3 is not null then
+        insert into tmp_libnot_fallas values (substrb(v_f3, 1, 300));
+    end if;
+    commit;
 exception
     when others then
-        rollback;
+        rollback to sp_v23;
         v_err := substr(sqlerrm, 1, 150);
         insert into tmp_libnot_fallas values ('V2/V3: ' || v_err);
+        commit;
 end;
 /
 
@@ -153,6 +194,7 @@ declare
     v_cli number;
     v_cod number := 0;
 begin
+    savepoint sp_v4;
     select min(id_cliente) into v_cli from clientes where id_empresa = 1;
     begin
         pkg_facturacion.prc_guardar_factura(
@@ -169,10 +211,11 @@ begin
     exception
         when others then v_cod := sqlcode;
     end;
-    rollback;
+    rollback to sp_v4;
     if v_cod <> -20063 then
         insert into tmp_libnot_fallas values ('V4: un control fuera de rango devolvio ' || v_cod || ' (se esperaba -20063)');
     end if;
+    commit;
 end;
 /
 

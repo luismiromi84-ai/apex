@@ -20045,6 +20045,7 @@ wwv_flow_imp_page.create_page_plug(
  '           nvl(d.tasa_cambio_aplicada, f.tipo_cambio) as tasa_linea,',
  '           case when exists (select 1 from impuestos i where i.id_impuesto = d.id_impuesto',
  '                              and i.cod_impuesto = ''IGTF'') then ''S'' else ''N'' end as es_igtf,',
+ '           0 as igtf_cab,',
  '           case when f.estado = ''ANULADA'' then 0 else 1 end',
  '             * case when f.tipo_documento = ''NC'' then -1 else 1 end as sg',
  '      from facturas f',
@@ -20068,10 +20069,18 @@ wwv_flow_imp_page.create_page_plug(
  '           nvl(d.tasa_cambio_aplicada, co.tipo_cambio),',
  '           case when exists (select 1 from impuestos i where i.id_impuesto = d.id_impuesto',
  '                              and i.cod_impuesto = ''IGTF'') then ''S'' else ''N'' end,',
+ '           case when nvl(co.cod_moneda, ''VES'') not in (''VES'', ''BS'')',
+ '                 and nvl(e.es_spe, ''N'') = ''S''',
+ '                 and nvl(fp.genera_igtf, ''N'') = ''S''',
+ '                then round(round(nvl(co.monto_total, 0) * nvl(fn_alicuota_igtf(co.id_empresa), 0) / 100, 2)',
+ '                           * nvl(co.tipo_cambio, 1), 2)',
+ '                else 0 end as igtf_cab,',
  '           case when co.estado = ''ANULADA'' then 0 else 1 end',
  '             * case when co.tipo_documento = ''NC'' then -1 else 1 end',
  '      from compras co',
  '      join proveedores p on p.id_proveedor = co.id_proveedor',
+ '      join empresas e on e.id_empresa = co.id_empresa',
+ '      left join forma_pago fp on fp.id_forma_pago = co.id_forma_pago',
  '      left join compras og on og.id_compra = co.id_compra_origen',
  '      left join compras_det d on d.id_compra = co.id_compra',
  '      left join (select id_compra, sum(nvl(monto_impuesto, 0) * nvl(tasa_cambio_aplicada, 1)) as iva_bs',
@@ -20101,14 +20110,17 @@ wwv_flow_imp_page.create_page_plug(
  '       round(max(b.sg) * sum(case when nvl(b.porcentaje_impuesto,0) = 0 then b.subtotal_bs else 0 end), 2) as exento,',
  '       round(max(b.sg) * sum(case when b.es_igtf = ''S'' then b.subtotal_bs else 0 end), 2) as base_igtf,',
  '       round(max(b.sg) * sum(case when b.es_igtf = ''S'' then nvl(b.monto_impuesto,0) * b.tasa_linea else 0 end), 2) as igtf,',
+ '       round(max(b.sg) * max(b.igtf_cab), 2) as igtf_compra,',
  '       round(max(b.sg) * sum(case when nvl(b.porcentaje_impuesto,0) not in (0,16) and b.es_igtf = ''N''',
  '                                   then b.subtotal_bs else 0 end), 2) as otras_base,',
  '       round(max(b.sg) * sum(case when nvl(b.porcentaje_impuesto,0) not in (0,16) and b.es_igtf = ''N''',
  '                                   then nvl(b.monto_impuesto,0) * b.tasa_linea else 0 end), 2) as otras_iva,',
- '       round(max(b.sg) * sum(nvl(b.total_bs, nvl(b.subtotal_bs,0) + nvl(b.monto_impuesto,0) * b.tasa_linea)), 2) as total_bs,',
+ '       round(max(b.sg) * sum(nvl(b.total_bs, nvl(b.subtotal_bs,0) + nvl(b.monto_impuesto,0) * b.tasa_linea)), 2)',
+ '         + round(max(b.sg) * max(b.igtf_cab), 2) as total_bs,',
  '       max(b.comprobante) as comprobante,',
  '       round(max(b.sg) * max(b.retencion_bs), 2) as retencion_bs,',
  '       round(max(b.sg) * sum(nvl(b.total_bs, nvl(b.subtotal_bs,0) + nvl(b.monto_impuesto,0) * b.tasa_linea)), 2)',
+ '         + round(max(b.sg) * max(b.igtf_cab), 2)',
  '         - round(max(b.sg) * max(b.retencion_bs), 2) as neto,',
  '       max(b.estado) as estado,',
  '       max(b.afectada) as afectada',
@@ -20327,6 +20339,18 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001215)
+,p_db_column_name=>'IGTF_COMPRA'
+,p_display_order=>165
+,p_column_identifier=>'Y'
+,p_column_label=>'IGTF compra'
+,p_column_type=>'NUMBER'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000000728)
 ,p_db_column_name=>'OTRAS_BASE'
 ,p_display_order=>170
@@ -20426,6 +20450,9 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>18
+,p_plug_display_condition_type=>'EXPRESSION'
+,p_plug_display_when_condition=>'(select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)) = ''VE'''
+,p_plug_display_when_cond2=>'SQL'
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -20462,10 +20489,10 @@ wwv_flow_imp_page.create_page_plug(
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
  'with base as (',
- '    select f.id_factura, f.fecha_emision, f.tipo_documento, f.folio_factura, f.nro_control,',
- '           f.cod_moneda, f.tipo_cambio, f.monto_total,',
-'           fn_estado_factura(f.estado, (select e.cod_pais from empresas e where e.id_empresa = f.id_empresa)) as estado,',
-'           f.id_empresa,',
+ '    select ''Ventas'' as libro, f.id_factura as id_doc, f.fecha_emision, f.tipo_documento,',
+ '           f.folio_factura, f.nro_control, f.cod_moneda, f.tipo_cambio, f.monto_total,',
+ '           fn_estado_factura(f.estado, (select e.cod_pais from empresas e where e.id_empresa = f.id_empresa)) as estado,',
+ '           f.id_empresa,',
  '           c.rif, c.razon_social,',
  '           (select o.folio_factura from facturas o where o.id_factura = f.id_factura_origen) as afectada,',
  '           d.porcentaje_impuesto, d.subtotal_bs, d.monto_impuesto, d.total_bs,',
@@ -20481,8 +20508,29 @@ wwv_flow_imp_page.create_page_plug(
  '       and f.id_empresa in (select id_empresa from empresas where cod_pais = ''MX'')',
  '       and f.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  '       and f.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '    union all',
+ '    select ''Compras'', co.id_compra, co.fecha_emision, co.tipo_documento,',
+ '           co.folio_factura, co.nro_control, co.cod_moneda, co.tipo_cambio, co.monto_total,',
+ '           co.estado, co.id_empresa,',
+ '           p.rif, p.razon_social,',
+ '           (select oo.folio_factura from compras oo where oo.id_compra = co.id_compra_origen),',
+ '           d.porcentaje_impuesto, d.subtotal_bs, d.monto_impuesto, d.total_bs,',
+ '           nvl(d.tasa_cambio_aplicada, co.tipo_cambio),',
+ '           case when co.estado = ''ANULADA'' then 0 else 1 end',
+ '             * case when co.tipo_documento = ''NC'' then -1 else 1 end',
+ '      from compras co',
+ '      join proveedores p on p.id_proveedor = co.id_proveedor',
+ '      left join compras_det d on d.id_compra = co.id_compra',
+ '     where co.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
+ '       and (:P18_ID_EMPRESA is null or co.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
+ '       and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''COMPRAS'')',
+ '       and co.id_empresa in (select id_empresa from empresas where cod_pais = ''MX'')',
+ '       and co.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '       and co.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  ')',
- 'select b.id_factura as ver_id,',
+ 'select case when b.libro = ''Ventas'' then b.id_doc end as ver_id,',
+ '       case when b.libro = ''Compras'' then b.id_doc end as ver_compra,',
+ '       b.libro,',
  '       b.fecha_emision,',
  '       b.rif,',
  '       b.razon_social,',
@@ -20507,10 +20555,9 @@ wwv_flow_imp_page.create_page_plug(
  '       max(b.estado) as estado,',
  '       max(b.afectada) as afectada',
  '  from base b',
- ' group by b.id_factura, b.fecha_emision, b.rif, b.razon_social, b.tipo_documento,',
+ ' group by b.libro, b.id_doc, b.fecha_emision, b.rif, b.razon_social, b.tipo_documento,',
  '          b.folio_factura, b.nro_control, b.cod_moneda, b.tipo_cambio',
- ' order by b.fecha_emision, b.folio_factura'))
-,p_plug_source_type=>'NATIVE_IR'
+ ' order by b.fecha_emision, b.folio_factura')),p_plug_source_type=>'NATIVE_IR'
 );
 wwv_flow_imp_page.create_worksheet(
  p_id=>wwv_flow_imp.id(43000000000000741)
@@ -20534,6 +20581,29 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Ver'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001216)
+,p_db_column_name=>'VER_COMPRA'
+,p_display_order=>11
+,p_column_identifier=>'U'
+,p_column_label=>'Ver compra'
+,p_column_type=>'NUMBER'
+,p_column_link=>'f?p=&APP_ID.:28:&SESSION.::&DEBUG.:28:P28_ID_COMPRA:#VER_COMPRA#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Ver'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001217)
+,p_db_column_name=>'LIBRO'
+,p_display_order=>12
+,p_column_identifier=>'V'
+,p_column_label=>'Libro'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000000743)
@@ -20769,14 +20839,17 @@ wwv_flow_imp_page.create_page_plug(
  'declare',
  '    v_tot number;',
  '    v_ret number;',
+ '    v_igtf number;',
  'begin',
- '    select round(nvl(sum(sg * tot), 0), 2), round(nvl(sum(sg * ret), 0), 2)',
- '      into v_tot, v_ret',
+ '    select round(nvl(sum(sg * tot), 0), 2), round(nvl(sum(sg * ret), 0), 2),',
+ '           round(nvl(sum(sg * igtf), 0), 2)',
+ '      into v_tot, v_ret, v_igtf',
  '      from (',
  '      select case when f.estado = ''ANULADA'' then 0 else 1 end',
  '               * case when f.tipo_documento = ''NC'' then -1 else 1 end as sg,',
  '             nvl(f.monto_total,0) * nvl(f.tipo_cambio,1) as tot,',
- '             nvl(f.retencion_iva_bs,0) as ret',
+ '             nvl(f.retencion_iva_bs,0) as ret,',
+ '             0 as igtf',
  '        from facturas f',
  '       where f.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
  '         and (:P18_ID_EMPRESA is null or f.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
@@ -20787,8 +20860,16 @@ wwv_flow_imp_page.create_page_plug(
  '      select case when co.estado = ''ANULADA'' then 0 else 1 end',
  '               * case when co.tipo_documento = ''NC'' then -1 else 1 end,',
  '             nvl(co.monto_total,0) * nvl(co.tipo_cambio,1),',
- '             nvl(co.retencion_iva_bs,0)',
+ '             nvl(co.retencion_iva_bs,0),',
+ '             case when nvl(co.cod_moneda, ''VES'') not in (''VES'', ''BS'')',
+ '                   and nvl(e.es_spe, ''N'') = ''S''',
+ '                   and nvl(fp.genera_igtf, ''N'') = ''S''',
+ '                  then round(round(nvl(co.monto_total, 0) * nvl(fn_alicuota_igtf(co.id_empresa), 0) / 100, 2)',
+ '                             * nvl(co.tipo_cambio, 1), 2)',
+ '                  else 0 end',
  '        from compras co',
+ '        join empresas e on e.id_empresa = co.id_empresa',
+ '        left join forma_pago fp on fp.id_forma_pago = co.id_forma_pago',
  '       where co.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
  '         and (:P18_ID_EMPRESA is null or co.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
  '         and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''COMPRAS'')',
@@ -20796,9 +20877,13 @@ wwv_flow_imp_page.create_page_plug(
  '         and co.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  '      ) t;',
  '',
+ '    v_tot := v_tot + v_igtf;',
+ '',
  '    return ''<table class="a-Report-table" style="width:100%"><tbody>''',
  '        || ''<tr><td>Total Bs del periodo</td>''',
  '        || ''<td style="text-align:right;font-weight:700">'' || to_char(v_tot, ''FM999G999G999G990D00'') || ''</td></tr>''',
+ '        || ''<tr><td>IGTF de compras Bs</td>''',
+ '        || ''<td class="spx-num">'' || to_char(v_igtf, ''FM999G999G999G990D00'') || ''</td></tr>''',
  '        || ''<tr><td>IVA retenido Bs</td>''',
  '        || ''<td class="spx-num">'' || to_char(v_ret, ''FM999G999G999G990D00'') || ''</td></tr>''',
  '        || ''<tr><td>Neto Bs</td>''',
@@ -24655,6 +24740,9 @@ wwv_flow_imp_page.create_page_plug(
 '           nvl(sum(subtotal_linea), 0)',
 '      into v_base, v_exento, v_iva, v_tot',
 '      from compras_det where id_compra = v_id;',
+ '    -- El total del documento es la base mas el exento mas el IVA: el IGTF',
+ '    -- se causa sobre el total que se paga (con IVA), no sobre la base.',
+ '    v_tot := v_tot + v_iva;',
 '',
 '    -- La retencion se calcula en vivo hasta registrar la compra; despues',
 '    -- manda la foto guardada (la que dice el comprobante).',

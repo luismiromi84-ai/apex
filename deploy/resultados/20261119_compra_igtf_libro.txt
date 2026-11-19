@@ -1,0 +1,84 @@
+﻿# 20261119 — El IGTF de las compras en el libro (página 18)
+
+Tarea pendiente del cierre del 2026-11-19: el libro de compras y ventas solo miraba el
+IGTF de **línea**, y desde el 2026-11-19 el de una compra es de **cabecera** (empresa
+SPE + `FORMA_PAGO.GENERA_IGTF` + documento en divisas). Ese 3 % no aparecía en ninguna
+parte del libro.
+
+## Qué se cambió
+
+| Dónde | Qué |
+|---|---|
+| `pagina_apex/f100.sql` · región `libro-ve` (18) | columna `igtf_compra` (cabecera, en Bs) calculada en el `base` como `round(round(monto_total * fn_alicuota_igtf(id_empresa)/100, 2) * tipo_cambio, 2)` cuando aplica; **Total Bs** y **Neto** la suman |
+| `pagina_apex/f100.sql` · informe de la 18 | columna **«IGTF compra»** (`IGTF_COMPRA`, orden 165, máscara contable) |
+| `pagina_apex/f100.sql` · región `libro-ve-totales` | fila **«IGTF de compras Bs»** y el total del período la incluye |
+| `pagina_apex/f100.sql` · región `compra-resumen` (28) | `v_tot` pasa a ser base + exento + IVA: el IGTF se causa sobre el total que se paga |
+| `funciones/fn_libro_excel.sql` | rotula «IGTF compra» y **excluye todas las columnas `VER_*`** (antes solo `VER_ID`) |
+| `deploy/migrations/20261119_compra_igtf_libro.sql` | solo la función + validación (la pantalla viaja en el export) |
+
+**Solo en la tabla de Venezuela.** La de México no incluye compras, así que no lleva IGTF.
+
+## Verificación nueva: `deploy/diagnostico/20261119_compra_igtf_libro_verificacion.sql`
+
+Crea dentro de un `savepoint` una compra en USD (100 + 16 de IVA, tasa 900) de la empresa 1
+(SPE) con la forma de pago DIVISAS, y comprueba:
+
+| Caso | Qué mide |
+|---|---|
+| L1 | la región `libro-ve` calcula el IGTF de cabecera (SPE + forma de pago + alícuota) |
+| L2 | el informe tiene la columna `IGTF_COMPRA` con rótulo y máscara |
+| L3 | IGTF del libro = `round(round(116*3/100,2)*900,2)` = **3.132,00** y Total Bs = **107.532,00**, con el cuadre de componentes |
+| L4 | en bolívares no causa IGTF |
+| L5 | con la empresa **no SPE** no causa IGTF |
+| L6 | con una forma de pago que no lo genera, 0 |
+| L7 | los totales del mes muestran y suman el IGTF |
+| L8 | el Excel fiscal no saca `VER_COMPRA`, rotula «IGTF compra» y suma el importe |
+| L9 | el resumen de la compra (28) dice el mismo IGTF y el mismo neto que el libro |
+
+`
+RESULTADO: FALLAS=0
+`
+
+Antes del cambio daba **`FALLAS=12`** (columna inexistente y totales sin IGTF).
+
+## Regresión
+
+| Verificación | Resultado |
+|---|---|
+| `20261116_libro_compras_ventas_verificacion.sql` (con L5 ampliada al IGTF) | `FALLAS=0` |
+| `20261118_libro_notas_verificacion.sql` (V1–V7, reparada) | `FALLAS=0` |
+| `20261119_compra_igtf_verificacion.sql` | `FALLAS=0` |
+| `20261116_libro_ventas_pagina.py` (navegador, 18) | `FALLAS=0` |
+| `20261118_libro_excel_navegador.py` (descarga el .xls) | `FALLAS=0` |
+| `20261119_compras_navegador.py` (28/29, resumen y comprobante) | `FALLAS=0` |
+| `20261105_portada_verificacion.py` (33 páginas, 25 guardas) | `FALLAS=0` |
+| `20261117_grid_paginas_verificacion.py` | `FALLAS=0` |
+| `20261109_compilar_procesos_pagina.py` (92 procesos) | `FALLAS=0` |
+| Objetos inválidos en `WKSP_SYPEXWS` | **0** |
+
+## Medido en la base (mes 11/2026, empresa 1)
+
+```
+suma de las filas del libro : 7.762.280,00
+bloque «Totales del mes»    : 7.762.279,99   (diferencia 0,01 por redondeo, tolerancia 0,05)
+de las cuales IGTF compras  : 0,00           (la única compra, 181, no tiene forma de pago)
+```
+
+## Dos verificaciones que estaban en verde sin medir nada (arregladas)
+
+- `20261116_libro_ventas_pagina.py`: el total del mes se calculaba **solo con ventas**; el libro es
+  de compras y ventas desde el 2026-11-16, así que fallaba (de forma legítima) desde que existe una
+  compra. Ahora suma las dos y el IGTF de cabecera.
+- `20261118_libro_notas_verificacion.sql`: **V1** no sustituía `:P18_PERIODO` (`ORA-01008`) y
+  **V2/V3** hacían un `rollback` completo **después** de anotar el fallo, así que el rollback se
+  llevaba la fila del informe. Además V2/V3 cogían el primer cliente (que retiene IVA → `-20064`) y
+  creaban la nota de crédito en negativo (una NC negativa **suma** al saldo según `fn_saldo_factura`).
+  Corregidas: savepoint + anotación después del rollback, cliente sin retención y NC en positivo.
+  **Regla: el fallo se anota después del `rollback`, o se hace `commit` de él.**
+
+## Notas de método
+
+- **`wwv_flow_string.join`:** dos literales adyacentes se concatenan, así que la falta de coma entre
+  ellos no da error de sintaxis: el error aparece como `PLS-00103` sobre el SQL resultante. La coma
+  que no se puede perder es la de **dentro** del literal, al final de cada columna.
+- Se borró la tabla de trabajo `TMP_V2B` que había quedado en el esquema de una verificación anterior.

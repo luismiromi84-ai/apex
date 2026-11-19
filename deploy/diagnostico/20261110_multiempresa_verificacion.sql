@@ -870,11 +870,20 @@ begin
     end;
 
     begin
+        -- Empresa desechable para M25 (editar una empresa AJENA). Antes se usaba
+        -- la 5, una 'dotech' real que se podo el 2026-11-19: el caso moria con
+        -- ORA-12801 al no existir la empresa y ademas escribia sobre datos del
+        -- cliente si la guarda fallaba.
+        execute immediate
+            q'[insert into empresas (id_empresa, nombre_empresa, estado, cod_pais, tipo_ident_fiscal, rfc)
+               select 900025, 'DIAG P19 AJENA', 'ACTIVO', 'VE', 'RIF', 'DIAG-AJENA' from dual
+                where not exists (select 1 from empresas where id_empresa = 900025)]';
+        commit;
         execute immediate
             q'[insert into usuario_empresa (usuario_id, id_empresa)
                select u, e from (
                    select 900020 u, 1 e from dual
-               union all select 900020 u, 3 e from dual
+               union all select 900020 u, 2 e from dual
                union all select 900021 u, 1 e from dual) p
                 where not exists (select 1 from usuario_empresa x
                                    where x.usuario_id = p.u and x.id_empresa = p.e)]';
@@ -1077,12 +1086,20 @@ begin
         -- el proceso da -20003 y que los datos NO cambian.
         -- ---------------------------------------------------------------------
         declare
-            v_ajena number := 5;
+            v_ajena number := 900025;
             v_nombre_ajeno varchar2(150);
             v_rfc_ajeno varchar2(20);
             v_c clob := v_cuerpo;
             v_cod number;
         begin
+            -- La empresa ajena es la desechable 900025 que crea el bloque de
+            -- preparacion (antes era la 5, una 'dotech' podada el 2026-11-19).
+            select count(*) into v_cod from empresas where id_empresa = v_ajena;
+
+            if v_cod = 0 then
+                insert into tmp_multi_fallas
+                values ('M25: falta la empresa de prueba 900025');
+            else
             select nombre_empresa, rfc into v_nombre_ajeno, v_rfc_ajeno
               from empresas where id_empresa = v_ajena;
 
@@ -1119,6 +1136,7 @@ begin
                 insert into tmp_multi_fallas
                 values (substrb('M25: la edicion de una empresa ajena CAMBIO sus datos'
                                 || ' (se esperaba que quedaran intactos)', 1, 300));
+            end if;
             end if;
         end;
 
@@ -1291,13 +1309,18 @@ begin
     begin
         execute immediate q'[delete from usuario_empresa
                             where usuario_id in (900020, 900021)
-                               or id_empresa in (900020,
+                               or id_empresa in (900020, 900025,
                                    (select min(id_empresa) from empresas where nombre_empresa = 'DIAG P19 ALTA'))]';
         commit;
     exception when others then null;
     end;
     begin
         execute immediate q'[delete from empresas where nombre_empresa = 'DIAG P19 ALTA']';
+        commit;
+    exception when others then null;
+    end;
+    begin
+        execute immediate q'[delete from empresas where id_empresa = 900025]';
         commit;
     exception when others then null;
     end;

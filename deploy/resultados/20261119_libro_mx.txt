@@ -1,0 +1,21 @@
+Verificacion: deploy/diagnostico/20261119_libro_mx_verificacion.py
+Fecha: 2026-11-19 (libro de Mexico: compras y «Ver compra»)
+
+  X1  el libro de Mexico sale con la empresa mexicana
+  X2  el bloque «IGTF percibido del mes» ya NO sale en Mexico (es de Venezuela)
+  X3  la tabla trae las columnas «Ver compra» y «Libro»
+
+  RESULTADO: FALLAS=0
+
+Y por SQL, con una compra de prueba de la empresa 2 dentro de una transaccion revertida:
+  libro-mx devuelve la fila de COMPRAS con su ver_compra (id de la compra) y la de VENTAS
+  con su ver_id (id de la factura).
+
+Regresion del mismo dia:
+  20261119_compra_igtf_libro_verificacion.sql       -> FALLAS=0   (L1-L9, Venezuela)
+  20261116_libro_compras_ventas_verificacion.sql    -> FALLAS=0   (L12 pide compras en MX y L12b la columna)
+  20261118_libro_notas_verificacion.sql             -> FALLAS=0
+  20261116_libro_ventas_pagina.py                   -> FALLAS=0
+  20261105_portada_verificacion.py                  -> FALLAS=0   (33 paginas, 25 guardas, 0 invalidos)
+
+Captura: deploy/resultados/20261119_libro_mx_compras.png

@@ -135,10 +135,10 @@ begin
     -- 4. Cabecera
     v_html := v_html || '<table><thead><tr>';
     for i in 1 .. v_ncols loop
-        -- La columna del enlace «Ver» del informe no va en el Excel fiscal: se
-        -- reconoce por su alias (VER_ID), no por la posicion, para que un cambio
-        -- en el informe no descuadre el archivo.
-        if upper(v_desc(i).col_name) <> 'VER_ID' then
+        -- Las columnas de enlace del informe («Ver» de la factura y «Ver compra»)
+        -- no van en el Excel fiscal: se reconocen por su alias (VER_...), no por
+        -- la posicion, para que un cambio en el informe no descuadre el archivo.
+        if substr(upper(v_desc(i).col_name), 1, 4) <> 'VER_' then
             v_html := v_html || '<th>' || sys.htf.escape_sc(
                 case upper(v_desc(i).col_name)
                     when 'LIBRO' then 'Libro'
@@ -159,6 +159,7 @@ begin
                     when 'EXENTO' then 'Exento'
                     when 'BASE_IGTF' then 'Base IGTF'
                     when 'IGTF' then 'IGTF 3%'
+                    when 'IGTF_COMPRA' then 'IGTF compra'
                     when 'OTRAS_BASE' then 'Otras base'
                     when 'OTRAS_IVA' then 'Otras IVA'
                     when 'TOTAL_BS' then 'Total Bs'
@@ -182,7 +183,7 @@ begin
         v_filas := v_filas + 1;
         v_html := v_html || '<tr>';
         for i in 1 .. v_ncols loop
-            continue when upper(v_desc(i).col_name) = 'VER_ID';
+            continue when substr(upper(v_desc(i).col_name), 1, 4) = 'VER_';
             if v_desc(i).col_type = dbms_sql.number_type then
                 dbms_sql.column_value(v_c, i, v_num);
                 if v_num is not null then
@@ -232,7 +233,7 @@ begin
     v_html := v_html || '</tbody><tfoot><tr class="tot">';
     v_primera := true;
     for i in 1 .. v_ncols loop
-        if upper(v_desc(i).col_name) = 'VER_ID' then
+        if substr(upper(v_desc(i).col_name), 1, 4) = 'VER_' then
             continue;
         end if;
         if v_primera then
