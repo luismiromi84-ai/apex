@@ -376,7 +376,7 @@ wwv_flow_imp_shared.create_list_item(
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(43000000000000870)
 ,p_list_item_display_sequence=>22
-,p_list_item_link_text=>'Cobros'
+,p_list_item_link_text=>'Recibos'
 ,p_static_id=>'cobros'
 ,p_list_item_link_target=>'f?p=&APP_ID.:24:&APP_SESSION.::&DEBUG.:::'
 ,p_list_item_icon=>'fa-money'
@@ -19796,7 +19796,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov=>'STATIC2:01;1,02;2,03;3,4,05;5,06;6,07;7,08;8,09;9,10;10,11;11,12;12'
 ,p_lov_display_null=>'NO'
 ,p_cSize=>20
-,p_colspan=>3
+,p_colspan=>2
 ,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
@@ -19811,7 +19811,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Anio'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>10
-,p_colspan=>3
+,p_colspan=>2
 ,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
@@ -19826,11 +19826,27 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov=>'STATIC2:Todas;TODOS,Ventas;VENTAS,Compras;COMPRAS'
 ,p_lov_display_null=>'NO'
 ,p_cSize=>20
-,p_colspan=>3
+,p_colspan=>2
 ,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_item_default=>'TODOS'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001122)
+,p_name=>'P18_PERIODO'
+,p_item_default=>'MES'
+,p_item_sequence=>45
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000700)
+,p_prompt=>unistr('Per\00EDodo')
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:Mes completo;MES,1ra quincena (1 al 15);Q1,2da quincena (16 al final);Q2'
+,p_lov_display_null=>'NO'
+,p_cSize=>30
+,p_colspan=>3
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(43000000000000790)
@@ -19953,8 +19969,8 @@ wwv_flow_imp_page.create_page_plug(
  '     where f.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
  '       and (:P18_ID_EMPRESA is null or f.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
  '       and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''VENTAS'')',
- '       and f.fecha_emision >= to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY'')',
- '       and f.fecha_emision <  add_months(to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY''), 1)',
+ '       and f.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '       and f.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  '    union all',
  '    select ''Compras'', co.id_compra, co.fecha_emision, co.tipo_documento,',
  '           co.folio_factura, co.nro_control, co.cod_moneda, co.tipo_cambio,',
@@ -19979,8 +19995,8 @@ wwv_flow_imp_page.create_page_plug(
  '     where co.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
  '       and (:P18_ID_EMPRESA is null or co.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
  '       and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''COMPRAS'')',
- '       and co.fecha_emision >= to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY'')',
- '       and co.fecha_emision <  add_months(to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY''), 1)',
+ '       and co.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '       and co.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  ')',
  'select case when b.libro = ''Ventas'' then b.id_doc end as ver_id,',
  '       b.libro,',
@@ -20363,8 +20379,8 @@ wwv_flow_imp_page.create_page_plug(
  '       and (:P18_ID_EMPRESA is null or f.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
  '       and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''VENTAS'')',
  '       and f.id_empresa in (select id_empresa from empresas where cod_pais = ''MX'')',
- '       and f.fecha_emision >= to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY'')',
- '       and f.fecha_emision <  add_months(to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY''), 1)',
+ '       and f.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '       and f.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  ')',
  'select b.id_factura as ver_id,',
  '       b.fecha_emision,',
@@ -20665,8 +20681,8 @@ wwv_flow_imp_page.create_page_plug(
  '       where f.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
  '         and (:P18_ID_EMPRESA is null or f.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
  '         and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''VENTAS'')',
- '         and f.fecha_emision >= to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY'')',
- '         and f.fecha_emision <  add_months(to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY''), 1)',
+ '         and f.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '         and f.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  '      union all',
  '      select case when co.estado = ''ANULADA'' then 0 else 1 end',
  '               * case when co.tipo_documento = ''NC'' then -1 else 1 end,',
@@ -20676,8 +20692,8 @@ wwv_flow_imp_page.create_page_plug(
  '       where co.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
  '         and (:P18_ID_EMPRESA is null or co.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
  '         and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''COMPRAS'')',
- '         and co.fecha_emision >= to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY'')',
- '         and co.fecha_emision <  add_months(to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY''), 1)',
+ '         and co.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '         and co.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  '      ) t;',
  '',
  '    return ''<table class="a-Report-table" style="width:100%"><tbody>''',
@@ -20720,8 +20736,8 @@ wwv_flow_imp_page.create_page_plug(
  '       and f.id_empresa in (select id_empresa from empresas where cod_pais = ''MX'')',
  '         and (:P18_ID_EMPRESA is null or f.id_empresa = fn_clean_num(:P18_ID_EMPRESA))',
  '         and (:P18_LIBRO = ''TODOS'' or :P18_LIBRO = ''VENTAS'')',
- '         and f.fecha_emision >= to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY'')',
- '         and f.fecha_emision <  add_months(to_date(''01/'' || lpad(:P18_MES, 2, ''0'') || ''/'' || :P18_ANIO, ''DD/MM/YYYY''), 1)',
+ '         and f.fecha_emision >= fn_periodo_desde(:P18_MES, :P18_ANIO, :P18_PERIODO)',
+ '         and f.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  '      ) t;',
  '',
  '    return ''<table class="a-Report-table" style="width:100%"><tbody>''',
@@ -20802,6 +20818,48 @@ wwv_flow_imp_page.create_page_process(
 'apex_util.set_session_state(''P18_ID_EMPRESA'', v(''F_EMPRESA_ACTIVA''));'))
 ,p_process_clob_language=>'PLSQL'
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001120)
+,p_name=>'LIBRO_PERIODO'
+,p_static_id=>'libro-periodo'
+,p_event_sequence=>45
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P18_PERIODO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001121)
+,p_event_id=>wwv_flow_imp.id(43000000000001120)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-javascript-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'apex.submit({request:"APLICAR", showWait:true});')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001123)
+,p_button_sequence=>30
+,p_button_plug_id=>wwv_flow_imp.id(43000000000000700)
+,p_button_name=>'BTN_PDF_LIBRO'
+,p_static_id=>'btn-pdf-libro'
+,p_button_action=>'REDIRECT_URL'
+,p_button_redirect_url=>'f?p=&APP_ID.:30:&APP_SESSION.'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'PDF'
+,p_button_position=>'NEXT'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-file-pdf-o'
+);
+
 end;
 /
 prompt --application/pages/page_00019
@@ -23691,6 +23749,9 @@ wwv_flow_imp_page.create_page(
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -23698,7 +23759,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Compra'
 ,p_static_id=>'compra-form'
 ,p_region_css_classes=>'card-3d'
-,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>10
 ,p_plug_item_display_point=>'ABOVE'
@@ -23842,7 +23903,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P28_PORCENTAJE_RETENCION'
 ,p_item_sequence=>90
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
-,p_prompt=>'% retencion IVA'
+,p_prompt=>unistr('% retenci\00F3n IVA')
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>10
 ,p_colspan=>6
@@ -23867,7 +23928,7 @@ wwv_flow_imp_page.create_page_item(
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000001032)
-,p_plug_name=>'Lineas de la compra'
+,p_plug_name=>unistr('L\00EDneas de la compra')
 ,p_static_id=>'compra-lineas'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4073835273271169698
@@ -23880,11 +23941,17 @@ wwv_flow_imp_page.create_page_plug(
 'declare',
 '    v_id   number := fn_clean_num(:P28_ID_COMPRA);',
 '    v_html clob;',
+'    v_n    number;',
 'begin',
 '    if v_id is null then return null; end if;',
 '',
+'    select count(*) into v_n from compras_det where id_compra = v_id;',
+'    if v_n = 0 then',
+'        return ''<p style="padding:16px 4px; color:#5f6368;">Esta compra no tiene l&iacute;neas todav&iacute;a: usa &quot;Nueva linea&quot; para agregarlas.</p>'';',
+'    end if;',
+'',
 '    v_html := ''<table class="t-Report-report" width="100%">''',
-'           || ''<thead><tr><th>#</th><th>Descripcion</th><th align="right">Cantidad</th>''',
+'           || ''<thead><tr><th>#</th><th>Descripci&oacute;n</th><th align="right">Cantidad</th>''',
 '           || ''<th align="right">Precio</th><th align="right">Subtotal</th>''',
 '           || ''<th align="right">IVA</th><th align="right">Total</th>''',
 '           || ''<th></th></tr></thead><tbody>'';',
@@ -24099,6 +24166,20 @@ wwv_flow_imp_page.create_page_process(
 '    if v_pct = ''#'' and v_prov is not null then',
 '        apex_util.set_session_state(''P28_PORCENTAJE_RETENCION'',',
 '            pkg_retenciones.fn_porcentaje(v_prov));',
+'    end if;',
+'',
+'    -- Los dos numeros del PROVEEDOR (2026-11-18): se proponen desde su serie',
+'    -- (FAC_PROV y CONTROL_PROV de FOLIO_CONTADOR) para no teclearlos. Si el',
+'    -- usuario escribe el numero del papel, se respeta al guardar y la serie no',
+'    -- se mueve.',
+'    if trim(nvl(:P28_FOLIO_FACTURA, ''#'')) = ''#'' then',
+'        apex_util.set_session_state(''P28_FOLIO_FACTURA'',',
+'            fn_siguiente_folio(fn_clean_num(:F_EMPRESA_ACTIVA), ''FAC_PROV''));',
+'    end if;',
+'',
+'    if trim(nvl(:P28_NRO_CONTROL, ''#'')) = ''#'' then',
+'        apex_util.set_session_state(''P28_NRO_CONTROL'',',
+'            fn_siguiente_folio(fn_clean_num(:F_EMPRESA_ACTIVA), ''CONTROL_PROV''));',
 '    end if;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
@@ -24346,19 +24427,22 @@ prompt --application/pages/page_00029
 begin
 wwv_flow_imp_page.create_page(
  p_id=>29
-,p_name=>'Linea de compra'
+,p_name=>unistr('L\00EDnea de compra')
 ,p_alias=>'LINEA-DE-COMPRA'
-,p_step_title=>'Linea de compra'
+,p_step_title=>unistr('L\00EDnea de compra')
 ,p_warn_on_unsaved_changes=>'Y'
 ,p_autocomplete_on_off=>'OFF'
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000001060)
-,p_plug_name=>'Linea de compra'
+,p_plug_name=>unistr('L\00EDnea de compra')
 ,p_static_id=>'compra-linea-form'
 ,p_region_css_classes=>'card-3d'
 ,p_region_template_options=>'#DEFAULT#'
@@ -24408,7 +24492,7 @@ wwv_flow_imp_page.create_page_item(
 ' order by p.nombre'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_text=>'-- Libre --'
-,p_colspan=>12
+,p_colspan=>6
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 );
@@ -24417,11 +24501,12 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P29_DESCRIPCION'
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000001060)
-,p_prompt=>'Descripcion'
+,p_prompt=>unistr('Descripci\00F3n')
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>60
 ,p_cMaxlength=>500
-,p_colspan=>12
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 );
@@ -24515,6 +24600,74 @@ wwv_flow_imp_page.create_page_item(
 ,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001142)
+,p_name=>'CARGA_PRODUCTO_LINEA'
+,p_static_id=>'carga-producto-linea'
+,p_event_sequence=>10
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P29_ID_PRODUCTO_SERVICIO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001143)
+,p_event_id=>wwv_flow_imp.id(43000000000001142)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'CARGA_PRODUCTO_LINEA'
+,p_static_id=>'carga-producto-linea'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P29_DESCRIPCION,P29_PRECIO_UNITARIO,P29_ID_IMPUESTO,P29_PORCENTAJE_IMPUESTO',
+  'items_to_submit', 'P29_ID_PRODUCTO_SERVICIO',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_prod   number := nullif(fn_clean_num(:P29_ID_PRODUCTO_SERVICIO), 0);',
+'    v_nombre varchar2(150);',
+'    v_precio number;',
+'    v_pct    number;',
+'    v_imp    number;',
+'begin',
+'    if v_prod is null then return; end if;',
+'',
+'    begin',
+'        select p.nombre, p.precio_sugerido, p.impuesto_aplicable',
+'          into v_nombre, v_precio, v_pct',
+'          from producto_servicio p',
+'         where p.id_producto_servicio = v_prod;',
+'    exception',
+'        when no_data_found then return;',
+'    end;',
+'',
+'    -- El catalogo manda: descripcion y precio sugerido, como en la pagina 6.',
+'    :P29_DESCRIPCION    := v_nombre;',
+'    :P29_PRECIO_UNITARIO := v_precio;',
+'',
+'    -- El impuesto se propone con el % del producto y el pais de la empresa.',
+'    -- Si no hay uno que coincida se deja lo que el usuario tenga elegido.',
+'    begin',
+'        select i.id_impuesto into v_imp',
+'          from impuestos i',
+'         where i.estado = ''ACTIVO''',
+'           and nvl(i.aplica_en, ''LINEA'') = ''LINEA''',
+'           and i.porcentage = v_pct',
+'           and i.cod_pais = (select e.cod_pais from empresas e',
+'                              where e.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA))',
+'           and rownum = 1;',
+'        :P29_ID_IMPUESTO          := v_imp;',
+'        :P29_PORCENTAJE_IMPUESTO  := v_pct;',
+'    exception',
+'        when no_data_found then null;',
+'    end;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'N')).to_clob
+,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001072)
@@ -24716,9 +24869,9 @@ prompt --application/pages/page_00024
 begin
 wwv_flow_imp_page.create_page(
  p_id=>24
-,p_name=>'Cobros'
+,p_name=>'Recibos'
 ,p_alias=>'COBROS'
-,p_step_title=>'Cobros'
+,p_step_title=>'Recibos'
 ,p_warn_on_unsaved_changes=>'N'
 ,p_autocomplete_on_off=>'OFF'
 ,p_step_template=>4073832297226169690
@@ -24859,7 +25012,7 @@ wwv_flow_imp_page.create_page_item(
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000801)
-,p_plug_name=>'Cobros'
+,p_plug_name=>'Recibos'
 ,p_static_id=>'lista-cobros'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4073835273271169698
@@ -25258,10 +25411,10 @@ prompt --application/pages/page_00025
 begin
 wwv_flow_imp_page.create_page(
  p_id=>25
-,p_name=>'Cobro'
+,p_name=>'Recibo'
 ,p_alias=>'COBRO'
 ,p_page_mode=>'MODAL'
-,p_step_title=>'Cobro'
+,p_step_title=>'Recibo'
 ,p_autocomplete_on_off=>'OFF'
 ,p_step_template=>2101883943284197310
 ,p_page_template_options=>'#DEFAULT#'
@@ -25330,7 +25483,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000802)
 ,p_prompt=>'Factura (con saldo)'
-,p_display_as=>'NATIVE_POPUP_LOV'
+,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select f.folio_factura || '' - '' || e.nombre_empresa || '' - '' || c.razon_social',
 unistr('       || '' - saldo '' || to_char(fn_saldo_factura(f.id_factura), ''FM999G999G990D00'')'),
@@ -25851,7 +26004,7 @@ wwv_flow_imp_page.create_page_da_action(
 '    when others then null;',
 'end;')),
   'show_processing', 'N',
-  'suppress_change_event', 'N')).to_clob
+  'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -25928,7 +26081,52 @@ wwv_flow_imp_page.create_page_da_action(
 '    when others then null;',
 'end;')),
   'show_processing', 'N',
-  'suppress_change_event', 'N')).to_clob
+  'suppress_change_event', 'Y')).to_clob
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001140)
+,p_name=>'CALCULA_NETO_RETENCION'
+,p_static_id=>'calcula-cobro-retencion'
+,p_event_sequence=>25
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P25_RETENCION'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001141)
+,p_event_id=>wwv_flow_imp.id(43000000000001140)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'CALCULA_NETO_RETENCION'
+,p_static_id=>'calcula-cobro-retencion'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P25_NETO,P25_NETO_BS',
+  'items_to_submit', 'P25_MONTO,P25_RETENCION,P25_IGTF,P25_TIPO_CAMBIO',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_monto number := nvl(fn_clean_num(:P25_MONTO), 0);',
+'    v_ret   number := nvl(fn_clean_num(:P25_RETENCION), 0);',
+'    v_igtf  number := nvl(fn_clean_num(:P25_IGTF), 0);',
+'    v_tasa  number := nvl(fn_clean_num(:P25_TIPO_CAMBIO), 0);',
+'begin',
+'    -- Solo recalcula el NETO cuando el usuario teclea la retencion del',
+'    -- comprobante: no vuelve a proponer la retencion ni toca el IGTF, asi que',
+'    -- no puede entrar en bucle con las otras acciones.',
+'    if v_tasa > 0 then',
+'        :P25_NETO := round(v_monto - round(v_ret / v_tasa, 2) + v_igtf, 2);',
+'        :P25_NETO_BS := round(v_monto * v_tasa - v_ret + v_igtf * v_tasa, 2);',
+'    end if;',
+'exception',
+'    when others then null;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -26005,7 +26203,7 @@ wwv_flow_imp_page.create_page_da_action(
 '    when others then null;',
 'end;')),
   'show_processing', 'N',
-  'suppress_change_event', 'N')).to_clob
+  'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
 );
 end;
@@ -26085,7 +26283,7 @@ wwv_flow_imp_page.create_page_da_action(
 '    when others then null;',
 'end;')),
   'show_processing', 'N',
-  'suppress_change_event', 'N')).to_clob
+  'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_process(
@@ -26191,6 +26389,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
 '    v_libro varchar2(20) := upper(nvl(v(''P18_LIBRO''), ''TODOS''));',
+'    v_per   varchar2(10) := upper(nvl(v(''P18_PERIODO''), ''MES''));',
 '    v_mes   number := nullif(fn_clean_num(v(''P18_MES'')), 0);',
 '    v_anio  number := nullif(fn_clean_num(v(''P18_ANIO'')), 0);',
 '    v_emp   number := nullif(fn_clean_num(v(''F_EMPRESA_ACTIVA'')), 0);',
@@ -26216,7 +26415,7 @@ wwv_flow_imp_page.create_page_process(
 '        raise_application_error(-20070, ''Elige la empresa en la barra.'');',
 '    end if;',
 '',
-'    v_html := fn_libro_excel(v_libro, v_mes, v_anio, v_emp);',
+'    v_html := fn_libro_excel(v_libro, v_mes, v_anio, v_emp, v_per);',
 '    v_nom  := ''libro-'' || lower(v_libro) || ''-'' || lpad(to_char(v_mes), 2, ''0'')',
 '              || ''-'' || to_char(v_anio) || ''.xls'';',
 '',
@@ -26237,6 +26436,85 @@ wwv_flow_imp_page.create_page_process(
 );
 end;
 /
+prompt --application/pages/page_00030
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>30
+,p_name=>'Libro PDF'
+,p_alias=>'LIBRO-PDF'
+,p_step_title=>'Libro PDF'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>3812028674738483
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001130)
+,p_process_sequence=>0
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>unistr('Valida rol: libro para PDF')
+,p_static_id=>'valida-rol-libro-pdf'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'') then',
+'    raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'end if;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001131)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Sirve el libro para imprimir'
+,p_static_id=>'sirve-pdf-libro'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_libro varchar2(20) := upper(nvl(v(''P18_LIBRO''), ''TODOS''));',
+'    v_mes   number := nullif(fn_clean_num(v(''P18_MES'')), 0);',
+'    v_anio  number := nullif(fn_clean_num(v(''P18_ANIO'')), 0);',
+'    v_per   varchar2(10) := upper(nvl(v(''P18_PERIODO''), ''MES''));',
+'    v_emp   number := nullif(fn_clean_num(v(''F_EMPRESA_ACTIVA'')), 0);',
+'    v_html  clob;',
+'    v_pos   number := 1;',
+'begin',
+'    -- El libro para imprimir o guardar como PDF: el mismo documento que el Excel,',
+'    -- en A4 horizontal y con el dialogo de impresion abierto solo.',
+'    if v_mes is null or v_mes not between 1 and 12 then',
+'        v_mes := extract(month from sysdate);',
+'    end if;',
+'    if v_anio is null or v_anio not between 2000 and 2100 then',
+'        v_anio := extract(year from sysdate);',
+'    end if;',
+'    if v_emp is null then',
+'        v_emp := nullif(fn_clean_num(v(''P0_EMPRESA_ACTIVA'')), 0);',
+'    end if;',
+'    if v_emp is null then',
+'        v_emp := fn_empresa_activa(v(''APP_USER''), null);',
+'    end if;',
+'    if v_emp is null then',
+'        raise_application_error(-20070, ''Elige la empresa en la barra.'');',
+'    end if;',
+'',
+'    v_html := fn_libro_excel(v_libro, v_mes, v_anio, v_emp, v_per, ''S'');',
+'',
+'    owa_util.mime_header(''text/html'', false);',
+'    htp.p(''Cache-Control: no-cache'');',
+'    owa_util.http_header_close;',
+'',
+'    while v_pos <= dbms_lob.getlength(v_html) loop',
+'        htp.prn(dbms_lob.substr(v_html, 8000, v_pos));',
+'        v_pos := v_pos + 8000;',
+'    end loop;',
+'',
+'    apex_application.stop_apex_engine;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+end;
+/
+
 prompt --application/pages/page_09999
 begin
 wwv_flow_imp_page.create_page(

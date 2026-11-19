@@ -18,7 +18,9 @@ create or replace function fn_libro_excel (
     p_libro      in varchar2,     -- 'VENTAS' | 'COMPRAS' | 'TODOS'
     p_mes        in number,
     p_anio       in number,
-    p_id_empresa in number
+    p_id_empresa in number,
+    p_periodo    in varchar2 default 'MES',   -- 'MES' | 'Q1' | 'Q2'
+    p_imprimir   in varchar2 default 'N'      -- 'S' = versión para imprimir/PDF
 ) return clob is
     type t_suma is table of number index by binary_integer;
 
@@ -36,6 +38,7 @@ create or replace function fn_libro_excel (
     v_rif     varchar2(40);
     v_pais    varchar2(2);
     v_filas   number := 0;
+    v_hay     number;
     v_mes_tx  varchar2(20);
     v_sumas   t_suma;
     v_primera boolean := true;
@@ -63,6 +66,7 @@ begin
     v_sql := replace(v_sql, ':P18_LIBRO', '''' || upper(nvl(p_libro, 'TODOS')) || '''');
     v_sql := replace(v_sql, ':P18_MES', to_char(p_mes));
     v_sql := replace(v_sql, ':P18_ANIO', to_char(p_anio));
+    v_sql := replace(v_sql, ':P18_PERIODO', '''' || upper(nvl(p_periodo, 'MES')) || '''');
     v_sql := replace(v_sql, ':APP_USER', '''');
 
     -- 2. Membrete (la empresa ya se leyo arriba, para elegir el libro)
@@ -79,12 +83,31 @@ begin
            || '.txt { mso-number-format:"\@"; }'
            || '.fec { mso-number-format:"dd\/mm\/yyyy"; }'
            || '.tot { background: #eaf3f6; font-weight: bold; }'
-           || '</style></head><body>'
+           || case when upper(nvl(p_imprimir, 'N')) = 'S' then
+                  -- version para imprimir / PDF: A4 horizontal, la cabecera se repite
+                  -- en cada pagina y el navegador abre el dialogo de impresion solo.
+                  '@page { size: A4 landscape; margin: 8mm; }'
+                  || 'body { margin: 0; }'
+                  || 'thead { display: table-header-group; }'
+                  || 'tr { page-break-inside: avoid; }'
+                  || 'th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }'
+              else '' end
+           || '</style>'
+           || case when upper(nvl(p_imprimir, 'N')) = 'S' then
+                  '<title>Libro de compras y ventas</title>'
+                  || '<script>window.addEventListener("load", function () { window.print(); });</script>'
+              else '' end
+           || '</head><body>'
            || '<div class="titulo">' || sys.htf.escape_sc(v_empresa) || '</div>'
            || '<div class="sub">'
            || case when v_pais = 'MX' then 'RFC: ' else 'RIF: ' end
            || sys.htf.escape_sc(v_rif)
            || ' &nbsp;&nbsp; Libro de compras y ventas - ' || v_mes_tx
+           || case upper(nvl(p_periodo, 'MES'))
+                  when 'Q1' then ' (1ra quincena: 1 al 15)'
+                  when 'Q2' then ' (2da quincena: 16 al final)'
+                  else ' (mes completo)'
+              end
            || ' &nbsp;&nbsp; Documentos: '
            || case upper(nvl(p_libro, 'TODOS'))
                   when 'VENTAS'  then 'ventas'
@@ -149,8 +172,11 @@ begin
     v_html := v_html || '</tr></thead><tbody>';
 
     -- 5. Filas
-    loop
-        exit when dbms_sql.fetch_rows(v_c) = 0;
+    -- OJO: aqui no se usa "exit": importar_export.py descarta las lineas que empiezan
+    -- por "exit" y el bucle quedaria SIN SALIDA (cuelgue medido el 2026-11-18). Se
+    -- recorre con un while.
+    v_hay := dbms_sql.fetch_rows(v_c);
+    while v_hay > 0 loop
         v_filas := v_filas + 1;
         v_html := v_html || '<tr>';
         for i in 1 .. v_ncols loop
@@ -194,6 +220,7 @@ begin
             end if;
         end loop;
         v_html := v_html || '</tr>';
+        v_hay := dbms_sql.fetch_rows(v_c);
     end loop;
 
     dbms_sql.close_cursor(v_c);

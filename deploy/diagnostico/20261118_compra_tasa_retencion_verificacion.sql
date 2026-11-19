@@ -67,18 +67,19 @@ begin
             'ACTIVO', 'S', 75, 'N', 30)
     returning id_proveedor into v_prov;
 
-    -- C1: folio de 2 digitos
-    if guarda('45', '00-000045') <> -20088 then
-        falla('C1', 'acepto el folio «45» (' || sqlcode || ' ' || substrb(v_msg, 1, 120) || ')');
+    -- C1: el N° de factura es el del PROVEEDOR y NO se valida el formato: «45» vale
+    if guarda('45', '00-000045') <> 0 then
+        falla('C1', 'rechazo el folio «45», que es un numero de factura valido del proveedor ('
+                    || sqlcode || ' ' || substrb(v_msg, 1, 120) || ')');
     end if;
 
-    -- C2: control de 2 digitos
-    if guarda('F-45', '45') <> -20089 then
+    -- C2: el N° de CONTROL si es fiscal: «45» no
+    if guarda('F-46', '45') <> -20089 then
         falla('C2', 'acepto el control «45» (' || sqlcode || ' ' || substrb(v_msg, 1, 120) || ')');
     end if;
 
     -- C3: formatos normales
-    if guarda('F-45', '00-000045') <> 0 then
+    if guarda('F-47', '00-000045') <> 0 then
         falla('C3', 'no dejo guardar con formatos normales (' || sqlcode || ' ' || substrb(v_msg, 1, 120) || ')');
     end if;
 
@@ -107,6 +108,34 @@ begin
        and format_mask is null;
     if v_n <> 1 then
         falla('C5', 'P28_TIPO_CAMBIO lleva mascara (redondea la tasa al mostrarla)');
+    end if;
+
+    -- C6 (2026-11-19): la linea de compra (29) trae del catalogo la descripcion,
+    -- el precio sugerido y el impuesto al elegir el producto.
+    select count(*) into v_n
+      from apex_260100.apex_application_page_da
+     where application_id = 100 and page_id = 29
+       and when_element = 'P29_ID_PRODUCTO_SERVICIO';
+    if v_n <> 1 then
+        falla('C6', 'la 29 no tiene la accion que dispara al elegir el producto');
+    end if;
+
+    select count(*) into v_n
+      from apex_260100.apex_application_page_da_acts
+     where application_id = 100 and page_id = 29
+       and instr(json_value(attributes, '$.items_to_return'), 'P29_PRECIO_UNITARIO') > 0;
+    if v_n <> 1 then
+        falla('C6', 'la accion de la 29 no devuelve P29_PRECIO_UNITARIO');
+    end if;
+
+    -- y que el impuesto propuesto sea el de la empresa con el % del producto
+    select count(*) into v_n
+      from producto_servicio p join impuestos i on i.porcentage = p.impuesto_aplicable
+     where p.id_producto_servicio = (select min(id_producto_servicio) from producto_servicio)
+       and i.cod_pais = (select cod_pais from empresas where id_empresa = 1)
+       and nvl(i.aplica_en, 'LINEA') = 'LINEA' and i.estado = 'ACTIVO';
+    if v_n = 0 then
+        falla('C6', 'el catalogo de productos no tiene un impuesto que case con su %');
     end if;
 
     rollback to sp_compra;

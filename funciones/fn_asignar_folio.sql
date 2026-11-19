@@ -14,7 +14,8 @@
 -- 1; si dos sesiones lo intentan a la vez, la segunda recibe DUP_VAL_ON_INDEX y
 -- reintenta el UPDATE.
 --
--- Formatos: PRESUPUESTO -> '1047', FAC -> 'F-1041', NC -> 'NC-1', ND -> 'ND-1'.
+-- Formatos: PRESUPUESTO -> '1047', FAC -> 'F-1041', NC -> 'NC-1', ND -> 'ND-1',
+-- FAC_PROV -> '45' (numeracion del proveedor), CONTROL_PROV -> '00-000045'.
 --
 -- Ojo al editar: el SET del UPDATE va en la misma linea que el UPDATE. El
 -- runner de despliegue descarta toda linea que empiece por "set " y partiria
@@ -58,10 +59,12 @@ begin
     end if;
 
     return case v_tipo
-             when 'PRESUPUESTO' then to_char(v_num)
-             when 'FAC'         then 'F-'  || v_num
-             when 'NC'          then 'NC-' || v_num
-             when 'ND'          then 'ND-' || v_num
+             when 'PRESUPUESTO'  then to_char(v_num)
+             when 'FAC'          then 'F-'  || v_num
+             when 'NC'           then 'NC-' || v_num
+             when 'ND'           then 'ND-' || v_num
+             when 'FAC_PROV'     then to_char(v_num)
+             when 'CONTROL_PROV' then '00-' || lpad(to_char(v_num), 6, '0')
              else to_char(v_num)
            end;
 end fn_asignar_folio;

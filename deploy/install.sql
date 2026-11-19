@@ -96,7 +96,9 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_control_en_rango.sql
 @@../funciones/fn_asignar_control.sql
 -- Excel fiscal del libro de compras y ventas (lo usa el proceso de la pagina 26).
-@@../funciones/fn_libro_excel.sql
+@@../funciones/fn_periodo_desde.sql
+@@../funciones/fn_periodo_hasta.sql
+@@../funciones/fn_libro_excel.sql  
 
 -- Monitoreo de errores: el procedimiento va antes porque fn_error_handler lo llama.
 @@../procedimientos/prc_log_error.sql

@@ -180,11 +180,15 @@ try:
         sys.exit("la pagina 18 no pinto los filtros")
     time.sleep(3)
 
-    comprueba("libro de ventas" in (js("document.title") or "").lower(),
-              "el titulo es «Libro de ventas»", repr(js("document.title")))
+    comprueba("libro de compras y ventas" in (js("document.title") or "").lower(),
+              "el titulo es «Libro de compras y ventas»", repr(js("document.title")))
     texto = js("document.body.innerText") or ""
-    for col in ("N° Control", "Base 16%", "IVA 16%", "IGTF 3%", "Total Bs", "Factura afectada"):
-        comprueba(col in texto, "la columna «%s» esta" % col)
+    # Los rotulos de la pantalla llevan espacio antes del simbolo («Base 16 %»), asi
+    # que se comparan sin espacios (2026-11-18).
+    texto_plano = re.sub(r"\s+", "", texto)
+    for col in ("Control", "Base 16%", "IVA 16%", "IGTF 3%", "Total Bs",
+                "Documento afectado"):
+        comprueba(re.sub(r"\s+", "", col) in texto_plano, "la columna «%s» esta" % col)
 
     fila_txt = js("""(function(){
         var trs=[...document.querySelectorAll('table.a-IRR-table tr')];
@@ -198,11 +202,11 @@ try:
     comprueba(any(abs(v - TOTAL_FAC) < 0.02 for v in valores),
               "el Total Bs de la factura cuadra", "esperado %.2f" % TOTAL_FAC)
 
-    if not esperar('(document.getElementById("R43000000000000560")||{}).innerText && '
-                   'document.getElementById("R43000000000000560").innerText.length > 10', 40):
+    if not esperar('(document.getElementById("R43000000000000730")||{}).innerText && '
+                   'document.getElementById("R43000000000000730").innerText.length > 10', 40):
         comprueba(False, "la region «Totales del mes» no pinto")
     else:
-        tot_txt = js("document.getElementById('R43000000000000560').innerText") or ""
+        tot_txt = js("document.getElementById('R43000000000000730').innerText") or ""
         valores = [numero(x) for x in re.findall(r"-?[\d.,]+", tot_txt)]
         valores = [v for v in valores if v is not None]
         comprueba(any(abs(v - TOTAL_MES) < 0.05 for v in valores),
@@ -223,7 +227,7 @@ try:
     entrar(CONSULTA, CLAVE_C)
     esperar('document.readyState === "complete" && !!window.apex', 60)
     time.sleep(3)
-    comprueba("libro de ventas" in (js("document.title") or "").lower()
+    comprueba("libro de compras y ventas" in (js("document.title") or "").lower()
               and "No tiene permisos" not in (js("document.body.innerText") or ""),
               "CONSULTA puede ver el libro")
 

@@ -266,40 +266,65 @@ try:
     nav.captura(os.path.join(REPO, "deploy", "resultados", "20261117_cobros_25_usd.png"))
 
     # P4b: el caso que reporto el dueno (factura USD, retencion en Bs):
-    # 200 USD al 914,0218 con 18.910,80 Bs retenidos -> neto 179,31 USD y el IGTF 6.
+    # 200 USD con 18.910,80 Bs retenidos -> neto 185,35 USD y el IGTF 6.
+    # La tasa NO se fija a mano: al pasar a USD la accion la trae de la tabla para
+    # la fecha del cobro, asi que la esperada se lee de la pantalla.
     en_dialogo(nav, 'apex.item("P25_COD_MONEDA").setValue("USD");')
-    en_dialogo(nav, 'apex.item("P25_TIPO_CAMBIO").setValue(914.0218);')
-    en_dialogo(nav, 'apex.item("P25_MONTO").setValue(200);')
     time.sleep(3)
-    en_dialogo(nav, 'apex.item("P25_RETENCION").setValue(18910.8);')
-    # la retencion no dispara accion: se fuerza el recalculo cambiando el monto
     en_dialogo(nav, 'apex.item("P25_MONTO").setValue(200);')
     time.sleep(4)
+    en_dialogo(nav, 'apex.item("P25_RETENCION").setValue(18910.8);')
+    time.sleep(5)
+    tasa_u = num(en_dialogo(nav, 'return apex.item("P25_TIPO_CAMBIO").getValue();'))
     neto = num(en_dialogo(nav, 'return apex.item("P25_NETO").getValue();'))
     neto_bs = num(en_dialogo(nav, 'return apex.item("P25_NETO_BS").getValue();'))
     igtf_u = num(en_dialogo(nav, 'return apex.item("P25_IGTF").getValue();'))
+    print("  P4b tasa leida: %s" % tasa_u)
     comprobar("P4b el neto no resta bolivares de dolares",
-              abs(neto - (200 - 18910.8 / 914.0218 + 6)) < 0.05, f"({neto})")
+              abs(neto - (200 - 18910.8 / tasa_u + 6)) < 0.05, f"({neto})")
     comprobar("P4b el IGTF es el 3 % del abono en divisas", abs(igtf_u - 6) < 0.05, f"({igtf_u})")
     comprobar("P4b el neto en bolivares cuadra",
-              abs(neto_bs - (200 * 914.0218 - 18910.8 + 6 * 914.0218)) < 1, f"({neto_bs})")
+              abs(neto_bs - (200 * tasa_u - 18910.8 + 6 * tasa_u)) < 1, f"({neto_bs})")
     nav.captura(os.path.join(REPO, "deploy", "resultados", "20261117_cobros_escenario_usd.png"))
 
     # P5: se cobra en bolivares el total. Se limpia la retencion y el IGTF de la
     # prueba anterior (una retencion en Bs mayor que el IVA se rechaza a proposito).
     en_dialogo(nav, 'apex.item("P25_RETENCION").setValue("");')
-    en_dialogo(nav, 'apex.item("P25_COD_MONEDA").setValue("VES");')
-    en_dialogo(nav, 'apex.item("P25_MONTO").setValue(1);')
     time.sleep(2)
+    en_dialogo(nav, 'apex.item("P25_COD_MONEDA").setValue("VES");')
+    time.sleep(3)
+    en_dialogo(nav, 'apex.item("P25_MONTO").setValue(1);')
+    time.sleep(3)
     en_dialogo(nav, 'apex.item("P25_MONTO").setValue(116);')
-    time.sleep(4)
-    clic_en_dialogo(nav, "Guardar")
-    time.sleep(9)
+    time.sleep(5)
 
-    fila = cur.execute("""select r.id_recibo, r.monto_cobrado, r.monto_neto, f.estado
-                            from recibos r join facturas f on f.id_factura = r.id_factura
-                           where f.folio_factura = :f and r.estado = 'ACTIVO'""", f=FOLIO).fetchone()
+    def cobrar():
+        clic_en_dialogo(nav, "Guardar")
+        time.sleep(9)
+        fila = cur.execute("""select r.id_recibo, r.monto_cobrado, r.monto_neto, f.estado
+                                from recibos r join facturas f on f.id_factura = r.id_factura
+                               where f.folio_factura = :f and r.estado = 'ACTIVO'""",
+                           f=FOLIO).fetchone()
+        try:
+            dicho = en_dialogo(nav, 'return document.body.innerText;') or ""
+        except Exception:
+            dicho = nav.js("document.body.innerText") or ""
+        errores = [l for l in dicho.splitlines()
+                   if "error" in l.lower() or "aviso" in l.lower() or "confirmaci" in l.lower()]
+        if errores or fila is None:
+            print("  pantalla tras guardar:", (" | ".join(errores) or dicho[:200]))
+        return fila, dicho
+
+    fila, dicho = cobrar()
+    # ORDS corta las rafagas de peticiones con 429 («Too Many Requests»): si paso,
+    # se espera y se reintenta UNA vez, que es lo que hace una persona.
+    if fila is None and "Too Many Requests" in dicho:
+        print("  (429 de ORDS: se espera y se reintenta)")
+        time.sleep(15)
+        fila, dicho = cobrar()
     comprobar("P5 el cobro se guarda", fila is not None)
+
+
     if fila:
         comprobar("P5 la factura queda PAGADA", fila[3] == "PAGADA", f"({fila[3]})")
         comprobar("P5 el monto es el de la factura", abs(float(fila[1]) - 116) < 0.01, f"({fila[1]})")
