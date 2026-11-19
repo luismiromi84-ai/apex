@@ -36,6 +36,7 @@ create table compras (
     monto_impuesto       number(14,2)  default 0 not null enable,
     monto_total          number(14,2)  default 0 not null enable,
     porcentaje_retencion number(5,2)   default 0 not null enable,
+    id_forma_pago        number,
     retencion_iva_bs     number(14,2)  default 0 not null enable,
     estado               varchar2(20)  default 'BORRADOR' not null enable,
     observaciones        varchar2(4000),

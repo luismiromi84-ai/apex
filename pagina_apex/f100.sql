@@ -23810,6 +23810,17 @@ wwv_flow_imp_page.create_page(
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
+,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* La factura afectada solo tiene sentido en una nota (NC/ND). */',
+'function spxAfectada() {',
+'    var esNota = ["NC", "ND"].indexOf(apex.item("P28_TIPO_DOCUMENTO").getValue()) >= 0;',
+'    var el = document.getElementById("P28_ID_COMPRA_ORIGEN");',
+'    if (!el) return;',
+'    var col = el.closest(".col") || el.parentElement;',
+'    if (!col) return;',
+'    col.style.display = esNota ? "" : "none";',
+'    if (!esNota) { apex.item("P28_ID_COMPRA_ORIGEN").setValue(""); }',
+' }'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
 '.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
@@ -23877,6 +23888,33 @@ wwv_flow_imp_page.create_page_item(
 ,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001180)
+,p_name=>'P28_ID_COMPRA_ORIGEN'
+,p_item_sequence=>35
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_prompt=>'Factura afectada (nota de credito/debito)'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c.folio_factura || '' - N. control '' || nvl(c.nro_control, ''-'')',
+unistr('       || '' - '' || to_char(c.monto_total, ''FM999G999G990D00'') || '' '' || c.cod_moneda as display_value,'),
+'       c.id_compra as return_value',
+'  from compras c',
+' where c.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
+'   and c.tipo_documento = ''FAC''',
+'   and c.estado <> ''ANULADA''',
+'   and (:P28_ID_PROVEEDOR is null',
+'        or c.id_proveedor = fn_clean_num(:P28_ID_PROVEEDOR))',
+'   and c.id_compra <> nvl(nullif(fn_clean_num(:P28_ID_COMPRA), 0), -1)',
+' order by c.fecha_emision desc'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Ninguna --'
+,p_lov_cascade_parent_items=>'P28_ID_PROVEEDOR'
+,p_colspan=>12
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Obligatoria en una nota: es la factura de compra que la nota acredita o debita.'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001025)
@@ -23973,6 +24011,26 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_template_options=>'#DEFAULT#'
 ,p_help_text=>unistr('Se propone seg\00FAn el proveedor (75 domiciliado, 100 del exterior, 0 no retiene).'))
 ;
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001190)
+,p_name=>'P28_ID_FORMA_PAGO'
+,p_item_sequence=>95
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_prompt=>'Forma de pago'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select f.descripcion || case when nvl(f.genera_igtf, ''N'') = ''S'' then '' (IGTF)'' else '''' end',
+'       as display_value, f.id_forma_pago as return_value',
+'  from forma_pago f',
+' where f.activo = ''Y'' and nvl(f.visible_compras, ''S'') = ''S''',
+' order by f.descripcion'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Sin definir --'
+,p_colspan=>12
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Si la empresa es Sujeto Pasivo Especial y el pago es en divisas, esta forma de pago decide el IGTF del 3 %.'
+);
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001031)
 ,p_name=>'P28_OBSERVACIONES'
@@ -24169,10 +24227,14 @@ unistr('            apex_util.set_session_state(''P28_FECHA_EMISION'', to_char(r
 '            apex_util.set_session_state(''P28_TIPO_CAMBIO'', r.tipo_cambio);',
 '            apex_util.set_session_state(''P28_PORCENTAJE_RETENCION'', r.porcentaje_retencion);',
 '            apex_util.set_session_state(''P28_OBSERVACIONES'', r.observaciones);',
+'            apex_util.set_session_state(''P28_ID_COMPRA_ORIGEN'', r.id_compra_origen);',
+'            apex_util.set_session_state(''P28_ID_FORMA_PAGO'', r.id_forma_pago);',
 '        end loop;',
 '    else',
 '        apex_util.set_session_state(''P28_ESTADO'', ''BORRADOR'');',
 '        apex_util.set_session_state(''P28_TIPO_DOCUMENTO'', ''FAC'');',
+'        apex_util.set_session_state(''P28_ID_COMPRA_ORIGEN'', '''');',
+'        apex_util.set_session_state(''P28_ID_FORMA_PAGO'', '''');',
 '        begin',
 '            select p.moneda_local into v_moneda',
 '              from empresas e join paises p on p.cod_pais = e.cod_pais',
@@ -24293,6 +24355,8 @@ unistr('        p_fecha_emision        => to_date(:P28_FECHA_EMISION, ''DD/MM/YY
 '        p_tipo_cambio          => fn_clean_num(:P28_TIPO_CAMBIO),',
 '        p_porcentaje_retencion => fn_clean_num(:P28_PORCENTAJE_RETENCION),',
 '        p_observaciones        => :P28_OBSERVACIONES,',
+'        p_id_compra_origen     => nullif(fn_clean_num(:P28_ID_COMPRA_ORIGEN), 0),',
+'        p_id_forma_pago        => nullif(fn_clean_num(:P28_ID_FORMA_PAGO), 0),',
 '        p_usuario              => :APP_USER);',
 '',
 '    :P28_ID_COMPRA := v_id;',
@@ -24504,6 +24568,12 @@ wwv_flow_imp_page.create_page_plug(
 '    v_ret    number := 0;',
 '    v_pct    number := 0;',
 '    v_neto   number := 0;',
+'    v_igtf   number := 0;',
+'    v_igtf_bs number := 0;',
+'    v_spe    varchar2(1) := ''N'';',
+'    v_genera varchar2(1) := ''N'';',
+'    v_emp    number;',
+'    v_alic   number := 0;',
 '    v_html   clob;',
 'begin',
 '    if v_id is null then return null; end if;',
@@ -24526,7 +24596,27 @@ wwv_flow_imp_page.create_page_plug(
 '        v_ret_bs := nvl(pkg_retenciones.fn_retencion_bs(v_id), 0);',
 '    end if;',
 '    v_ret := case when nvl(v_tasa, 0) > 0 then round(v_ret_bs / v_tasa, 2) else 0 end;',
-'    v_neto := v_tot - v_ret;',
+'    -- IGTF: se causa con el pago en divisas si la empresa es SPE y la forma',
+'    -- de pago lo genera (la alicuota sale de IMPUESTOS, no del codigo).',
+'    if nvl(v_mon, ''VES'') not in (''VES'', ''BS'') then',
+'        begin',
+'            select nvl(e.es_spe, ''N''), nvl(f.genera_igtf, ''N''), c.id_empresa',
+'              into v_spe, v_genera, v_emp',
+'              from compras c',
+'              join empresas e on e.id_empresa = c.id_empresa',
+'              left join forma_pago f on f.id_forma_pago = c.id_forma_pago',
+'             where c.id_compra = v_id;',
+'        exception',
+'            when others then v_spe := ''N''; v_genera := ''N'';',
+'        end;',
+'        if v_spe = ''S'' and v_genera = ''S'' then',
+'            v_alic    := nvl(fn_alicuota_igtf(v_emp), 0);',
+'            v_igtf    := round(v_tot * v_alic / 100, 2);',
+'            v_igtf_bs := round(v_igtf * v_tasa, 2);',
+'        end if;',
+'    end if;',
+'',
+'    v_neto := v_tot - v_ret + v_igtf;',
 '',
 '    v_html := ''<table class="a-Report-table" style="width:100%">''',
 '           || ''<thead><tr><th>Concepto</th><th class="spx-num">'' || v_mon || ''</th>''',
@@ -24547,6 +24637,11 @@ wwv_flow_imp_page.create_page_plug(
 '    v_html := v_html || ''<tr><td>IVA retenido ('' || to_char(v_pct) || '' %)</td>''',
 '        || ''<td align="right">-'' || to_char(v_ret, ''FM999G999G999G990D00'') || ''</td>''',
 '        || ''<td align="right">-'' || to_char(v_ret_bs, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'    if v_igtf > 0 then',
+'        v_html := v_html || ''<tr><td>IGTF ('' || to_char(v_alic) || '' %)</td>''',
+'            || ''<td align="right">'' || to_char(v_igtf, ''FM999G999G999G990D00'') || ''</td>''',
+'            || ''<td align="right">'' || to_char(v_igtf_bs, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'    end if;',
 '    v_html := v_html || ''<tr><td><b>Neto a pagar</b></td>''',
 '        || ''<td align="right"><b>'' || to_char(v_neto, ''FM999G999G999G990D00'') || ''</b></td>''',
 '        || ''<td align="right"><b>'' || to_char(v_neto * v_tasa, ''FM999G999G999G990D00'') || ''</b></td></tr>'';',
@@ -24555,6 +24650,29 @@ wwv_flow_imp_page.create_page_plug(
 'end;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001181)
+,p_name=>'MUESTRA_AFECTADA'
+,p_static_id=>'muestra-afectada'
+,p_event_sequence=>50
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P28_TIPO_DOCUMENTO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001182)
+,p_event_id=>wwv_flow_imp.id(43000000000001181)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'Y'
+,p_name=>'MUESTRA_AFECTADA'
+,p_static_id=>'muestra-afectada'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'spxAfectada();')).to_clob
 );
 end;
 /

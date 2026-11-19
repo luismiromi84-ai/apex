@@ -119,6 +119,19 @@ cur.execute("""select min(i.id_impuesto)
                   and nvl(i.aplica_en, 'LINEA') = 'LINEA'
                   and i.porcentage = 0""")
 imp_exento = cur.fetchone()[0]
+
+# una compra en BORRADOR propia: la prueba necesita una que ofrezca «Nueva linea»
+cur.execute("delete from compras_det where id_compra in "
+            "(select id_compra from compras where folio_factura = 'EST-ZZ-1')")
+con.commit()
+cur.execute("delete from compras where folio_factura = 'EST-ZZ-1'")
+con.commit()
+cur.execute("select min(id_proveedor) from proveedores where id_empresa = 1")
+prov1 = cur.fetchone()[0]
+cur.execute("""insert into compras (id_empresa, id_proveedor, tipo_documento, folio_factura,
+                 nro_control, fecha_emision, cod_moneda, tipo_cambio, porcentaje_retencion)
+               values (1, :p, 'FAC', 'EST-ZZ-1', '00-000999', sysdate, 'VES', 1, 75)""", p=prov1)
+con.commit()
 con.close()
 
 nav = Nav()
@@ -150,17 +163,13 @@ try:
     print("  captura:", nav.captura(os.path.join(REPO, "deploy", "resultados",
                                                 "20261119_compras_27.png")))
 
-    # a la compra existente: «Editar» de la primera fila de la lista
+    # a la compra (28): «Editar» de la primera fila, que es la compra en BORRADOR
+    # que acaba de crear la prueba
     abierto = nav.js('(function(){var a=[...document.querySelectorAll("td a")].find(function(x){'
                      'return /editar/i.test(x.innerText) || x.querySelector(".fa-pencil");});'
                      'if(!a) return "SIN ENLACE"; a.click(); return "CLIC";})()')
     time.sleep(10)
     print("  abrir compra:", abierto)
-    if abierto != "CLIC":
-        nav.js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'
-               'return (x.getAttribute("data-otel-label")||"")==="BTN_NUEVA_COMPRA";});'
-               'if(b) b.click();})()')
-        time.sleep(10)
 
     # E2 y E3: la compra (28)
     grad28 = nav.js('(function(){var h=document.querySelector(".t-Region-header");'
@@ -183,11 +192,25 @@ try:
     comprobar("E6 la 28 abre sin error de rejilla",
               "cannot be rendered" not in texto28 and "12 Columns" not in texto28)
 
-    # a la linea (29)
-    nav.js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'
-           'return (x.getAttribute("data-otel-label")||"")==="BTN_LINEA_COMPRA";});'
-           'if(b) b.click();})()')
-    time.sleep(10)
+    # a la linea (29): esperar a que el boton exista y, si no navega, reintentar
+    def ir_a_linea():
+        for _ in range(20):
+            if nav.js('(function(){return !![...document.querySelectorAll("button,a")]'
+                      '.find(function(x){return (x.getAttribute("data-otel-label")||"")'
+                      '==="BTN_LINEA_COMPRA";});})()'):
+                break
+            time.sleep(1)
+        nav.js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'
+               'return (x.getAttribute("data-otel-label")||"")==="BTN_LINEA_COMPRA";});'
+               'if(b) b.click();})()')
+        for _ in range(20):
+            time.sleep(1)
+            if nav.js('(function(){return !!document.getElementById("P29_CANTIDAD");})()'):
+                return True
+        return False
+
+    if not ir_a_linea():
+        ir_a_linea()
 
     grad29 = nav.js('(function(){var h=document.querySelector(".t-Region-header");'
                     'if(!h) return "SIN CABECERA";'
@@ -245,6 +268,27 @@ try:
     pct_desc = nav.js('apex.item("P29_PORCENTAJE_DESCUENTO").getValue()')
     comprobar("E10 90 de 900 son el 10 %",
               str(pct_desc).replace(",", ".") in ("10", "10.0", "10.00"), pct_desc)
+
+    # E11 (2026-11-19): la «Factura afectada» solo sale en una nota (NC/ND)
+    nav.js('window.location.href="%s/f?p=100:28:%s"' % (BASE, ses))
+    time.sleep(8)
+    visible = ('(function(){var el=document.getElementById("P28_ID_COMPRA_ORIGEN");'
+               'if(!el) return "SIN ITEM";'
+               'var col=el.closest(".col")||el.parentElement;'
+               'return (col && col.offsetParent!==null) ? "VISIBLE" : "OCULTA";})()')
+
+    def pon_tipo(t):
+        nav.js('(function(){apex.item("P28_TIPO_DOCUMENTO").setValue("%s");'
+               'var el=document.getElementById("P28_TIPO_DOCUMENTO");'
+               'if(el){el.dispatchEvent(new Event("change",{bubbles:true}));}return "OK";})()' % t)
+        time.sleep(4)
+
+    pon_tipo("NC")
+    comprobar("E11 con Nota de Crédito sale la factura afectada", nav.js(visible) == "VISIBLE",
+              nav.js(visible))
+    pon_tipo("FAC")
+    comprobar("E11 con Factura se oculta la factura afectada", nav.js(visible) == "OCULTA",
+              nav.js(visible))
     print("  captura:", nav.captura(os.path.join(REPO, "deploy", "resultados",
                                                 "20261119_compras_29.png")))
 finally:
@@ -252,6 +296,12 @@ finally:
     con = oracledb.connect(user=c["DB_USER"], password=c["DB_PASSWORD"], dsn=CS)
     cur = con.cursor()
     cur.execute("alter session set current_schema = WKSP_SYPEXWS")
+    # la compra de prueba (y sus lineas) se van con la prueba
+    cur.execute("delete from compras_det where id_compra in "
+                "(select id_compra from compras where folio_factura = 'EST-ZZ-1')")
+    con.commit()
+    cur.execute("delete from compras where folio_factura = 'EST-ZZ-1'")
+    con.commit()
     cur.execute("begin delete from usuario_empresa where usuario_id in "
                 "(select usuario_id from usuario where upper(username)='DIAG.ESTETICA'); commit; "
                 "delete from usuario where upper(username)='DIAG.ESTETICA'; commit; end;")

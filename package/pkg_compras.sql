@@ -29,6 +29,7 @@ create or replace package pkg_compras as
         p_porcentaje_retencion in number default null,
         p_id_compra_origen     in number default null,
         p_observaciones        in varchar2 default null,
+        p_id_forma_pago        in number default null,
         p_usuario              in varchar2);
 
     procedure prc_registrar_compra(p_id_compra in number, p_usuario in varchar2);
