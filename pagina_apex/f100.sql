@@ -429,12 +429,13 @@ wwv_flow_imp_shared.create_list_item(
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(43000000000000550)
-,p_list_item_display_sequence=>15
+,p_list_item_display_sequence=>1
+,p_parent_list_item_id=>wwv_flow_imp.id(18272401440108059)
 ,p_list_item_link_text=>'Clientes'
 ,p_static_id=>'clientes'
 ,p_list_item_link_target=>'f?p=&APP_ID.:20:&APP_SESSION.::&DEBUG.:::'
 ,p_list_item_icon=>'fa-users'
-,p_security_scheme=>wwv_flow_imp.id(9149896901584567)
+,p_security_scheme=>wwv_flow_imp.id(43000000000001152)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'20,21'
 );
@@ -449,6 +450,19 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'5,6'
 );
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(43000000000001151)
+,p_list_item_display_sequence=>1
+,p_parent_list_item_id=>wwv_flow_imp.id(11948716200514858)
+,p_list_item_link_text=>'Gasto real'
+,p_static_id=>'gasto-real'
+,p_list_item_link_target=>'f?p=&APP_ID.:16:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-money'
+,p_security_scheme=>wwv_flow_imp.id(43000000000001150)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'16'
+);
+
 end;
 /
 prompt --application/shared_components/navigation/listentry
@@ -7616,6 +7630,44 @@ wwv_flow_imp_shared.create_flow_process(
 end;
 /
 
+prompt --application/shared_components/security/authorizations/ver_gasto_real
+
+begin
+
+wwv_flow_imp_shared.create_security_scheme(
+ p_id=>wwv_flow_imp.id(43000000000001150)
+,p_name=>'Ver Gasto Real'
+,p_static_id=>'ver-gasto-real'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') then 1 else 0 end = 1;')).to_clob
+,p_error_message=>'No tiene permisos para ver el gasto real.'
+,p_caching=>'BY_USER_BY_PAGE_VIEW'
+);
+
+end;
+
+/
+prompt --application/shared_components/security/authorizations/ver_clientes
+
+begin
+
+wwv_flow_imp_shared.create_security_scheme(
+ p_id=>wwv_flow_imp.id(43000000000001152)
+,p_name=>'Ver Clientes'
+,p_static_id=>'ver-clientes'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'') then 1 else 0 end = 1;')).to_clob
+,p_error_message=>'No tiene permisos para ver clientes.'
+,p_caching=>'BY_USER_BY_PAGE_VIEW'
+);
+
+end;
+
+/
+
+
 prompt --application/shared_components/security/authorizations/ver_compras
 begin
 wwv_flow_imp_shared.create_security_scheme(
@@ -12567,6 +12619,8 @@ unistr('    // La columna \00ABCobrar\00BB la pinta APEX en todas las filas, per
 '.status-FACTURADO { color: #6d28d9; background-color: #f5f3ff; } .status-FACTURADO .status-dot { background-color: #8b5cf6; }',
 '.status-ACTIVO { color: #15803d; background-color: #f0fdf4; } .status-ACTIVO .status-dot { background-color: #22c55e; }',
 '.status-TIMBRADA { color: #1d4ed8; background-color: #eff6ff; } .status-TIMBRADA .status-dot { background-color: #3b82f6; }',
+'/* En Venezuela la factura no se timbra: el estado TIMBRADA se muestra EMITIDA */',
+'.status-EMITIDA { color: #1d4ed8; background-color: #eff6ff; } .status-EMITIDA .status-dot { background-color: #3b82f6; }',
 '.status-PAGADA { color: #15803d; background-color: #f0fdf4; } .status-PAGADA .status-dot { background-color: #22c55e; }',
 '.status-ANULADA { color: #475569; background-color: #f1f5f9; } .status-ANULADA .status-dot { background-color: #94a3b8; }',
 '.status-INACTIVO { color: #b91c1c; background-color: #fef2f2; } .status-INACTIVO .status-dot { background-color: #ef4444; }',
@@ -12950,7 +13004,7 @@ wwv_flow_imp_page.create_page_plug(
 '          ELSE ''background-color: #f1f3f4; color: #5f6368;''',
 '       END AS estado_css,',
 '       f.creado_por,',
-'       f.estado,',
+'       fn_estado_factura(f.estado, (select e.cod_pais from empresas e where e.id_empresa = f.id_empresa)) as estado,',
 '       f.uuid_fiscal,',
 '       f.nro_control,',
 '       -- Lo que ya esta acreditado por notas de credito no anuladas, y el saldo.',
@@ -19176,6 +19230,9 @@ wwv_flow_imp_page.create_page(
 '.status-PENDIENTE .status-dot { background-color: #f59e0b; }',
 '.status-TIMBRADA { color: #1d4ed8; background-color: #eff6ff; }',
 '.status-TIMBRADA .status-dot { background-color: #3b82f6; }',
+'/* En Venezuela la factura no se timbra: el estado TIMBRADA se muestra EMITIDA */',
+'.status-EMITIDA { color: #1d4ed8; background-color: #eff6ff; }',
+'.status-EMITIDA .status-dot { background-color: #3b82f6; }',
 '.status-PAGADA { color: #15803d; background-color: #f0fdf4; }',
 '.status-PAGADA .status-dot { background-color: #22c55e; }',
 '.status-ANULADA { color: #b91c1c; background-color: #fef2f2; }',
@@ -19508,7 +19565,7 @@ wwv_flow_imp_page.create_page_plug(
 '       case when f.tipo_documento = ''FAC'' then',
 '            fn_saldo_factura(f.id_factura)',
 '       end as saldo,',
-'       f.estado',
+'       fn_estado_factura(f.estado, (select e.cod_pais from empresas e where e.id_empresa = f.id_empresa)) as estado',
 '  from facturas f',
 '  join clientes c',
 '    on f.id_cliente = c.id_cliente',
@@ -19952,7 +20009,9 @@ wwv_flow_imp_page.create_page_plug(
  'with base as (',
  '    select ''Ventas'' as libro, f.id_factura as id_doc, f.fecha_emision, f.tipo_documento,',
  '           f.folio_factura as folio, f.nro_control, f.cod_moneda, f.tipo_cambio,',
- '           f.monto_total, f.estado, f.id_empresa,',
+ '           f.monto_total,',
+'           fn_estado_factura(f.estado, (select e.cod_pais from empresas e where e.id_empresa = f.id_empresa)) as estado,',
+'           f.id_empresa,',
  '           nvl(f.retencion_iva_bs, 0) as retencion_bs,',
  '           nvl(f.nro_comprobante_retencion, ''-'') as comprobante,',
  '           c.rif, c.razon_social,',
@@ -20365,7 +20424,9 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
  'with base as (',
  '    select f.id_factura, f.fecha_emision, f.tipo_documento, f.folio_factura, f.nro_control,',
- '           f.cod_moneda, f.tipo_cambio, f.monto_total, f.estado, f.id_empresa,',
+ '           f.cod_moneda, f.tipo_cambio, f.monto_total,',
+'           fn_estado_factura(f.estado, (select e.cod_pais from empresas e where e.id_empresa = f.id_empresa)) as estado,',
+'           f.id_empresa,',
  '           c.rif, c.razon_social,',
  '           (select o.folio_factura from facturas o where o.id_factura = f.id_factura_origen) as afectada,',
  '           d.porcentaje_impuesto, d.subtotal_bs, d.monto_impuesto, d.total_bs,',
@@ -24773,7 +24834,6 @@ wwv_flow_imp_page.create_page_process(
 '            apex_util.set_session_state(''P29_PORCENTAJE_IMPUESTO'', r.porcentaje_impuesto);',
 '        end loop;',
 '    else',
-'        apex_util.set_session_state(''P29_CANTIDAD'', 1);',
 '        apex_util.set_session_state(''P29_PORCENTAJE_IMPUESTO'', 16);',
 '    end if;',
 'end;'))
@@ -24861,6 +24921,49 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_when_button_id=>wwv_flow_imp.id(43000000000001073)
 ,p_branch_sequence=>20
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001163)
+,p_name=>'IMPUESTO_LINEA_PCT'
+,p_static_id=>'impuesto-linea-pct'
+,p_event_sequence=>20
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P29_ID_IMPUESTO'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001164)
+,p_event_id=>wwv_flow_imp.id(43000000000001163)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'IMPUESTO_LINEA_PCT'
+,p_static_id=>'impuesto-linea-pct'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P29_PORCENTAJE_IMPUESTO',
+  'items_to_submit', 'P29_ID_IMPUESTO',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_imp number := nullif(fn_clean_num(:P29_ID_IMPUESTO), 0);',
+'    v_pct number;',
+'begin',
+'    -- El porcentaje lo manda el impuesto elegido: exento deja 0, no el 16 anterior.',
+'    if v_imp is null then',
+'        :P29_PORCENTAJE_IMPUESTO := 0;',
+'        return;',
+'    end if;',
+'    select i.porcentage into v_pct from impuestos i where i.id_impuesto = v_imp;',
+'    :P29_PORCENTAJE_IMPUESTO := v_pct;',
+'exception',
+'    when others then null;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'Y')).to_clob
+,p_wait_for_result=>'Y'
 );
 end;
 /
