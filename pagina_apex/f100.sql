@@ -3403,9 +3403,8 @@ wwv_flow_imp_shared.create_list_of_values(
 'SELECT id_cliente,',
 '       razon_social ||'' ''|| rif cliente',
 '  FROM clientes',
-' WHERE id_empresa = :P7_ID_EMPRESA',
-'   AND :P7_ID_EMPRESA IS NOT NULL',
-'   AND estado = ''ACTIVO'''))
+' WHERE estado = ''ACTIVO''',
+'   AND id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)'))
 ,p_source_type=>'SQL'
 ,p_location=>'LOCAL'
 ,p_return_column_name=>'ID_CLIENTE'
@@ -14515,7 +14514,7 @@ wwv_flow_imp_page.create_page_item(
 '       id_cliente AS return_value',
 '  FROM clientes',
 ' WHERE estado = ''ACTIVO''',
-'   AND id_empresa = :P9_ID_EMPRESA',
+'   AND id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
 ' ORDER BY razon_social'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_value=>'-- Seleccione Cliente --'
@@ -19792,7 +19791,25 @@ wwv_flow_imp_page.create_page(
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
+,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* En el libro, las filas de compras no tienen factura que ver: el enlace',
+'   se pinta igual y abre la 9 vacia. Se vacia esa celda (2026-11-19). */',
+'function spxMarcaVer() {',
+'    document.querySelectorAll("td a").forEach(function (a) {',
+'        var h = decodeURIComponent(a.getAttribute("href") || "");',
+'        var i = h.indexOf("p9_id_factura=");',
+'        if (i < 0) { return; }',
+'        var resto = h.substr(i + 14, 1);',
+'        if (resto === "" || resto === "&" || resto === ",") {',
+'            var td = a.closest("td");',
+'            if (td) { td.textContent = ""; }',
+'        }',
+'    });',
+' }',
+'$(function () { spxMarcaVer(); $(document).on("apexafterrefresh", spxMarcaVer); });'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* El IGTF percibido del mes: las cifras centradas bajo su titulo. */',
+'#R43000000000000890 th, #R43000000000000890 td { text-align: center; }',
 '/* Mismo estandar de cabecera que el resto de la app */',
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
 '    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
