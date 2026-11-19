@@ -99,6 +99,8 @@ begin
     v_sql := replace(v_sql, ':P18_LIBRO', '''TODOS''');
     v_sql := replace(v_sql, ':P18_MES', '11');
     v_sql := replace(v_sql, ':P18_ANIO', '2026');
+    -- el filtro de periodo (quincenas) se agrego el 2026-11-18
+    v_sql := replace(v_sql, ':P18_PERIODO', '''MES''');
     v_sql := replace(v_sql, ':APP_USER', '''ADMIN''');
 
     execute immediate 'select count(*) from (' || v_sql || ')' into v_n;
@@ -148,6 +150,8 @@ begin
     v_sql := replace(v_sql, ':P18_LIBRO', '''TODOS''');
     v_sql := replace(v_sql, ':P18_MES', '11');
     v_sql := replace(v_sql, ':P18_ANIO', '2026');
+    -- el filtro de periodo (quincenas) se agrego el 2026-11-18
+    v_sql := replace(v_sql, ':P18_PERIODO', '''MES''');
     v_sql := replace(v_sql, ':APP_USER', '''ADMIN''');
 
     execute immediate 'select count(*) from (' || v_sql || ') where tipo like ''Nota de cr%'' and total_bs > 0'

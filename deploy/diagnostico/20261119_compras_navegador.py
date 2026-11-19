@@ -306,9 +306,12 @@ try:
            'apex.item("P29_CANTIDAD").setValue(2);'
            'apex.item("P29_PRECIO_UNITARIO").setValue(50);'
            'var s=document.getElementById("P29_ID_IMPUESTO");'
-           'if(s && s.options.length>1){apex.item("P29_ID_IMPUESTO").setValue(s.options[1].value);}'
-           'apex.item("P29_PORCENTAJE_IMPUESTO").setValue(16);return "OK";})()')
-        time.sleep(2)
+           'if(s){var op=[...s.options].find(function(o){return /16/.test(o.textContent);});'
+           'if(op){apex.item("P29_ID_IMPUESTO").setValue(op.value);}}'
+           'return "OK";})()')
+        # el % lo pone la accion del impuesto (2026-11-19): hay que dejarla terminar
+        time.sleep(6)
+        print("  % del impuesto tras elegirlo:", js('apex.item("P29_PORCENTAJE_IMPUESTO").getValue()'))
         boton("BTN_GUARDAR_LINEA_COMPRA")
         time.sleep(9)
 

@@ -51,6 +51,12 @@ create or replace package body pkg_compra_detalle as
             raise_application_error(-20086, 'La descripcion de la linea es obligatoria.');
         end if;
 
+        -- La cantidad la teclea el usuario (la pantalla ya no la propone, 2026-11-19):
+        -- una linea en cero no es una compra, es un renglon vacio.
+        if nvl(p_cantidad, 0) <= 0 then
+            raise_application_error(-20096, 'La cantidad de la linea debe ser mayor que cero.');
+        end if;
+
         if p_id_detalle is null then
             select nvl(max(num_linea), 0) + 1 into v_num
               from compras_det where id_compra = p_id_compra;

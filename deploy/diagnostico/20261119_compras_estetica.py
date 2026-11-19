@@ -113,6 +113,12 @@ cur.execute("""insert into usuario (username,email,password_hash,estado,id_empre
                  sypex_hash_password('Diag#2026'),'ACTIVO',1,
                  (select id_rol from syn_roles where codigo_rol='ADMIN'),'N',0)""")
 con.commit()
+cur.execute("""select min(i.id_impuesto)
+                 from impuestos i join empresas e on e.cod_pais = i.cod_pais
+                where e.id_empresa = 1 and i.estado = 'ACTIVO'
+                  and nvl(i.aplica_en, 'LINEA') = 'LINEA'
+                  and i.porcentage = 0""")
+imp_exento = cur.fetchone()[0]
 con.close()
 
 nav = Nav()
@@ -205,6 +211,20 @@ try:
               "cannot be rendered" not in texto29 and "12 Columns" not in texto29)
     comprobar("E6 la 29 no muestra el PL/SQL de ninguna region",
               "fn_clean_num" not in texto29 and "v_html" not in texto29)
+
+    # E7 (2026-11-19): la cantidad nace VACIA; la teclea el usuario
+    cantidad = nav.js('(function(){var el=document.getElementById("P29_CANTIDAD");'
+                      'return el ? (el.value === "" ? "VACIA" : el.value) : "SIN ITEM";})()')
+    comprobar("E7 la cantidad nace vacia (la teclea el usuario)", cantidad == "VACIA", cantidad)
+
+    # E8 (2026-11-19): elegir «Exento (0 %)» deja el % en 0 (antes seguia en 16)
+    nav.js('(function(){apex.item("P29_ID_IMPUESTO").setValue("%s");'
+           'var el=document.getElementById("P29_ID_IMPUESTO");'
+           'if(el){el.dispatchEvent(new Event("change",{bubbles:true}));}return "OK";})()'
+           % imp_exento)
+    time.sleep(5)
+    pct = nav.js('apex.item("P29_PORCENTAJE_IMPUESTO").getValue()')
+    comprobar("E8 el impuesto exento deja el % en 0", str(pct) in ("0", "0.00"), pct)
     print("  captura:", nav.captura(os.path.join(REPO, "deploy", "resultados",
                                                 "20261119_compras_29.png")))
 finally:

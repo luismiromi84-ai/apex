@@ -100,13 +100,14 @@ begin
         falla('V5', 'el padre no apunta a la 27, no usa Ver Compras o lleva resaltado propio');
     end if;
 
-    -- V6: nadie mas cuelga de nadie
+    -- V6: nadie mas cuelga de nadie (2026-11-19: ahora son cuatro: las dos de
+    -- Compras, «Clientes» bajo Facturación y «Gasto real» bajo Presupuestos)
     select count(*) into v_n
       from apex_260100.apex_application_list_entries
      where application_id = 100 and list_name = 'Navigation Menu'
        and list_entry_parent_id is not null;
-    if v_n <> 2 then
-        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 2)');
+    if v_n <> 4 then
+        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 4)');
     end if;
 
     -- V7: el padre usa «Ver Compras» y de él cuelga «Proveedores» con «Ver Proveedores».
@@ -133,6 +134,51 @@ begin
        and page_title = 'Facturas de Compras';
     if v_n <> 1 then
         falla('V8', 'la pagina 27 no se titula Facturas de Compras');
+    end if;
+
+    -- V9 (2026-11-19): «Clientes» cuelga de «Facturación» y conserva lo suyo
+    select count(*) into v_n
+      from apex_260100.apex_application_list_entries h
+      join apex_260100.apex_application_list_entries p
+        on p.list_entry_id = h.list_entry_parent_id
+     where h.application_id = 100 and h.list_name = 'Navigation Menu'
+       and h.static_id = 'clientes'
+       and instr(h.entry_target, ':20:') > 0
+       and h.authorization_scheme = 'Ver Clientes'
+       and h.current_for_pages_type_code = 'COLON_DELIMITED_PAGE_LIST'
+       and h.current_for_pages_expression = '20,21'
+       and p.static_id = 'facturacion'
+       and instr(p.entry_target, ':8:') > 0;
+    if v_n <> 1 then
+        falla('V9', '«Clientes» no cuelga de «Facturación» o perdio destino/esquema');
+    end if;
+
+    -- V10: «Gasto real» cuelga de «Presupuestos» y lleva su propio esquema
+    select count(*) into v_n
+      from apex_260100.apex_application_list_entries h
+      join apex_260100.apex_application_list_entries p
+        on p.list_entry_id = h.list_entry_parent_id
+     where h.application_id = 100 and h.list_name = 'Navigation Menu'
+       and h.static_id = 'gasto-real'
+       and instr(h.entry_target, ':16:') > 0
+       and h.authorization_scheme = 'Ver Gasto Real'
+       and h.current_for_pages_type_code = 'COLON_DELIMITED_PAGE_LIST'
+       and h.current_for_pages_expression = '16'
+       and p.static_id = 'presupuestos'
+       and instr(p.entry_target, ':5:') > 0;
+    if v_n <> 1 then
+        falla('V10', '«Gasto real» no cuelga de «Presupuestos» o perdio destino/esquema');
+    end if;
+
+    -- V11: los roles de «Ver Gasto Real» son los de la guarda de la pagina 16
+    -- (ADMIN, GERENCIA, VENTAS, PRUEBA): CONSULTA no debe ver la entrada.
+    select count(*) into v_n
+      from apex_260100.apex_application_authorization
+     where application_id = 100 and static_id = 'ver-gasto-real'
+       and json_value(attributes, '$.plsql_function_body') like '%ADMIN,GERENCIA,VENTAS,PRUEBA%'
+       and json_value(attributes, '$.plsql_function_body') not like '%CONSULTA%';
+    if v_n <> 1 then
+        falla('V11', '«Ver Gasto Real» no tiene los roles de la guarda de la pagina 16');
     end if;
 
     raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || v_lista, 1, 3000));

@@ -34,6 +34,8 @@ declare
     v_base   number;
     v_tlinea number;
     v_origen number;
+    v_linea3 number;
+    v_compra2 number;
 
     procedure falla(p_texto varchar2) is
     begin
@@ -140,6 +142,22 @@ begin
     exception
         when others then
             if sqlcode <> -20083 then falla('D3: codigo ' || sqlcode || ' en vez de -20083'); end if;
+    end;
+
+    -- D7 (2026-11-19): la cantidad la teclea el usuario; cero no vale.
+    v_compra2 := nueva('FAC', 'DET-2', null);
+    begin
+        pkg_compra_detalle.guardar_detalle(
+            p_id_detalle => v_linea3, p_id_compra => v_compra2, p_num_linea => null,
+            p_id_producto_servicio => null,
+            p_descripcion => 'Linea sin cantidad',
+            p_cantidad => 0, p_precio_unitario => 10,
+            p_porcentaje_descuento => 0, p_monto_descuento => 0,
+            p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'VERIFICACION');
+        falla('D7: acepto una linea con cantidad cero');
+    exception
+        when others then
+            if sqlcode <> -20096 then falla('D7: codigo ' || sqlcode || ' en vez de -20096'); end if;
     end;
 
     rollback to sp_det;

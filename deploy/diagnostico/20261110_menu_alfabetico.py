@@ -27,10 +27,13 @@ import oracledb
 from verificar_conexion import CONNECT_STRING, credenciales
 
 USUARIO, CLAVE = "diag.menu3", "Diag#2026"
-ESPERADO = ["Home", "Administración", "Compras", "Clientes", "Facturación", "Recibos",
+ESPERADO = ["Home", "Administración", "Compras", "Facturación", "Recibos",
             "Reportes Factura y Notas C/D", "Libro de compras y ventas",
             "Gestión de Usuarios", "Panel general", "Presupuestos"]
-HIJOS = ["Facturas de compras", "Proveedores"]
+# 2026-11-19: «Clientes» cuelga de Facturación y «Gasto real» de Presupuestos
+HIJOS = {"Compras": ["Facturas de compras", "Proveedores"],
+         "Facturación": ["Clientes"],
+         "Presupuestos": ["Gasto real"]}
 fallas = 0
 
 c = credenciales()
@@ -53,18 +56,19 @@ if orden_apex != ESPERADO:
     fallas += 1
     print("  MAL el orden guardado no es el orden esperado (Home primero):", orden_apex)
 
-# 1b) Las hijas del grupo Compras
-cur.execute("""select c.entry_text
-                 from apex_application_list_entries c
-                 join apex_application_list_entries p
-                   on p.list_entry_id = c.list_entry_parent_id
-                where c.application_id = 100 and c.list_name = 'Navigation Menu'
-                  and p.static_id = 'compras-grupo'
-                order by c.display_sequence""")
-hijas = [r[0] for r in cur.fetchall()]
-if hijas != HIJOS:
-    fallas += 1
-    print("  MAL las hijas del grupo Compras son", hijas)
+# 1b) Las hijas de cada grupo (Compras, Facturacion y Presupuestos)
+for padre, esperadas in HIJOS.items():
+    cur.execute("""select c.entry_text
+                     from apex_application_list_entries c
+                     join apex_application_list_entries p
+                       on p.list_entry_id = c.list_entry_parent_id
+                    where c.application_id = 100 and c.list_name = 'Navigation Menu'
+                      and p.entry_text = :p
+                    order by c.display_sequence""", p=padre)
+    hijas = [r[0] for r in cur.fetchall()]
+    if hijas != esperadas:
+        fallas += 1
+        print("  MAL las hijas de «%s» son %s (se esperaban %s)" % (padre, hijas, esperadas))
 
 # 2) El render real del navegador.
 # Se borran tambien los usuarios viejos de esta prueba (diag.menu / diag.menu2 quedaron
@@ -156,14 +160,12 @@ try:
     time.sleep(1.5)
     # la plantilla tarda un poco en pintar el arbol: se espera por condicion, no por reloj
     esperar('document.querySelectorAll(\'a[aria-level="1"]\').length > 4', 25)
-    # el grupo Compras sale plegado: se despliega para ver a sus hijas
-    js('(function(){var n=document.getElementById("t_TreeNav");'
-       'if(!n){return false;}'
-       'var li=[...n.querySelectorAll("li")].find(function(x){'
-       'return (x.textContent||"").indexOf("Compras")>=0;});'
-       'var t=li? li.querySelector(".a-TreeView-toggle"):null;'
-       'if(t){t.click();}return !!t;})()')
-    esperar('document.querySelectorAll(\'a[aria-level="2"]\').length > 0', 25)
+    # los grupos salen plegados: se despliegan TODOS para ver a sus hijas
+    js('(function(){var n=document.getElementById("t_TreeNav"); if(!n){return false;}'
+       'var ts=[...n.querySelectorAll(".a-TreeView-toggle")];'
+       'ts.forEach(function(t){t.click();});'
+       'return ts.length;})()')
+    esperar('document.querySelectorAll(\'a[aria-level="2"]\').length >= 4', 25)
 
     pintado = js('(function(){var n=document.querySelector("#t_TreeNav, .t-TreeNav");'
                  'if(!n){return "SIN NAV";}'
@@ -180,10 +182,14 @@ try:
                'if(!n){return "SIN NAV";}'
                'return [...n.querySelectorAll(\'a[aria-level="2"]\')]'
                '.map(function(x){return x.textContent.trim();})})()')
-    print("  hijas del grupo:", hijos)
-    if hijos != HIJOS:
+    print("  hijas de los grupos:", hijos)
+    # orden esperado: el de los grupos en el primer nivel
+    planas = []
+    for p in ESPERADO:
+        planas.extend(HIJOS.get(p, []))
+    if hijos != planas:
         fallas += 1
-        print("  MAL las hijas del grupo no son", HIJOS)
+        print("  MAL las hijas de los grupos no son", planas)
 
     # Captura para el ojo humano: con el menu desplegado, si hace falta.
     import base64
