@@ -19797,6 +19797,14 @@ wwv_flow_imp_page.create_page(
 'function spxMarcaVer() {',
 '    document.querySelectorAll("td a").forEach(function (a) {',
 '        var h = decodeURIComponent(a.getAttribute("href") || "");',
+'        if (h.indexOf("p28_id_compra=") >= 0) {',
+'            var j2 = h.indexOf("p28_id_compra=");',
+'            var r2 = h.substr(j2 + 15, 1);',
+'            if (r2 === "" || r2 === "&" || r2 === ",") {',
+'                var td2 = a.closest("td"); if (td2) { td2.textContent = ""; }',
+'            }',
+'            return;',
+'        }',
 '        var i = h.indexOf("p9_id_factura=");',
 '        if (i < 0) { return; }',
 '        var resto = h.substr(i + 14, 1);',
@@ -20018,7 +20026,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>20
 ,p_plug_display_condition_type=>'EXPRESSION'
-,p_plug_display_when_condition=>'nvl(:P18_ID_EMPRESA, 0) = 0 or (select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P18_ID_EMPRESA)) = ''VE'''
+,p_plug_display_when_condition=>'(select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)) = ''VE'''
 ,p_plug_display_when_cond2=>'SQL'
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
@@ -20075,6 +20083,7 @@ wwv_flow_imp_page.create_page_plug(
  '       and co.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  ')',
  'select case when b.libro = ''Ventas'' then b.id_doc end as ver_id,',
+'       case when b.libro = ''Compras'' then b.id_doc end as ver_compra,',
  '       b.libro,',
  '       b.fecha_emision,',
  '       b.rif,',
@@ -20132,6 +20141,19 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
 );
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001210)
+,p_db_column_name=>'VER_COMPRA'
+,p_display_order=>11
+,p_column_identifier=>'Z'
+,p_column_label=>'Ver compra'
+,p_column_type=>'NUMBER'
+,p_column_link=>'f?p=&APP_ID.:28:&SESSION.::&DEBUG.:28:P28_ID_COMPRA:#VER_COMPRA#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Ver'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000000713)
 ,p_db_column_name=>'LIBRO'
@@ -20434,7 +20456,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>50
 ,p_plug_display_condition_type=>'EXPRESSION'
-,p_plug_display_when_condition=>'nvl(:P18_ID_EMPRESA, 0) = 0 or (select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P18_ID_EMPRESA)) = ''MX'''
+,p_plug_display_when_condition=>'(select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)) = ''MX'''
 ,p_plug_display_when_cond2=>'SQL'
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
@@ -20740,7 +20762,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>15
 ,p_plug_display_condition_type=>'EXPRESSION'
-,p_plug_display_when_condition=>'nvl(:P18_ID_EMPRESA, 0) = 0 or (select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P18_ID_EMPRESA)) = ''VE'''
+,p_plug_display_when_condition=>'(select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)) = ''VE'''
 ,p_plug_display_when_cond2=>'SQL'
 ,p_plug_item_display_point=>'ABOVE'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -20794,7 +20816,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>45
 ,p_plug_display_condition_type=>'EXPRESSION'
-,p_plug_display_when_condition=>'nvl(:P18_ID_EMPRESA, 0) = 0 or (select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:P18_ID_EMPRESA)) = ''MX'''
+,p_plug_display_when_condition=>'(select e.cod_pais from empresas e where e.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)) = ''MX'''
 ,p_plug_display_when_cond2=>'SQL'
 ,p_plug_item_display_point=>'ABOVE'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -26257,9 +26279,12 @@ unistr('    apex_util.set_session_state(''P25_FECHA_COBRO'', to_char(r.fecha_cob
 '    apex_util.set_session_state(''P25_MONTO'', to_char(r.monto_cobrado));',
 '    apex_util.set_session_state(''P25_APLICA_IGTF'', r.aplica_igtf);',
 '    apex_util.set_session_state(''P25_IGTF'', to_char(r.igtf_monto));',
-'    apex_util.set_session_state(''P25_RETENCION'', to_char(r.retencion_iva_bs));',
+'    apex_util.set_session_state(''P25_RETENCION'', to_char(nvl(r.retencion_iva_bs, 0)));',
 '    apex_util.set_session_state(''P25_NRO_COMPROBANTE'', r.nro_comprobante_retencion);',
 '    apex_util.set_session_state(''P25_NETO'', to_char(r.monto_neto));',
+'    -- El neto en bolivares no se guarda: sale del neto por la tasa del cobro.',
+'    apex_util.set_session_state(''P25_NETO_BS'',',
+'        to_char(round(r.monto_neto * nvl(r.tipo_cambio, 1), 2)));',
 '    apex_util.set_session_state(''P25_REFERENCIA'', r.referencia);',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
