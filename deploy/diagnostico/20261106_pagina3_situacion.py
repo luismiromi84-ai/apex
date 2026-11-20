@@ -246,7 +246,7 @@ try:
                     "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW','TYPE','TYPE BODY')")
     comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
     paginas = uno("select count(*) from apex_application_pages where application_id = 100")
-    comprobar("siguen las 34 paginas", paginas == 34, f"({paginas})")
+    comprobar("siguen las 35 paginas", paginas == 35, f"({paginas})")
     guarda = uno("select count(*) from apex_application_page_proc "
                  "where application_id = 100 and page_id = 3 and static_id = 'valida-rol-admin'")
     comprobar("la guarda de rol de la pagina 3 sigue", guarda == 1)
