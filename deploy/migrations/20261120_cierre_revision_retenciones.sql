@@ -639,6 +639,17 @@ create or replace package body pkg_compras as
 
         -- Una nota (NC/ND) tiene que decir que factura de compra afecta: es lo que
         -- pide la providencia del SENIAT y lo que cruza el libro de compras.
+        --
+        -- CORRELACION DE LA TASA (2026-11-20): la nota lleva la TASA de la factura
+        -- que acredita, no la del dia en que se emite, igual que las notas de venta
+        -- desde el 2026-11-09. Sin esto la cabecera quedaba a la tasa del dia y las
+        -- lineas copiadas con la de la factura: el libro suma las filas por el
+        -- detalle y los totales del mes por la cabecera, y los dos numeros no
+        -- cuadraban (nota de compra 1462: 1.294,71 Bs de diferencia).
+        -- Si la factura que acredita esta ANULADA se mantiene la tasa recibida (de
+        -- un documento anulado no se hereda nada). Y si la nota esta en otra moneda
+        -- que la factura, la tasa de la factura no significa nada en esa moneda:
+        -- se respeta la que llega (la pantalla copia la moneda del origen).
         if upper(nvl(p_tipo_documento, 'FAC')) in ('NC', 'ND') then
             if p_id_compra_origen is null then
                 raise_application_error(-20097,
@@ -647,13 +658,21 @@ create or replace package body pkg_compras as
             declare
                 v_tipo_origen varchar2(10);
                 v_emp_origen  number;
+                v_est_origen  varchar2(20);
+                v_tasa_origen number;
+                v_mon_origen  varchar2(5);
             begin
-                select tipo_documento, id_empresa
-                  into v_tipo_origen, v_emp_origen
+                select tipo_documento, id_empresa, estado, tipo_cambio, cod_moneda
+                  into v_tipo_origen, v_emp_origen, v_est_origen, v_tasa_origen, v_mon_origen
                   from compras where id_compra = p_id_compra_origen;
                 if v_tipo_origen <> 'FAC' or v_emp_origen <> p_id_empresa then
                     raise_application_error(-20097,
                         'La factura afectada tiene que ser una factura de compra de esta empresa.');
+                end if;
+                if v_est_origen <> 'ANULADA'
+                   and v_tasa_origen is not null
+                   and upper(nvl(v_mon_origen, 'VES')) = upper(nvl(p_cod_moneda, 'VES')) then
+                    v_tasa := v_tasa_origen;
                 end if;
             exception
                 when no_data_found then

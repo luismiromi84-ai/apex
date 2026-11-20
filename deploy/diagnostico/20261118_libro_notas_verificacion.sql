@@ -1,18 +1,23 @@
 -- =============================================================================
 -- 20261118_libro_notas_verificacion.sql
 --
--- Libro de compras y ventas (18) y notas de crédito (revisión del 2026-11-18):
---   V1  los «Totales del mes» suman exactamente lo que suman las filas del libro
---       (mismos filtros: empresa activa, libro y mes/año)
---   V2  una nota de crédito que cubre el total deja la factura en PAGADA
+-- Libro de compras y ventas (18) y notas de crÃ©dito (revisiÃ³n del 2026-11-18):
+--   V1  los Â«Totales del mesÂ» suman exactamente lo que suman las filas del libro
+--       (mismos filtros: empresa activa, libro y mes/aÃ±o)
+--   V2  una nota de crÃ©dito que cubre el total deja la factura en PAGADA
 --   V3  al anular esa nota, la factura vuelve a TIMBRADA
 --   V4  guardar una factura con un N de Control fuera del rango da -20063
---   V5  las notas no llevan N de Control propio y las facturas sí cumplen el formato
---   V6  la página 17 se llama «Reportes Factura y Notas C/D»
+--   V5  las notas no llevan N de Control propio y las facturas sÃ­ cumplen el formato
+--   V6  la pÃ¡gina 17 se llama Â«Reportes Factura y Notas C/DÂ»
 --   V7  la LOV del filtro de cliente de la 17 devuelve primero el nombre (display_value)
+--   V8  una nota de compra creada por el package con la tasa del dia termina con
+--       la tasa de la FACTURA que acredita, y su cabecera cuadra con sus lineas
+--       (2026-11-20)
+--   V9  no queda ninguna nota de compra con la tasa del dia (reparacion aplicada)
+--   V10 la pagina 28 toma la tasa de la factura origen (accion dinamica y proceso)
 --
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261118_libro_notas_verificacion.sql
--- FALLAS=0 = EXITO (el runner sale con 1 a propósito: -20100).
+-- FALLAS=0 = EXITO (el runner sale con 1 a propÃ³sito: -20100).
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS
@@ -64,7 +69,7 @@ begin
         v_libro := replace(v_libro, ':APP_USER', '''ADMIN''');
         execute immediate 'select round(sum(total_bs), 2) from (' || to_char(v_libro) || ')' into v_suma;
 
-        -- Lo que suma el bloque de «Totales del mes»: ventas y compras por
+        -- Lo que suma el bloque de Â«Totales del mesÂ»: ventas y compras por
         -- cabecera a la tasa del documento, mas el IGTF de cabecera de las
         -- compras que lo causan (2026-11-19).
         execute immediate '
@@ -108,7 +113,7 @@ begin
 end;
 /
 
--- V2 y V3: la nota de crédito mueve el estado de la factura
+-- V2 y V3: la nota de crÃ©dito mueve el estado de la factura
 declare
     v_fac number;
     v_nc  number;
@@ -246,9 +251,9 @@ begin
 end;
 /
 
--- V6 y V7: el nombre de la página 17 y el orden de columnas de su LOV de cliente
+-- V6 y V7: el nombre de la pÃ¡gina 17 y el orden de columnas de su LOV de cliente
 insert into tmp_libnot_fallas
-select 'V6: la pagina 17 no se llama «Reportes Factura y Notas C/D»' from dual
+select 'V6: la pagina 17 no se llama Â«Reportes Factura y Notas C/DÂ»' from dual
  where not exists (select 1 from apex_application_pages
                     where application_id = 100 and page_id = 17
                       and upper(page_title) = upper('Reportes Factura y Notas C/D'))
@@ -260,6 +265,167 @@ select 'V7: la LOV del cliente de la 17 no devuelve primero el nombre' from dual
                     where application_id = 100 and item_name = 'P17_CLIENTE'
                       and regexp_like(lower(lov_definition),
                           'select\s+.*razon_social.*as\s+display_value'))
+/
+
+-- V8: la nota de compra toma la tasa de la FACTURA que acredita (2026-11-20)
+declare
+    v_prov  number;
+    v_fac   number;
+    v_nc    number;
+    v_det   number;
+    v_add   number := 0;
+    v_ya    number := 0;
+    v_tasa  number;
+    v_n     number;
+    v_tot   number;
+    v_linea number;
+    v_err   varchar2(300);
+begin
+    savepoint sp_v8;
+    select min(id_proveedor) into v_prov from proveedores where id_empresa = 1;
+    if v_prov is null then
+        insert into tmp_libnot_fallas values ('V8: la empresa 1 no tiene proveedores');
+        commit;
+        return;
+    end if;
+
+    begin
+        -- Factura de compra en USD a una tasa conocida (900) y una linea.
+        pkg_compras.prc_guardar_compra(
+            p_id_compra => v_fac, p_id_empresa => 1, p_id_proveedor => v_prov,
+            p_tipo_documento => 'FAC', p_folio_factura => 'T-TASA-1',
+            p_nro_control => '00-000901', p_fecha_emision => sysdate,
+            p_cod_moneda => 'USD', p_tipo_cambio => 900,
+            p_porcentaje_retencion => 0, p_id_compra_origen => null,
+            p_observaciones => null, p_id_forma_pago => null,
+            p_id_concepto_islr => 0, p_usuario => 'admin');
+
+        pkg_compra_detalle.guardar_detalle(
+            p_id_detalle => v_det, p_id_compra => v_fac, p_num_linea => 1,
+            p_id_producto_servicio => null, p_descripcion => 'T tasa origen',
+            p_cantidad => 1, p_precio_unitario => 100,
+            p_porcentaje_descuento => 0, p_monto_descuento => 0,
+            p_id_impuesto => null, p_porcentaje_impuesto => 16,
+            p_usuario => 'admin');
+
+        -- La nota se guarda con la tasa del DIA (917,7751), que es lo que hacia
+        -- la pantalla: el package tiene que imponer la de la factura (900).
+        pkg_compras.prc_guardar_compra(
+            p_id_compra => v_nc, p_id_empresa => 1, p_id_proveedor => v_prov,
+            p_tipo_documento => 'NC', p_folio_factura => 'T-TASA-2',
+            p_nro_control => '00-000902', p_fecha_emision => sysdate,
+            p_cod_moneda => 'USD', p_tipo_cambio => 917.7751,
+            p_porcentaje_retencion => 0, p_id_compra_origen => v_fac,
+            p_observaciones => null, p_id_forma_pago => null,
+            p_id_concepto_islr => 0, p_usuario => 'admin');
+
+        pkg_compra_detalle.copiar_desde_compra(
+            p_id_compra => v_nc, p_id_compra_origen => v_fac,
+            p_usuario => 'admin', p_agregadas => v_add, p_ya_estaban => v_ya);
+
+        select tipo_cambio into v_tasa from compras where id_compra = v_nc;
+        if nvl(v_tasa, -1) <> 900 then
+            v_err := 'V8: la nota quedo a la tasa ' || v_tasa || ' (se esperaba 900, la del origen)';
+        end if;
+
+        select count(*) into v_n
+          from compras_det
+         where id_compra = v_nc
+           and nvl(tasa_cambio_aplicada, -1) <> nvl(v_tasa, -2);
+        if v_n > 0 then
+            v_err := (case when v_err is null then '' else v_err || ' | ' end) || 'V8: ' || v_n
+                  || ' linea(s) de la nota con una tasa distinta de su cabecera';
+        end if;
+
+        select round(nvl(monto_total, 0) * nvl(tipo_cambio, 1), 2) into v_tot
+          from compras where id_compra = v_nc;
+        select round(nvl(sum(total_bs), 0), 2) into v_linea
+          from compras_det where id_compra = v_nc;
+        if abs(v_tot - v_linea) > 0.05 then
+            v_err := (case when v_err is null then '' else v_err || ' | ' end) || 'V8: la cabecera da ' || v_tot
+                  || ' Bs y sus lineas ' || v_linea;
+        end if;
+    exception
+        when others then
+            v_err := 'V8: ' || substr(sqlerrm, 1, 220);
+    end;
+
+    rollback to sp_v8;
+    if v_err is not null then
+        insert into tmp_libnot_fallas values (substrb(v_err, 1, 300));
+    end if;
+    commit;
+end;
+/
+
+-- V9: reparacion aplicada (ninguna nota de compra con la tasa del dia)
+declare
+    v_n number;
+begin
+    select count(*) into v_n
+      from compras co
+      join compras o on o.id_compra = co.id_compra_origen
+     where co.tipo_documento in ('NC', 'ND')
+       and o.tipo_documento = 'FAC'
+       and o.estado <> 'ANULADA'
+       and nvl(co.tipo_cambio, -1) <> nvl(o.tipo_cambio, -1);
+    if v_n > 0 then
+        insert into tmp_libnot_fallas
+        values ('V9: ' || v_n || ' nota(s) de compra con la tasa del dia en vez de la del origen');
+    end if;
+
+    select count(*) into v_n
+      from compras co
+      join compras_det d on d.id_compra = co.id_compra
+     where co.tipo_documento in ('NC', 'ND')
+       and d.id_detalle_origen is not null
+       and nvl(d.tasa_cambio_aplicada, -1) <> nvl(co.tipo_cambio, -1);
+    if v_n > 0 then
+        insert into tmp_libnot_fallas
+        values ('V9: ' || v_n || ' linea(s) de nota con tasa distinta de su cabecera');
+    end if;
+end;
+/
+
+-- V10: la pagina 28 toma la tasa de la factura origen (accion + proceso)
+declare
+    v_n number;
+begin
+    select count(*) into v_n
+      from apex_application_page_da
+     where application_id = 100 and page_id = 28
+       and static_id = 'tasa-nota-origen'
+       and when_element = 'P28_ID_COMPRA_ORIGEN'
+       and upper(when_event_name) = 'CHANGE';
+    if v_n = 0 then
+        insert into tmp_libnot_fallas
+        values ('V10: la 28 no tiene la accion TASA_NOTA_ORIGEN sobre P28_ID_COMPRA_ORIGEN');
+    end if;
+
+    select count(*) into v_n
+      from apex_application_page_da_acts
+     where application_id = 100 and page_id = 28
+       and dynamic_action_name = 'TASA_NOTA_ORIGEN'
+       and action_code = 'NATIVE_EXECUTE_PLSQL_CODE'
+       and dbms_lob.instr(attributes, 'P28_TIPO_CAMBIO') > 0
+       and dbms_lob.instr(attributes, 'suppress_change_event":"Y') > 0;
+    if v_n = 0 then
+        insert into tmp_libnot_fallas
+        values ('V10: la accion de la 28 no devuelve P28_TIPO_CAMBIO o no suprime el change');
+    end if;
+
+    select count(*) into v_n
+      from apex_application_page_proc
+     where application_id = 100 and page_id = 28
+       and static_id = 'tasa-nota-origen'
+       and process_point_code = 'BEFORE_HEADER'
+       and upper(process_source) like '%FROM COMPRAS%'
+       and upper(process_source) like '%TIPO_CAMBIO%';
+    if v_n = 0 then
+        insert into tmp_libnot_fallas
+        values ('V10: la 28 no tiene el proceso BEFORE_HEADER que toma la tasa del origen');
+    end if;
+end;
 /
 
 declare

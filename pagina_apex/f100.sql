@@ -8817,11 +8817,115 @@ unistr('/* Colores seg\00FAn el estado */'),
 '}',
 '.status-BLOQUEADO .status-dot {',
 '    background-color: #dc2626;',
+'}',
+'',
+'/* Clave obligatoria por cambiar: el mismo badge, en verde azulado, porque pide',
+'   accion del administrador. La clase la sigue dando SITUACION_CLASE (ACTIVO);',
+'   el texto completo viaja en data-spx para poder distinguirla sin tocar la',
+'   consulta. */',
+'.status-badge[data-spx*="CLAVE POR CAMBIAR"] { color: #0f766e; background-color: #ccfbf1; }',
+'.status-badge[data-spx*="CLAVE POR CAMBIAR"] .status-dot { background-color: #0d9488; }',
+'',
+'/* Fila de indicadores: las mismas tarjetas de Facturacion, Presupuestos y Clientes,',
+'   cuatro en linea, encima de las pestanas. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--iva { background: #eff6ff; border-color: #bfdbfe; } .spx-card--iva .spx-card-lbl { color: #1d4ed8; } .spx-card--iva .spx-card-val { color: #1e3a8a; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'.spx-card--venc { background: #fef2f2; border-color: #fecaca; } .spx-card--venc .spx-card-lbl { color: #b91c1c; } .spx-card--venc .spx-card-val { color: #991b1b; }',
+'',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 767px) {',
+'  .spx-kpis { gap: 8px; }',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.15rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
 '}'))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_page_component_map=>'18'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001441)
+,p_plug_name=>'Indicadores de usuarios'
+,p_static_id=>'kpi-usuarios'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>2
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_tot  number := 0;',
+'    v_act  number := 0;',
+'    v_blq  number := 0;',
+'    v_pen  number := 0;',
+'    v_html clob;',
+'',
+'    -- Sin usuarios en el alcance del administrador no se pintan ceros: se pinta un guion.',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if v_tot = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0));',
+'    end;',
+'begin',
+'    -- El mismo alcance que la lista de usuarios: los que comparten alguna empresa',
+'    -- con el administrador, mas los que todavia no tienen ninguna (los PENDIENTE',
+'    -- que hay que activar). Un administrador no ve los de otra empresa.',
+'    -- Activos excluye a los bloqueados para que los cuatro numeros no se solapen:',
+'    -- es la misma prioridad que usa la columna Situacion.',
+'    select count(*),',
+'           count(case when upper(nvl(u.estado, ''#'')) in (''ACTIVO'', ''A'', ''1'')',
+'                       and nvl(u.bloqueado_hasta, sysdate - 1) <= sysdate then 1 end),',
+'           count(case when u.bloqueado_hasta > sysdate then 1 end),',
+'           count(case when upper(nvl(u.estado, ''#'')) = ''PENDIENTE'' then 1 end)',
+'      into v_tot, v_act, v_blq, v_pen',
+'      from usuario u',
+'     where exists (select 1',
+'                     from usuario_empresa ue',
+'                     join usuario_empresa mia on mia.id_empresa = ue.id_empresa',
+'                     join usuario a on a.usuario_id = mia.usuario_id',
+'                    where ue.usuario_id = u.usuario_id',
+'                      and upper(a.username) = upper(:APP_USER))',
+'        or not exists (select 1 from usuario_empresa x where x.usuario_id = u.usuario_id);',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card spx-card--iva">''',
+'        || ''<div class="spx-card-lbl">Usuarios</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_tot) || ''</div>''',
+'        || ''<div class="spx-card-sub">en tus empresas, mas los pendientes sin empresa</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Activos</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_act) || ''</div>''',
+'        || ''<div class="spx-card-sub">pueden entrar</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--venc">''',
+'        || ''<div class="spx-card-lbl">Bloqueados</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_blq) || ''</div>''',
+'        || ''<div class="spx-card-sub">por intentos fallidos; se desbloquean en la 4</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Pendientes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_pen) || ''</div>''',
+'        || ''<div class="spx-card-sub">registrados y sin activar</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000540)
@@ -8976,7 +9080,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'G'
 ,p_column_label=>unistr('Situaci\00F3n')
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<span class="status-badge status-#SITUACION_CLASE#">',
+'<span class="status-badge status-#SITUACION_CLASE#" data-spx="#SITUACION#">',
 '    <span class="status-dot"></span>',
 '    #SITUACION#',
 '</span>'))
@@ -9870,17 +9974,24 @@ unistr('        $b.attr("title", habilitado ? "" : "Solo se puede procesar un pr
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: la pagina global (0) no emite su CSS, asi que cada pagina */',
-'/* que las usa lleva su copia (medido el 2026-11-07). */',
-'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; }',
+'/* que las usa lleva su copia (medido el 2026-11-07). Mismas clases, forma de */',
+'/* pildora y colores que Facturacion (pagina 8): la app se lee como un producto. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
 '.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
-'.status-PENDIENTE { color: #b45309; background-color: #fffbeb; } .status-PENDIENTE .status-dot { background-color: #f59e0b; }',
-'.status-ENVIADO { color: #1d4ed8; background-color: #eff6ff; } .status-ENVIADO .status-dot { background-color: #3b82f6; }',
-'.status-APROBADO { color: #15803d; background-color: #f0fdf4; } .status-APROBADO .status-dot { background-color: #22c55e; }',
-'.status-RECHAZADO { color: #b91c1c; background-color: #fef2f2; } .status-RECHAZADO .status-dot { background-color: #ef4444; }',
-'.status-CANCELADO { color: #475569; background-color: #f1f5f9; } .status-CANCELADO .status-dot { background-color: #94a3b8; }',
-'.status-FACTURADO { color: #6d28d9; background-color: #f5f3ff; } .status-FACTURADO .status-dot { background-color: #8b5cf6; }',
-'.status-ACTIVO { color: #15803d; background-color: #f0fdf4; } .status-ACTIVO .status-dot { background-color: #22c55e; }',
-'.status-INACTIVO { color: #b91c1c; background-color: #fef2f2; } .status-INACTIVO .status-dot { background-color: #ef4444; }',
+'/* Pendiente (ambar) */',
+'.status-PENDIENTE { color: #d97706; background-color: #fef3c7; } .status-PENDIENTE .status-dot { background-color: #d97706; }',
+'/* Enviado (azul) */',
+'.status-ENVIADO { color: #2563eb; background-color: #dbeafe; } .status-ENVIADO .status-dot { background-color: #2563eb; }',
+'/* Aprobado (verde) */',
+'.status-APROBADO { color: #16a34a; background-color: #dcfce7; } .status-APROBADO .status-dot { background-color: #16a34a; }',
+'/* Rechazado (rojo) */',
+'.status-RECHAZADO { color: #b91c1c; background-color: #fee2e2; } .status-RECHAZADO .status-dot { background-color: #dc2626; }',
+'/* Cancelado (gris) */',
+'.status-CANCELADO { color: #5f6368; background-color: #f1f3f4; } .status-CANCELADO .status-dot { background-color: #9aa0a6; }',
+'/* Facturado (violeta) */',
+'.status-FACTURADO { color: #7c3aed; background-color: #ede9fe; } .status-FACTURADO .status-dot { background-color: #7c3aed; }',
+'.status-ACTIVO { color: #16a34a; background-color: #dcfce7; } .status-ACTIVO .status-dot { background-color: #16a34a; }',
+'.status-INACTIVO { color: #b91c1c; background-color: #fee2e2; } .status-INACTIVO .status-dot { background-color: #dc2626; }',
 '.status-BLOQUEADO { color: #991b1b; background-color: #fee2e2; } .status-BLOQUEADO .status-dot { background-color: #dc2626; }',
 '/* Barra del cuadro de dialogo: la pinta el navegador en ESTA pagina, no el modal. */',
 '.ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; padding: 12px 18px !important; }',
@@ -9937,6 +10048,40 @@ unistr('  /* Sombra 3D aumentada y m\00E1s marcada */'),
 '    height: 0 !important;',
 '    padding: 0 !important;',
 '}',
+'',
+'/* Fila de indicadores: las mismas tarjetas de Facturacion (8), Clientes (20) y */',
+'/* Proveedores (22), cuatro en linea. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--iva { background: #eff6ff; border-color: #bfdbfe; } .spx-card--iva .spx-card-lbl { color: #1d4ed8; } .spx-card--iva .spx-card-val { color: #1e3a8a; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'.spx-card--total { background: #f0fffa; border: 2px solid #16a085; padding: 16px 18px; box-shadow: 0 2px 12px rgba(22, 160, 133, .16); }',
+'.spx-card--total .spx-card-lbl { color: #0f766e; }',
+'.spx-card--total .spx-card-val { font-size: 1.7rem; line-height: 1.1; font-weight: 700; color: #0f766e; }',
+'.spx-card--total .spx-card-sub { color: #0f766e; opacity: .85; }',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 767px) {',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.05rem; }',
+'  .spx-card--total { padding: 12px 14px; }',
+'  .spx-card--total .spx-card-val { font-size: 1.3rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
+'}',
+'/* Resumen Financiero: el mismo tratamiento de tarjeta que el resumen de la compra */',
+'/* (borde suave y sombra ligera). No cambia el contenido ni el formato de las cifras. */',
+'#R12541094704283236 { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); padding: 6px 16px 12px; }',
+'#R12541094704283236 .t-Region-body { padding: 8px 4px 4px; }',
+'/* La tabla de la lista se desplaza dentro de su tarjeta en pantallas angostas, */',
+'/* como en Facturacion (8), en vez de empujar la pagina entera a lo ancho. */',
+'#R11950647600514906 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
 '',
 ''))
 ,p_step_template=>4073832297226169690
@@ -10117,6 +10262,84 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_report_columns=>'ID_DETALLE:DESCRIPCION:CANTIDAD:PRECIO_UNITARIO:DESCUENTO_PCT:MONTO_DESCUENTO:IMPUESTO_PCT:MONTO_IMPUESTO:SUBTOTAL_LINEA:MONTO_TOTAL_LINEA'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001410)
+,p_plug_name=>'Indicadores de presupuestos'
+,p_static_id=>'kpi-presupuestos'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp  number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_n    number := 0;',
+'    v_pen  number := 0;',
+'    v_env  number := 0;',
+'    v_apr  number := 0;',
+'    v_tot  number := 0;',
+'    v_nls  varchar2(40) := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'    v_html clob;',
+'',
+'    -- Con la empresa sin presupuestos la fila no se pinta con ceros: se pinta un guion.',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if v_n = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0));',
+'    end;',
+'',
+'    function f_bs(p_val number) return varchar2 is',
+'    begin',
+'        if v_n = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0), ''FM999G999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    -- Lo que el usuario puede accionar: lo que falta por procesar, lo enviado,',
+'    -- lo aprobado y el dinero comprometido en esos tres estados. Los cerrados',
+'    -- (RECHAZADO, CANCELADO y FACTURADO) no cuentan como cartera vigente.',
+'    select count(*),',
+'           count(case when estado = ''PENDIENTE'' then 1 end),',
+'           count(case when estado = ''ENVIADO'' then 1 end),',
+'           count(case when estado = ''APROBADO'' then 1 end),',
+'           nvl(sum(case when estado in (''PENDIENTE'', ''ENVIADO'', ''APROBADO'')',
+'                        then nvl(total, 0) * nvl(tipo_cambio, 1) end), 0)',
+'      into v_n, v_pen, v_env, v_apr, v_tot',
+'      from presupuestos',
+'     where id_empresa = v_emp;',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Pendientes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_pen) || ''</div>''',
+'        || ''<div class="spx-card-sub">sin procesar</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--iva">''',
+'        || ''<div class="spx-card-lbl">Enviados</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_env) || ''</div>''',
+'        || ''<div class="spx-card-sub">al cliente</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Aprobados</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_apr) || ''</div>''',
+'        || ''<div class="spx-card-sub">listos para facturar</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--total">''',
+'        || ''<div class="spx-card-lbl">Total presupuestado (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_tot) || ''</div>''',
+'        || ''<div class="spx-card-sub">vigentes: pendientes, enviados y aprobados</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(11950647600514906)
@@ -24291,6 +24514,12 @@ wwv_flow_imp_page.create_page(
 '.spx-chip--SPE { color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; }',
 '.spx-chip--NOSPE { color: #9aa0a6; background: #ffffff; border: 1px solid #e5e7eb; }',
 '',
+'/* El nombre es el enlace a la ficha del proveedor (pagina 33); el lapiz de la',
+'   primera columna sigue abriendo el dialogo de edicion (23). */',
+'.spx-nombre { font-weight: 600; }',
+'a.spx-nombre-link { text-decoration: none; }',
+'a.spx-nombre-link:hover .spx-nombre { color: #0076ce; text-decoration: underline; }',
+'',
 '/* Fila de indicadores: las mismas tarjetas de Clientes, Facturacion y Compras. */',
 '.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
 '.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
@@ -24467,9 +24696,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>20
 ,p_column_identifier=>'D'
 ,p_column_label=>'Nombre'
+,p_column_link=>'f?p=&APP_ID.:33:&APP_SESSION.::&DEBUG.::P33_ID_PROVEEDOR:#ID_PROVEEDOR#'
+,p_column_linktext=>'<span class="spx-nombre">#RAZON_SOCIAL#</span>'
+,p_column_link_attr=>'class="spx-nombre-link"'
 ,p_column_type=>'STRING'
 ,p_use_as_row_header=>'N'
-,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000000606)
@@ -26442,6 +26673,43 @@ wwv_flow_imp_page.create_page_process(
 ,p_internal_uid=>43000000000001116
 );
 wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001430)
+,p_process_sequence=>35
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Tasa de la nota'
+,p_static_id=>'tasa-nota-origen'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_tipo varchar2(10) := upper(nvl(:P28_TIPO_DOCUMENTO, ''FAC''));',
+'    v_ori  number := nullif(fn_clean_num(:P28_ID_COMPRA_ORIGEN), 0);',
+'    v_tasa number;',
+'begin',
+'    -- La nota de compra lleva la TASA de la factura que acredita, no la del dia',
+'    -- (regla de las notas de venta desde el 2026-11-09). Se fija tambien aqui,',
+'    -- en el servidor, porque la accion dinamica del navegador puede no correr.',
+'    -- Si la factura no existe, es de otra empresa, es una nota o esta ANULADA,',
+'    -- no se toca nada y el package decide al guardar.',
+'    if v_tipo not in (''NC'', ''ND'') or v_ori is null then',
+'        return;',
+'    end if;',
+'    begin',
+'        select tipo_cambio into v_tasa',
+'          from compras',
+'         where id_compra = v_ori',
+'           and nvl(tipo_documento, ''FAC'') = ''FAC''',
+'           and estado <> ''ANULADA''',
+'           and id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    exception',
+'        when no_data_found then',
+'            return;',
+'    end;',
+'    apex_util.set_session_state(''P28_TIPO_CAMBIO'', v_tasa);',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001430
+);
+wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000001040)
 ,p_process_sequence=>10
 ,p_process_point=>'AFTER_SUBMIT'
@@ -26453,6 +26721,8 @@ wwv_flow_imp_page.create_page_process(
 '    v_id  number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
 '    v_emp number := fn_clean_num(:F_EMPRESA_ACTIVA);',
 '    v_prov number := fn_clean_num(:P28_ID_PROVEEDOR);',
+'    v_tasa_g number;',
+'    v_mon_g  varchar2(5);',
 'begin',
 '    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,PRUEBA'') then',
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
@@ -26492,6 +26762,18 @@ unistr('        p_fecha_emision        => to_date(:P28_FECHA_EMISION, ''DD/MM/YY
 '        p_id_forma_pago        => nullif(fn_clean_num(:P28_ID_FORMA_PAGO), 0),',
 '        p_id_concepto_islr     => nvl(fn_clean_num(:P28_ID_CONCEPTO_ISLR), 0),',
 '        p_usuario              => :APP_USER);',
+'',
+'    -- La nota toma la tasa de la FACTURA que acredita (lo decide el package,',
+'    -- 2026-11-20). Se refresca el item para que la pantalla muestre la que quedo',
+'    -- guardada y no la que se tecleo.',
+'    begin',
+'        select tipo_cambio, cod_moneda into v_tasa_g, v_mon_g',
+'          from compras where id_compra = v_id;',
+'        apex_util.set_session_state(''P28_TIPO_CAMBIO'', v_tasa_g);',
+'        apex_util.set_session_state(''P28_COD_MONEDA'', v_mon_g);',
+'    exception',
+'        when others then null;',
+'    end;',
 '',
 '    :P28_ID_COMPRA := v_id;',
 '    apex_application.g_print_success_message := ''Compra guardada.'';',
@@ -27120,6 +27402,64 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'js_code', 'spxAfectada();')).to_clob
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001420)
+,p_name=>'TASA_NOTA_ORIGEN'
+,p_static_id=>'tasa-nota-origen'
+,p_event_sequence=>60
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P28_ID_COMPRA_ORIGEN'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001421)
+,p_event_id=>wwv_flow_imp.id(43000000000001420)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'Toma la tasa de la factura que acredita'
+,p_static_id=>'tasa-nota-origen'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P28_TIPO_CAMBIO,P28_COD_MONEDA',
+  'items_to_submit', 'P28_ID_COMPRA_ORIGEN,P28_TIPO_DOCUMENTO',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_ori  number := nullif(fn_clean_num(:P28_ID_COMPRA_ORIGEN), 0);',
+'    v_tipo varchar2(10) := upper(nvl(:P28_TIPO_DOCUMENTO, ''FAC''));',
+'    v_tasa number;',
+'    v_mon  varchar2(5);',
+'begin',
+'    -- La nota de compra lleva la tasa (y la moneda) de la FACTURA que acredita,',
+'    -- no la del dia: es la regla de las notas de venta desde el 2026-11-09.',
+'    -- Es una accion de apoyo: si algo falla se sale en silencio y no puede',
+'    -- tumbar la pagina ni bloquear el guardado (el package lo decide igual).',
+'    if v_ori is null or v_tipo not in (''NC'', ''ND'') then',
+'        return;',
+'    end if;',
+'    begin',
+'        select tipo_cambio, cod_moneda into v_tasa, v_mon',
+'          from compras',
+'         where id_compra = v_ori',
+'           and nvl(tipo_documento, ''FAC'') = ''FAC''',
+'           and estado <> ''ANULADA''',
+'           and id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    exception',
+'        when no_data_found then',
+'            return;',
+'    end;',
+'    :P28_TIPO_CAMBIO := to_char(v_tasa);',
+'    :P28_COD_MONEDA  := v_mon;',
+'exception',
+'    when others then null;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'Y')).to_clob
+,p_wait_for_result=>'Y'
+);
 end;
 /
 
@@ -27707,6 +28047,47 @@ wwv_flow_imp_page.create_page(
 '    color: #ffffff !important;',
 '    font-weight: 600 !important;',
 '    font-size: 1.25rem !important;',
+'}',
+'',
+'/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'/* Emitido (verde): el recibo vivo. En la base el estado es ACTIVO. */',
+'.status-EMITIDO { color: #16a34a; background-color: #dcfce7; } .status-EMITIDO .status-dot { background-color: #16a34a; }',
+'/* Anulado (gris): conserva el rastro y no cuenta para el saldo. */',
+'.status-ANULADO { color: #5f6368; background-color: #f1f3f4; } .status-ANULADO .status-dot { background-color: #9aa0a6; }',
+'',
+'/* Chip de conciliado: verde azulado si, gris no. */',
+'.spx-chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.8rem; padding: 3px 12px; border-radius: 999px; }',
+'.spx-chip--Si { color: #0f766e; background-color: #ccfbf1; }',
+'.spx-chip--No { color: #5f6368; background-color: #f1f3f4; }',
+'',
+'/* Fila de indicadores: las mismas tarjetas de Facturacion, Presupuestos y Clientes, cuatro en linea. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--sub { background: #f9fafb; border-color: #e5e7eb; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'.spx-card--total { background: #f0fffa; border: 2px solid #16a085; padding: 16px 18px; box-shadow: 0 2px 12px rgba(22, 160, 133, .16); }',
+'.spx-card--total .spx-card-lbl { color: #0f766e; }',
+'.spx-card--total .spx-card-val { font-size: 1.7rem; line-height: 1.1; font-weight: 700; color: #0f766e; }',
+'.spx-card--total .spx-card-sub { color: #0f766e; opacity: .85; }',
+'',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 767px) {',
+'  .spx-kpis { gap: 8px; }',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.15rem; }',
+'  .spx-card--total { padding: 12px 14px; }',
+'  .spx-card--total .spx-card-val { font-size: 1.3rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
 '}'))
 ,p_page_component_map=>'25'
 ,p_last_updated_by=>'ADMIN'
@@ -27830,6 +28211,88 @@ wwv_flow_imp_page.create_page_item(
 'select ''TODOS'' from dual'))
 );
 wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001440)
+,p_plug_name=>'Indicadores de recibos'
+,p_static_id=>'kpi-recibos'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>15
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp  number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_tot  number := 0;',
+'    v_n    number := 0;',
+'    v_bs   number := 0;',
+'    v_igtf number := 0;',
+'    v_sinc number := 0;',
+'    v_nls  varchar2(40) := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'    v_html clob;',
+'',
+'    -- Con la empresa sin recibos la fila no se pinta con ceros: se pinta un guion.',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if v_tot = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0));',
+'    end;',
+'',
+'    function f_bs(p_val number) return varchar2 is',
+'    begin',
+'        if v_tot = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0), ''FM999G999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    -- Lo que el dueno puede accionar hoy: cuanto se cobro este mes, cuanto IGTF',
+'    -- hay por enterar y cuantos recibos siguen sin conciliar con el banco.',
+'    -- MONTO_BS es el equivalente en bolivares que ya guarda el recibo; si',
+'    -- viniera nulo se deriva con la tasa del propio cobro.',
+'    select count(*),',
+'           count(case when estado = ''ACTIVO''',
+'                       and trunc(fecha_cobro, ''MM'') = trunc(sysdate, ''MM'') then 1 end),',
+'           nvl(sum(case when estado = ''ACTIVO''',
+'                         and trunc(fecha_cobro, ''MM'') = trunc(sysdate, ''MM'')',
+'                        then nvl(monto_bs, monto_cobrado * nvl(tipo_cambio, 1)) end), 0),',
+'           nvl(sum(case when estado = ''ACTIVO''',
+'                         and trunc(fecha_cobro, ''MM'') = trunc(sysdate, ''MM'')',
+'                        then nvl(igtf_bs, 0) end), 0),',
+'           count(case when estado = ''ACTIVO'' and conciliado = ''N'' then 1 end)',
+'      into v_tot, v_n, v_bs, v_igtf, v_sinc',
+'      from recibos',
+'     where id_empresa = v_emp;',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Recibos del mes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_n) || ''</div>''',
+'        || ''<div class="spx-card-sub">emitidos este mes</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--total spx-card--money">''',
+'        || ''<div class="spx-card-lbl">Cobrado (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_bs) || ''</div>''',
+'        || ''<div class="spx-card-sub">equivalente en bolivares del mes</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ret spx-card--money">''',
+'        || ''<div class="spx-card-lbl">IGTF (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_igtf) || ''</div>''',
+'        || ''<div class="spx-card-sub">impuesto por enterar, no es ingreso</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--sub">''',
+'        || ''<div class="spx-card-lbl">Sin conciliar</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_sinc) || ''</div>''',
+'        || ''<div class="spx-card-sub">emitidos y sin conciliar, de cualquier fecha</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000801)
 ,p_plug_name=>'Recibos'
 ,p_static_id=>'lista-cobros'
@@ -27853,7 +28316,9 @@ wwv_flow_imp_page.create_page_plug(
 '       r.monto_neto,',
 '       r.referencia,',
 '       case r.conciliado when ''S'' then ''Si'' else ''No'' end as conciliado,',
-'       r.estado',
+'       -- El recibo vivo se muestra como EMITIDO; en la base el estado es ACTIVO',
+'       -- (el CHECK de RECIBOS solo admite ACTIVO y ANULADO).',
+'       case r.estado when ''ACTIVO'' then ''EMITIDO'' else r.estado end as estado',
 '  from recibos r',
 '  join facturas f on f.id_factura = r.id_factura',
 '  left join clientes c on c.id_cliente = f.id_cliente',
@@ -28041,6 +28506,8 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>140
 ,p_column_identifier=>'N'
 ,p_column_label=>'Conciliado'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="spx-chip spx-chip--#CONCILIADO#">#CONCILIADO#</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -28052,6 +28519,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>150
 ,p_column_identifier=>'O'
 ,p_column_label=>'Estado'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="status-badge status-#ESTADO#">',
+'    <span class="status-dot"></span>',
+'    #ESTADO#',
+'</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -29941,6 +30413,562 @@ wwv_flow_imp_page.create_page_process(
 end;
 /
 
+prompt --application/pages/page_00033
+begin
+-- ==================== Pagina 33 - Ficha del proveedor (2026-11-20) ====================
+wwv_flow_imp_page.create_page(
+ p_id=>33
+,p_name=>'Ficha del proveedor'
+,p_alias=>'PROVEEDOR-FICHA'
+,p_step_title=>'Ficha del proveedor'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Ficha del proveedor: la tarjeta de cabecera, la fila de indicadores y sus',
+'   compras. Las clases son las mismas de las paginas 8, 20, 22 y 32; el CSS va',
+'   aqui porque el de la pagina global no se emite en ninguna pagina. */',
+'/* Cabecera azul de la tarjeta, el mismo de las paginas 3, 5, 8 y 20. */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }',
+'.spx-ficha { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 16px; padding: 18px 20px; border: 1px solid #e0e9f0; border-radius: 12px; background: #f7fafc; box-shadow: 0 1px 3px rgba(0, 0, 0, .06); }',
+'.spx-ficha-icono { font-size: 1.9rem; line-height: 1.1; }',
+'.spx-ficha-txt { min-width: 0; flex: 1 1 260px; }',
+'.spx-ficha-nombre { font-size: 1.35rem; font-weight: 700; color: #17364a; line-height: 1.2; overflow-wrap: anywhere; }',
+'.spx-ficha-meta { font-size: 0.85rem; color: #6b7280; margin-top: 4px; overflow-wrap: anywhere; }',
+'.spx-ficha-meta strong { color: #17364a; font-weight: 600; }',
+'.spx-ficha-estado { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }',
+'.spx-ficha-contacto { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.85rem; flex: 1 1 100%; border-top: 1px solid #e5e7eb; padding-top: 10px; }',
+'.spx-dato { display: inline-flex; gap: 6px; align-items: center; color: #4b5563; overflow-wrap: anywhere; }',
+'a.spx-mail { color: #1a73e8; text-decoration: none; }',
+'a.spx-mail:hover { text-decoration: underline; }',
+'a.spx-tel { color: #0f766e; text-decoration: none; }',
+'a.spx-tel:hover { text-decoration: underline; }',
+'/* Insignias: el estado del proveedor y el de sus compras. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'.status-ACTIVO { color: #16a34a; background-color: #dcfce7; } .status-ACTIVO .status-dot { background-color: #16a34a; }',
+'.status-INACTIVO { color: #b91c1c; background-color: #fee2e2; } .status-INACTIVO .status-dot { background-color: #dc2626; }',
+'.status-BORRADOR { color: #b45309; background-color: #fffbeb; } .status-BORRADOR .status-dot { background-color: #f59e0b; }',
+'.status-REGISTRADA { color: #15803d; background-color: #f0fdf4; } .status-REGISTRADA .status-dot { background-color: #22c55e; }',
+'.status-ANULADA { color: #5f6368; background-color: #f1f3f4; } .status-ANULADA .status-dot { background-color: #9aa0a6; }',
+'/* Fila de indicadores: las mismas tarjetas de la 8, la 20 y la 22. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--total { background: #f0fffa; border: 2px solid #16a085; padding: 16px 18px; } .spx-card--total .spx-card-lbl { color: #0f766e; } .spx-card--total .spx-card-val { color: #0f766e; font-size: 1.35rem; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'/* En pantalla estrecha el informe se desplaza en horizontal en vez de aplastar',
+'   las columnas; el folio no se parte en dos lineas. */',
+'#R43000000000001382 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
+'#R43000000000001382 .a-IRR-table td:nth-child(1),',
+'#R43000000000001382 .a-IRR-table td:nth-child(2),',
+'#R43000000000001382 .a-IRR-table td:nth-child(4) { white-space: nowrap; }',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 520px) {',
+'  .spx-ficha { padding: 12px 14px; }',
+'  .spx-ficha-nombre { font-size: 1.1rem; }',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.15rem; }',
+'  .spx-card--total .spx-card-val { font-size: 1.15rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
+'}'
+))
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001380)
+,p_plug_name=>'Proveedor'
+,p_static_id=>'ficha-proveedor'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id     number        := nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0);',
+'    v_nombre varchar2(400);',
+'    v_rif    varchar2(80);',
+'    v_tipo   varchar2(1);',
+'    v_estado varchar2(20);',
+'    v_email  varchar2(300);',
+'    v_tel    varchar2(150);',
+'    v_dir    varchar2(900);',
+'    v_emp    number;',
+'    v_empnom varchar2(300);',
+'    v_html   clob;',
+'begin',
+'    if v_id is null then',
+'        return ''<div class="spx-ficha"><div class="spx-ficha-txt">''',
+'            || ''<div class="spx-ficha-nombre">Ficha del proveedor</div>''',
+'            || ''<div class="spx-ficha-meta">Abre la ficha desde la lista de Proveedores.</div>''',
+'            || ''</div></div>'';',
+'    end if;',
+'',
+'    begin',
+'        select p.razon_social, p.rif, p.tipo_persona, p.estado,',
+'               p.email, p.telefono, p.direccion, p.id_empresa, e.nombre_empresa',
+'          into v_nombre, v_rif, v_tipo, v_estado,',
+'               v_email, v_tel, v_dir, v_emp, v_empnom',
+'          from proveedores p',
+'          join empresas e on e.id_empresa = p.id_empresa',
+'         where p.id_proveedor = v_id;',
+'    exception',
+'        when no_data_found then',
+'            return null;',
+'    end;',
+'',
+'    -- La fila se pinta solo si el proveedor es de una empresa del usuario: con un',
+'    -- id ajeno en la URL esta region no devuelve nada (el proceso de arriba ya',
+'    -- corta con -20003; esto es la segunda capa).',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        return null;',
+'    end if;',
+'',
+'    v_estado := case when upper(nvl(v_estado, ''ACTIVO'')) = ''INACTIVO''',
+'                     then ''INACTIVO'' else ''ACTIVO'' end;',
+'',
+'    -- El icono va como entidad HTML: la base no es AL32UTF8 y un emoji literal no',
+'    -- sobrevive al viaje (&#127970; = edificio, &#128100; = persona).',
+'    v_html := ''<div class="spx-ficha">''',
+'        || ''<div class="spx-ficha-icono" aria-hidden="true">''',
+'        || case when v_tipo = ''J'' then ''&#127970;'' else ''&#128100;'' end',
+'        || ''</div>''',
+'        || ''<div class="spx-ficha-txt">''',
+'        || ''<div class="spx-ficha-nombre">'' || sys.htf.escape_sc(v_nombre) || ''</div>''',
+'        || ''<div class="spx-ficha-meta">''',
+'        || case when v_rif is not null',
+'                then ''RIF / RFC <strong>'' || sys.htf.escape_sc(v_rif) || ''</strong> &middot; ''',
+'           end',
+'        || case when v_tipo = ''J'' then ''Jur&iacute;dica'' else ''Natural'' end',
+'        || '' &middot; '' || sys.htf.escape_sc(nvl(v_empnom, ''sin empresa''))',
+'        || ''</div></div>''',
+'        || ''<div class="spx-ficha-estado">''',
+'        || ''<span class="status-badge status-'' || v_estado || ''">''',
+'        || ''<span class="status-dot"></span>'' || v_estado || ''</span>''',
+'        || ''</div>''',
+'        || ''<div class="spx-ficha-contacto">'';',
+'',
+'    if v_tel is not null then',
+'        v_html := v_html || ''<span class="spx-dato"><span class="fa fa-phone" aria-hidden="true"></span>''',
+'            || ''<a class="spx-tel" href="tel:'' || sys.htf.escape_sc(v_tel) || ''">''',
+'            || sys.htf.escape_sc(v_tel) || ''</a></span>'';',
+'    end if;',
+'',
+'    if v_email is not null then',
+'        v_html := v_html || ''<span class="spx-dato"><span class="fa fa-envelope-o" aria-hidden="true"></span>''',
+'            || ''<a class="spx-mail" href="mailto:'' || sys.htf.escape_sc(v_email) || ''">''',
+'            || sys.htf.escape_sc(v_email) || ''</a></span>'';',
+'    end if;',
+'',
+'    if v_dir is not null then',
+'        v_html := v_html || ''<span class="spx-dato"><span class="fa fa-map-marker" aria-hidden="true"></span>''',
+'            || sys.htf.escape_sc(v_dir) || ''</span>'';',
+'    end if;',
+'',
+'    if v_tel is null and v_email is null and v_dir is null then',
+'        v_html := v_html || ''<span class="spx-dato">Sin datos de contacto.</span>'';',
+'    end if;',
+'',
+'    v_html := v_html || ''</div></div>'';',
+'    return v_html;',
+'end;'
+))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001381)
+,p_plug_name=>'Indicadores del proveedor'
+,p_static_id=>'kpi-proveedor'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>15
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id    number        := nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0);',
+'    v_emp   number;',
+'    v_com   number        := 0;',
+'    v_tot   number        := 0;',
+'    v_ret   number        := 0;',
+'    v_comp  number        := 0;',
+'    v_nls   varchar2(40)  := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'    v_html  clob;',
+'',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if nvl(p_val, 0) = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(p_val);',
+'    end;',
+'',
+'    function f_bs(p_val number, p_hay number) return varchar2 is',
+'    begin',
+'        if nvl(p_hay, 0) = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0), ''FM999G999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    if v_id is null then',
+'        return null;',
+'    end if;',
+'',
+'    begin',
+'        select id_empresa into v_emp',
+'          from proveedores',
+'         where id_proveedor = v_id;',
+'    exception',
+'        when no_data_found then',
+'            return null;',
+'    end;',
+'',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        return null;',
+'    end if;',
+'',
+'    -- Compras: solo FAC (una nota no es una compra) y sin las anuladas. El total y',
+'    -- la retencion son de ese mismo conjunto: la retencion va en bolivares porque',
+'    -- es la foto del comprobante, y el total se lleva a bolivares con la tasa del',
+'    -- documento (misma cuenta que el libro).',
+'    select count(case when co.tipo_documento = ''FAC'' and nvl(co.estado, ''#'') <> ''ANULADA''',
+'                      then 1 end),',
+'           nvl(sum(case when co.tipo_documento = ''FAC'' and nvl(co.estado, ''#'') <> ''ANULADA''',
+'                        then co.monto_total * nvl(co.tipo_cambio, 1) end), 0),',
+'           nvl(sum(case when co.tipo_documento = ''FAC'' and nvl(co.estado, ''#'') <> ''ANULADA''',
+'                        then co.retencion_iva_bs end), 0)',
+'      into v_com, v_tot, v_ret',
+'      from compras co',
+'     where co.id_proveedor = v_id',
+'       and co.id_empresa = v_emp;',
+'',
+'    -- Comprobantes de retencion vigentes: los de IVA y los de ISLR.',
+'    select count(*)',
+'      into v_comp',
+'      from retenciones r',
+'     where r.id_proveedor = v_id',
+'       and r.id_empresa = v_emp',
+'       and r.estado = ''EMITIDO'';',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card">''',
+'        || ''<div class="spx-card-lbl">Compras</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_com) || ''</div>''',
+'        || ''<div class="spx-card-sub">sin contar las anuladas</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--total">''',
+'        || ''<div class="spx-card-lbl">Total compras (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_tot, v_com) || ''</div>''',
+'        || ''<div class="spx-card-sub">al cambio de cada documento</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Retenci&oacute;n IVA (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_ret, v_com) || ''</div>''',
+'        || ''<div class="spx-card-sub">lo retenido en esas compras</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Comprobantes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_comp) || ''</div>''',
+'        || ''<div class="spx-card-sub">de retenci&oacute;n IVA e ISLR</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'
+))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001382)
+,p_plug_name=>'Compras del proveedor'
+,p_static_id=>'ficha-compras'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select co.id_compra as ver_compra,',
+'       co.folio_factura as folio,',
+'       co.tipo_documento as tipo,',
+'       co.nro_control,',
+'       co.fecha_emision as fecha,',
+'       co.cod_moneda as moneda,',
+'       co.monto_total as total,',
+'       co.retencion_iva_bs as retencion,',
+'       -- La etiqueta que se lee (Procesada en una compra registrada) y el codigo',
+'       -- que pinta la clase de la insignia: son dos columnas y no una.',
+'       fn_estado_compra(co.estado) as estado,',
+'       co.estado as estado_cod',
+'  from compras co',
+' where co.id_proveedor = nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0)',
+'   and co.id_empresa = (select p.id_empresa',
+'                          from proveedores p',
+'                         where p.id_proveedor = nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0))',
+'   and co.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
+' order by co.fecha_emision desc, co.id_compra desc'
+))
+,p_plug_source_type=>'NATIVE_IR'
+,p_ajax_items_to_submit=>'P33_ID_PROVEEDOR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000001384)
+,p_max_row_count_message=>'El proveedor tiene demasiadas compras (#MAX_ROW_COUNT#). Filtra.'
+,p_no_data_found_message=>'Este proveedor no tiene compras en la empresa activa.'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(43000000000001385)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'VER_COMPRA:FOLIO:TIPO:NRO_CONTROL:FECHA:MONEDA:TOTAL:RETENCION:ESTADO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001386)
+,p_db_column_name=>'VER_COMPRA'
+,p_display_order=>10
+,p_is_primary_key=>'Y'
+,p_column_identifier=>'A'
+,p_column_label=>'Ver'
+,p_column_link=>'f?p=&APP_ID.:28:&APP_SESSION.::&DEBUG.::P28_ID_COMPRA:#VER_COMPRA#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-folder-open-o"></span> Ver compra'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001387)
+,p_db_column_name=>'FOLIO'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Folio'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001388)
+,p_db_column_name=>'TIPO'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Tipo'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001389)
+,p_db_column_name=>'NRO_CONTROL'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>unistr('N\00B0 de Control')
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001390)
+,p_db_column_name=>'FECHA'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Fecha'
+,p_column_type=>'DATE'
+,p_format_mask=>'DD/MM/YYYY'
+,p_tz_dependent=>'N'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001391)
+,p_db_column_name=>'MONEDA'
+,p_display_order=>60
+,p_column_identifier=>'F'
+,p_column_label=>'Moneda'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001392)
+,p_db_column_name=>'TOTAL'
+,p_display_order=>70
+,p_column_identifier=>'G'
+,p_column_label=>'Total'
+,p_column_type=>'NUMBER'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001393)
+,p_db_column_name=>'RETENCION'
+,p_display_order=>80
+,p_column_identifier=>'H'
+,p_column_label=>unistr('Retenci\00F3n (Bs)')
+,p_column_type=>'NUMBER'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001394)
+,p_db_column_name=>'ESTADO'
+,p_display_order=>90
+,p_column_identifier=>'I'
+,p_column_label=>'Estado'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="status-badge status-#ESTADO_COD#">',
+'    <span class="status-dot"></span>',
+'    #ESTADO#',
+'</span>'))
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001395)
+,p_db_column_name=>'ESTADO_COD'
+,p_display_order=>100
+,p_column_identifier=>'J'
+,p_column_label=>'Estado (codigo)'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001383)
+,p_plug_name=>'Acciones'
+,p_static_id=>'acciones-proveedor'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001396)
+,p_name=>'P33_ID_PROVEEDOR'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001380)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001397)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001383)
+,p_button_name=>'BTN_EDITAR_PROVEEDOR'
+,p_static_id=>'btn-editar-proveedor'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Editar proveedor'
+,p_button_redirect_url=>'f?p=&APP_ID.:23:&APP_SESSION.::&DEBUG.:23:P23_ID_PROVEEDOR:&P33_ID_PROVEEDOR.'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,ALMACEN,PRUEBA'') and :P33_ID_PROVEEDOR is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-pencil'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001398)
+,p_button_sequence=>210
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001383)
+,p_button_name=>'BTN_VOLVER'
+,p_static_id=>'btn-volver-proveedores'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver'
+,p_button_redirect_url=>'f?p=&APP_ID.:22:&APP_SESSION.::&DEBUG.:22::'
+,p_warn_on_unsaved_changes=>null
+,p_button_css_classes=>'u-pullRight'
+,p_icon_css_classes=>'fa-arrow-left'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001399)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol proveedor ficha'
+,p_static_id=>'valida-rol-proveedores'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'
+))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001399
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001400)
+,p_process_sequence=>2
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida proveedor de la empresa'
+,p_static_id=>'valida-proveedor-propio'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id  number := nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0);',
+'    v_emp number;',
+'begin',
+'    if v_id is null then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select id_empresa into v_emp',
+'          from proveedores',
+'         where id_proveedor = v_id;',
+'    exception',
+'        when no_data_found then',
+'            raise_application_error(-20003, ''No tiene permisos sobre este proveedor.'');',
+'    end;',
+'',
+'    -- La ficha es de la empresa del proveedor: sin esta guarda, un id ajeno en',
+'    -- la URL pintaria la cabecera, los totales y las compras de otro proveedor.',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        raise_application_error(-20003, ''No tiene permisos sobre este proveedor.'');',
+'    end if;',
+'end;'
+))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001400
+);
+end;
+/
 prompt --application/pages/page_00030
 begin
 wwv_flow_imp_page.create_page(
