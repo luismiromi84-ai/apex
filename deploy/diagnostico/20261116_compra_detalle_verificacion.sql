@@ -42,6 +42,8 @@ declare
     v_linea4 number;
     v_compra2 number;
     v_compra3 number;
+    v_add    number;
+    v_ya     number;
 
     procedure falla(p_texto varchar2) is
     begin
@@ -115,21 +117,27 @@ begin
     pkg_compras.prc_registrar_compra(p_id_compra => v_compra, p_usuario => 'test_det_uno');
     v_nc := nueva('NC', 'DET-NC-1', v_compra);
     pkg_compra_detalle.copiar_desde_compra(p_id_compra => v_nc, p_id_compra_origen => v_compra,
-                                           p_usuario => 'test_det_uno');
+                                           p_usuario => 'test_det_uno',
+                                           p_agregadas => v_add, p_ya_estaban => v_ya);
     select count(*), count(id_detalle_origen) into v_sub, v_origen
       from compras_det where id_compra = v_nc;
     if v_sub <> 1 or v_origen <> 1 then
         falla('D4: la nota tiene ' || v_sub || ' lineas y ' || v_origen || ' con origen');
     end if;
 
-    -- D5: copiar dos veces.
+    -- D5 (2026-11-20): copiar dos veces NO duplica ni lanza: agrega 0.
     begin
         pkg_compra_detalle.copiar_desde_compra(p_id_compra => v_nc, p_id_compra_origen => v_compra,
-                                               p_usuario => 'test_det_uno');
-        falla('D5: copio dos veces');
+                                               p_usuario => 'test_det_uno',
+                                               p_agregadas => v_add, p_ya_estaban => v_ya);
+        select count(*) into v_sub from compras_det where id_compra = v_nc;
+        if v_add <> 0 or v_ya <> 1 or v_sub <> 1 then
+            falla('D5: la segunda copia agrego ' || v_add || ', ya estaban ' || v_ya ||
+                  ' y la nota quedo con ' || v_sub || ' lineas');
+        end if;
     exception
         when others then
-            if sqlcode <> -20045 then falla('D5: codigo ' || sqlcode || ' en vez de -20045'); end if;
+            falla('D5: la segunda copia fallo con ' || sqlcode || ' en vez de no hacer nada');
     end;
 
     -- D2 y D3 (parte 2): en REGISTRADA no se guarda ni se borra.

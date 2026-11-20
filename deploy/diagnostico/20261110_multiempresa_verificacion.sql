@@ -3250,18 +3250,29 @@ select substrb('M45: la region admin-logo no declara el lenguaje PL/SQL', 1, 300
                       and upper(nvl(r.function_body_language, '#')) = 'PLSQL');
 /
 
--- M46: la 19 queda con las cuatro pestanas de contenido en el selector y sin
--- los botones que llevaban a las paginas retiradas.
+-- M46: la 19 queda con las cinco pestanas de contenido en el selector y sin
+-- los botones que llevaban a las paginas retiradas. Desde el 2026-11-20 «Logo
+-- actual» y «Subir logo» son UNA sola pestana («admin-logo»), asi que
+-- admin-logo-subir ya no puede estar en el selector.
 insert into tmp_multi_fallas
 select substrb('M46: falta la pestana ' || t.static_id || ' en el selector de la 19', 1, 300)
-  from (select 'admin-fiscal' static_id from dual union all
+  from (select 'admin-mis-empresas' static_id from dual union all
+        select 'admin-empresa' from dual union all
+        select 'admin-fiscal' from dual union all
         select 'admin-imprenta' from dual union all
-        select 'admin-logo' from dual union all
-        select 'admin-logo-subir' from dual) t
+        select 'admin-logo' from dual) t
  where not exists (select 1 from apex_application_page_regions r
                     where r.application_id = 100 and r.page_id = 19
                       and r.region_static_id = t.static_id
                       and r.display_region_selector = 'Yes');
+/
+
+insert into tmp_multi_fallas
+select substrb('M46: admin-logo-subir sigue siendo una pestana aparte (se fusiono con admin-logo)', 1, 300)
+  from dual
+ where exists (select 1 from apex_application_page_regions r
+                where r.application_id = 100 and r.page_id = 19
+                  and r.region_static_id = 'admin-logo-subir');
 /
 
 insert into tmp_multi_fallas

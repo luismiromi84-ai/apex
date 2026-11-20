@@ -191,7 +191,12 @@ try:
     abierto = abre_dialogo(nav, "P9_TIPO_DOCUMENTO",
                            '(function(){var as=[...document.querySelectorAll("td a")].filter(function(a){'
                            'return /Editar/.test(a.innerText);});'
-                           'if(!as.length) return null; var r=as[0].getBoundingClientRect();'
+                           'if(!as.length) return null;'
+                           # La fila de indicadores empuja la lista hacia abajo: sin
+                           # esto, en una ventana baja el clic por coordenadas cae
+                           # fuera de la pantalla y el dialogo no se abre.
+                           'as[0].scrollIntoView({block:"center"});'
+                           'var r=as[0].getBoundingClientRect();'
                            'return JSON.stringify({x:r.left+r.width/2,y:r.top+r.height/2});})()')
     comprobar("G1 el dialogo de la factura (9) abre", abierto)
     texto = texto_dialogo(nav)

@@ -222,7 +222,8 @@ try:
     time.sleep(1)
     nav.clic('(function(){var f=document.querySelector("iframe"); var d=f.contentDocument;'
              'var b=[...d.querySelectorAll("button")].find(function(x){return /Guardar/i.test(x.innerText);});'
-             'if(!b) return null; var fb=f.getBoundingClientRect(), r=b.getBoundingClientRect();'
+             'if(!b) return null; b.scrollIntoView({block:"center"});'
+             'var fb=f.getBoundingClientRect(), r=b.getBoundingClientRect();'
              'return JSON.stringify({x:fb.left+r.left+r.width/2, y:fb.top+r.top+r.height/2});})()')
     time.sleep(10)
 

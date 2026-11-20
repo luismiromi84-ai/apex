@@ -112,5 +112,16 @@ create or replace PACKAGE pkg_facturacion AS
         p_id_factura IN NUMBER,
         p_usuario    IN VARCHAR2
     );
+
+    -- Comprobante de retencion del cliente (2026-11-20). En Venezuela lo emite
+    -- el cliente DESPUES de recibir la factura, cuando el documento ya esta
+    -- TIMBRADA/PARCIAL/PAGADA y por tanto cerrado para fn_factura_editable. Este
+    -- procedimiento es la unica via para dejar constancia del numero sin tocar
+    -- el documento: no cambia estado, importes ni retencion_iva_bs.
+    PROCEDURE prc_registrar_comprobante_retencion (
+        p_id_factura IN NUMBER,
+        p_nro        IN VARCHAR2,
+        p_usuario    IN VARCHAR2
+    );
 END pkg_facturacion;
 /

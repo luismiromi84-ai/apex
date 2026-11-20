@@ -1,8 +1,12 @@
 -- =============================================================================
 -- 20261116_reporte_documentos_verificacion.sql
 --
--- Verificacion del reporte «Facturas y notas» (pagina 17). Se ejecuta de arriba
--- a abajo, como las demas:
+-- Verificacion del «Centro de documentos» (pagina 17). Desde el 2026-11-20 el
+-- informe es la union de VENTAS (FACTURAS + CLIENTES) y COMPRAS (COMPRAS +
+-- PROVEEDORES), con un filtro de modulo, una columna de modulo con insignia y
+-- los totales por modulo y moneda.
+--
+-- Se ejecuta de arriba a abajo, como las demas:
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261116_reporte_documentos_verificacion.sql
 --
 -- Patron de conteo igual que 20261110_multiempresa_verificacion.sql: cada caso
@@ -34,29 +38,59 @@ select substrb('R1: no existe la pagina 17 con alias DOCUMENTOS', 1, 300)
                       and upper(page_alias) = 'DOCUMENTOS');
 /
 
--- R2: la region del informe es un IR y su fuente trae el saldo y los filtros.
+-- R2: la region del informe es un IR y su fuente es la union de los dos modulos
+-- con los filtros de siempre mas el de modulo y el de proveedor.
 insert into tmp_rep_fallas
-select substrb('R2: la region rep-documentos no es un IR con la consulta esperada', 1, 300)
+select substrb('R2: la region rep-documentos no es la union de ventas y compras', 1, 300)
   from dual
  where not exists (select 1 from apex_application_page_regions r
                     where r.application_id = 100 and r.page_id = 17
                       and r.region_static_id = 'rep-documentos'
                       and r.source_type_plugin_static_id = 'NATIVE_IR'
+                      and instr(upper(r.region_source), 'UNION ALL') > 0
+                      and instr(upper(r.region_source), 'FROM COMPRAS') > 0
+                      and instr(upper(r.region_source), 'PROVEEDORES') > 0
+                      and instr(upper(r.region_source), 'FN_ESTADO_COMPRA') > 0
                       and instr(r.region_source, 'id_factura_origen') > 0
                       and instr(r.region_source, 'ANULADA') > 0
                       and instr(upper(r.region_source), 'F_EMPRESA_ACTIVA') > 0
                       and instr(r.region_source, ':P17_TIPO') > 0
-                      and instr(r.region_source, ':P17_INCLUIR_ANULADAS') > 0);
+                      and instr(r.region_source, ':P17_INCLUIR_ANULADAS') > 0
+                      and instr(r.region_source, ':P17_MODULO') > 0
+                      and instr(r.region_source, ':P17_PROVEEDOR') > 0);
 /
 
--- R3 y R4: la consulta guardada se ejecuta con los binds sustituidos y el saldo
--- de TODAS las filas cuadra con fn_saldo_factura (total - notas timbradas - cobros).
+-- R3 a R9: la consulta guardada se ejecuta con los binds sustituidos.
+--   R3  devuelve filas
+--   R4  el saldo de cada venta cuadra con fn_saldo_factura
+--   R5  las compras no traen saldo ni notas de credito
+--   R6  la union trae las dos insignias (Venta y Compra)
+--   R7  con modulo VENTAS no queda ninguna compra
+--   R8  con modulo COMPRAS no queda ninguna venta
+--   R9  el filtro de proveedor recorta solo las compras
 declare
     v_sql    clob;
     v_n      number;
     v_mal    number;
     v_emp    number;
+    v_prov   number;
     v_error  varchar2(300);
+
+    function arma(p_modulo varchar2, p_proveedor varchar2) return clob is
+        s clob := v_sql;
+    begin
+        s := replace(s, ':F_EMPRESA_ACTIVA', to_char(v_emp));
+        s := replace(s, ':P17_ID_EMPRESA', 'null');
+        s := replace(s, ':P17_CLIENTE', 'null');
+        s := replace(s, ':P17_PROVEEDOR', p_proveedor);
+        s := replace(s, ':P17_TIPO', '''TODOS''');
+        s := replace(s, ':P17_DESDE', 'null');
+        s := replace(s, ':P17_HASTA', 'null');
+        s := replace(s, ':P17_INCLUIR_ANULADAS', '''N''');
+        s := replace(s, ':P17_MODULO', '''' || p_modulo || '''');
+        s := replace(s, ':APP_USER', '''ADMIN''');
+        return s;
+    end;
 begin
     begin
         select region_source into v_sql
@@ -71,20 +105,23 @@ begin
     end;
 
     if v_sql is not null then
-        -- La empresa activa manda (plan empresa-activa, tarea 3): la consulta ya no
-        -- filtra por «todas mis empresas» sino por el ítem de aplicación.
-        select min(id_empresa) into v_emp from facturas;
-        v_sql := replace(v_sql, ':F_EMPRESA_ACTIVA', to_char(nvl(v_emp, 0)));
-        v_sql := replace(v_sql, ':P17_ID_EMPRESA', 'null');
-        v_sql := replace(v_sql, ':P17_CLIENTE', 'null');
-        v_sql := replace(v_sql, ':P17_TIPO', '''TODOS''');
-        v_sql := replace(v_sql, ':P17_DESDE', 'null');
-        v_sql := replace(v_sql, ':P17_HASTA', 'null');
-        v_sql := replace(v_sql, ':P17_INCLUIR_ANULADAS', '''N''');
-        v_sql := replace(v_sql, ':APP_USER', '''ADMIN''');
+        -- Una empresa que tenga de las dos cosas: si no, el caso R6 no mediria.
+        begin
+            select max(id_empresa) into v_emp
+              from (select id_empresa from facturas
+                    intersect
+                    select id_empresa from compras);
+        exception
+            when others then v_emp := null;
+        end;
+        if v_emp is null then
+            select min(id_empresa) into v_emp from empresas;
+        end if;
+        select min(id_proveedor) into v_prov from proveedores where id_empresa = v_emp;
 
         begin
-            execute immediate 'select count(*) from (' || v_sql || ')' into v_n;
+            execute immediate 'select count(*) from (' || arma('TODOS', 'null') || ')'
+              into v_n;
             if v_n = 0 then
                 insert into tmp_rep_fallas
                 values (substrb('R3: la consulta no devuelve filas para ADMIN', 1, 300));
@@ -100,26 +137,104 @@ begin
         if v_n > 0 then
             begin
                 execute immediate
-                    'select count(*) from (' || v_sql || ') where saldo is not null '
-                    || 'and abs(saldo - fn_saldo_factura(detalle_link)) > 0.01' into v_mal;
+                    'select count(*) from (' || arma('TODOS', 'null') || ') where saldo is not null '
+                    || 'and abs(saldo - fn_saldo_factura(ver_venta)) > 0.01' into v_mal;
                 if v_mal > 0 then
                     insert into tmp_rep_fallas
                     values (substrb('R4: ' || v_mal || ' fila(s) con saldo <> fn_saldo_factura', 1, 300));
                 end if;
             exception
                 when others then
-                    v_error := sqlerrm;
+                    v_error := substrb(sqlerrm, 1, 280);
                     insert into tmp_rep_fallas
                     values (substrb('R4: no se pudo comparar el saldo: ' || v_error, 1, 300));
             end;
+
+            begin
+                execute immediate
+                    'select count(*) from (' || arma('TODOS', 'null') || ') '
+                    || 'where modulo = ''Compra'' and (saldo is not null or notas_credito is not null)'
+                  into v_mal;
+                if v_mal > 0 then
+                    insert into tmp_rep_fallas
+                    values (substrb('R5: ' || v_mal || ' compra(s) con saldo o notas de credito', 1, 300));
+                end if;
+            exception
+                when others then
+                    v_error := substrb(sqlerrm, 1, 280);
+                    insert into tmp_rep_fallas
+                    values (substrb('R5: no se pudo mirar el saldo de las compras: ' || v_error, 1, 300));
+            end;
+
+            begin
+                execute immediate
+                    'select count(distinct modulo) from (' || arma('TODOS', 'null') || ')'
+                  into v_mal;
+                if v_mal < 2 then
+                    insert into tmp_rep_fallas
+                    values (substrb('R6: la union no trae las dos insignias (Venta y Compra)', 1, 300));
+                end if;
+            exception
+                when others then
+                    v_error := substrb(sqlerrm, 1, 280);
+                    insert into tmp_rep_fallas
+                    values (substrb('R6: no se pudo contar los modulos: ' || v_error, 1, 300));
+            end;
+
+            begin
+                execute immediate
+                    'select count(*) from (' || arma('VENTAS', 'null') || ') where modulo <> ''Venta'''
+                  into v_mal;
+                if v_mal > 0 then
+                    insert into tmp_rep_fallas
+                    values (substrb('R7: con modulo VENTAS quedan ' || v_mal || ' filas de compra', 1, 300));
+                end if;
+            exception
+                when others then
+                    v_error := substrb(sqlerrm, 1, 280);
+                    insert into tmp_rep_fallas
+                    values (substrb('R7: el filtro de modulo no se pudo probar: ' || v_error, 1, 300));
+            end;
+
+            begin
+                execute immediate
+                    'select count(*) from (' || arma('COMPRAS', 'null') || ') where modulo <> ''Compra'''
+                  into v_mal;
+                if v_mal > 0 then
+                    insert into tmp_rep_fallas
+                    values (substrb('R8: con modulo COMPRAS quedan ' || v_mal || ' filas de venta', 1, 300));
+                end if;
+            exception
+                when others then
+                    v_error := substrb(sqlerrm, 1, 280);
+                    insert into tmp_rep_fallas
+                    values (substrb('R8: el filtro de modulo no se pudo probar: ' || v_error, 1, 300));
+            end;
+
+            if v_prov is not null then
+                begin
+                    execute immediate
+                        'select count(*) from (' || arma('COMPRAS', to_char(v_prov)) || ') '
+                        || 'where ver_compra is null' into v_mal;
+                    if v_mal > 0 then
+                        insert into tmp_rep_fallas
+                        values (substrb('R9: el filtro de proveedor no recorta las compras', 1, 300));
+                    end if;
+                exception
+                    when others then
+                        v_error := substrb(sqlerrm, 1, 280);
+                        insert into tmp_rep_fallas
+                        values (substrb('R9: el filtro de proveedor falla: ' || v_error, 1, 300));
+                end;
+            end if;
         end if;
     end if;
 end;
 /
 
--- R5: en el resultado hay al menos una factura con notas y su saldo cuadra.
+-- R10: en los datos hay al menos una factura con notas (si no, R4 no mide nada).
 insert into tmp_rep_fallas
-select substrb('R5: ninguna factura con notas en los datos (no se puede probar el saldo)', 1, 300)
+select substrb('R10: ninguna factura con notas en los datos (no se puede probar el saldo)', 1, 300)
   from dual
  where not exists (select 1 from facturas f
                     where f.tipo_documento = 'FAC'
@@ -130,20 +245,112 @@ select substrb('R5: ninguna factura con notas en los datos (no se puede probar e
                                      and n.estado <> 'ANULADA'));
 /
 
--- R6: el filtro de anuladas existe y su expresion es la esperada.
+-- R11: el filtro de anuladas existe en las DOS ramas de la union.
 insert into tmp_rep_fallas
-select substrb('R6: falta el filtro de anuladas en la consulta', 1, 300)
+select substrb('R11: falta el filtro de anuladas en alguna rama de la union', 1, 300)
   from dual
  where not exists (select 1 from apex_application_page_regions r
                     where r.application_id = 100 and r.page_id = 17
                       and r.region_static_id = 'rep-documentos'
                       and instr(r.region_source, 'P17_INCLUIR_ANULADAS') > 0
-                      and instr(r.region_source, '''S''') > 0);
+                      and instr(r.region_source, 'co.estado <> ''ANULADA''') > 0
+                      and instr(r.region_source, 'f.estado <> ''ANULADA''') > 0);
 /
 
--- R7: guarda de rol.
+-- R12: el item de modulo, sus tres opciones y su propia accion de cambio (una
+-- accion por item: una DA no puede escuchar varios).
 insert into tmp_rep_fallas
-select substrb('R7: falta la guarda de rol del reporte', 1, 300)
+select substrb('R12: falta el item P17_MODULO con sus tres opciones', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_items
+                    where application_id = 100 and page_id = 17
+                      and item_name = 'P17_MODULO'
+                      and display_as = 'Select List'
+                      and instr(lov_definition, 'TODOS') > 0
+                      and instr(lov_definition, 'VENTAS') > 0
+                      and instr(lov_definition, 'COMPRAS') > 0);
+/
+
+insert into tmp_rep_fallas
+select substrb('R12: el cambio de modulo no tiene su accion propia', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_da d
+                    where d.application_id = 100 and d.page_id = 17
+                      and d.when_element = 'P17_MODULO'
+                      and upper(d.when_event_name) = 'CHANGE')
+   or not exists (select 1 from apex_application_page_da d
+                   where d.application_id = 100 and d.page_id = 17
+                     and d.when_element = 'P17_PROVEEDOR'
+                     and upper(d.when_event_name) = 'CHANGE');
+/
+
+-- R13: la LOV de proveedor filtra por la empresa activa.
+insert into tmp_rep_fallas
+select substrb('R13: la LOV de proveedor no filtra por la empresa activa', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_items
+                    where application_id = 100 and page_id = 17
+                      and item_name = 'P17_PROVEEDOR'
+                      and instr(upper(lov_definition), 'PROVEEDORES') > 0
+                      and instr(upper(lov_definition), 'F_EMPRESA_ACTIVA') > 0);
+/
+
+-- R14: la columna de modulo se pinta como insignia y el CSS de las dos clases
+-- esta en la pagina (la pagina 0 no emite CSS).
+insert into tmp_rep_fallas
+select substrb('R14: la columna Modulo no se pinta como insignia', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_ir_col
+                    where application_id = 100 and page_id = 17
+                      and column_alias = 'MODULO'
+                      and instr(upper(html_expression), 'STATUS-BADGE') > 0
+                      and instr(html_expression, '#MODULO#') > 0);
+/
+
+insert into tmp_rep_fallas
+select substrb('R14: falta el CSS de las insignias Venta/Compra', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_pages
+                    where application_id = 100 and page_id = 17
+                      and instr(inline_css, '.status-Venta') > 0
+                      and instr(inline_css, '.status-Compra') > 0);
+/
+
+-- R15: los enlaces: «Ver» de la venta a la 9 (modo consulta), «Ver compra» a la
+-- 28 e «Imprimir» a la 11.
+insert into tmp_rep_fallas
+select substrb('R15: el «Ver» de la venta no abre la 9 en modo consulta', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_ir_col
+                    where application_id = 100 and page_id = 17
+                      and column_alias = 'VER_VENTA'
+                      and instr(column_link, ':9:') > 0
+                      and instr(column_link, 'P9_MODO_VER') > 0);
+/
+
+insert into tmp_rep_fallas
+select substrb('R15: el «Ver compra» no abre la 28', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_ir_col
+                    where application_id = 100 and page_id = 17
+                      and column_alias = 'VER_COMPRA'
+                      and instr(column_link, ':28:') > 0
+                      and instr(column_link, 'P28_ID_COMPRA') > 0);
+/
+
+insert into tmp_rep_fallas
+select substrb('R15: el «Imprimir» no abre la 11', 1, 300)
+  from dual
+ where not exists (select 1 from apex_application_page_ir_col
+                    where application_id = 100 and page_id = 17
+                      and column_alias = 'IMPRIMIR'
+                      and instr(column_link, ':11:') > 0
+                      and instr(column_link, 'P11_ID_FACTURA') > 0);
+/
+
+-- R16: guarda de rol.
+insert into tmp_rep_fallas
+select substrb('R16: falta la guarda de rol del reporte', 1, 300)
   from dual
  where not exists (select 1 from apex_application_page_proc p
                     where p.application_id = 100 and p.page_id = 17
@@ -152,9 +359,9 @@ select substrb('R7: falta la guarda de rol del reporte', 1, 300)
                       and instr(upper(p.process_source), 'ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA') > 0);
 /
 
--- R8: la empresa del filtro se valida contra las del usuario.
+-- R17: la empresa del filtro se valida contra las del usuario.
 insert into tmp_rep_fallas
-select substrb('R8: el filtro de empresa no valida la empresa del usuario', 1, 300)
+select substrb('R17: el filtro de empresa no valida la empresa del usuario', 1, 300)
   from dual
  where not exists (select 1 from apex_application_page_proc p
                     where p.application_id = 100 and p.page_id = 17
@@ -163,67 +370,44 @@ select substrb('R8: el filtro de empresa no valida la empresa del usuario', 1, 3
                       and instr(upper(p.process_source), 'P17_ID_EMPRESA') > 0);
 /
 
--- R9: entrada de menu «Reportes Factura y Notas C/D» (antes «Facturas y notas»).
+-- R18: entrada de menu «Reportes Factura y Notas C/D».
 insert into tmp_rep_fallas
-select substrb('R9: falta la entrada de menu del reporte', 1, 300)
+select substrb('R18: falta la entrada de menu del reporte', 1, 300)
   from dual
  where not exists (select 1 from apex_application_list_entries
                     where application_id = 100 and entry_target like '%:17:%'
                       and upper(entry_text) like '%REPORTES FACTURA Y NOTAS C/D%');
 /
 
--- R10: «Ver» abre la factura en modo consulta y la pagina 9 lo respeta.
+-- R19: «Ver» abre la factura en modo consulta y la pagina 9 lo respeta.
 insert into tmp_rep_fallas
-select substrb('R10: la pagina 9 no tiene P9_MODO_VER', 1, 300)
+select substrb('R19: la pagina 9 no tiene P9_MODO_VER', 1, 300)
   from dual
  where not exists (select 1 from apex_application_page_items
                     where application_id = 100 and page_id = 9 and item_name = 'P9_MODO_VER');
 /
 
 insert into tmp_rep_fallas
-select substrb('R10: el boton ' || button_name || ' no respeta el modo consulta', 1, 300)
+select substrb('R19: el boton ' || button_name || ' no respeta el modo consulta', 1, 300)
   from apex_application_page_buttons
  where application_id = 100 and page_id = 9
    and button_name in ('BTN_GUARDAR', 'BTN_CANCELAR', 'BTN_TRAER')
    and instr(nvl(condition_expression1, '#'), 'P9_MODO_VER') = 0;
 /
 
+-- R20: la region de totales suma por modulo y por moneda, con los filtros del
+-- informe (incluido el de modulo).
 insert into tmp_rep_fallas
-select substrb('R10: el proceso ' || process_name || ' no respeta el modo consulta', 1, 300)
-  from apex_application_page_proc
- where application_id = 100 and page_id = 9
-   and process_name in ('Insert/update Facturacion', 'Elimiar factura', 'Traer todas las lineas')
-   and instr(nvl(process_source, '#'), 'P9_MODO_VER') = 0;
-/
-
--- R11: la pagina 9 muestra el detalle de la factura y el boton de imprimir.
-insert into tmp_rep_fallas
-select substrb('R11: falta la region detalle-factura en la 9', 1, 300)
-  from dual
- where not exists (select 1 from apex_application_page_regions
-                    where application_id = 100 and page_id = 9
-                      and region_static_id = 'detalle-factura'
-                      and instr(upper(region_source), 'FACTURAS_DET') > 0);
-/
-
-insert into tmp_rep_fallas
-select substrb('R11: falta el boton Imprimir en la 9', 1, 300)
-  from dual
- where not exists (select 1 from apex_application_page_buttons
-                    where application_id = 100 and page_id = 9
-                      and button_name = 'BTN_IMPRIMIR_FACTURA'
-                      and instr(nvl(redirect_url, '#'), 'P11_ID_FACTURA') > 0);
-/
-
--- R12: la region de totales del periodo existe y trae los filtros y las sumas.
-insert into tmp_rep_fallas
-select substrb('R12: falta la region rep-totales', 1, 300)
+select substrb('R20: falta la region rep-totales o no suma por modulo y moneda', 1, 300)
   from dual
  where not exists (select 1 from apex_application_page_regions
                     where application_id = 100 and page_id = 17
                       and region_static_id = 'rep-totales'
-                      and instr(upper(region_source), 'GROUP BY F.COD_MONEDA') > 0
-                      and instr(upper(region_source), '''NC''  THEN -F.MONTO_TOTAL') > 0
+                      and instr(upper(region_source), 'GROUP BY COD_MONEDA') > 0
+                      and instr(upper(region_source), 'UNION ALL') > 0
+                      and instr(upper(region_source), 'COMPRAS') > 0
+                      and instr(region_source, ':P17_MODULO') > 0
+                      and instr(region_source, ':P17_PROVEEDOR') > 0
                       and instr(region_source, ':P17_DESDE') > 0
                       and instr(region_source, ':P17_INCLUIR_ANULADAS') > 0);
 /

@@ -1,28 +1,163 @@
 -- =============================================================================
 -- 20261119_retencion_comprobante_obligatorio.sql
 --
--- El comprobante de retencion del cliente pasa a ser OBLIGATORIO (2026-11-19).
+-- El comprobante de retencion del cliente NO es obligatorio al emitir.
 --
--- Que arregla: `prc_guardar_factura` solo validaba el formato de 14 digitos
--- cuando el numero venia; si venia vacio dejaba guardar y la pagina se limitaba
--- a avisar despues. Asi se emitieron facturas con retencion (75 %) y sin
--- comprobante, y el libro de ventas queda sin el respaldo de esa retencion.
+-- HISTORIA - esta migracion nacio el 2026-11-19 para hacer OBLIGATORIO el
+-- comprobante (lanzaba -20064).
 --
--- Regla nueva: en una FACTURA (FAC) con porcentaje de retencion > 0, el
--- comprobante es obligatorio; si falta, lanza -20064 con el porcentaje y el
--- requisito. Se mira tambien el que ya tenga guardado la factura, para que
--- editar sin volver a teclearlo no bloquee. Las notas de credito/debito (NC/ND)
--- no se tocan.
+-- REGLA VIGENTE - el comprobante no se exige al emitir. En Venezuela lo emite el
+-- cliente DESPUES de recibir la factura, asi que en el momento de guardar todavia
+-- no existe. Lo que queda:
+--   * el FORMATO se valida cuando llega un numero (-20081, 14 digitos);
+--   * el numero se guarda cuando llega y el NVL del UPDATE conserva el que ya
+--     tuviera la factura;
+--   * el IVA retenido (RETENCION_IVA_BS) se sigue calculando y guardando igual;
+--   * se puede registrar DESPUES de emitir con prc_registrar_comprobante_retencion
+--     (2026-11-20).
 --
--- Contenido: body de pkg_facturacion (la spec no cambia).
+-- Se regenero el 2026-11-20 con la spec y el body canonicos finales, para que
+-- repetir esta migracion no deje el paquete sin el procedimiento nuevo. Es
+-- idempotente.
 --
--- Reversa: volver a la version anterior del body (sin el bloque de -20064).
--- Los datos ya guardados no se tocan.
+-- Contenido - spec y body de pkg_facturacion, sacados de los canonicos
+-- (package/pkg_facturacion.sql y package_bodies/pkg_facturacion.sql). La spec va
+-- PRIMERO - al reves el body queda INVALID con PLS-00323.
 --
--- Verificacion: deploy/diagnostico/20261119_redondeo_retencion_verificacion.sql
+-- Reversa - recompilar spec y body de la version anterior. No toca datos.
+--
+-- Verificacion - deploy/diagnostico/20261119_redondeo_retencion_verificacion.sql
 -- =============================================================================
 
 alter session set current_schema = WKSP_SYPEXWS
+/
+
+create or replace PACKAGE pkg_facturacion AS
+    PROCEDURE prc_insertar (
+        p_id_factura        IN OUT NUMBER,
+        p_id_empresa        IN NUMBER,
+        p_folio_factura     IN VARCHAR2,
+        p_id_cliente        IN NUMBER,
+        p_id_presupuesto    IN NUMBER,
+        p_rfc_emisor        IN VARCHAR2,
+        p_rfc_receptor      IN VARCHAR2,
+        p_uuid_fiscal       IN VARCHAR2,
+        p_uso_cfdi          IN VARCHAR2,
+        p_forma_pago        IN VARCHAR2,
+        p_metodo_pago       IN VARCHAR2,
+        p_condicion_pago    IN VARCHAR2,
+        p_fecha_emision     IN VARCHAR2,
+        p_fecha_vencimiento IN VARCHAR2,
+        p_estado            IN VARCHAR2,
+        p_subtotal          IN NUMBER,
+        p_monto_impuesto    IN NUMBER,
+        p_monto_total       IN NUMBER,
+        p_observaciones     IN VARCHAR2,
+        p_cod_moneda        IN VARCHAR2,
+        p_tipo_cambio       IN NUMBER,
+        p_usuario           IN VARCHAR2,
+        p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC',
+        p_nro_control       IN VARCHAR2 DEFAULT NULL,
+        p_id_factura_origen IN NUMBER   DEFAULT NULL
+    );
+
+    PROCEDURE prc_actualizar (
+        p_id_factura        IN NUMBER,
+        p_id_empresa        IN NUMBER,
+        p_folio_factura     IN VARCHAR2,
+        p_id_cliente        IN NUMBER,
+        p_id_presupuesto    IN NUMBER,
+        p_rfc_emisor        IN VARCHAR2,
+        p_rfc_receptor      IN VARCHAR2,
+        p_uuid_fiscal       IN VARCHAR2,
+        p_uso_cfdi          IN VARCHAR2,
+        p_forma_pago        IN VARCHAR2,
+        p_metodo_pago       IN VARCHAR2,
+        p_condicion_pago    IN VARCHAR2,
+        p_fecha_emision     IN VARCHAR2,
+        p_fecha_vencimiento IN VARCHAR2,
+        p_estado            IN VARCHAR2,
+        p_subtotal          IN NUMBER,
+        p_monto_impuesto    IN NUMBER,
+        p_monto_total       IN NUMBER,
+        p_observaciones     IN VARCHAR2,
+        p_cod_moneda        IN VARCHAR2,
+        p_tipo_cambio       IN NUMBER,
+        p_tipo_documento    IN VARCHAR2 DEFAULT 'FAC',
+        p_nro_control       IN VARCHAR2 DEFAULT NULL,
+        p_id_factura_origen IN NUMBER   DEFAULT NULL
+    );
+
+    PROCEDURE prc_procesar_presupuesto_factura (
+        p_id_presupuesto_str IN VARCHAR2,
+        p_fecha_emision_str  IN VARCHAR2,
+        p_id_factura         IN NUMBER,
+        p_es_vencido         OUT VARCHAR2,
+        p_id_empresa         OUT VARCHAR2,
+        p_id_cliente         OUT VARCHAR2,
+        p_subtotal           OUT VARCHAR2,
+        p_monto_impuesto     OUT VARCHAR2,
+        p_monto_total        OUT VARCHAR2,
+        p_cod_moneda         OUT VARCHAR2,
+        p_tipo_cambio        OUT VARCHAR2,
+        p_observaciones      OUT VARCHAR2
+    );
+
+    PROCEDURE prc_guardar_factura (
+        p_id_factura         IN OUT NUMBER,
+        p_id_empresa         IN NUMBER,
+        p_folio_factura      IN VARCHAR2,
+        p_id_cliente         IN NUMBER,
+        p_id_presupuesto     IN NUMBER,
+        p_rfc_emisor         IN VARCHAR2,
+        p_rfc_receptor       IN VARCHAR2,
+        p_uuid_fiscal        IN VARCHAR2,
+        p_uso_cfdi           IN VARCHAR2,
+        p_forma_pago         IN VARCHAR2,
+        p_metodo_pago        IN VARCHAR2,
+        p_condicion_pago     IN VARCHAR2,
+        p_fecha_emision      IN VARCHAR2,
+        p_fecha_vencimiento  IN VARCHAR2,
+        p_estado             IN VARCHAR2,
+        p_subtotal           IN NUMBER,
+        p_monto_impuesto     IN NUMBER,
+        p_monto_total        IN NUMBER,
+        p_observaciones      IN VARCHAR2,
+        p_cod_moneda         IN VARCHAR2,
+        p_tipo_cambio        IN NUMBER,
+        p_usuario            IN VARCHAR2,
+        p_tipo_documento     IN VARCHAR2 DEFAULT 'FAC',
+        p_nro_control        IN VARCHAR2 DEFAULT NULL,
+        p_id_factura_origen  IN NUMBER   DEFAULT NULL,
+        -- Fecha de la factura que se acredita: la nota lleva la tasa de ESE dia
+        -- (correlacion). Se pasa tal cual a fn_validar_tasa_documento.
+        p_fecha_referencia   IN DATE     DEFAULT NULL,
+        p_porcentaje_retencion        IN NUMBER   DEFAULT NULL,
+        p_nro_comprobante_retencion   IN VARCHAR2 DEFAULT NULL
+    );
+
+    PROCEDURE prc_anular_factura (
+        p_id_factura     IN NUMBER,
+        p_id_presupuesto IN NUMBER,
+        p_usuario        IN VARCHAR2
+    );
+
+    PROCEDURE prc_procesar_factura (
+        p_id_factura IN NUMBER,
+        p_usuario    IN VARCHAR2
+    );
+
+    -- Comprobante de retencion del cliente (2026-11-20). En Venezuela lo emite
+    -- el cliente DESPUES de recibir la factura, cuando el documento ya esta
+    -- TIMBRADA/PARCIAL/PAGADA y por tanto cerrado para fn_factura_editable. Este
+    -- procedimiento es la unica via para dejar constancia del numero sin tocar
+    -- el documento: no cambia estado, importes ni retencion_iva_bs.
+    PROCEDURE prc_registrar_comprobante_retencion (
+        p_id_factura IN NUMBER,
+        p_nro        IN VARCHAR2,
+        p_usuario    IN VARCHAR2
+    );
+END pkg_facturacion;
 /
 
 create or replace PACKAGE BODY pkg_facturacion AS
@@ -441,7 +576,6 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_nro_control    VARCHAR2(60);
         v_pct_retencion  NUMBER;
         v_ret_bs         NUMBER;
-        v_nro_comp       VARCHAR2(60);
     BEGIN
     -- Seguridad: la empresa debe pertenecer al usuario de la sesion APEX
     if apex_application.g_user is not null
@@ -628,30 +762,10 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 'El comprobante de retencion del cliente debe tener 14 digitos (AAAAMM + 8).');
         END IF;
 
-        -- Si el cliente retiene IVA, el comprobante es OBLIGATORIO en la factura:
-        -- sin el numero el libro de ventas queda sin el respaldo de la retencion.
-        -- Se mira tambien el que ya tenga guardada la factura, para que editar sin
-        -- volver a teclearlo no bloquee.
-        IF v_tipo_doc = 'FAC' AND NVL(v_pct_retencion, 0) > 0 THEN
-            v_nro_comp := TRIM(NVL(p_nro_comprobante_retencion, '#'));
-            IF v_nro_comp = '#' AND p_id_factura IS NOT NULL AND p_id_factura > 0 THEN
-                BEGIN
-                    SELECT TRIM(NVL(nro_comprobante_retencion, '#'))
-                      INTO v_nro_comp
-                      FROM facturas
-                     WHERE id_factura = p_id_factura;
-                EXCEPTION
-                    WHEN NO_DATA_FOUND THEN v_nro_comp := '#';
-                END;
-            END IF;
-            IF v_nro_comp = '#' OR v_nro_comp IS NULL THEN
-                raise_application_error(-20064,
-                    'El cliente retiene IVA (' || v_pct_retencion
-                    || ' %). Debe ingresar el Nro. de comprobante de retencion'
-                    || ' de 14 digitos para guardar.');
-            END IF;
-        END IF;
-
+        -- El comprobante de retencion NO es obligatorio al emitir: en Venezuela lo
+        -- emite el cliente DESPUES de recibir la factura, asi que en el momento de
+        -- guardar todavia no existe. Se valida el formato si viene (-20081) y se
+        -- guarda cuando llegue; el NVL del UPDATE conserva el que ya tuviera.
         -- El monto se calcula sobre el IVA (sin IGTF) y del detalle real, no del
         -- monto_impuesto que manda la pantalla: en un alta la cabecera llega en 0
         -- porque los totales los pone el detalle (pagina 10).
@@ -799,13 +913,100 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 'No se pudo procesar la factura. Avisa al administrador.');
     END prc_procesar_factura;
 
+--------------------------------------------------------------------------------
+-- 7. COMPROBANTE DE RETENCION DEL CLIENTE (DOCUMENTO YA EMITIDO)
+--------------------------------------------------------------------------------
+    -- El comprobante llega dias despues de emitir la factura, cuando ya esta
+    -- TIMBRADA/PARCIAL/PAGADA y fn_factura_editable la cierra. Esto NO es una
+    -- edicion del documento: solo se anota el numero en su columna. No se toca
+    -- el estado, los importes ni RETENCION_IVA_BS (que ya se calculo al emitir).
+    PROCEDURE prc_registrar_comprobante_retencion (
+        p_id_factura IN NUMBER,
+        p_nro        IN VARCHAR2,
+        p_usuario    IN VARCHAR2
+    ) IS
+        v_id_factura NUMBER := fn_clean_num(TO_CHAR(p_id_factura));
+        v_empresa    NUMBER;
+        v_folio      VARCHAR2(30);
+        v_estado     VARCHAR2(20);
+    BEGIN
+        BEGIN
+            SELECT id_empresa, folio_factura, UPPER(estado)
+              INTO v_empresa, v_folio, v_estado
+              FROM facturas
+             WHERE id_factura = v_id_factura;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                raise_application_error(-20085,
+                    'La factura ' || p_id_factura || ' no existe.');
+        END;
+
+        -- Seguridad primero: sin esto un POST con un id ajeno escribiria el
+        -- comprobante en la factura de otra empresa.
+        IF NOT fn_usuario_empresa_valida(p_usuario, v_empresa) THEN
+            raise_application_error(-20003,
+                'No tiene acceso a la empresa indicada.');
+        END IF;
+
+        -- Una factura anulada no admite papeles: su comprobante ya no respalda nada.
+        IF v_estado = 'ANULADA' THEN
+            raise_application_error(-20024,
+                'La factura ' || v_folio || ' esta ANULADA: '
+                || 'no se puede registrar un comprobante de retencion.');
+        END IF;
+
+        IF TRIM(p_nro) IS NULL
+           OR NOT REGEXP_LIKE(TRIM(p_nro), '^[0-9]{14}$') THEN
+            raise_application_error(-20081,
+                'El comprobante de retencion del cliente debe tener 14 digitos (AAAAMM + 8).');
+        END IF;
+
+        UPDATE facturas set nro_comprobante_retencion = TRIM(p_nro),
+               modificado_por            = p_usuario,
+               fecha_modificacion        = SYSTIMESTAMP
+         WHERE id_factura = v_id_factura;
+    END prc_registrar_comprobante_retencion;
 
 END pkg_facturacion;
 /
 
-/
+-- =============================================================================
+-- Validacion - el paquete tiene que quedar VALID. Si algo quedo INVALID se dice
+-- aqui y no en la cara del usuario al guardar una factura.
+-- =============================================================================
 
 begin
     dbms_utility.compile_schema('WKSP_SYPEXWS', false);
+end;
+/
+
+declare
+    v_n number;
+begin
+    select count(*) into v_n
+      from all_objects
+     where owner = 'WKSP_SYPEXWS' and object_name = 'PKG_FACTURACION'
+       and object_type = 'PACKAGE' and status = 'VALID';
+    if v_n <> 1 then
+        raise_application_error(-20120, 'la spec de PKG_FACTURACION quedo INVALID');
+    end if;
+
+    select count(*) into v_n
+      from all_objects
+     where owner = 'WKSP_SYPEXWS' and object_name = 'PKG_FACTURACION'
+       and object_type = 'PACKAGE BODY' and status = 'VALID';
+    if v_n <> 1 then
+        raise_application_error(-20120, 'el body de PKG_FACTURACION quedo INVALID');
+    end if;
+
+    select count(*) into v_n
+      from all_source
+     where owner = 'WKSP_SYPEXWS' and name = 'PKG_FACTURACION'
+       and type = 'PACKAGE BODY'
+       and upper(text) like '%PRC_REGISTRAR_COMPROBANTE_RETENCION%';
+    if v_n = 0 then
+        raise_application_error(-20120,
+            'el body no tiene prc_registrar_comprobante_retencion');
+    end if;
 end;
 /

@@ -101,13 +101,14 @@ begin
     end if;
 
     -- V6: nadie mas cuelga de nadie (2026-11-19: ahora son cuatro: las dos de
-    -- Compras, «Clientes» bajo Facturación y «Gasto real» bajo Presupuestos)
+    -- Compras, «Clientes» bajo Facturación y «Gasto real» bajo Presupuestos;
+    -- 2026-11-20: cinco, con «Factura de Venta» bajo Facturación)
     select count(*) into v_n
       from apex_260100.apex_application_list_entries
      where application_id = 100 and list_name = 'Navigation Menu'
        and list_entry_parent_id is not null;
-    if v_n <> 4 then
-        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 4)');
+    if v_n <> 5 then
+        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 5)');
     end if;
 
     -- V7: el padre usa «Ver Compras» y de él cuelga «Proveedores» con «Ver Proveedores».
@@ -179,6 +180,49 @@ begin
        and json_value(attributes, '$.plsql_function_body') not like '%CONSULTA%';
     if v_n <> 1 then
         falla('V11', '«Ver Gasto Real» no tiene los roles de la guarda de la pagina 16');
+    end if;
+
+    -- V12 (2026-11-20): el grupo se llama «Facturación» y no resalta solo; de el
+    -- cuelga «Factura de Venta» (la pagina 8) con el esquema, el icono y el
+    -- resaltado que tenia la entrada, y va ANTES de «Clientes».
+    select count(*) into v_n
+      from apex_260100.apex_application_list_entries
+     where application_id = 100 and list_name = 'Navigation Menu'
+       and static_id = 'facturacion'
+       and entry_text = unistr('Facturaci\00F3n')
+       and instr(entry_target, ':8:') > 0
+       and authorization_scheme = 'Ver Facturacion'
+       and current_for_pages_type_code = 'NEVER'
+       and current_for_pages_expression is null;
+    if v_n <> 1 then
+        falla('V12', 'el grupo no se llama Facturación, no usa Ver Facturacion o lleva resaltado propio');
+    end if;
+
+    select count(*) into v_n
+      from apex_260100.apex_application_list_entries h
+      join apex_260100.apex_application_list_entries p
+        on p.list_entry_id = h.list_entry_parent_id
+     where h.application_id = 100 and h.list_name = 'Navigation Menu'
+       and h.static_id = 'factura-de-venta'
+       and h.entry_text = 'Factura de Venta'
+       and h.display_sequence = 1
+       and instr(h.entry_target, ':8:') > 0
+       and h.authorization_scheme = 'Ver Facturacion'
+       and h.entry_image = 'fa-file-invoice'
+       and h.current_for_pages_type_code = 'COLON_DELIMITED_PAGE_LIST'
+       and h.current_for_pages_expression = '8'
+       and p.static_id = 'facturacion';
+    if v_n <> 1 then
+        falla('V13', '«Factura de Venta» no cuelga de Facturación o perdio destino/esquema/icono');
+    end if;
+
+    select count(*) into v_n
+      from apex_260100.apex_application_list_entries
+     where application_id = 100 and list_name = 'Navigation Menu'
+       and static_id = 'clientes'
+       and display_sequence = 2;
+    if v_n <> 1 then
+        falla('V14', '«Clientes» no quedo como segunda hija (secuencia 2)');
     end if;
 
     raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || v_lista, 1, 3000));

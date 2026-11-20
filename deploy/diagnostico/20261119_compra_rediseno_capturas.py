@@ -22,8 +22,8 @@ La revision del 2026-11-20 anadio tres cosas que este script vigila:
 
   V1  la 28 abre sin el error de rejilla y sin mostrar PL/SQL
   V2  la cabecera de la compra trae folio, proveedor, insignia y fecha
-  V3  hay cuatro tarjetas y el total esta a 28 px (24 en movil)
-  V4  el resumen trae la tasa BCV con su fecha (compra en divisa)
+  V3  hay cuatro tarjetas, el total esta a 42 px y es la mas ancha, a la derecha
+  V4  la banda de pago trae la tasa BCV con su fecha y el neto en las dos monedas
   V5  con concepto de ISLR salen base, tarifa/sustraendo y retenido
   V6  la tabla de lineas trae la columna Acciones y la fila de sumatoria
   V7  en BORRADOR se ve el concepto de ISLR y los iconos de borrar
@@ -32,7 +32,17 @@ La revision del 2026-11-20 anadio tres cosas que este script vigila:
   V9  a 500 px la barra azul mide menos de 50 px y las tarjetas se apilan
   V10 a 500 px no hay desbordamiento horizontal de la pagina
   V11 el icono de borrar de una linea la quita (confirmacion y peticion POST)
-  V12 la auditoria del pie trae creado y modificado por
+  V12 la auditoria del pie son dos lineas compactas (creado y modificacion)
+
+  El acabado del 2026-11-20 (tarjetas con tinte, banda de pago, tabla con
+  cebra y botones circulares) se vigila con:
+
+  V17 cada tarjeta tiene su tinte y el total el verde con borde reforzado
+  V18 los chips ejecutivos dicen proveedor, documento, moneda y retencion
+  V19 la tabla tiene cebra, hover y los importes a la derecha (cabecera igual)
+  V20 las acciones son botones circulares de 36 px
+  V21 las observaciones llevan contador de caracteres
+  V22 a 500 px el total ocupa la fila entera y nada se sale de la pantalla
 
 Uso: python deploy/diagnostico/20261119_compra_rediseno_capturas.py
 Crea y borra su propio usuario, proveedores y compras; devuelve el contador de
@@ -326,8 +336,8 @@ try:
                    't=t.replace(/\\./g,"").replace(",",".");var n=parseFloat(t);'
                    'return isNaN(n)?null:n;}'
                    'var cards=document.querySelectorAll(".spx-resumen .spx-card");'
-                   'var pie=document.querySelector(".spx-pie");'
-                   'var m=pie?pie.innerText.match(/Neto a pagar:\\s*(-?[0-9.,]+)/):null;'
+                   'var pie=document.querySelector(".spx-banda");'
+                   'var m=pie?pie.innerText.match(/Neto a pagar:?\\s*(-?[0-9.,]+)/i):null;'
                    'return JSON.stringify({ret: cards.length>2?'
                    'num(cards[2].querySelector(".spx-card-val").innerText):null,'
                    'neto: m?num(m[1]):null, pie: pie?pie.innerText.replace(/\\s+/g," "):""});})()')
@@ -351,11 +361,47 @@ try:
                       'if(t.length!==4) return "TARJETAS " + t.length;'
                       'var tot=document.querySelector(".spx-card--total .spx-card-val");'
                       'return Math.round(parseFloat(getComputedStyle(tot).fontSize)) + "px";})()')
-    comprobar("V3 hay cuatro tarjetas y el total a 28 px", tarjetas == "28px", tarjetas)
+    comprobar("V3 hay cuatro tarjetas y el total a 42 px", tarjetas == "42px", tarjetas)
 
-    pie = nav.js('document.querySelector(".spx-pie") ? document.querySelector(".spx-pie").innerText : "SIN PIE"')
-    comprobar("V4 el resumen trae la tasa BCV con su fecha",
-              isinstance(pie, str) and "Tasa BCV" in pie and "vigente al" in pie, pie)
+    ancho_tot = nav.js('(function(){var t=document.querySelectorAll(".spx-resumen .spx-card");'
+                       'if(t.length!==4) return "SIN TARJETAS";'
+                       'var a=t[0].getBoundingClientRect(), d=t[3].getBoundingClientRect();'
+                       'var mas = d.width > a.width + 10;'
+                       'var derecha = d.right >= Math.max(a.right, t[1].getBoundingClientRect().right,'
+                       ' t[2].getBoundingClientRect().right) - 1;'
+                       'return (mas && derecha) ? "MAS ANCHA Y A LA DERECHA"'
+                       ' : "anchos " + Math.round(a.width) + "/" + Math.round(d.width);})()')
+    comprobar("V3b el total es la tarjeta mas ancha y esta al extremo derecho",
+              ancho_tot == "MAS ANCHA Y A LA DERECHA", ancho_tot)
+
+    tintes = nav.js('(function(){var t=document.querySelectorAll(".spx-resumen .spx-card");'
+                    'if(t.length!==4) return "SIN TARJETAS";'
+                    'var bg=[...t].map(function(c){return getComputedStyle(c).backgroundColor;});'
+                    'var borde=getComputedStyle(t[3]).borderTopWidth + " "'
+                    ' + getComputedStyle(t[3]).borderTopColor;'
+                    'var unicos = bg.filter(function(v,i){return bg.indexOf(v)===i;}).length;'
+                    'return JSON.stringify({bg:bg, unicos:unicos, borde:borde});})()')
+    try:
+        tt = json.loads(tintes)
+    except Exception:
+        tt = {}
+    comprobar("V17 las cuatro tarjetas tienen tinte propio y el total borde verde",
+              tt.get("unicos") == 4 and "2px" in str(tt.get("borde"))
+              and "22, 160, 133" in str(tt.get("borde")), tintes)
+
+    chips = nav.js('(function(){var c=document.querySelectorAll(".spx-chips .spx-chip");'
+                   'return c.length + " / " + [...c].map(function(x){'
+                   'return x.innerText.replace(/\\s+/g," ").trim();}).join(" | ");})()')
+    comprobar("V18 los chips dicen proveedor, documento, moneda y retencion",
+              isinstance(chips, str) and chips.startswith("4 /")
+              and "Proveedor:" in chips and "CAP-ZZ-2" in chips
+              and "USD" in chips and "75" in chips, chips)
+
+    pie = nav.js('document.querySelector(".spx-banda") ? document.querySelector(".spx-banda").innerText : "SIN BANDA"')
+    comprobar("V4 la banda de pago trae la tasa BCV con su fecha y el neto",
+              isinstance(pie, str) and "TASA BCV" in pie.upper()
+              and "VIGENTE AL" in pie.upper() and "NETO A PAGAR" in pie.upper()
+              and "(Bs." in pie, pie)
 
     islr = nav.js('(function(){var t=document.querySelector(".spx-lineas");'
                   'return t ? t.innerText.replace(/\\s+/g," ") : "SIN ISLR";})()')
@@ -369,7 +415,56 @@ try:
                  'var pie=t.querySelector("tfoot");'
                  'return th.join("|") + " / " + (pie ? pie.innerText.replace(/\\s+/g," ") : "SIN SUMATORIA");})()')
     comprobar("V6 la tabla de lineas trae Acciones y la sumatoria",
-              isinstance(det, str) and "Acciones" in det and "Total de las" in det, det)
+              isinstance(det, str) and "ACCIONES" in det.upper()
+              and "TOTAL DE LAS" in det.upper(), det)
+
+    zebra = nav.js('(function(){var t=document.querySelector(".spx-det");'
+                   'if(!t) return "SIN TABLA";'
+                   'var f=t.querySelectorAll("tbody tr");'
+                   'if(f.length<2) return "UNA FILA";'
+                   'var b1=getComputedStyle(f[0]).backgroundColor;'
+                   'var b2=getComputedStyle(f[1]).backgroundColor;'
+                   'var nums=[...t.querySelectorAll("td.num")].map(function(c){'
+                   'return getComputedStyle(c).textAlign;});'
+                   'var th=[...t.querySelectorAll("th.num")].map(function(c){'
+                   'return getComputedStyle(c).textAlign;});'
+                   'var hover=false;'
+                   'for(var i=0;i<document.styleSheets.length;i++){try{'
+                   'var rs=document.styleSheets[i].cssRules;'
+                   'for(var k=0;k<rs.length;k++){'
+                   'if(rs[k].selectorText && rs[k].selectorText.indexOf(".spx-det tbody tr:hover")>=0){hover=true;}}}'
+                   'catch(e){}}'
+                   'return JSON.stringify({b1:b1, b2:b2, nums:nums, th:th, hover:hover});})()')
+    try:
+        zz = json.loads(zebra)
+    except Exception:
+        zz = {}
+    comprobar("V19 la tabla tiene cebra, hover y los importes a la derecha",
+              zz.get("b1") != zz.get("b2")
+              and all(x == "right" for x in zz.get("nums", ["x"]))
+              and all(x == "right" for x in zz.get("th", ["x"]))
+              and zz.get("hover") is True, zebra)
+
+    acc = nav.js('(function(){var a=document.querySelector(".spx-det .spx-acc a");'
+                 'if(!a) return "SIN BOTON";'
+                 'var s=getComputedStyle(a);'
+                 'return JSON.stringify({w:Math.round(a.getBoundingClientRect().width),'
+                 'h:Math.round(a.getBoundingClientRect().height), r:s.borderRadius});})()')
+    try:
+        aa = json.loads(acc)
+    except Exception:
+        aa = {}
+    comprobar("V20 las acciones son botones circulares de 36 px",
+              aa.get("w") == 36 and aa.get("h") == 36
+              and str(aa.get("r")) in ("50%", "18px"), acc)
+
+    cuenta = nav.js('(function(){var c=document.getElementById("spx-obs-count");'
+                    'if(!c) return "SIN CONTADOR";'
+                    'var ta=document.getElementById("P28_OBSERVACIONES");'
+                    'var borde=getComputedStyle(ta).borderLeftWidth;'
+                    'return c.innerText.trim() + " / borde " + borde;})()')
+    comprobar("V21 las observaciones llevan contador y acento a la izquierda",
+              isinstance(cuenta, str) and "caracteres" in cuenta and "4px" in cuenta, cuenta)
 
     concepto = nav.js('(function(){var e=document.getElementById("P28_ID_CONCEPTO_ISLR");'
                       'if(!e) return "SIN ITEM";'
@@ -387,18 +482,54 @@ try:
         d = {"ret": None, "neto": None, "pie": leido}
     ret2_doc = round(ret2_vivo / tasa2, 2)
     comprobar("V14a en BORRADOR la tarjeta de retencion es la del detalle",
-              casi_igual(d.get("ret"), -ret2_doc), "%s vs -%.2f" % (d.get("ret"), ret2_doc))
+              casi_igual(d.get("ret"), ret2_doc), "%s vs %.2f" % (d.get("ret"), ret2_doc))
     comprobar("V14b el neto a pagar del borrador descuenta IVA e ISLR",
               casi_igual(d.get("neto"), neto2), "%s vs %.2f" % (d.get("neto"), neto2))
 
-    print("  captura:", nav.captura(os.path.join(RES, "20261119_compra_rediseno_1440.png")))
+    # V23 (2026-11-20): la retencion se lee POSITIVA y la deduccion se explica
+    # debajo de la etiqueta; la aritmetica del neto no cambia.
+    ret_card = nav.js('(function(){var t=document.querySelectorAll(".spx-resumen .spx-card");'
+                      'if(t.length<4) return "SIN TARJETAS";'
+                      'var c=t[2];'
+                      'var nota=c.querySelector(".spx-card-nota");'
+                      'return JSON.stringify({val:c.querySelector(".spx-card-val").innerText.trim(),'
+                      'sub:c.querySelector(".spx-card-sub").innerText.trim(),'
+                      'nota: nota?nota.innerText.trim():"SIN NOTA",'
+                      'lbl:c.querySelector(".spx-card-lbl").innerText.trim()});})()')
+    try:
+        rc = json.loads(ret_card)
+    except Exception:
+        rc = {}
+    comprobar("V23 la retencion se lee positiva y dice Descontado del pago",
+              rc.get("nota") == "Descontado del pago"
+              and "-" not in str(rc.get("val")) and "-" not in str(rc.get("sub"))
+              and "Bs." in str(rc.get("sub")), ret_card)
+
+    # V24: en escritorio la tabla conserva todas sus columnas
+    cols_pc = nav.js('(function(){var t=document.querySelector(".spx-det");'
+                     'if(!t) return "SIN TABLA";'
+                     'var vis=function(s){var e=t.querySelector(s);'
+                     'return e ? getComputedStyle(e).display !== "none" : "SIN CELDA";};'
+                     'return JSON.stringify({sub:vis("th.spx-col-sub"), iva:vis("th.spx-col-iva")});})()')
+    try:
+        cp = json.loads(cols_pc)
+    except Exception:
+        cp = {}
+    comprobar("V24 en escritorio se ven las columnas Subtotal e IVA",
+              cp.get("sub") is True and cp.get("iva") is True, cols_pc)
+
+    print("  captura:", nav.captura(os.path.join(RES, "20261120_compra_premium_1440.png")))
+    import shutil
+    shutil.copyfile(os.path.join(RES, "20261120_compra_premium_1440.png"),
+                    os.path.join(RES, "20261120_nota_compra_1440.png"))
+    print("  captura:", os.path.join(RES, "20261120_nota_compra_1440.png"))
 
     nav.js("window.scrollTo(0, document.body.scrollHeight)")
     time.sleep(1.5)
     aud = nav.js('(function(){var a=document.querySelector(".spx-aud");'
                  'return a ? a.innerText.replace(/\\s+/g," ") : "SIN AUDITORIA";})()')
-    comprobar("V12 la auditoria del pie trae creado y modificado por",
-              isinstance(aud, str) and "Creado por" in aud and "Modificado por" in aud, aud)
+    comprobar("V12 la auditoria del pie son dos lineas compactas",
+              isinstance(aud, str) and "Creado:" in aud and "ltima modificaci" in aud, aud)
     print("  captura:", nav.captura(os.path.join(RES, "20261119_compra_pie_1440.png")))
 
     # ---- a 500 px
@@ -419,8 +550,60 @@ try:
                    ' - document.documentElement.clientWidth;})()')
     comprobar("V10 a 500 px no hay desbordamiento horizontal",
               isinstance(ancho, (int, float)) and ancho <= 1, ancho)
-    print("  captura:", nav.captura(os.path.join(RES, "20261119_compra_rediseno_500.png")))
+    total_movil = nav.js('(function(){var t=document.querySelectorAll(".spx-resumen .spx-card");'
+                         'if(t.length!==4) return "SIN TARJETAS";'
+                         'var a=t[0].getBoundingClientRect(), d=t[3].getBoundingClientRect();'
+                         'var anchoFila=Math.round(d.width);'
+                         'return JSON.stringify({ancho:anchoFila,'
+                         'doble: anchoFila > Math.round(a.width)+10,'
+                         'fuente: Math.round(parseFloat(getComputedStyle('
+                         'document.querySelector(".spx-card--total .spx-card-val")).fontSize))});})()')
+    try:
+        tm = json.loads(total_movil)
+    except Exception:
+        tm = {}
+    comprobar("V22 a 500 px el total ocupa la fila entera y baja a 30 px",
+              tm.get("doble") is True and tm.get("fuente") == 30, total_movil)
     print("  captura:", nav.captura(os.path.join(RES, "20261119_cabecera_500.png")))
+    nav.js('(function(){var c=document.querySelector(".spx-chips")'
+           '||document.querySelector(".spx-resumen");'
+           'if(!c) return "SIN CHIPS";'
+           'window.scrollTo(0, c.getBoundingClientRect().top + window.pageYOffset - 70);'
+           'return "OK";})()')
+    time.sleep(1.5)
+    print("  captura:", nav.captura(os.path.join(RES, "20261120_compra_premium_500.png")))
+
+    # V25 (2026-11-20): en un telefono la tabla de lineas se queda con
+    # Descripcion, Cantidad, Precio, Total y Acciones: IVA y Subtotal se ocultan.
+    cols_movil = nav.js('(function(){var t=document.querySelector(".spx-det");'
+                        'if(!t) return "SIN TABLA";'
+                        'var vis=function(s){var e=t.querySelector(s);'
+                        'return e ? getComputedStyle(e).display !== "none" : "SIN CELDA";};'
+                        'var ths=[...t.querySelectorAll("thead th")].filter(function(e){'
+                        'return getComputedStyle(e).display !== "none";})'
+                        '.map(function(e){return e.innerText.trim();});'
+                        'return JSON.stringify({sub:vis("th.spx-col-sub"), iva:vis("th.spx-col-iva"),'
+                        'visibles:ths});})()')
+    try:
+        cm = json.loads(cols_movil)
+    except Exception:
+        cm = {}
+    comprobar("V25 a 500 px se ocultan IVA y Subtotal y quedan las cinco columnas",
+              cm.get("sub") is False and cm.get("iva") is False
+              and [x.lower() for x in (cm.get("visibles") or [])]
+              == ["#", "descripción", "cantidad", "precio", "total", "acciones"],
+              cols_movil)
+    desborde = nav.js('(function(){var w=document.querySelector(".spx-det-wrap");'
+                      'if(!w) return "SIN TABLA";'
+                      'return w.scrollWidth - w.clientWidth;})()')
+    comprobar("V26 a 500 px la tabla de lineas no necesita scroll horizontal",
+              isinstance(desborde, (int, float)) and desborde <= 1, desborde)
+    nav.js('(function(){var t=document.querySelector(".spx-det-wrap");'
+           'if(!t) return "SIN TABLA";'
+           'window.scrollTo(0, t.getBoundingClientRect().top + window.pageYOffset - 70);'
+           'return "OK";})()')
+    time.sleep(1.5)
+    print("  captura:", nav.captura(os.path.join(RES, "20261120_nota_compra_500.png")))
 
     # ---- V13: con el id de una compra de OTRA empresa no se pinta nada
     nav.tam(1440, 1000)
@@ -465,7 +648,7 @@ try:
         d1 = {"ret": None, "neto": None, "pie": leido1}
     ret1_doc = round(ret1 / tasa1, 2)
     comprobar("V8c en REGISTRADA la retencion es la foto del comprobante",
-              casi_igual(d1.get("ret"), -ret1_doc), "%s vs -%.2f" % (d1.get("ret"), ret1_doc))
+              casi_igual(d1.get("ret"), ret1_doc), "%s vs %.2f" % (d1.get("ret"), ret1_doc))
     comprobar("V8d el neto de la compra procesada cuadra con el libro",
               casi_igual(d1.get("neto"), neto1), "%s vs %.2f" % (d1.get("neto"), neto1))
     print("  captura:", nav.captura(os.path.join(RES, "20261119_compra_registrada_1440.png")))

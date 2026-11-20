@@ -31,8 +31,9 @@ ESPERADO = ["Home", "Administración", "Compras", "Facturación", "Recibos",
             "Reportes Factura y Notas C/D", "Libro de compras y ventas",
             "Gestión de Usuarios", "Panel general", "Presupuestos"]
 # 2026-11-19: «Clientes» cuelga de Facturación y «Gasto real» de Presupuestos
+# 2026-11-20: «Facturación» es el grupo y «Factura de Venta» (la pagina 8) su primera hija
 HIJOS = {"Compras": ["Facturas de compras", "Proveedores"],
-         "Facturación": ["Clientes"],
+         "Facturación": ["Factura de Venta", "Clientes"],
          "Presupuestos": ["Gasto real"]}
 fallas = 0
 
@@ -165,7 +166,7 @@ try:
        'var ts=[...n.querySelectorAll(".a-TreeView-toggle")];'
        'ts.forEach(function(t){t.click();});'
        'return ts.length;})()')
-    esperar('document.querySelectorAll(\'a[aria-level="2"]\').length >= 4', 25)
+    esperar('document.querySelectorAll(\'a[aria-level="2"]\').length >= 5', 25)
 
     pintado = js('(function(){var n=document.querySelector("#t_TreeNav, .t-TreeNav");'
                  'if(!n){return "SIN NAV";}'
