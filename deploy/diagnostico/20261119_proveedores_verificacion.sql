@@ -9,6 +9,9 @@
 --   P5  la guarda de la 22 admite CONSULTA y la escritura no
 --   P6  el RIF es unico por empresa
 --   P7  la consulta de la lista trae los de la empresa activa y no los de otra
+--   P8  el combo del RIF guarda la LETRA (J/V/E) y el proceso la convierte a J/N
+--   P9  el concepto de ISLR por defecto: item en la 23, carga, guardado con 0 -> null
+--       y lista de los activos con la tarifa en la etiqueta
 --
 -- Todo el DML va dentro de un SAVEPOINT y se revierte.
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261119_proveedores_verificacion.sql
@@ -140,6 +143,41 @@ begin
        and instr(upper(process_source), 'IN (''V'', ''E'')') > 0;
     if v_n = 0 then
         falla('P8: la carga del proveedor no deriva la letra del RIF');
+    end if;
+
+    -- P9 (2026-11-20): el concepto de ISLR por defecto del proveedor. Sin item en la
+    -- 23 solo se podia rellenar por SQL y la mitad "por defecto en el proveedor" del
+    -- modelo aprobado era inalcanzable desde la app.
+    select count(*) into v_n from apex_260100.apex_application_page_items
+     where application_id = 100 and page_id = 23 and item_name = 'P23_ID_CONCEPTO_ISLR';
+    if v_n <> 1 then
+        falla('P9: la pagina 23 no tiene el concepto de ISLR');
+    end if;
+
+    select count(*) into v_n from apex_260100.apex_application_page_proc
+     where application_id = 100 and page_id = 23 and static_id = 'carga-proveedor'
+       and instr(lower(process_source), 'p23_id_concepto_islr') > 0;
+    if v_n = 0 then
+        falla('P9: la carga de la 23 no trae el concepto del proveedor');
+    end if;
+
+    -- El guardado escribe el concepto en las DOS ramas (alta y edicion) y convierte
+    -- el 0 de "sin concepto" en NULL.
+    select count(*) into v_n from apex_260100.apex_application_page_proc
+     where application_id = 100 and page_id = 23 and static_id = 'guardar-proveedor'
+       and instr(lower(process_source), 'id_concepto_islr') > 0
+       and instr(lower(process_source), 'nullif(fn_clean_num(:p23_id_concepto_islr)') > 0;
+    if v_n = 0 then
+        falla('P9: el guardado de la 23 no escribe el concepto con 0 -> null');
+    end if;
+
+    -- La lista ofrece los conceptos ACTIVOS y ensena la tarifa en la etiqueta.
+    select count(*) into v_n from apex_260100.apex_application_page_items
+     where application_id = 100 and page_id = 23 and item_name = 'P23_ID_CONCEPTO_ISLR'
+       and lower(lov_definition) like '%activo%'
+       and lower(lov_definition) like '%tarifa%';
+    if v_n <> 1 then
+        falla('P9: la lista de conceptos no filtra los activos o no ensena la tarifa');
     end if;
 
     rollback to sp_prov;

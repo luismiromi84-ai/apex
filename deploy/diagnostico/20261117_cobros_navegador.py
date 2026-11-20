@@ -162,6 +162,11 @@ conn = oracledb.connect(user=credenciales()["DB_USER"],
 cur = conn.cursor()
 cur.execute("alter session set current_schema = WKSP_SYPEXWS")
 
+# Estado original de la marca SPE de la empresa 1: la prueba necesita 'S' para que el
+# IGTF se cause y al terminar tiene que devolver lo que hubiera (config del dueno).
+ES_SPE_ORIGINAL = cur.execute(
+    "select nvl(es_spe, 'N') from empresas where id_empresa = 1").fetchone()[0]
+
 
 def limpia():
     # ORA-12860 si se borran el hijo y el padre en la misma transaccion: commit entre los dos.
@@ -170,7 +175,10 @@ def limpia():
     conn.commit()
     cur.execute("delete from facturas where folio_factura = :f", f=FOLIO)
     conn.commit()
-    cur.execute("update empresas set es_spe = 'N' where id_empresa = 1")
+    # NO se toca EMPRESAS.ES_SPE: es configuracion del dueno (marca si la empresa es
+    # Sujeto Pasivo Especial y por tanto si el IGTF se causa). Esta funcion se llama
+    # tambien en el finally y dejaba la empresa 1 en 'N', o sea que la suite apagaba
+    # el IGTF en produccion. El valor original se restaura en el finally.
     cur.execute("""update clientes set es_spe = 'N'
                     where id_cliente = (select id_cliente from facturas where folio_factura = :f)""",
                 f=FOLIO)
@@ -347,6 +355,7 @@ try:
 finally:
     nav.cerrar()
     limpia()
+    cur.execute("update empresas set es_spe = :v where id_empresa = 1", v=ES_SPE_ORIGINAL)
     conn.commit()
     conn.close()
 

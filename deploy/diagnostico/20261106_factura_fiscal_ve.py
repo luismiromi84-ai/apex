@@ -73,10 +73,16 @@ if fila:
               all(x is not None for x in fila[3:7]), f"({fila[3]} / {fila[5]}..{fila[6]})")
     comprobar("datos de la imprenta", all(x is not None for x in fila[7:9]))
 
-sin_control = uno("select count(*) from facturas where nro_control is null")
-comprobar("todas las facturas tienen numero de control", sin_control == 0, f"({sin_control})")
+sin_control = uno("select count(*) from facturas f join empresas e on e.id_empresa = f.id_empresa "
+                  " where e.cod_pais = 'VE' and f.tipo_documento = 'FAC' "
+                  "   and f.nro_control is null")
+comprobar("todas las FAC de Venezuela tienen numero de control", sin_control == 0, f"({sin_control})")
 
+# Las notas (NC/ND) no llevan control propio y las facturas de Mexico usan UUID
+# (CFDI), no N° de Control: el control es un dato venezolano de la factura. Los
+# NULL se excluyen del group by porque Oracle los agrupa juntos.
 rep = uno("select count(*) from (select id_empresa, nro_control from facturas "
+          " where tipo_documento = 'FAC' and nro_control is not null "
           " group by id_empresa, nro_control having count(*) > 1)")
 comprobar("el numero de control no se repite dentro de la empresa", rep == 0, f"({rep})")
 
@@ -136,7 +142,7 @@ invalidos = uno("select count(*) from all_objects where owner = 'WKSP_SYPEXWS' "
                 "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')")
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = uno("select count(*) from apex_application_pages where application_id = 100")
-comprobar("siguen las 25 paginas", paginas == 25, f"({paginas})")
+comprobar("siguen las 33 paginas", paginas == 33, f"({paginas})")
 
 conn.close()
 print()

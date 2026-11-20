@@ -177,6 +177,11 @@ try:
     comprueba(not js('apex.item("P19_NOMBRE_EMPRESA").getValue()'),
               "al volver a entrar el formulario sigue en blanco")
     js('apex.item("P19_NOMBRE_EMPRESA").setValue(%s)' % json.dumps(PRUEBA))
+    # Desde el 2026-11-17/18 la empresa exige un RIF/RFC con la forma del pais
+    # (fn_rif_empresa_valido): sin el, el alta responde «El RIF/RFC de la empresa
+    # no tiene la forma del pais». La prueba es del alta en blanco, no del RIF.
+    js('apex.item("P19_COD_PAIS").setValue("VE")')
+    js('apex.item("P19_RFC").setValue("J-12345678-9")')
     js("document.getElementById('B43000000000000388').click()")
     ok = esperar('document.body.innerText.indexOf("Empresa creada") >= 0', 45)
     comprueba(ok, "el alta desde el formulario en blanco responde «Empresa creada»")

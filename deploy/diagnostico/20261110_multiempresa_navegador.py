@@ -19,8 +19,9 @@
 #      el formulario la trae por defecto (regresion).
 #
 # Al final borra TODO: los usuarios temporales, la empresa centinela, la
-# empresa de prueba y sus pares. Las empresas reales (1, 2, 3, 4, 5) no se
-# tocan.
+# empresa de prueba y sus pares. Las empresas reales (1 y 2) no se
+# tocan. (Antes eran 1, 2, 3, 4 y 5; la poda del 2026-11-19 borro las dotech 3,
+# 4 y 5, y este script fallaba con ORA-02291 en FK_UE_EMPRESA.)
 #
 # RANGO RESERVADO (regla del plan): TODOS los datos de prueba usan ids
 # 900000+. Concretamente:
@@ -148,7 +149,7 @@ def preparar():
             i=uid, u=nombre, e=correo, p=CLAVE)
         con.commit()
 
-    # El usuario A tiene pares en las empresas 1 y 3 (dos reales del dueño);
+    # El usuario A tiene pares en las empresas 1 y 2 (las dos reales que quedan);
     # el B, solo en la 1.
     sql("""insert into usuario_empresa (usuario_id, id_empresa)
            select :u, :e from dual where not exists
@@ -158,7 +159,7 @@ def preparar():
     sql("""insert into usuario_empresa (usuario_id, id_empresa)
            select :u, :e from dual where not exists
            (select 1 from usuario_empresa where usuario_id = :u and id_empresa = :e)""",
-        u=ID_USUARIO_A, e=3)
+        u=ID_USUARIO_A, e=2)
     con.commit()
     sql("""insert into usuario_empresa (usuario_id, id_empresa)
            select :u, :e from dual where not exists
@@ -352,6 +353,11 @@ try:
     # -----------------------------------------------------------------------
     print("\n== alta real ==")
     js('apex.item("P19_NOMBRE_EMPRESA").setValue(%s)' % json.dumps(NOMBRE_PRUEBA))
+    # La empresa exige un RIF/RFC con la forma del pais desde el 2026-11-17/18
+    # (fn_rif_empresa_valido); sin el, el alta responde «El RIF/RFC de la empresa
+    # no tiene la forma del pais» y este caso mide el alta y el par, no el RIF.
+    js('apex.item("P19_COD_PAIS").setValue("VE")')
+    js('apex.item("P19_RFC").setValue("J-12345678-9")')
     if clic("Guardar empresa") != "clic":
         falla("no encontre el boton «Guardar empresa»")
     elif not esperar('document.body.innerText.indexOf("Empresa creada") >= 0', 60):

@@ -7923,17 +7923,43 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<style>',
 '/* El selector de empresa se coloca a la IZQUIERDA del usuario. Lo mueve el',
-'   script de abajo; debajo de 768 px se queda en su linea, como siempre. */',
+'   script de abajo, en escritorio y en telefono. */',
 '.spx-empresa-barra .t-Header-nav { display: none; }',
 '.spx-empresa-barra #R43000000000000970 { display: flex; align-items: center;',
 '                  margin: 0 12px 0 0; font-size: 0; }',
 '.spx-empresa-barra #R43000000000000970 .apex-item-select { font-size: 13px;',
 '                  height: 32px; width: 210px; border: 0; border-radius: 6px;',
 '                  padding: 0 8px; background: rgba(255,255,255,0.94); color: #123b70; }',
+'/* En un telefono la barra azul ocupa lo minimo y el selector de empresa queda',
+'   en la misma linea que el usuario. El resto del CSS de arriba es de escritorio. */',
+'@media (max-width: 767px) {',
+'  .t-Header { padding-block: 2px; }',
+'  .t-Header-branding { padding-block: 0 !important; min-height: 0 !important; }',
+'  /* El lockup del tema (isotipo + Synpex + SISTEMA DE GESTION) mide 71 px y no',
+'     cabe: en el telefono se queda el isotipo y el nombre, en una sola linea. */',
+'  .synpex-brand { align-items: center !important; gap: 6px !important; }',
+'  .synpex-brand svg.synpex-mark { width: 22px !important; height: 22px !important; }',
+'  .synpex-name { font-size: 14px !important; line-height: 1.1 !important; }',
+'  .synpex-tag { display: none !important; }',
+'  .t-Header-logo { padding-block: 0 !important; min-height: 0 !important;',
+'      flex: 0 0 auto !important; width: auto !important; }',
+'  .t-Header-controls { height: 28px; }',
+'  .t-Header-navBar { min-height: 0 !important; padding-block: 0 !important; }',
+'  .t-Button--navBar .t-Button-label { display: inline-block; max-width: 104px;',
+'      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }',
+'  /* Las reglas de escritorio de arriba llevan .spx-empresa-barra, asi que las del',
+'     telefono tienen que llevarlo tambien o no ganan por especificidad. */',
+'  #R43000000000000970 { font-size: 0; }',
+'  .spx-empresa-barra #R43000000000000970 { margin: 0 6px 0 0; display: inline-flex; }',
+'  .spx-empresa-barra #R43000000000000970 .apex-item-select { font-size: 12px; height: 26px;',
+'      width: 128px; border: 0; border-radius: 6px; padding: 0 6px;',
+'      background: rgba(255,255,255,0.94); color: #123b70; }',
+'}',
 '</style>',
 '<script>',
 'document.addEventListener("DOMContentLoaded", function () {',
-'  if (window.innerWidth < 768) { return; }',
+'  /* Se mueve en todos los tamanos: en el telefono, si se quedara en la barra de',
+'     navegacion, seria una segunda fila y la cabecera mediria el doble. */',
 '  var combo = document.getElementById("R43000000000000970");',
 '  var lista = document.querySelector(".t-Header-navBar--center ul.t-NavigationBar");',
 '  if (!combo || !lista || !lista.parentNode) { return; }',
@@ -13225,7 +13251,8 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
-);wwv_flow_imp_page.create_worksheet_column(
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000000898)
 ,p_db_column_name=>'COBRAR_LINK'
 ,p_display_order=>155
@@ -23464,6 +23491,27 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 );
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001260)
+,p_name=>'P23_ID_CONCEPTO_ISLR'
+,p_item_sequence=>140
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000620)
+,p_prompt=>'Concepto de ISLR por defecto'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c.codigo || '' - '' || c.descripcion',
+'       || '' ('' || trim(to_char(nvl(c.tarifa, 0), ''FM990.00'')) || '' %)'' as display_value,',
+'       c.id_concepto as return_value',
+'  from islr_conceptos c',
+' where c.activo = ''S''',
+' order by c.codigo'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Sin concepto --'
+,p_colspan=>12
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>unistr('Se hereda en cada factura de compra que se d\00E9 de alta con este proveedor. Sin concepto no se emite comprobante de ISLR.')
+);
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000641)
 ,p_button_sequence=>200
@@ -23547,6 +23595,7 @@ unistr('    -- perderia lo que el usuario acaba de teclear.'),
 unistr('            apex_util.set_session_state(''P23_PORCENTAJE_RETENCION'', nvl(r.porcentaje_retencion, 75));'),
 '            apex_util.set_session_state(''P23_ES_SPE'', nvl(r.es_spe, ''N''));',
 '            apex_util.set_session_state(''P23_DIAS_CREDITO'', nvl(r.dias_credito, 0));',
+'            apex_util.set_session_state(''P23_ID_CONCEPTO_ISLR'', r.id_concepto_islr);',
 '        end loop;',
 '    else',
 '        apex_util.set_session_state(''P23_ID_EMPRESA'', v_emp);',
@@ -23556,6 +23605,7 @@ unistr('            apex_util.set_session_state(''P23_PORCENTAJE_RETENCION'', nv
 '        apex_util.set_session_state(''P23_PORCENTAJE_RETENCION'', 75);',
 '        apex_util.set_session_state(''P23_ES_SPE'', ''N'');',
 '        apex_util.set_session_state(''P23_DIAS_CREDITO'', 0);',
+'        apex_util.set_session_state(''P23_ID_CONCEPTO_ISLR'', null);',
 '        begin',
 '            select cod_pais into v_pais from empresas where id_empresa = v_emp;',
 '            apex_util.set_session_state(''P23_COD_PAIS'', v_pais);',
@@ -23611,10 +23661,12 @@ unistr('    -- El nombre no puede ser un correo ni un telefono (misma regla que 
 '    if v_id is null then',
 '        insert into proveedores (id_empresa, rif, razon_social, tipo_persona, cod_pais,',
 '                                 email, telefono, direccion, estado, retener_iva,',
-'                                 porcentaje_retencion, es_spe, dias_credito)',
+'                                 porcentaje_retencion, es_spe, dias_credito,',
+'                                 id_concepto_islr)',
 '        values (v_emp, v_rif, :P23_RAZON_SOCIAL, v_tipo, v_pais,',
 '                :P23_EMAIL, :P23_TELEFONO, :P23_DIRECCION, nvl(:P23_ESTADO, ''ACTIVO''),',
-'                nvl(:P23_RETENER_IVA, ''S''), v_pct, nvl(:P23_ES_SPE, ''N''), v_dias)',
+'                nvl(:P23_RETENER_IVA, ''S''), v_pct, nvl(:P23_ES_SPE, ''N''), v_dias,',
+'                nullif(fn_clean_num(:P23_ID_CONCEPTO_ISLR), 0))',
 '        returning id_proveedor into :P23_ID_PROVEEDOR;',
 '    else',
 '        update proveedores',
@@ -23629,7 +23681,8 @@ unistr('    -- El nombre no puede ser un correo ni un telefono (misma regla que 
 '               retener_iva = nvl(:P23_RETENER_IVA, ''S''),',
 '               porcentaje_retencion = v_pct,',
 '               es_spe = nvl(:P23_ES_SPE, ''N''),',
-'               dias_credito = v_dias',
+'               dias_credito = v_dias,',
+'               id_concepto_islr = nullif(fn_clean_num(:P23_ID_CONCEPTO_ISLR), 0)',
 '         where id_proveedor = v_id',
 '           and id_empresa = v_emp;',
 '        if sql%rowcount = 0 then',
@@ -23679,8 +23732,7 @@ wwv_flow_imp_page.create_page(
 '.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
 '.status-BORRADOR { color: #b45309; background-color: #fffbeb; } .status-BORRADOR .status-dot { background-color: #f59e0b; }',
 '.status-REGISTRADA { color: #15803d; background-color: #f0fdf4; } .status-REGISTRADA .status-dot { background-color: #22c55e; }',
-'.status-ANULADA { color: #b91c1c; background-color: #fef2f2; } .status-ANULADA .status-dot { background-color: #ef4444; }',
-'.status-badge.status-ANULADA { background-color: #f1f3f4; color: #5f6368; } .status-ANULADA .status-dot { background-color: #9aa0a6; }',
+'.status-ANULADA { color: #5f6368; background-color: #f1f3f4; } .status-ANULADA .status-dot { background-color: #9aa0a6; }',
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
 '.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
 ,p_page_component_map=>'25'
@@ -23706,7 +23758,8 @@ wwv_flow_imp_page.create_page_plug(
 '       c.cod_moneda,',
 '       c.monto_total,',
 '       c.retencion_iva_bs,',
-'       c.estado',
+'       fn_estado_compra(c.estado) as estado,',
+'       c.estado as estado_cod',
 '  from compras c',
 '  join proveedores p on p.id_proveedor = c.id_proveedor',
 ' where c.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
@@ -23844,12 +23897,22 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'K'
 ,p_column_label=>'Estado'
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<span class="status-badge status-#ESTADO#">',
+'<span class="status-badge status-#ESTADO_COD#">',
 '    <span class="status-dot"></span>',
 '    #ESTADO#',
 '</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001220)
+,p_db_column_name=>'ESTADO_COD'
+,p_display_order=>110
+,p_column_identifier=>'L'
+,p_column_label=>'Estado (codigo)'
+,p_column_type=>'STRING'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
@@ -23944,11 +24007,118 @@ wwv_flow_imp_page.create_page(
 '    if (!col) return;',
 '    col.style.display = esNota ? "" : "none";',
 '    if (!esNota) { apex.item("P28_ID_COMPRA_ORIGEN").setValue(""); }',
-' }'))
+' }',
+'/* Borrar una linea de la compra: confirma y manda la peticion con el id. */',
+'function spxBorrarLinea(id) {',
+'    if (!window.confirm("Borrar esta linea de la compra?")) { return false; }',
+'    apex.submit({ request: "BORRAR_LINEA", set: { "P28_BORRAR_DETALLE": id } });',
+'    return false;',
+' }',
+'/* El JS de pagina de APEX corre en ambito local: el onclick de la tabla es global. */',
+'window.spxBorrarLinea = spxBorrarLinea;'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
-'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
+'/* Insignias de estado (copia local: la pagina 0 no emite su CSS). */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'.status-BORRADOR { color: #b45309; background-color: #fffbeb; } .status-BORRADOR .status-dot { background-color: #f59e0b; }',
+'.status-REGISTRADA { color: #15803d; background-color: #f0fdf4; } .status-REGISTRADA .status-dot { background-color: #22c55e; }',
+'.status-ANULADA { color: #5f6368; background-color: #f1f3f4; } .status-ANULADA .status-dot { background-color: #9aa0a6; }',
+'/* Cabecera de la compra: folio, proveedor, estado y fecha en una banda. */',
+'.spx-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 2px 2px 4px; }',
+'.spx-cab-tit { font-size: 1.35rem; font-weight: 700; color: #17364a; line-height: 1.2; }',
+'.spx-cab-tit b { color: #0b807c; }',
+'.spx-cab-sub { font-size: 0.92rem; color: #5f7b8c; }',
+'.spx-cab-fecha { font-size: 0.9rem; color: #5f7b8c; margin-left: auto; white-space: nowrap; }',
+'/* Resumen en cuatro tarjetas, con el total a 28 px y las dos monedas. */',
+'.spx-resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }',
+'.spx-card { border: 1px solid #d7e3e9; border-radius: 10px; background: #fff; padding: 12px 14px; box-shadow: 0 1px 2px rgba(20,54,74,.05); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #5f7b8c; }',
+'.spx-card-val { font-size: 1.15rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card-sub { font-size: 0.78rem; color: #5f7b8c; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--total { border-color: #0b807c; background: #f2fbfa; }',
+'.spx-card--total .spx-card-val { font-size: 28px; line-height: 1.1; color: #0b807c; }',
+'.spx-pie { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.82rem; color: #5f7b8c; }',
+'.spx-pie b { color: #17364a; }',
+'/* Filas de ISLR, IGTF y neto debajo de las tarjetas. */',
+'.spx-lineas { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 0.86rem; }',
+'.spx-lineas td { padding: 6px 8px; border-top: 1px solid #eef3f6; }',
+'.spx-lineas td.num { text-align: right; white-space: nowrap; }',
+'.spx-lineas tr.tot td { font-weight: 700; color: #17364a; border-top: 2px solid #d7e3e9; }',
+'/* Tabla de lineas de la compra. */',
+'.spx-det-wrap { overflow-x: auto; }',
+'.spx-det { width: 100%; border-collapse: collapse; font-size: 0.9rem; }',
+'.spx-det th { background: #eaf3f6; color: #17364a; font-weight: 700; padding: 8px; text-align: left; }',
+'.spx-det td { padding: 8px; border-top: 1px solid #eef3f6; }',
+'.spx-det td.num, .spx-det th.num { text-align: right; white-space: nowrap; }',
+'.spx-det tfoot td { font-weight: 700; border-top: 2px solid #d7e3e9; color: #17364a; background: #f7fafb; }',
+'.spx-acc a { margin: 0 4px; }',
+'.spx-acc .fa-trash { color: #b91c1c; }',
+'.spx-vacio { padding: 16px 4px; color: #5f6368; }',
+'/* Auditoria, al pie. */',
+'.spx-aud { display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 0.8rem; color: #5f7b8c; }',
+'.spx-aud b { color: #17364a; font-weight: 600; }',
+'@media (max-width: 767px) {',
+'  .spx-resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'  .spx-card { padding: 10px; }',
+'  .spx-card-val { font-size: 1rem; }',
+'  .spx-card--total .spx-card-val { font-size: 24px; }',
+'  .spx-cab-tit { font-size: 1.15rem; }',
+'  .spx-cab-fecha { margin-left: 0; }',
+'  .spx-det th, .spx-det td { padding: 6px; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-resumen { grid-template-columns: 1fr; }',
+'}'))
 ,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001222)
+,p_plug_name=>'Cabecera de la compra'
+,p_static_id=>'compra-cabecera'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>5
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id     number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
+'    v_folio  varchar2(50);',
+'    v_prov   varchar2(200);',
+'    v_estado varchar2(20);',
+'    v_fecha  date;',
+'    v_etiq   varchar2(30);',
+'begin',
+'    if v_id is null then',
+'        return ''<div class="spx-cab"><div class="spx-cab-tit">Compra nueva</div>''',
+'            || ''<div class="spx-cab-sub">Completa los datos y pulsa Guardar. ''',
+'            || ''Registrala despues para emitir los comprobantes de retencion.</div></div>'';',
+'    end if;',
+'    begin',
+'        select c.folio_factura, p.razon_social, c.estado, c.fecha_emision',
+'          into v_folio, v_prov, v_estado, v_fecha',
+'          from compras c',
+'          join proveedores p on p.id_proveedor = c.id_proveedor',
+'         where c.id_compra = v_id',
+'           and c.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual);',
+'    exception',
+'        when no_data_found then null;',
+'    end;',
+'    if v_folio is null then',
+'        return null;',
+'    end if;',
+'    v_etiq := nvl(:P28_ESTADO_TXT, fn_estado_compra(v_estado));',
+'    return ''<div class="spx-cab">''',
+'        || ''<div class="spx-cab-tit">Compra <b>'' || sys.htf.escape_sc(v_folio) || ''</b></div>''',
+'        || ''<div class="spx-cab-sub">'' || sys.htf.escape_sc(v_prov) || ''</div>''',
+'        || ''<span class="status-badge status-'' || sys.htf.escape_sc(v_estado) || ''">''',
+'        || ''<span class="status-dot"></span>'' || sys.htf.escape_sc(v_etiq) || ''</span>''',
+'        || ''<div class="spx-cab-fecha">'' || nvl(to_char(v_fecha, ''DD/MM/YYYY''), ''-'') || ''</div>''',
+'        || ''</div>'';',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000001020)
@@ -23977,6 +24147,22 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001227)
+,p_name=>'P28_URL_RETENCION_ISLR'
+,p_item_sequence=>18
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_display_as=>'NATIVE_HIDDEN'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001228)
+,p_name=>'P28_BORRAR_DETALLE'
+,p_item_sequence=>19
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001022)
 ,p_name=>'P28_ESTADO'
 ,p_item_sequence=>15
@@ -23984,6 +24170,13 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001224)
+,p_name=>'P28_ESTADO_TXT'
+,p_item_sequence=>17
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_display_as=>'NATIVE_HIDDEN'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001023)
@@ -24159,8 +24352,32 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov_null_text=>'-- Sin definir --'
 ,p_colspan=>12
 ,p_field_template=>1610598304472262251
+,p_begin_on_new_line=>'Y'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_help_text=>'Si la empresa es Sujeto Pasivo Especial y el pago es en divisas, esta forma de pago decide el IGTF del 3 %.'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001223)
+,p_name=>'P28_ID_CONCEPTO_ISLR'
+,p_item_sequence=>92
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_prompt=>'Concepto de ISLR'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c.codigo || '' - '' || c.descripcion as display_value,',
+'       c.id_concepto as return_value',
+'  from islr_conceptos c',
+' where c.activo = ''S''',
+' order by c.codigo'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Sin concepto --'
+,p_colspan=>12
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_display_when=>'nvl(:P28_ESTADO,''BORRADOR'') = ''BORRADOR'''
+,p_display_when2=>'PLSQL'
+,p_display_when_type=>'EXPRESSION'
+,p_help_text=>'Se hereda del proveedor al dar de alta. Sin concepto no se emite comprobante de ISLR.'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001031)
@@ -24187,43 +24404,96 @@ wwv_flow_imp_page.create_page_plug(
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-
 'declare',
-'    v_id   number := fn_clean_num(:P28_ID_COMPRA);',
-'    v_html clob;',
-'    v_n    number;',
+'    v_id    number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
+'    v_est   varchar2(20);',
+'    v_puede varchar2(1) := ''N'';',
+'    v_n     number;',
+'    v_sub   number := 0;',
+'    v_iva   number := 0;',
+'    v_tot   number := 0;',
+'    v_html  clob;',
 'begin',
-'    if v_id is null then return null; end if;',
-'',
+'    if v_id is null then',
+'        return null;',
+'    end if;',
 '    select count(*) into v_n from compras_det where id_compra = v_id;',
 '    if v_n = 0 then',
-'        return ''<p style="padding:16px 4px; color:#5f6368;">Esta compra no tiene l&iacute;neas todav&iacute;a: usa &quot;Nueva linea&quot; para agregarlas.</p>'';',
+'        return ''<p class="spx-vacio">Esta compra no tiene l&iacute;neas todav&iacute;a: usa "Nueva linea" para agregarlas.</p>'';',
 '    end if;',
-'',
-'    v_html := ''<table class="t-Report-report" width="100%">''',
-'           || ''<thead><tr><th>#</th><th>Descripci&oacute;n</th><th align="right">Cantidad</th>''',
-'           || ''<th align="right">Precio</th><th align="right">Subtotal</th>''',
-'           || ''<th align="right">IVA</th><th align="right">Total</th>''',
-'           || ''<th></th></tr></thead><tbody>'';',
-'',
-'    for r in (select d.* from compras_det d',
-'               where d.id_compra = v_id',
-'               order by d.num_linea) loop',
+'    select estado into v_est from compras where id_compra = v_id;',
+'    if v_est = ''BORRADOR'' and fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,PRUEBA'') then',
+'        v_puede := ''S'';',
+'    end if;',
+'    v_html := ''<div class="spx-det-wrap"><table class="spx-det"><thead><tr>''',
+'        || ''<th>#</th><th>Descripci&oacute;n</th><th class="num">Cantidad</th>''',
+'        || ''<th class="num">Precio</th><th class="num">Subtotal</th>''',
+'        || ''<th class="num">IVA</th><th class="num">Total</th>''',
+'        || ''<th class="num">Acciones</th></tr></thead><tbody>'';',
+'    for r in (select d.* from compras_det d where d.id_compra = v_id order by d.num_linea) loop',
 '        v_html := v_html',
 '            || ''<tr><td>'' || to_char(r.num_linea) || ''</td>''',
 '            || ''<td>'' || sys.htf.escape_sc(r.descripcion) || ''</td>''',
-'            || ''<td align="right">'' || to_char(r.cantidad, ''FM999G990D00'') || ''</td>''',
-'            || ''<td align="right">'' || to_char(r.precio_unitario, ''FM999G999G990D00'') || ''</td>''',
-'            || ''<td align="right">'' || to_char(r.subtotal_linea, ''FM999G999G990D00'') || ''</td>''',
-'            || ''<td align="right">'' || to_char(r.monto_impuesto, ''FM999G999G990D00'') || ''</td>''',
-'            || ''<td align="right">'' || to_char(r.total_linea, ''FM999G999G990D00'') || ''</td>''',
-'            || ''<td align="center"><a href="'' || apex_page.get_url(p_page => 29,',
+'            || ''<td class="num">'' || to_char(r.cantidad, ''FM999G990D00'') || ''</td>''',
+'            || ''<td class="num">'' || to_char(r.precio_unitario, ''FM999G999G990D00'') || ''</td>''',
+'            || ''<td class="num">'' || to_char(r.subtotal_linea, ''FM999G999G990D00'') || ''</td>''',
+'            || ''<td class="num">'' || to_char(r.monto_impuesto, ''FM999G999G990D00'') || ''</td>''',
+'            || ''<td class="num">'' || to_char(r.total_linea, ''FM999G999G990D00'') || ''</td>''',
+'            || ''<td class="num spx-acc">''',
+'            || ''<a href="'' || apex_page.get_url(p_page => 29,',
 '                   p_items => ''P29_ID_DETALLE,P29_ID_COMPRA'',',
 '                   p_values => r.id_detalle || '','' || v_id) || ''" title="Editar linea">''',
-'            || ''<span class="fa fa-pencil"></span></a></td></tr>'';',
+'            || ''<span class="fa fa-pencil"></span></a>'';',
+'        if v_puede = ''S'' then',
+'            v_html := v_html || ''<a href="#" title="Borrar linea" onclick="return spxBorrarLinea(''',
+'                || to_char(r.id_detalle) || '');"><span class="fa fa-trash"></span></a>'';',
+'        end if;',
+'        v_html := v_html || ''</td></tr>'';',
+'        v_sub := v_sub + nvl(r.subtotal_linea, 0);',
+'        v_iva := v_iva + nvl(r.monto_impuesto, 0);',
+'        v_tot := v_tot + nvl(r.total_linea, 0);',
 '    end loop;',
-'',
-'    v_html := v_html || ''</tbody></table>'';',
+'    v_html := v_html || ''</tbody><tfoot><tr>''',
+'        || ''<td colspan="4">Total de las l&iacute;neas</td>''',
+'        || ''<td class="num">'' || to_char(v_sub, ''FM999G999G990D00'') || ''</td>''',
+'        || ''<td class="num">'' || to_char(v_iva, ''FM999G999G990D00'') || ''</td>''',
+'        || ''<td class="num">'' || to_char(v_tot, ''FM999G999G990D00'') || ''</td>''',
+'        || ''<td></td></tr></tfoot></table></div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_plug_display_condition_type=>'EXISTS'
+,p_plug_display_when_condition=>'select 1 from compras where id_compra = fn_clean_num(:P28_ID_COMPRA) and id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001225)
+,p_plug_name=>unistr('Auditor\00EDa de la compra')
+,p_static_id=>'compra-auditoria'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>40
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id   number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
+'    v_html clob;',
+'begin',
+'    if v_id is null then',
+'        return null;',
+'    end if;',
+'    for r in (select * from compras',
+'               where id_compra = v_id',
+'                 and id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)) loop',
+'        v_html := ''<div class="spx-aud">''',
+'            || ''<span><b>Creado por</b> '' || nvl(sys.htf.escape_sc(r.creado_por), ''-'')',
+'            || '' el '' || nvl(to_char(r.fecha_creacion, ''DD/MM/YYYY HH24:MI''), ''-'') || ''</span>''',
+'            || ''<span><b>Modificado por</b> '' || nvl(sys.htf.escape_sc(r.modificado_por), ''-'')',
+'            || '' el '' || nvl(to_char(r.fecha_modificacion, ''DD/MM/YYYY HH24:MI''), ''-'') || ''</span>''',
+'            || ''</div>'';',
+'    end loop;',
 '    return v_html;',
 'end;'))
 ,p_lazy_loading=>false
@@ -24231,7 +24501,7 @@ wwv_flow_imp_page.create_page_plug(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001033)
-,p_button_sequence=>200
+,p_button_sequence=>210
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
 ,p_button_name=>'BTN_GUARDAR_COMPRA'
 ,p_static_id=>'btn-guardar-compra'
@@ -24244,11 +24514,11 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_condition2=>'PLSQL'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-floppy-o'
-,p_grid_new_row=>'Y'
+,p_grid_new_row=>'N'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001034)
-,p_button_sequence=>210
+,p_button_sequence=>220
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
 ,p_button_name=>'BTN_LINEA_COMPRA'
 ,p_static_id=>'btn-linea-compra'
@@ -24265,7 +24535,7 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001035)
-,p_button_sequence=>220
+,p_button_sequence=>230
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
 ,p_button_name=>'BTN_REGISTRAR_COMPRA'
 ,p_static_id=>'btn-registrar-compra'
@@ -24283,7 +24553,7 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001036)
-,p_button_sequence=>230
+,p_button_sequence=>200
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
 ,p_button_name=>'BTN_ANULAR_COMPRA'
 ,p_static_id=>'btn-anular-compra'
@@ -24297,11 +24567,11 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_condition2=>'PLSQL'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-ban'
-,p_grid_new_row=>'N'
+,p_grid_new_row=>'Y'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001037)
-,p_button_sequence=>240
+,p_button_sequence=>260
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
 ,p_button_name=>'BTN_VOLVER_COMPRA'
 ,p_static_id=>'btn-volver-compra'
@@ -24316,19 +24586,37 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001204)
-,p_button_sequence=>230
+,p_button_sequence=>240
 ,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
 ,p_button_name=>'BTN_IMPRIMIR_RETENCION'
 ,p_static_id=>'btn-imprimir-retencion'
 ,p_button_action=>'REDIRECT_URL'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2084305881903810008
+,p_grid_new_row=>'N'
 ,p_button_image_alt=>'Imprimir comprobante'
 ,p_icon_css_classes=>'fa-print'
 ,p_button_redirect_url=>'&P28_URL_RETENCION.'
 ,p_button_condition_type=>'EXPRESSION'
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'') and nvl(:P28_ESTADO, ''#'') = ''REGISTRADA'''
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'') and nvl(:P28_ESTADO, ''#'') = ''REGISTRADA'' and fn_compra_tiene_iva(fn_clean_num(:P28_ID_COMPRA))'
 ,p_button_condition2=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001226)
+,p_button_sequence=>250
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_button_name=>'BTN_IMPRIMIR_RET_ISLR'
+,p_static_id=>'btn-imprimir-ret-islr'
+,p_button_action=>'REDIRECT_URL'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_grid_new_row=>'N'
+,p_button_image_alt=>'Comprobante ISLR'
+,p_icon_css_classes=>'fa-file-text-o'
+,p_button_redirect_url=>'&P28_URL_RETENCION_ISLR.'
+,p_button_condition_type=>'EXPRESSION'
+,p_button_condition2=>'PLSQL'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'') and fn_compra_tiene_islr(fn_clean_num(:P28_ID_COMPRA))'
 );
 
 wwv_flow_imp_page.create_page_process(
@@ -24360,6 +24648,7 @@ wwv_flow_imp_page.create_page_process(
 '    v_pais varchar2(2);',
 '    v_pct number;',
 '    v_moneda varchar2(5);',
+'    v_con_prov number;',
 'begin',
 '    if v_id is not null and v_id > 0 then',
 '        for r in (select * from compras',
@@ -24380,12 +24669,34 @@ unistr('            apex_util.set_session_state(''P28_FECHA_EMISION'', to_char(r
 '                                  p_values => v_id));',
 '            apex_util.set_session_state(''P28_ID_COMPRA_ORIGEN'', r.id_compra_origen);',
 '            apex_util.set_session_state(''P28_ID_FORMA_PAGO'', r.id_forma_pago);',
+'            apex_util.set_session_state(''P28_ID_CONCEPTO_ISLR'', r.id_concepto_islr);',
+'            apex_util.set_session_state(''P28_ESTADO_TXT'', fn_estado_compra(r.estado));',
+'            apex_util.set_session_state(''P28_URL_RETENCION_ISLR'',',
+'                apex_page.get_url(p_page => 31, p_items => ''P31_ID_COMPRA,P31_TIPO'',',
+'                                  p_values => v_id || '',ISLR''));',
 '        end loop;',
 '    else',
 '        apex_util.set_session_state(''P28_ESTADO'', ''BORRADOR'');',
 '        apex_util.set_session_state(''P28_TIPO_DOCUMENTO'', ''FAC'');',
 '        apex_util.set_session_state(''P28_ID_COMPRA_ORIGEN'', '''');',
 '        apex_util.set_session_state(''P28_ID_FORMA_PAGO'', '''');',
+'        -- El concepto de ISLR se hereda del proveedor en un ALTA, pero no se pisa lo',
+'        -- que el usuario haya elegido: si el item trae valor se respeta (un guardado',
+'        -- que falla la validacion vuelve a pasar por este proceso).',
+'        if trim(nvl(:P28_ID_CONCEPTO_ISLR, ''#'')) = ''#'' then',
+'            apex_util.set_session_state(''P28_ID_CONCEPTO_ISLR'', '''');',
+'            if nullif(fn_clean_num(:P28_ID_PROVEEDOR), 0) is not null then',
+'                begin',
+'                    select p.id_concepto_islr into v_con_prov',
+'                      from proveedores p',
+'                     where p.id_proveedor = fn_clean_num(:P28_ID_PROVEEDOR);',
+'                    apex_util.set_session_state(''P28_ID_CONCEPTO_ISLR'', v_con_prov);',
+'                exception',
+'                    when others then null;',
+'                end;',
+'            end if;',
+'        end if;',
+'        apex_util.set_session_state(''P28_ESTADO_TXT'', fn_estado_compra(''BORRADOR''));',
 '        begin',
 '            select p.moneda_local into v_moneda',
 '              from empresas e join paises p on p.cod_pais = e.cod_pais',
@@ -24508,6 +24819,7 @@ unistr('        p_fecha_emision        => to_date(:P28_FECHA_EMISION, ''DD/MM/YY
 '        p_observaciones        => :P28_OBSERVACIONES,',
 '        p_id_compra_origen     => nullif(fn_clean_num(:P28_ID_COMPRA_ORIGEN), 0),',
 '        p_id_forma_pago        => nullif(fn_clean_num(:P28_ID_FORMA_PAGO), 0),',
+'        p_id_concepto_islr     => nvl(fn_clean_num(:P28_ID_CONCEPTO_ISLR), 0),',
 '        p_usuario              => :APP_USER);',
 '',
 '    :P28_ID_COMPRA := v_id;',
@@ -24556,6 +24868,58 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000001036)
 ,p_internal_uid=>43000000000001042
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001229)
+,p_process_sequence=>40
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Borrar linea'
+,p_static_id=>'borrar-linea'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id     number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
+'    v_det    number := nullif(fn_clean_num(:P28_BORRAR_DETALLE), 0);',
+'    v_emp    number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_estado varchar2(20);',
+'    v_n      number;',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'    if v_id is null or v_det is null then',
+'        raise_application_error(-20070, ''No se identifico la linea que se quiere borrar.'');',
+'    end if;',
+'    begin',
+'        select estado into v_estado',
+'          from compras',
+'         where id_compra = v_id',
+'           and id_empresa = v_emp;',
+'    exception',
+'        when no_data_found then',
+'            raise_application_error(-20003, ''La compra no es de su empresa.'');',
+'    end;',
+'    if v_estado <> ''BORRADOR'' then',
+'        raise_application_error(-20083,',
+'            ''La compra esta '' || v_estado || '': no se pueden borrar lineas.'');',
+'    end if;',
+'',
+'    -- La linea tiene que ser de ESTA compra y de una empresa del usuario. El id',
+'    -- llega de la tabla por JavaScript, en un item que no esta protegido.',
+'    select count(*) into v_n',
+'      from compras_det',
+'     where id_detalle = v_det',
+'       and id_compra = v_id;',
+'    if v_n = 0 then',
+'        raise_application_error(-20003, ''La linea no es de esta compra.'');',
+'    end if;',
+'    pkg_compra_detalle.eliminar_detalle(p_id_detalle => v_det, p_usuario => :APP_USER);',
+'    apex_application.g_print_success_message := ''Linea borrada.'';',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when=>'upper(nvl(:REQUEST,''#'')) = ''BORRAR_LINEA'''
+,p_process_when2=>'PLSQL'
+,p_process_when_type=>'EXPRESSION'
 );
 
 wwv_flow_imp_page.create_page_branch(
@@ -24696,62 +25060,140 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'N')).to_clob
 ,p_wait_for_result=>'Y'
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001230)
+,p_name=>'SUGIERE-CONCEPTO-ISLR'
+,p_static_id=>'sugiere-concepto-islr'
+,p_event_sequence=>40
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P28_ID_PROVEEDOR'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001231)
+,p_event_id=>wwv_flow_imp.id(43000000000001230)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'SUGIERE-CONCEPTO-ISLR'
+,p_static_id=>'sugiere-concepto-islr'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P28_ID_CONCEPTO_ISLR',
+  'items_to_submit', 'P28_ID_PROVEEDOR,P28_ESTADO,P28_ID_COMPRA',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_prov     number := nullif(fn_clean_num(:P28_ID_PROVEEDOR), 0);',
+'    v_prov_con number;',
+'begin',
+'    -- En un ALTA el concepto sigue al proveedor: al cambiar de proveedor se cambia',
+'    -- el concepto (y se vacia si el nuevo no tiene). En un documento que ya existe',
+'    -- no se toca nunca: lo guardado manda, y el usuario puede dejarlo sin concepto.',
+'    if v_prov is null then',
+'        return;',
+'    end if;',
+'    if nullif(fn_clean_num(:P28_ID_COMPRA), 0) is not null then',
+'        return;',
+'    end if;',
+'    if nvl(:P28_ESTADO, ''BORRADOR'') <> ''BORRADOR'' then',
+'        return;',
+'    end if;',
+'    begin',
+'        select p.id_concepto_islr into v_prov_con',
+'          from proveedores p',
+'         where p.id_proveedor = v_prov;',
+'    exception',
+'        when others then v_prov_con := null;',
+'    end;',
+'    :P28_ID_CONCEPTO_ISLR := to_char(v_prov_con);',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'Y')).to_clob
+,p_wait_for_result=>'Y'
+);
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000001170)
 ,p_plug_name=>'Resumen de la compra'
 ,p_static_id=>'compra-resumen'
 ,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4073835273271169698
-,p_plug_display_sequence=>30
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>15
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
-'    v_id     number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
-'    v_mon    varchar2(5);',
-'    v_tasa   number;',
-'    v_base   number := 0;',
-'    v_exento number := 0;',
-'    v_iva    number := 0;',
-'    v_tot    number := 0;',
-'    v_ret_bs number := 0;',
-'    v_ret    number := 0;',
-'    v_pct    number := 0;',
-'    v_neto   number := 0;',
-'    v_igtf   number := 0;',
+'    v_id      number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
+'    v_mon     varchar2(5);',
+'    v_tasa    number;',
+'    v_fecha   date;',
+'    v_estado  varchar2(20);',
+'    v_base    number := 0;',
+'    v_exento  number := 0;',
+'    v_iva     number := 0;',
+'    v_sub     number := 0;',
+'    v_tot     number := 0;',
+'    v_ret_bs  number := 0;',
+'    v_ret     number := 0;',
+'    v_pct     number := 0;',
+'    v_igtf    number := 0;',
 '    v_igtf_bs number := 0;',
-'    v_spe    varchar2(1) := ''N'';',
-'    v_genera varchar2(1) := ''N'';',
-'    v_emp    number;',
-'    v_alic   number := 0;',
-'    v_html   clob;',
+'    v_spe     varchar2(1) := ''N'';',
+'    v_genera  varchar2(1) := ''N'';',
+'    v_emp     number;',
+'    v_alic    number := 0;',
+'    v_neto_bs number := 0;',
+'    v_neto    number := 0;',
+'    v_con     number;',
+'    v_cod     varchar2(20);',
+'    v_des     varchar2(200);',
+'    v_tar     number := 0;',
+'    v_sus_ut  number := 0;',
+'    v_sus_bs  number := 0;',
+'    v_islr_b  number := 0;',
+'    v_islr_r  number := 0;',
+'    v_ut      number := 0;',
+'    v_tfecha  date;',
+'    v_nls     varchar2(40) := ''NLS_NUMERIC_CHARACTERS='''',.'''''';',
+'    v_html    clob;',
 'begin',
-'    if v_id is null then return null; end if;',
+'    if v_id is null then',
+'        return null;',
+'    end if;',
 '',
 '    select cod_moneda, nvl(tipo_cambio, 1), nvl(porcentaje_retencion, 0),',
-'           nvl(retencion_iva_bs, -1)',
-'      into v_mon, v_tasa, v_pct, v_ret_bs',
-'      from compras where id_compra = v_id;',
+'           nvl(retencion_iva_bs, -1), fecha_emision, id_concepto_islr, estado',
+'      into v_mon, v_tasa, v_pct, v_ret_bs, v_fecha, v_con, v_estado',
+'      from compras',
+'     where id_compra = v_id;',
+'',
+'    if nvl(v_tasa, 0) <= 0 then',
+'        v_tasa := 1;',
+'    end if;',
 '',
 '    select nvl(sum(case when nvl(porcentaje_impuesto, 0) > 0 then subtotal_linea end), 0),',
 '           nvl(sum(case when nvl(porcentaje_impuesto, 0) = 0 then subtotal_linea end), 0),',
 '           nvl(sum(monto_impuesto), 0),',
 '           nvl(sum(subtotal_linea), 0)',
-'      into v_base, v_exento, v_iva, v_tot',
-'      from compras_det where id_compra = v_id;',
- '    -- El total del documento es la base mas el exento mas el IVA: el IGTF',
- '    -- se causa sobre el total que se paga (con IVA), no sobre la base.',
- '    v_tot := v_tot + v_iva;',
+'      into v_base, v_exento, v_iva, v_sub',
+'      from compras_det',
+'     where id_compra = v_id;',
 '',
-'    -- La retencion se calcula en vivo hasta registrar la compra; despues',
-'    -- manda la foto guardada (la que dice el comprobante).',
-'    if v_ret_bs < 0 then',
+'    v_tot := v_sub + v_iva;',
+'',
+'    -- En BORRADOR la retencion de IVA todavia no esta guardada (la columna nace en 0',
+'    -- y solo se escribe al emitir): se muestra la que saldria del detalle. Ya procesada',
+'    -- manda la foto del comprobante, que es la que dice el papel.',
+'    if v_estado = ''BORRADOR'' then',
 '        v_ret_bs := nvl(pkg_retenciones.fn_retencion_bs(v_id), 0);',
+'    else',
+'        v_ret_bs := nvl(v_ret_bs, 0);',
 '    end if;',
-'    v_ret := case when nvl(v_tasa, 0) > 0 then round(v_ret_bs / v_tasa, 2) else 0 end;',
-'    -- IGTF: se causa con el pago en divisas si la empresa es SPE y la forma',
-'    -- de pago lo genera (la alicuota sale de IMPUESTOS, no del codigo).',
+'    v_ret := round(v_ret_bs / v_tasa, 2);',
+'',
 '    if nvl(v_mon, ''VES'') not in (''VES'', ''BS'') then',
 '        begin',
 '            select nvl(e.es_spe, ''N''), nvl(f.genera_igtf, ''N''), c.id_empresa',
@@ -24761,49 +25203,144 @@ wwv_flow_imp_page.create_page_plug(
 '              left join forma_pago f on f.id_forma_pago = c.id_forma_pago',
 '             where c.id_compra = v_id;',
 '        exception',
-'            when others then v_spe := ''N''; v_genera := ''N'';',
+'            when others then',
+'                v_spe := ''N'';',
+'                v_genera := ''N'';',
 '        end;',
 '        if v_spe = ''S'' and v_genera = ''S'' then',
 '            v_alic    := nvl(fn_alicuota_igtf(v_emp), 0);',
 '            v_igtf    := round(v_tot * v_alic / 100, 2);',
 '            v_igtf_bs := round(v_igtf * v_tasa, 2);',
 '        end if;',
+'        begin',
+'            select max(fecha_vigencia) into v_tfecha',
+'              from tipo_cambio',
+'             where moneda_origen = upper(v_mon)',
+'               and moneda_destino = ''VES''',
+'               and tipo_tasa = ''REAL''',
+'               and fecha_vigencia <= nvl(v_fecha, trunc(sysdate));',
+'        exception',
+'            when others then',
+'                v_tfecha := null;',
+'        end;',
 '    end if;',
 '',
-'    v_neto := v_tot - v_ret + v_igtf;',
+'    if v_con is not null then',
+'        v_cod := null;',
+'        -- La foto del comprobante manda SOLO si el comprobante existe y no esta',
+'        -- anulado; es la misma condicion que el boton (fn_compra_tiene_islr), asi la',
+'        -- pantalla y el papel no pueden discrepar. Si no hay comprobante vigente se',
+'        -- calcula en vivo con el catalogo.',
+'        if fn_compra_tiene_islr(v_id) then',
+'            begin',
+'                select h.codigo_concepto, h.actividad, h.base_imponible_bs, h.retenido_bs,',
+'                       d.tarifa, d.sustraendo_ut, d.valor_ut',
+'                  into v_cod, v_des, v_islr_b, v_islr_r, v_tar, v_sus_ut, v_ut',
+'                  from retenciones h',
+'                  join retenciones_det d on d.id_retencion = h.id_retencion',
+'                 where h.id_compra = v_id',
+'                   and h.tipo = ''ISLR''',
+'                   and rownum = 1;',
+'            exception',
+'                when others then',
+'                    v_cod := null;',
+'            end;',
+'        end if;',
 '',
-'    v_html := ''<table class="a-Report-table" style="width:100%">''',
-'           || ''<thead><tr><th>Concepto</th><th class="spx-num">'' || v_mon || ''</th>''',
-'           || ''<th class="spx-num">Bolivares</th></tr></thead><tbody>'';',
+'        if v_cod is null then',
+'            begin',
+'                select codigo, descripcion, tarifa, sustraendo_ut',
+'                  into v_cod, v_des, v_tar, v_sus_ut',
+'                  from islr_conceptos',
+'                 where id_concepto = v_con;',
+'                v_ut := pkg_retenciones.fn_valor_ut;',
+'            exception',
+'                when others then',
+'                    v_cod := null;',
+'            end;',
+'            v_islr_b := nvl(pkg_retenciones.fn_islr_base_bs(v_id, v_con), 0);',
+'            v_islr_r := nvl(pkg_retenciones.fn_islr_retencion_bs(v_id, v_con), 0);',
+'        end if;',
 '',
-'    v_html := v_html || ''<tr><td>Base imponible</td>''',
-'        || ''<td align="right">'' || to_char(v_base, ''FM999G999G999G990D00'') || ''</td>''',
-'        || ''<td align="right">'' || to_char(v_base * v_tasa, ''FM999G999G999G990D00'') || ''</td></tr>'';',
-'    v_html := v_html || ''<tr><td>Monto exento</td>''',
-'        || ''<td align="right">'' || to_char(v_exento, ''FM999G999G999G990D00'') || ''</td>''',
-'        || ''<td align="right">'' || to_char(v_exento * v_tasa, ''FM999G999G999G990D00'') || ''</td></tr>'';',
-'    v_html := v_html || ''<tr><td>IVA</td>''',
-'        || ''<td align="right">'' || to_char(v_iva, ''FM999G999G999G990D00'') || ''</td>''',
-'        || ''<td align="right">'' || to_char(v_iva * v_tasa, ''FM999G999G999G990D00'') || ''</td></tr>'';',
-'    v_html := v_html || ''<tr><td><b>Total de la factura</b></td>''',
-'        || ''<td align="right"><b>'' || to_char(v_tot, ''FM999G999G999G990D00'') || ''</b></td>''',
-'        || ''<td align="right"><b>'' || to_char(v_tot * v_tasa, ''FM999G999G999G990D00'') || ''</b></td></tr>'';',
-'    v_html := v_html || ''<tr><td>IVA retenido ('' || to_char(v_pct) || '' %)</td>''',
-'        || ''<td align="right">-'' || to_char(v_ret, ''FM999G999G999G990D00'') || ''</td>''',
-'        || ''<td align="right">-'' || to_char(v_ret_bs, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'        v_sus_bs := round(nvl(v_sus_ut, 0) * nvl(v_ut, 0), 2);',
+'    end if;',
+'',
+'    v_neto_bs := round(v_tot * v_tasa, 2) - v_ret_bs - v_islr_r + v_igtf_bs;',
+'    v_neto    := round(v_neto_bs / v_tasa, 2);',
+'',
+'    v_html := ''<div class="spx-resumen">'';',
+'',
+'    v_html := v_html || ''<div class="spx-card"><div class="spx-card-lbl">Subtotal (''',
+'        || sys.htf.escape_sc(v_mon) || '')</div>''',
+'        || ''<div class="spx-card-val">''',
+'        || to_char(nvl(v_sub, 0), ''FM999G999G999G990D00'', v_nls) || ''</div>''',
+'        || ''<div class="spx-card-sub">Bs. ''',
+'        || to_char(nvl(v_sub * v_tasa, 0), ''FM999G999G999G990D00'', v_nls) || ''</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card"><div class="spx-card-lbl">IVA (''',
+'        || sys.htf.escape_sc(v_mon) || '')</div>''',
+'        || ''<div class="spx-card-val">''',
+'        || to_char(nvl(v_iva, 0), ''FM999G999G999G990D00'', v_nls) || ''</div>''',
+'        || ''<div class="spx-card-sub">Bs. ''',
+'        || to_char(nvl(v_iva * v_tasa, 0), ''FM999G999G999G990D00'', v_nls) || ''</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card"><div class="spx-card-lbl">Retencion IVA (''',
+'        || to_char(v_pct) || '' %)</div>''',
+'        || ''<div class="spx-card-val">'' || case when v_ret > 0 then ''-'' else '''' end',
+'        || to_char(nvl(v_ret, 0), ''FM999G999G999G990D00'', v_nls) || ''</div>''',
+'        || ''<div class="spx-card-sub">'' || case when v_ret_bs > 0 then ''Bs. -'' else ''Bs. '' end',
+'        || to_char(nvl(v_ret_bs, 0), ''FM999G999G999G990D00'', v_nls) || ''</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--total"><div class="spx-card-lbl">Total (''',
+'        || sys.htf.escape_sc(v_mon) || '')</div>''',
+'        || ''<div class="spx-card-val">''',
+'        || to_char(nvl(v_tot, 0), ''FM999G999G999G990D00'', v_nls) || ''</div>''',
+'        || ''<div class="spx-card-sub">Bs. ''',
+'        || to_char(nvl(v_tot * v_tasa, 0), ''FM999G999G999G990D00'', v_nls) || ''</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'',
+'    if nvl(v_mon, ''VES'') not in (''VES'', ''BS'') then',
+'        v_html := v_html || ''<div class="spx-pie">''',
+'            || case when v_tfecha is not null',
+'                    then ''<span>Tasa BCV vigente al '' || to_char(v_tfecha, ''DD/MM/YYYY'') || ''</span>''',
+'                    else '''' end;',
+'    else',
+'        v_html := v_html || ''<div class="spx-pie">'';',
+'    end if;',
+'',
 '    if v_igtf > 0 then',
-'        v_html := v_html || ''<tr><td>IGTF ('' || to_char(v_alic) || '' %)</td>''',
-'            || ''<td align="right">'' || to_char(v_igtf, ''FM999G999G999G990D00'') || ''</td>''',
-'            || ''<td align="right">'' || to_char(v_igtf_bs, ''FM999G999G999G990D00'') || ''</td></tr>'';',
+'        v_html := v_html || ''<span>IGTF '' || to_char(v_alic) || '' %: <b>''',
+'            || to_char(nvl(v_igtf, 0), ''FM999G999G999G990D00'', v_nls) || ''</b> ''',
+'            || sys.htf.escape_sc(v_mon)',
+'            || '' (Bs. '' || to_char(nvl(v_igtf_bs, 0), ''FM999G999G999G990D00'', v_nls) || '')</span>'';',
 '    end if;',
-'    v_html := v_html || ''<tr><td><b>Neto a pagar</b></td>''',
-'        || ''<td align="right"><b>'' || to_char(v_neto, ''FM999G999G999G990D00'') || ''</b></td>''',
-'        || ''<td align="right"><b>'' || to_char(v_neto * v_tasa, ''FM999G999G999G990D00'') || ''</b></td></tr>'';',
 '',
-'    return v_html || ''</tbody></table>'';',
+'    v_html := v_html || ''<span>Neto a pagar: <b>''',
+'        || to_char(nvl(v_neto, 0), ''FM999G999G999G990D00'', v_nls) || ''</b> ''',
+'        || sys.htf.escape_sc(v_mon)',
+'        || '' (Bs. '' || to_char(nvl(v_neto_bs, 0), ''FM999G999G999G990D00'', v_nls) || '')</span></div>'';',
+'',
+'    if v_cod is not null then',
+'        v_html := v_html || ''<table class="spx-lineas"><tbody>''',
+'            || ''<tr><td>ISLR concepto '' || sys.htf.escape_sc(v_cod)',
+'            || case when v_des is not null then '' - '' || sys.htf.escape_sc(v_des) else '''' end',
+'            || '' - tarifa '' || to_char(v_tar) || '' % - sustraendo ''',
+'            || to_char(v_sus_ut, ''FM990D9999'') || '' UT (Bs. ''',
+'            || to_char(nvl(v_sus_bs, 0), ''FM999G999G999G990D00'', v_nls) || '')</td>''',
+'            || ''<td class="num">Base Bs. ''',
+'            || to_char(nvl(v_islr_b, 0), ''FM999G999G999G990D00'', v_nls) || ''</td>''',
+'            || ''<td class="num">Retenido Bs. ''',
+'            || to_char(nvl(v_islr_r, 0), ''FM999G999G999G990D00'', v_nls) || ''</td></tr>''',
+'            || ''</tbody></table>'';',
+'    end if;',
+'',
+'    return v_html;',
 'end;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_plug_display_condition_type=>'EXISTS'
+,p_plug_display_when_condition=>'select 1 from compras where id_compra = fn_clean_num(:P28_ID_COMPRA) and id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(43000000000001181)
@@ -27014,10 +27551,10 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
-,p_plug_source=>'RETURN fn_imprimir_retencion(:P31_ID_COMPRA);'
+,p_plug_source=>'RETURN fn_imprimir_retencion(:P31_ID_COMPRA, nvl(:P31_TIPO, ''IVA''));'
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
-,p_ajax_items_to_submit=>'P31_ID_COMPRA'
+,p_ajax_items_to_submit=>'P31_ID_COMPRA,P31_TIPO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001200)
@@ -27025,6 +27562,46 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000001201)
 ,p_display_as=>'NATIVE_HIDDEN'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001221)
+,p_name=>'P31_TIPO'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001201)
+,p_display_as=>'NATIVE_HIDDEN'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001250)
+,p_process_sequence=>5
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida empresa del comprobante'
+,p_static_id=>'valida-empresa-retencion'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id  number := nullif(fn_clean_num(:P31_ID_COMPRA), 0);',
+'    v_emp number;',
+'begin',
+'    if v_id is null then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select id_empresa into v_emp',
+'          from compras',
+'         where id_compra = v_id;',
+'    exception',
+'        when no_data_found then',
+'            raise_application_error(-20003, ''No tiene permisos sobre este comprobante.'');',
+'    end;',
+'',
+'    -- fn_imprimir_retencion solo recibe el id: sin esta guarda, un id ajeno en la',
+'    -- URL imprimiria el comprobante de otra empresa.',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        raise_application_error(-20003, ''No tiene permisos sobre este comprobante.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000001202)

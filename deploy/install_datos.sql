@@ -121,6 +121,142 @@ when matched then update set descripcion = s.descripcion, activo = 'Y'
 commit;
 /
 
+-- -----------------------------------------------------------------------------
+-- Catalogo de conceptos de retencion de ISLR (tabla oficial del SENIAT,
+-- Decreto 1.808, G.O. 43.140, UT = 43 Bs).
+--
+-- Por que existe aqui: sin catalogo no se puede calcular el ISLR ni imprimir su
+-- comprobante, y una tarifa o un sustraendo mal puestos son dinero mal retenido
+-- en cada compra. Hasta el 2026-11-19 el catalogo solo lo sembraba la migracion
+-- deploy/migrations/20261119_islr_conceptos_seed.sql, asi que una INSTALACION
+-- LIMPIA quedaba con ISLR_CONCEPTOS vacia y la compra no podia retener.
+--
+-- Es el MISMO merge que la migracion (alli esta el detalle de cada fila y la
+-- validacion contra el PDF). Aqui va sin "alter session" porque install_datos
+-- se ejecuta dentro del esquema.
+--
+-- Los 13 de tarifa plana van ACTIVO='S'; los 3 de formula especial (040 primas
+-- de seguro, 065 y 067 tarjetas de credito) van ACTIVO='N': se ven en el
+-- catalogo pero no se pueden elegir. El resto de conceptos de tarifa plana del
+-- PDF (fletes, publicidad, regalias, asistencia tecnica, intereses, premios...)
+-- NO se siembra: espera la revision del dueno.
+--
+-- OJO: el SET va en la misma linea del UPDATE. importar_export.py descarta toda
+-- linea que empiece por "set " y el MERGE se quedaria sin el SET (ORA-00971).
+--
+-- Idempotente: MERGE por CODIGO.
+-- -----------------------------------------------------------------------------
+merge into islr_conceptos t
+using (
+    -- Honorarios profesionales (9.1)
+    select '002' as codigo, '9.1.b' as numeral,
+           'HONORARIOS PROFESIONALES' as descripcion,
+           100 as base_pct, 3 as tarifa, 2.5 as sustraendo_ut,
+           'J' as tipo_persona, 'S' as domiciliado, 'S' as activo
+      from dual
+    union all
+    select '003', '9.1.a', 'HONORARIOS PROFESIONALES',
+           90, 34, 0, 'N', 'S', 'S' from dual
+    -- Comisiones mercantiles y otras (9.2.b)
+    union all
+    select '018', '9.2.b', 'COMISIONES MERCANTILES Y OTRAS',
+           100, 3, 2.5, 'J', 'S', 'S' from dual
+    union all
+    select '019', '9.2.b', 'COMISIONES MERCANTILES Y OTRAS',
+           100, 34, 0, 'N', 'S', 'S' from dual
+    -- Servicios (9.11)
+    union all
+    select '053', '9.11', 'SERVICIOS',
+           100, 1, 0.8333, 'J', 'S', 'S' from dual
+    union all
+    select '054', '9.11', 'SERVICIOS',
+           100, 34, 0, 'N', 'S', 'S' from dual
+    union all
+    select '055', '9.11', 'SERVICIOS',
+           100, 2, 0, 'J', 'N', 'S' from dual
+    -- Arrendamiento de bienes inmuebles (9.12)
+    union all
+    select '057', '9.12', 'ARRENDAMIENTO BIENES INMUEBLES',
+           100, 3, 2.5, 'J', 'S', 'S' from dual
+    union all
+    select '058', '9.12', 'ARRENDAMIENTO BIENES INMUEBLES',
+           100, 34, 0, 'N', 'S', 'S' from dual
+    union all
+    select '059', '9.12', 'ARRENDAMIENTO BIENES INMUEBLES',
+           100, 5, 0, 'J', 'N', 'S' from dual
+    -- Arrendamiento de bienes muebles (9.13)
+    union all
+    select '061', '9.13', 'ARRENDAMIENTO BIENES MUEBLES',
+           100, 3, 2.5, 'J', 'S', 'S' from dual
+    union all
+    select '062', '9.13', 'ARRENDAMIENTO BIENES MUEBLES',
+           100, 34, 0, 'N', 'S', 'S' from dual
+    union all
+    select '063', '9.13', 'ARRENDAMIENTO BIENES MUEBLES',
+           100, 5, 0, 'J', 'N', 'S' from dual
+    -- Formula especial: se siembran inactivos (no se pueden elegir)
+    union all
+    select '040', '9.8', 'PRIMAS DE SEGURO (requiere captura manual)',
+           30, 10, 0, null, null, 'N' from dual
+    union all
+    select '065', '9.14', 'TARJETAS DE CREDITO (requiere captura manual)',
+           100, 3, 0, null, null, 'N' from dual
+    union all
+    select '067', '9.14', 'TARJETAS DE CREDITO (requiere captura manual)',
+           100, 5, 0, null, null, 'N' from dual
+) s
+on (t.codigo = s.codigo)
+when matched then update set
+    t.numeral       = s.numeral,
+    t.descripcion   = s.descripcion,
+    t.actividad     = s.descripcion,
+    t.base_pct      = s.base_pct,
+    t.tarifa        = s.tarifa,
+    t.sustraendo_ut = s.sustraendo_ut,
+    t.tipo_persona  = s.tipo_persona,
+    t.domiciliado   = s.domiciliado,
+    t.activo        = s.activo
+when not matched then
+    insert (codigo, numeral, descripcion, actividad, base_pct, tarifa,
+            sustraendo_ut, tipo_persona, domiciliado, activo)
+    values (s.codigo, s.numeral, s.descripcion, s.descripcion, s.base_pct,
+            s.tarifa, s.sustraendo_ut, s.tipo_persona, s.domiciliado, s.activo)
+/
+
+commit;
+/
+
+-- Comprobacion del catalogo: 16 conceptos sembrados y 13 elegibles. Se cuentan
+-- SOLO los 16 codigos de esta siembra, para que agregar conceptos en otra
+-- migracion no haga abortar una reinstalacion.
+declare
+    v_n number;
+begin
+    select count(*) into v_n from islr_conceptos
+     where codigo in ('002','003','018','019','040','053','054','055','057',
+                      '058','059','061','062','063','065','067');
+    if v_n <> 16 then
+        raise_application_error(-20112, 'el catalogo de ISLR tiene ' || v_n || ' de 16 conceptos');
+    end if;
+
+    select count(*) into v_n from islr_conceptos
+     where codigo in ('002','003','018','019','040','053','054','055','057',
+                      '058','059','061','062','063','065','067')
+       and activo = 'S';
+    if v_n <> 13 then
+        raise_application_error(-20112, 'hay ' || v_n || ' de 16 conceptos de ISLR activos (esperado 13)');
+    end if;
+
+    -- El sustraendo es lo que mas caro sale si se redondea: 0,83 UT en vez de
+    -- 0,8333 son 35,69 Bs en vez de 35,83 en cada compra al 1 %.
+    select count(*) into v_n from islr_conceptos
+     where codigo = '053' and tarifa = 1 and abs(sustraendo_ut - 0.8333) < 0.0001;
+    if v_n <> 1 then
+        raise_application_error(-20112, 'el concepto 053 no quedo con 1 % y 0,8333 UT');
+    end if;
+end;
+/
+
 -- Constancia: los siete roles, la empresa y el usuario inicial.
 select codigo_rol, nombre_rol from syn_roles order by codigo_rol;
 /

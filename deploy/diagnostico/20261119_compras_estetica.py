@@ -5,7 +5,7 @@ tenian la cabecera azul del estandar (27, 3, 5, 8) y en la 29 los dos primeros
 campos ocupaban la fila entera.
 
   E1  la 27 pinta la cabecera de la lista en azul (gradiente del estandar)
-  E2  la 28 pinta la tarjeta «Compra» con cabecera azul (antes la ocultaba)
+  E2  la 28 deja el titulo al tema y pinta la banda de la compra (folio, estado, fecha)
   E3  la 28 mantiene la rejilla de dos columnas (Proveedor y Tipo en la misma fila)
   E4  la 29 pinta su cabecera en azul
   E5  la 29 pone Producto y Descripcion en la misma fila (media fila cada uno)
@@ -171,13 +171,17 @@ try:
     time.sleep(10)
     print("  abrir compra:", abierto)
 
-    # E2 y E3: la compra (28)
-    grad28 = nav.js('(function(){var h=document.querySelector(".t-Region-header");'
-                    'if(!h) return "SIN CABECERA";'
-                    'return getComputedStyle(h).backgroundImage.slice(0,40) + "|" + h.innerText.trim()'
-                    ' + "|" + (document.getElementById("P28_ID_PROVEEDOR") ? "CON ITEMS" : "SIN ITEMS");})()')
-    comprobar("E2 la 28 pinta la tarjeta con cabecera azul",
-              "linear-gradient" in str(grad28) and "CON ITEMS" in str(grad28), grad28)
+    # E2 y E3: la compra (28). Desde el 2026-11-20 la 28 NO lleva el degradado azul:
+    # el dueno pidio una banda con folio/proveedor/estado/fecha y el titulo al tema.
+    cab28 = nav.js('(function(){var h=document.querySelector(".t-Region-header");'
+                   'var c=document.querySelector(".spx-cab");'
+                   'if(!h) return "SIN CABECERA";'
+                   'return getComputedStyle(h).backgroundImage.slice(0,20) + "|"'
+                   ' + (c ? "CON BANDA" : "SIN BANDA") + "|"'
+                   ' + (document.getElementById("P28_ID_PROVEEDOR") ? "CON ITEMS" : "SIN ITEMS");})()')
+    comprobar("E2 la 28 deja el titulo al tema y pinta la banda de la compra",
+              "none" in str(cab28) and "CON BANDA" in str(cab28) and "CON ITEMS" in str(cab28),
+              cab28)
 
     fila28 = nav.js('(function(){var a=document.getElementById("P28_ID_PROVEEDOR"),'
                     'b=document.getElementById("P28_TIPO_DOCUMENTO");'

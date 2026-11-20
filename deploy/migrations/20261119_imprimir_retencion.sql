@@ -1,6 +1,9 @@
 -- =============================================================================
 -- 20261119_imprimir_retencion.sql
 --
+-- SUPERADA por 20261120_imprimir_retencion_v2.sql: deja la version de un solo
+-- argumento; no re-ejecutar.
+--
 -- El comprobante de retencion de IVA en papel: fn_imprimir_retencion(compra)
 -- devuelve el HTML listo para imprimir (o guardar como PDF) y la pagina 31 lo
 -- sirve. Se llega desde el boton «Imprimir comprobante» de la compra (28).

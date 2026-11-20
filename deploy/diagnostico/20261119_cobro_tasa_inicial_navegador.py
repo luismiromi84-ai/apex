@@ -53,6 +53,9 @@ cur.execute("select max(tasa_cambio) keep (dense_rank last order by fecha_vigenc
             "where moneda_origen = :m and moneda_destino = 'VES' and tipo_tasa = 'REAL' "
             "and fecha_vigencia < trunc(sysdate) + 1", m=fac[1])
 tasa = cur.fetchone()[0]
+# «Hoy» se toma de la BASE (UTC): con la fecha del equipo, una corrida pasada la
+# medianoche local fallaba por la zona horaria, no por la app.
+hoy = cur.execute("select to_char(sysdate, 'DD/MM/YYYY') from dual").fetchone()[0]
 print("  factura:", fac, " tasa de la tabla:", tasa)
 con.close()
 
@@ -153,9 +156,8 @@ try:
     comprobar("T6 la tasa se ve con sus decimales",
               len(str(t).split(".")[-1]) >= 4, t)
 
-    # T4: la fecha del cobro nace con la de hoy
-    import datetime
-    hoy = datetime.date.today().strftime("%d/%m/%Y")
+    # T4: la fecha del cobro nace con la de hoy (el sysdate de la base, leido antes
+    # de cerrar la conexion).
     fecha_item = en_if('return apex.item("P25_FECHA_COBRO").getValue();')
     comprobar("T4 la fecha del cobro nace con la de hoy", str(fecha_item) == hoy,
               "%s vs %s" % (fecha_item, hoy))

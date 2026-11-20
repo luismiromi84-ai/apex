@@ -21,10 +21,14 @@ create or replace package body pkg_compras as
         p_id_compra_origen     in number default null,
         p_observaciones        in varchar2 default null,
         p_id_forma_pago        in number default null,
+        p_id_concepto_islr     in number default -1,
         p_usuario              in varchar2) is
         v_estado    varchar2(20);
         v_prov_emp  number;
+        v_prov_con  number;
+        v_con       number;
         v_tasa      number;
+        v_tasa_ant  number;
         v_pct       number;
         v_fecha     date;
         v_folio     varchar2(50);
@@ -39,7 +43,7 @@ create or replace package body pkg_compras as
         end if;
 
         begin
-            select id_empresa into v_prov_emp
+            select id_empresa, id_concepto_islr into v_prov_emp, v_prov_con
               from proveedores where id_proveedor = p_id_proveedor;
         exception
             when no_data_found then
@@ -121,15 +125,28 @@ create or replace package body pkg_compras as
         end if;
 
         if p_id_compra is null then
+            -- Concepto de ISLR con CENTINELA (ver la spec): -1 o nulo = no se envio y
+            -- se HEREDA del proveedor; 0 = sin concepto; otro = ese concepto. Un nulo
+            -- no puede significar a la vez "borralo" y "no lo mande": el llamador que
+            -- no pasa el parametro borraba el concepto heredado en cada guardado y el
+            -- comprobante de ISLR dejaba de emitirse en silencio.
+            v_con := p_id_concepto_islr;
+            if v_con is null or v_con = -1 then
+                v_con := v_prov_con;
+            elsif v_con = 0 then
+                v_con := null;
+            end if;
+
             begin
                 insert into compras (id_empresa, id_proveedor, tipo_documento, folio_factura,
                                      nro_control, fecha_emision, cod_moneda, tipo_cambio,
                                      porcentaje_retencion, estado, observaciones,
-                                     id_compra_origen, id_forma_pago, creado_por)
+                                     id_compra_origen, id_forma_pago, id_concepto_islr,
+                                     creado_por)
                 values (p_id_empresa, p_id_proveedor, nvl(p_tipo_documento, 'FAC'),
                         v_folio, v_control, v_fecha, nvl(p_cod_moneda, 'VES'),
                         v_tasa, v_pct, 'BORRADOR', p_observaciones,
-                        p_id_compra_origen, p_id_forma_pago, p_usuario)
+                        p_id_compra_origen, p_id_forma_pago, v_con, p_usuario)
                 returning id_compra into p_id_compra;
             exception
                 when dup_val_on_index then
@@ -138,7 +155,8 @@ create or replace package body pkg_compras as
             end;
         else
             begin
-                select estado into v_estado from compras where id_compra = p_id_compra;
+                select estado, tipo_cambio into v_estado, v_tasa_ant
+                  from compras where id_compra = p_id_compra;
             exception
                 when no_data_found then
                     raise_application_error(-20085, 'La compra ' || p_id_compra || ' no existe.');
@@ -155,23 +173,62 @@ create or replace package body pkg_compras as
                        tipo_cambio = v_tasa, porcentaje_retencion = v_pct,
                        observaciones = p_observaciones, id_compra_origen = p_id_compra_origen,
                        id_forma_pago = p_id_forma_pago,
+                       -- Centinela: -1 (el defecto) deja el concepto que ya tenia la
+                       -- compra; 0 o nulo lo borran (sin concepto); otro pone ese
+                       -- concepto. Es lo que cierra la fuga de guardar un borrador y
+                       -- perder el ISLR.
+                       id_concepto_islr = case when p_id_concepto_islr = -1
+                                             then id_concepto_islr
+                                             else nullif(p_id_concepto_islr, 0) end,
                        modificado_por = p_usuario, fecha_modificacion = systimestamp
-                 where id_compra = p_id_compra;
+                 where id_compra = p_id_compra
+                   -- Defensa en profundidad: el documento tiene que ser de la empresa
+                   -- que se esta guardando. El id llega del navegador y no esta
+                   -- protegido; sin este predicado un POST con el id de una compra ajena
+                   -- la reescribia y le cambiaba la empresa.
+                   and id_empresa = p_id_empresa;
+                if sql%rowcount = 0 then
+                    raise_application_error(-20003,
+                        'No tiene permisos sobre esta compra.');
+                end if;
             exception
                 when dup_val_on_index then
                     raise_application_error(-20080,
                         'Ya existe la factura ' || v_folio || ' de este proveedor.');
             end;
+
+            -- Si la TASA de la cabecera cambio en un borrador, el detalle se queda con
+            -- la vieja y los dos comprobantes salen en monedas distintas: el de IVA usa
+            -- la tasa de la LINEA (compras_det.tasa_cambio_aplicada) y el de ISLR la de
+            -- la CABECERA. Se reprecian las lineas del borrador en el mismo guardado;
+            -- un documento que ya no es BORRADOR no llega aqui (arriba se corta).
+            if nvl(v_tasa_ant, 1) <> nvl(v_tasa, 1) then
+                update compras_det set tasa_cambio_aplicada = v_tasa,
+                       subtotal_bs = round(nvl(subtotal_linea, 0) * v_tasa, 2),
+                       total_bs = round(nvl(total_linea, 0) * v_tasa, 2)
+                 where id_compra = p_id_compra;
+            end if;
         end if;
     end prc_guardar_compra;
 
     procedure prc_registrar_compra(p_id_compra in number, p_usuario in varchar2) is
-        v_estado varchar2(20);
-        v_lineas number;
-        v_idret  number;
+        v_estado  varchar2(20);
+        v_tipo    varchar2(10);
+        v_empresa number;
+        v_lineas  number;
+        v_idret   number;
     begin
-        select estado into v_estado
+        select estado, nvl(tipo_documento, 'FAC'), id_empresa
+          into v_estado, v_tipo, v_empresa
           from compras where id_compra = p_id_compra for update;
+
+        -- La compra es de OTRA empresa si el usuario no la administra. Se valida en el
+        -- package y ANTES de tocar nada: registrar quema la numeracion de ESA empresa
+        -- (los comprobantes de IVA e ISLR consumen RETENCION_CONTADOR) y el id llega
+        -- del navegador sin proteger. Los procesos de la pagina solo miran el rol.
+        if not fn_usuario_empresa_valida(p_usuario, v_empresa) then
+            raise_application_error(-20003, 'No tiene permisos sobre esta compra.');
+        end if;
 
         if v_estado <> 'BORRADOR' then
             raise_application_error(-20083,
@@ -188,17 +245,31 @@ create or replace package body pkg_compras as
                fecha_modificacion = systimestamp
          where id_compra = p_id_compra;
 
-        pkg_retenciones.prc_emitir(p_id_compra, v_idret, p_usuario);
+        -- SOLO LAS FACTURAS EMITEN COMPROBANTE (decision del dueno, 2026-11-19): una
+        -- nota de credito o de debito no emite, no consume numeracion y no toca el
+        -- comprobante de la factura original. Antes la nota emitia un comprobante de
+        -- IVA por el importe de la nota y en positivo, lo que sobre-retiene.
+        if v_tipo = 'FAC' then
+            pkg_retenciones.prc_emitir(p_id_compra, v_idret, p_usuario);
+            pkg_retenciones.prc_emitir_islr(p_id_compra, v_idret, p_usuario);
+        end if;
     exception
         when no_data_found then
             raise_application_error(-20085, 'La compra ' || p_id_compra || ' no existe.');
     end prc_registrar_compra;
 
     procedure prc_anular_compra(p_id_compra in number, p_usuario in varchar2) is
-        v_estado varchar2(20);
+        v_estado  varchar2(20);
+        v_empresa number;
     begin
-        select estado into v_estado
+        select estado, id_empresa into v_estado, v_empresa
           from compras where id_compra = p_id_compra for update;
+
+        -- Anular es escritura: sin esta guarda un POST con el id de una compra ajena
+        -- la anulaba (y de paso los comprobantes de retencion de esa empresa).
+        if not fn_usuario_empresa_valida(p_usuario, v_empresa) then
+            raise_application_error(-20003, 'No tiene permisos sobre esta compra.');
+        end if;
 
         if v_estado = 'ANULADA' then
             return;

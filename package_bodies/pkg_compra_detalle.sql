@@ -20,6 +20,7 @@ create or replace package body pkg_compra_detalle as
         p_porcentaje_impuesto  in number,
         p_usuario              in varchar2) is
         v_estado varchar2(20);
+        v_id_emp number;
         v_tasa   number;
         v_num    number;
         v_bruto  number;
@@ -27,9 +28,17 @@ create or replace package body pkg_compra_detalle as
         v_base   number;
         v_iva    number;
         v_total  number;
+        v_compra_linea number;
     begin
-        select estado, nvl(tipo_cambio, 1) into v_estado, v_tasa
+        select estado, nvl(tipo_cambio, 1), id_empresa into v_estado, v_tasa, v_id_emp
           from compras where id_compra = p_id_compra;
+
+        -- El id de la compra llega de la pantalla (P29_ID_COMPRA no esta protegido):
+        -- sin esta comprobacion un POST manipulado agregaria una linea a la compra de
+        -- OTRA empresa. Se valida aqui, no solo en el proceso de la pagina.
+        if not fn_usuario_empresa_valida(p_usuario, v_id_emp) then
+            raise_application_error(-20003, 'No tiene permisos sobre esta compra.');
+        end if;
 
         if v_estado <> 'BORRADOR' then
             raise_application_error(-20083,
@@ -73,6 +82,21 @@ create or replace package body pkg_compra_detalle as
                     round(v_base * v_tasa, 2), round(v_total * v_tasa, 2), p_usuario)
             returning id_detalle into p_id_detalle;
         else
+            -- Editar una linea: ademas de la empresa de la compra hay que comprobar
+            -- que la linea sea DE ESA compra (si no, con una compra propia se
+            -- reescribiria una linea de otra).
+            begin
+                select id_compra into v_compra_linea
+                  from compras_det
+                 where id_detalle = p_id_detalle;
+            exception
+                when no_data_found then
+                    raise_application_error(-20085, 'La linea ' || p_id_detalle || ' no existe.');
+            end;
+            if v_compra_linea <> p_id_compra then
+                raise_application_error(-20003, 'La linea no es de esta compra.');
+            end if;
+
             update compras_det set num_linea = nvl(p_num_linea, num_linea),
                    id_producto_servicio = p_id_producto_servicio,
                    descripcion = p_descripcion,
@@ -93,11 +117,24 @@ create or replace package body pkg_compra_detalle as
 
     procedure eliminar_detalle(p_id_detalle in number, p_usuario in varchar2) is
         v_estado varchar2(20);
+        v_id_emp number;
     begin
-        select c.estado into v_estado
-          from compras_det d
-          join compras c on c.id_compra = d.id_compra
-         where d.id_detalle = p_id_detalle;
+        begin
+            select c.estado, c.id_empresa into v_estado, v_id_emp
+              from compras_det d
+              join compras c on c.id_compra = d.id_compra
+             where d.id_detalle = p_id_detalle;
+        exception
+            when no_data_found then
+                raise_application_error(-20085, 'La linea ' || p_id_detalle || ' no existe.');
+        end;
+
+        -- El id de la linea llega de la pantalla (item oculto, no protegido): sin esta
+        -- comprobacion un POST manipulado borraria la linea de una compra de OTRA
+        -- empresa. La propiedad se valida aqui, no solo en el proceso de la pagina.
+        if not fn_usuario_empresa_valida(p_usuario, v_id_emp) then
+            raise_application_error(-20003, 'No tiene permisos sobre esta linea.');
+        end if;
 
         if v_estado <> 'BORRADOR' then
             raise_application_error(-20083,
@@ -105,9 +142,6 @@ create or replace package body pkg_compra_detalle as
         end if;
 
         delete from compras_det where id_detalle = p_id_detalle;
-    exception
-        when no_data_found then
-            raise_application_error(-20085, 'La linea ' || p_id_detalle || ' no existe.');
     end eliminar_detalle;
 
     procedure copiar_desde_compra(p_id_compra in number, p_id_compra_origen in number,

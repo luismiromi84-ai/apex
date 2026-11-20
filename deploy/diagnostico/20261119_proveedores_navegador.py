@@ -9,6 +9,8 @@
   P7  una persona natural (Venezolano) se guarda: V-4666778-9 es un RIF valido
       (2026-11-19; antes el combo pasaba la letra «V» como tipo de persona y la
       validacion lo rechazaba siempre)
+  P8  el concepto de ISLR por defecto se elige en el dialogo, se guarda y vuelve al
+      editar (2026-11-20: sin item en la 23 solo se podia rellenar por SQL)
 
 Uso: python deploy/diagnostico/20261119_proveedores_navegador.py
 Sale con codigo 1 si hay fallas. Crea y borra su propio usuario y proveedor.
@@ -67,6 +69,9 @@ comprobar("la 23 guarda en PROVEEDORES", cur.fetchone()[0] == 1)
 cur.execute("""select count(*) from apex_application_list_entries
                 where application_id=100 and static_id='proveedores'""")
 comprobar("el menu trae Proveedores", cur.fetchone()[0] == 1)
+cur.execute("select max(id_concepto) from islr_conceptos where codigo = '063'")
+CON_ID = cur.fetchone()[0]
+comprobar("el catalogo de ISLR tiene el concepto 063 para la prueba", CON_ID is not None)
 con.close()
 
 proc = subprocess.Popen([EDGE, "--headless=new", "--disable-gpu", "--no-first-run",
@@ -150,12 +155,16 @@ try:
     js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'
        'return (x.getAttribute("data-otel-label")||"")==="BTN_NUEVO_PROVEEDOR";});if(b){b.click();}})()')
     time.sleep(8)
+    # P8: el concepto de ISLR por defecto (063, tarifa plana del 5 %).
+    con_id = CON_ID
     en_if('apex.item("P23_RAZON_SOCIAL").setValue(' + json.dumps(NOMBRE) + ');'
           'apex.item("P23_RIF").setValue(' + json.dumps(RIF) + ');'
           'apex.item("P23_TIPO_RIF").setValue("J");'
           'apex.item("P23_EMAIL").setValue("proveedor@prueba.local");'
           'apex.item("P23_TELEFONO").setValue("0414-1234567");'
-          'apex.item("P23_DIAS_CREDITO").setValue(15);return "OK";')
+          'apex.item("P23_DIAS_CREDITO").setValue(15);'
+          'apex.item("P23_ID_CONCEPTO_ISLR").setValue(' + json.dumps(str(con_id)) + ');'
+          'return "OK";')
     time.sleep(2)
     js('(function(){var d=document.querySelector("iframe").contentDocument;'
        'var b=d.querySelector(\'[data-otel-label="BTN_GUARDAR_PROVEEDOR"]\');if(b){b.click();}})()')
@@ -166,7 +175,8 @@ try:
     cur = con.cursor()
     cur.execute("alter session set current_schema = WKSP_SYPEXWS")
     cur.execute("""select id_proveedor, id_empresa, rif, razon_social, tipo_persona, cod_pais,
-                          retener_iva, porcentaje_retencion, es_spe, dias_credito, estado
+                          retener_iva, porcentaje_retencion, es_spe, dias_credito, estado,
+                          id_concepto_islr
                      from proveedores where razon_social = :n""", n=NOMBRE)
     fila = cur.fetchone()
     comprobar("P2 el proveedor quedo guardado", fila is not None)
@@ -175,6 +185,7 @@ try:
         comprobar("P3 retencion 75 por defecto y los dias tecleados",
                   float(fila[7]) == 75 and int(fila[9]) == 15, (fila[7], fila[9]))
         comprobar("P3 nace ACTIVO y sin SPE", fila[10] == "ACTIVO" and fila[8] == "N", fila)
+        comprobar("P8 el concepto de ISLR se guarda", fila[11] == con_id, (fila[11], con_id))
 
     # P2b: la lista muestra el proveedor recien creado
     texto = js("document.body.innerText") or ""
@@ -191,10 +202,12 @@ try:
     time.sleep(8)
     valores = en_if('return JSON.stringify({n: apex.item("P23_RAZON_SOCIAL").getValue(),'
                     ' r: apex.item("P23_RIF").getValue(),'
-                    ' d: apex.item("P23_DIAS_CREDITO").getValue()});')
+                    ' d: apex.item("P23_DIAS_CREDITO").getValue(),'
+                    ' c: apex.item("P23_ID_CONCEPTO_ISLR").getValue()});')
     print("  dialogo al editar:", valores)
     comprobar("P4 el dialogo trae los valores guardados",
               NOMBRE in str(valores) and RIF in str(valores) and "15" in str(valores), valores)
+    comprobar("P8 al editar vuelve el concepto de ISLR", str(con_id) in str(valores), valores)
 
     # se cambia el plazo y se guarda
     en_if('apex.item("P23_DIAS_CREDITO").setValue(30);return "OK";')
@@ -203,6 +216,8 @@ try:
     time.sleep(10)
     cur.execute("select dias_credito from proveedores where razon_social = :n", n=NOMBRE)
     comprobar("P4 la edicion guarda el cambio", int(cur.fetchone()[0]) == 30)
+    cur.execute("select id_concepto_islr from proveedores where razon_social = :n", n=NOMBRE)
+    comprobar("P8 la edicion conserva el concepto de ISLR", cur.fetchone()[0] == con_id)
 
     # P5: RIF invalido
     js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'

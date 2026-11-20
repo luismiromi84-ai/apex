@@ -167,7 +167,10 @@ try:
                 'var d=f.contentWindow.document;'
                 'var s=d.getElementById("P25_ID_FACTURA");'
                 'return s ? s.value : "SIN CAMPO";})()')
-    comprobar("C3b el dialogo abre con la factura cargada", str(cobrable[1]) in str(dentro),
+    # P25_ID_FACTURA es una lista de seleccion desde el 2026-11-18: su valor es el
+    # ID de la factura, no el folio. Se compara con el id de la fila cobrable.
+    comprobar("C3b el dialogo abre con la factura cargada",
+              str(cobrable[0]) in str(dentro),
               "(" + str(dentro) + ")")
     js('apex.navigation.dialog.close(true);')
     time.sleep(2)

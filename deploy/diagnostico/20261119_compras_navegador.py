@@ -41,8 +41,11 @@ cur = con.cursor()
 cur.execute("alter session set current_schema = WKSP_SYPEXWS")
 
 # limpieza previa
-cur.execute("delete from retenciones_iva where id_compra in (select id_compra from compras where folio_factura = :f)", f=FOLIO)
-con.commit()
+for _sql in ("delete from retenciones_det where id_compra in (select id_compra from compras where folio_factura = :f)",
+             "delete from retenciones where id_compra in (select id_compra from compras where folio_factura = :f)",
+             "delete from retenciones_iva where id_compra in (select id_compra from compras where folio_factura = :f)"):
+    cur.execute(_sql, f=FOLIO)
+    con.commit()
 cur.execute("delete from compras_det where id_compra in "
             "(select id_compra from compras where folio_factura = :f)", f=FOLIO)
 con.commit()
@@ -355,9 +358,9 @@ try:
         comprobar("C4 tras registrar se vuelve a la lista",
                   "compras" in destino.lower(), destino[-60:])
 
-        cur.execute("""select numero_comprobante, base_imponible_bs, iva_causado_bs,
-                              iva_retenido_bs, estado
-                         from retenciones_iva where id_compra = :i""", i=id_compra)
+        cur.execute("""select numero_comprobante, base_imponible_bs, impuesto_bs,
+                              retenido_bs, estado
+                         from retenciones where id_compra = :i and tipo = 'IVA'""", i=id_compra)
         ret = cur.fetchone()
         print("  retencion:", ret)
         comprobar("C4 se emitio el comprobante", ret is not None)
@@ -386,9 +389,12 @@ try:
 
         # C7 (2026-11-19): el resumen de la compra (base, exento, IVA, retención, neto)
         texto28 = js("document.body.innerText") or ""
-        faltan = [c for c in ("Base imponible", "Monto exento", "IVA", "Total de la factura",
-                              "IVA retenido", "Neto a pagar") if c not in texto28]
-        comprobar("C7 el resumen de la compra sale con sus cinco conceptos",
+        # 2026-11-20: el resumen paso de tabla a cuatro tarjetas (Subtotal, IVA,
+        # Retencion, Total) con la tasa y el neto debajo.
+        texto28_may = texto28.upper()
+        faltan = [c for c in ("SUBTOTAL", "IVA", "RETENCION IVA", "TOTAL",
+                              "NETO A PAGAR") if c not in texto28_may]
+        comprobar("C7 el resumen de la compra sale con sus cuatro tarjetas y el neto",
                   not faltan, faltan)
 
         # C8 (2026-11-19): el boton «Imprimir comprobante» lleva al comprobante
@@ -398,7 +404,8 @@ try:
         time.sleep(10)
         cuerpo_ret = js("document.body.innerText") or ""
         comprobar("C8 el comprobante de retención se imprime",
-                  clic_imp == "CLIC" and "COMPROBANTE DE RETENCION" in cuerpo_ret,
+                  clic_imp == "CLIC" and "COMPROBANTE DE RETENCI" in cuerpo_ret.upper()
+                  and "I.V.A." in cuerpo_ret,
                   (clic_imp, cuerpo_ret[:120]))
     con.close()
 finally:
@@ -406,8 +413,11 @@ finally:
     con = oracledb.connect(user=c["DB_USER"], password=c["DB_PASSWORD"], dsn=CONNECT_STRING)
     cur = con.cursor()
     cur.execute("alter session set current_schema = WKSP_SYPEXWS")
-    cur.execute("delete from retenciones_iva where id_compra in (select id_compra from compras where folio_factura = :f)", f=FOLIO)
-    con.commit()
+    for _sql in ("delete from retenciones_det where id_compra in (select id_compra from compras where folio_factura = :f)",
+                 "delete from retenciones where id_compra in (select id_compra from compras where folio_factura = :f)",
+                 "delete from retenciones_iva where id_compra in (select id_compra from compras where folio_factura = :f)"):
+        cur.execute(_sql, f=FOLIO)
+        con.commit()
     cur.execute("delete from compras_det where id_compra in "
                 "(select id_compra from compras where folio_factura = :f)", f=FOLIO)
     con.commit()
@@ -418,7 +428,7 @@ finally:
     cur.execute("""merge into retencion_contador t
                    using (select 1 as id_empresa, to_char(sysdate, 'YYYYMM') as periodo,
                                  nvl((select max(nvl(to_number(substr(numero_comprobante, 7)), 0))
-                                        from retenciones_iva
+                                        from retenciones
                                        where id_empresa = 1
                                          and substr(numero_comprobante, 1, 6) = to_char(sysdate, 'YYYYMM')),
                                      0) as ultimo
