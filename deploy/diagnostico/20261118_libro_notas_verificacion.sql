@@ -119,8 +119,9 @@ declare
     v_f3  varchar2(300);
 begin
     savepoint sp_v23;
-    -- Un cliente que NO sea agente de retencion: con uno que retiene, guardar la
-    -- factura exige el comprobante de 14 digitos (-20064) y esta prueba no va de eso.
+    -- Un cliente que NO sea agente de retencion: con uno que retiene la factura
+    -- guarda igual (el comprobante se pide despues, 2026-11-20), pero la prueba
+    -- no va de retencion y asi el IVA retenido no ensucia el saldo.
     select min(id_cliente) into v_cli
       from clientes
      where id_empresa = 1 and nvl(es_agente_retencion, 'N') <> 'S';

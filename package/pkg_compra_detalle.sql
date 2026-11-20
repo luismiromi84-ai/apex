@@ -27,8 +27,15 @@ create or replace package pkg_compra_detalle as
 
     procedure eliminar_detalle(p_id_detalle in number, p_usuario in varchar2);
 
+    -- Trae a la nota las lineas de la factura de compra que acredita. Es
+    -- IDEMPOTENTE (2026-11-20): se puede pulsar las veces que haga falta. Copia
+    -- solo las que faltan (se comparan por ID_DETALLE_ORIGEN), no borra ni
+    -- reescribe lo que ya hay, y las lineas tecleadas a mano se quedan.
+    --   p_agregadas   cuantas lineas se insertaron en esta pasada
+    --   p_ya_estaban  cuantas de la factura ya estaban en la nota
     procedure copiar_desde_compra(p_id_compra in number, p_id_compra_origen in number,
-                                  p_usuario in varchar2);
+                                  p_usuario in varchar2,
+                                  p_agregadas out number, p_ya_estaban out number);
 
 end pkg_compra_detalle;
 /

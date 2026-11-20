@@ -2,7 +2,8 @@
 """Pagina 19 «Administracion > Logo de empresa» (Paso B del plan de pestanas).
 
 Comprueba con navegador real (Edge headless por CDP) que:
-  - la 19 trae las pestanas «Logo actual» y «Subir logo»,
+  - la 19 trae la pestana «Logo corporativo» (desde el 2026-11-20 «Logo actual»
+    y «Subir logo» son una sola pestana),
   - el logo de la empresa se pinta en la pagina (data URI),
   - el archivo elegido en el input se sube y queda en EMPRESA_LOGO.
 Restaura el logo que hubiera antes (lo vuelve a guardar con el paquete, o lo
@@ -144,8 +145,9 @@ try:
     time.sleep(2)
 
     rds = js("(document.getElementById('43000000000000380_RDS')||{}).innerText || ''")
-    comprueba("Logo actual" in (rds or ""), "el selector tiene la pestana «Logo actual»")
-    comprueba("Subir logo" in (rds or ""), "el selector tiene la pestana «Subir logo»")
+    comprueba("Logo corporativo" in (rds or ""), "el selector tiene la pestana «Logo corporativo»")
+    comprueba("Subir logo" not in (rds or ""),
+              "«Subir logo» ya no es una pestana aparte (vive dentro de la del logo)")
     comprueba((js("document.body.innerHTML") or "").count("data:image") >= 1,
               "la pagina pinta el logo de la empresa como data URI")
 

@@ -9,7 +9,8 @@
 --   R5  la pagina 21 (Cliente) guarda ES_AGENTE_RETENCION y PORCENTAJE_RETENCION
 --   R6  la pagina 9 trae el % del cliente al elegirlo (accion dinamica)
 --   R7  la pagina 9 refresca el IVA retenido y manda el comprobante al package
---       (la obligatoriedad vive en pkg_facturacion, -20064, desde 2026-11-19)
+--       (el package NO lo exige al emitir desde 2026-11-20: el cliente lo emite
+--       despues de recibir la factura)
 --   R8  el comprobante sigue validado a 14 digitos
 --
 -- Todo el DML va dentro de un SAVEPOINT y se revierte.
@@ -152,8 +153,10 @@ begin
        and upper(when_element) = 'P9_ID_CLIENTE';
     if v_n = 0 then falla('R6: no hay evento de cambio sobre P9_ID_CLIENTE en la pagina 9'); end if;
 
-    -- R7: el proceso refresca el IVA retenido y manda el comprobante; la
-    -- obligatoriedad la aplica el package (-20064, 2026-11-19).
+    -- R7: el proceso refresca el IVA retenido y manda el comprobante. Desde el
+    -- 2026-11-20 el package NO exige el comprobante al emitir: en Venezuela lo
+    -- emite el cliente despues de recibir la factura, asi que al guardar todavia
+    -- no existe. Lo que se vigila aqui es que el numero se siga mandando.
     select count(*) into v_n from apex_application_page_proc
      where application_id = 100 and page_id = 9
        and process_name = 'Insert/update Facturacion'
@@ -166,8 +169,8 @@ begin
     select count(*) into v_n from all_source
      where owner = 'WKSP_SYPEXWS' and name = 'PKG_FACTURACION' and type = 'PACKAGE BODY'
        and text like '%20064%';
-    if v_n = 0 then
-        falla('R7: el package no exige el comprobante de retencion (-20064)');
+    if v_n > 0 then
+        falla('R7: el package sigue exigiendo el comprobante de retencion (-20064)');
     end if;
 
     rollback to sp_retiva;

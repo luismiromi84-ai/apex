@@ -145,9 +145,12 @@ try:
               "«Nueva empresa» esta disponible para limpiar el formulario")
 
     # 2) Editar tiene que cargar la empresa y dejar la pestana «Empresa» delante.
-    js("""(function(){var a=[...document.querySelectorAll('a')].find(function(x){
-             return /Editar/i.test(x.innerText) && /p19_id_empresa/i.test(x.getAttribute('href')||'');
-           }); if(a){a.click();}})()""")
+    #    OJO: desde el 2026-11-20 el enlace es SOLO el icono (como en Clientes),
+    #    asi que no se puede buscar por el texto «Editar».
+    js("""(function(){var a=document.querySelector('a.spx-editar[href*="p19_id_empresa"]');
+             if(!a){a=[...document.querySelectorAll('a')].find(function(x){
+               return /p19_id_empresa/i.test(x.getAttribute('href')||'');});}
+             if(a){a.click();}})()""")
     if not esperar('document.readyState === "complete" && !!window.apex', 30):
         sys.exit("no recargo al pulsar Editar")
     time.sleep(3)

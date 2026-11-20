@@ -171,7 +171,7 @@ try:
     # Con varias empresas, la pestana del logo no tiene empresa: sus botones no
     # salen hasta elegir una. Al elegirla en el selector, la pagina tiene que
     # reenviar y pintarlos (la condicion del boton es de servidor).
-    js("""(function(){var a=document.querySelector('.a-RDS-link[href="#R43000000000000435"]');
+    js("""(function(){var a=document.querySelector('.a-RDS-link[href="#R43000000000000434"]');
              if(a){a.click();}})()""")
     time.sleep(2)
     comprueba(js("document.querySelector('[data-otel-label=\"BTN_SUBIR_LOGO\"]') !== null"),

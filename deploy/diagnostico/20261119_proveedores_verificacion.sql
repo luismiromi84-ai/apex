@@ -12,6 +12,11 @@
 --   P8  el combo del RIF guarda la LETRA (J/V/E) y el proceso la convierte a J/N
 --   P9  el concepto de ISLR por defecto: item en la 23, carga, guardado con 0 -> null
 --       y lista de los activos con la tarifa en la etiqueta
+--   P10 la 22 trae la fila de indicadores (Proveedores/Activos/SPE/Retienen IVA)
+--   P11 «Retiene IVA» y «SPE» son insignias: chip en la columna y su clase
+--   P12 la 23 tiene las cuatro secciones, la direccion es area de texto y los
+--       flags de retencion/SPE nacen en «No» (2026-11-20)
+--   P13 la ficha del proveedor es contenido dinamico y el % se esconde con «No»
 --
 -- Todo el DML va dentro de un SAVEPOINT y se revierte.
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261119_proveedores_verificacion.sql
@@ -178,6 +183,83 @@ begin
        and lower(lov_definition) like '%tarifa%';
     if v_n <> 1 then
         falla('P9: la lista de conceptos no filtra los activos o no ensena la tarifa');
+    end if;
+
+    -- P10 (2026-11-20): fila de indicadores encima de la lista, con la empresa activa.
+    select count(*) into v_n
+      from apex_260100.apex_application_page_regions
+     where application_id = 100 and page_id = 22
+       and region_static_id = 'kpi-proveedores'
+       and source_type_plugin_static_id = 'NATIVE_DYNAMIC_CONTENT'
+       and function_body_language = 'PLSQL'
+       and instr(upper(region_source), 'F_EMPRESA_ACTIVA') > 0
+       and display_sequence < 10;
+    if v_n = 0 then falla('P10: la lista no tiene la fila de indicadores'); end if;
+
+    -- P11: las dos columnas son insignias y existe la columna de clase del chip.
+    select count(*) into v_n
+      from apex_260100.apex_application_page_ir_col
+     where application_id = 100 and page_id = 22
+       and column_alias in ('RETENCION', 'SPE')
+       and instr(html_expression, 'spx-chip') > 0;
+    if v_n <> 2 then
+        falla('P11: «Retiene IVA» y «SPE» no son insignias (' || v_n || '/2)');
+    end if;
+
+    select count(*) into v_n
+      from apex_260100.apex_application_page_ir_col
+     where application_id = 100 and page_id = 22
+       and column_alias in ('RETENCION_CLASE', 'SPE_CLASE');
+    if v_n <> 2 then
+        falla('P11: faltan las columnas de clase del chip (' || v_n || '/2)');
+    end if;
+
+    -- P12 (2026-11-20): el dialogo en cuatro secciones.
+    select count(*) into v_n
+      from apex_260100.apex_application_page_regions
+     where application_id = 100 and page_id = 23
+       and region_static_id in ('proveedor-form', 'proveedor-contacto', 'proveedor-fiscal',
+                                'proveedor-condiciones', 'proveedor-ficha', 'proveedor-acciones');
+    if v_n <> 6 then
+        falla('P12: faltan secciones en el dialogo (' || v_n || '/6)');
+    end if;
+
+    select count(*) into v_n from apex_260100.apex_application_page_items
+     where application_id = 100 and page_id = 23 and item_name = 'P23_DIRECCION'
+       and lower(display_as) = 'textarea';
+    if v_n <> 1 then
+        falla('P12: la direccion no es un area de texto');
+    end if;
+
+    -- Un cliente o un proveedor NUEVO no puede nacer como agente de retencion ni
+    -- como SPE: sin defecto la lista abre en «Si» y el alta queda marcada.
+    select count(*) into v_n from apex_260100.apex_application_page_items
+     where application_id = 100
+       and ((page_id = 21 and item_name in ('P21_ES_AGENTE_RETENCION', 'P21_ES_SPE'))
+         or (page_id = 23 and item_name in ('P23_RETENER_IVA', 'P23_ES_SPE')))
+       and nvl(item_default, '#') = 'N';
+    if v_n <> 4 then
+        falla('P12: los flags de retencion/SPE no nacen en No (' || v_n || '/4)');
+    end if;
+
+    -- P13: la ficha del proveedor y el % que se esconde con «No».
+    select count(*) into v_n
+      from apex_260100.apex_application_page_regions
+     where application_id = 100 and page_id = 23
+       and region_static_id = 'proveedor-ficha'
+       and source_type_plugin_static_id = 'NATIVE_DYNAMIC_CONTENT'
+       and instr(region_source, 'spx-ficha') > 0;
+    if v_n = 0 then
+        falla('P13: la ficha del proveedor no es contenido dinamico');
+    end if;
+
+    select count(*) into v_n
+      from apex_260100.apex_application_page_da_acts
+     where application_id = 100 and page_id = 23
+       and static_id = 'muestra-porcentaje-prov'
+       and execute_on_page_init = 'Yes';
+    if v_n = 0 then
+        falla('P13: el % de retencion no se esconde con «No»');
     end if;
 
     rollback to sp_prov;
