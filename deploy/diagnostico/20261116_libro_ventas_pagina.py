@@ -65,16 +65,36 @@ cur = con.cursor()
 cur.execute("alter session set current_schema = WKSP_SYPEXWS")
 
 # Total Bs del mes (misma formula del libro) y el de una factura concreta.
-cur.execute("""select round(nvl(sum(sg * nvl(d.total_bs, nvl(d.subtotal_bs, 0) + nvl(d.monto_impuesto, 0)
-                          * nvl(d.tasa_cambio_aplicada, f.tipo_cambio))), 0), 2)
-                 from (select f.id_factura, f.tipo_documento, f.estado, f.tipo_cambio,
-                              case when f.estado = 'ANULADA' then 0 else 1 end
-                                * case when f.tipo_documento = 'NC' then -1 else 1 end as sg
-                         from facturas f
-                        where f.id_empresa = 1
-                          and f.fecha_emision >= trunc(sysdate, 'MM')
-                          and f.fecha_emision <  add_months(trunc(sysdate, 'MM'), 1)) f
-                 left join facturas_det d on d.id_factura = f.id_factura""")
+# El libro es de compras y ventas: el total del mes suma las ventas y las compras
+# por cabecera a la tasa del documento, mas el IGTF de cabecera de las compras que
+# lo causan (empresa SPE + forma de pago que lo genera + documento en divisas).
+cur.execute("""select round(nvl(sum(sg * tot), 0), 2)
+                 from (
+                 select case when f.estado = 'ANULADA' then 0 else 1 end
+                          * case when f.tipo_documento = 'NC' then -1 else 1 end as sg,
+                        nvl(f.monto_total, 0) * nvl(f.tipo_cambio, 1) as tot
+                   from facturas f
+                  where f.id_empresa = 1
+                    and f.fecha_emision >= trunc(sysdate, 'MM')
+                    and f.fecha_emision <  add_months(trunc(sysdate, 'MM'), 1)
+                 union all
+                 select case when co.estado = 'ANULADA' then 0 else 1 end
+                          * case when co.tipo_documento = 'NC' then -1 else 1 end,
+                        nvl(co.monto_total, 0) * nvl(co.tipo_cambio, 1)
+                          + case when nvl(co.cod_moneda, 'VES') not in ('VES', 'BS')
+                                  and nvl(e.es_spe, 'N') = 'S'
+                                  and nvl(fp.genera_igtf, 'N') = 'S'
+                                 then round(round(nvl(co.monto_total, 0)
+                                            * nvl(fn_alicuota_igtf(co.id_empresa), 0) / 100, 2)
+                                            * nvl(co.tipo_cambio, 1), 2)
+                                 else 0 end
+                   from compras co
+                   join empresas e on e.id_empresa = co.id_empresa
+                   left join forma_pago fp on fp.id_forma_pago = co.id_forma_pago
+                  where co.id_empresa = 1
+                    and co.fecha_emision >= trunc(sysdate, 'MM')
+                    and co.fecha_emision <  add_months(trunc(sysdate, 'MM'), 1)
+                 )""")
 TOTAL_MES = float(cur.fetchone()[0])
 
 cur.execute("""select f.folio_factura,
@@ -186,7 +206,7 @@ try:
     # Los rotulos de la pantalla llevan espacio antes del simbolo («Base 16 %»), asi
     # que se comparan sin espacios (2026-11-18).
     texto_plano = re.sub(r"\s+", "", texto)
-    for col in ("Control", "Base 16%", "IVA 16%", "IGTF 3%", "Total Bs",
+    for col in ("Control", "Base 16%", "IVA 16%", "IGTF 3%", "IGTF compra", "Total Bs",
                 "Documento afectado"):
         comprueba(re.sub(r"\s+", "", col) in texto_plano, "la columna «%s» esta" % col)
 
@@ -212,6 +232,9 @@ try:
         comprueba(any(abs(v - TOTAL_MES) < 0.05 for v in valores),
                   "el total del mes cuadra", "esperado %.2f" % TOTAL_MES)
         comprueba("Aviso" not in tot_txt, "el libro cuadra (sin aviso de diferencia)")
+        # el IGTF de las compras tiene su propia fila en los totales (2026-11-19)
+        comprueba("IGTF" in re.sub(r"\s+", "", tot_txt).upper(),
+                  "los totales muestran el IGTF de compras", tot_txt[:80].replace("\n", " "))
 
     # Mes sin documentos.
     js('apex.item("P18_MES").setValue("1")')

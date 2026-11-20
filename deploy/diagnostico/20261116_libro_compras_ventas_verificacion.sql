@@ -111,7 +111,7 @@ begin
     execute immediate
         'select count(*) from (' || v_sql || ') where abs(nvl(total_bs,0) '
         || '- (nvl(base16,0)+nvl(iva16,0)+nvl(exento,0)+nvl(base_igtf,0)+nvl(igtf,0)'
-        || '+nvl(otras_base,0)+nvl(otras_iva,0))) > 0.01'
+        || '+nvl(otras_base,0)+nvl(otras_iva,0)+nvl(igtf_compra,0))) > 0.01'
         into v_mal;
     if v_mal > 0 then
         v_f2 := 'L5: ' || v_mal || ' fila(s) sin cuadre';
@@ -216,13 +216,26 @@ select substrb('L11: la consulta no prorratea la retencion de las notas de compr
            and instr(upper(r.region_source), 'ID_COMPRA_ORIGEN') > 0) = 0;
 /
 
--- L12: la region de Mexico no incluye compras.
+-- L12: la region de Mexico tambien trae las compras y su columna «Ver compra»
+-- (hasta el 2026-11-19 solo traia ventas, y la columna no tenia a donde apuntar).
 insert into tmp_lcv_fallas
-select substrb('L12: la region libro-mx incluye compras', 1, 300)
+select substrb('L12: la region libro-mx no incluye las compras', 1, 300)
   from dual
- where exists (select 1 from apex_application_page_regions r
-                where r.application_id = 100 and r.page_id = 18 and r.region_static_id = 'libro-mx'
-                  and instr(upper(r.region_source), 'COMPRAS') > 0);
+ where not exists (select 1 from apex_application_page_regions r
+                    where r.application_id = 100 and r.page_id = 18 and r.region_static_id = 'libro-mx'
+                      and instr(upper(r.region_source), 'COMPRAS') > 0
+                      and instr(upper(r.region_source), 'VER_COMPRA') > 0);
+/
+
+-- L12b: la columna «Ver compra» del libro de Mexico apunta a la compra (28).
+insert into tmp_lcv_fallas
+select substrb('L12b: falta la columna Ver compra en el libro de Mexico', 1, 300)
+  from dual
+ where not exists (select 1 from apex_260100.apex_application_page_ir_col c
+                    where c.application_id = 100 and c.page_id = 18
+                      and c.region_name = 'Libro de Mexico'
+                      and c.column_alias = 'VER_COMPRA'
+                      and lower(c.column_link) like '%p28_id_compra%');
 /
 
 -- L14: totales de los dos paises y guarda de rol.
