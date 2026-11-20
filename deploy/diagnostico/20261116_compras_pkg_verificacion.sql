@@ -141,12 +141,12 @@ begin
     select estado into v_estado from compras where id_compra = v_c;
     if v_estado <> 'REGISTRADA' then falla('C5: estado ' || v_estado); end if;
 
-    select count(*) into v_ret from retenciones_iva where id_compra = v_c;
+    select count(*) into v_ret from retenciones where id_compra = v_c and tipo = 'IVA';
     if v_ret <> 1 then
         falla('C5: no se creo el comprobante');
     else
-        select numero_comprobante, iva_retenido_bs into v_num, v_ret
-          from retenciones_iva where id_compra = v_c;
+        select numero_comprobante, retenido_bs into v_num, v_ret
+          from retenciones where id_compra = v_c and tipo = 'IVA';
         if length(v_num) <> 14 then falla('C5: numero ' || v_num); end if;
         if v_ret <> 120 then falla('C5: retenido ' || v_ret || ' en vez de 120'); end if;
     end if;
@@ -164,7 +164,7 @@ begin
                              subtotal_linea, total_linea, tasa_cambio_aplicada, subtotal_bs, total_bs)
     values (v_c2, 1, 'Servicio', 1, 1000, 1, 16, 160, 1000, 1160, 1, 1000, 1160);
     pkg_compras.prc_registrar_compra(p_id_compra => v_c2, p_usuario => 'test_pkg_uno');
-    select count(*) into v_ret from retenciones_iva where id_compra = v_c2;
+    select count(*) into v_ret from retenciones where id_compra = v_c2 and tipo = 'IVA';
     if v_ret <> 0 then falla('C6: creo comprobante con retencion 0'); end if;
 
     -- C7: editar una REGISTRADA.
@@ -186,7 +186,7 @@ begin
     pkg_compras.prc_anular_compra(p_id_compra => v_c, p_usuario => 'test_pkg_uno');
     select estado into v_estado from compras where id_compra = v_c;
     if v_estado <> 'ANULADA' then falla('C8: estado ' || v_estado); end if;
-    select count(*) into v_ret from retenciones_iva where id_compra = v_c and estado = 'ANULADO';
+    select count(*) into v_ret from retenciones where id_compra = v_c and tipo = 'IVA' and estado = 'ANULADO';
     if v_ret <> 1 then falla('C8: el comprobante no quedo anulado'); end if;
 
     -- C9: moneda extranjera con tasa 1 (invalida).

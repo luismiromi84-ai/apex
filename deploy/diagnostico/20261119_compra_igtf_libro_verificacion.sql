@@ -234,12 +234,16 @@ begin
         v_sql := replace(v_sql, ':P28_ID_COMPRA', to_char(v_id));
         v_sql := replace(v_sql, 'return ', ':v_out := ');
         execute immediate to_clob(v_sql) using out v_html;
-        if instr(v_html, to_char(round(116 * v_alic / 100, 2), 'FM999G999G999G990D00')) = 0 then
+        -- El resumen pinta los bolivares con NLS_NUMERIC_CHARACTERS=',.' (miles con
+        -- punto y decimales con coma), como el impreso; el esperado se formatea igual
+        -- o el instr no encuentra nada aunque el numero sea el correcto.
+        if instr(v_html, to_char(round(116 * v_alic / 100, 2), 'FM999G999G999G990D00',
+                                 'NLS_NUMERIC_CHARACTERS='',.''')) = 0 then
             falla('L9', 'el resumen de la compra no muestra el IGTF en Bs');
         end if;
         if instr(v_html, to_char(104400 + round(round(116 * v_alic / 100, 2) * 900, 2),
-                                 'FM999G999G999G990D00')) = 0 then
-            falla('L9', 'el neto del resumen no cuadra con el libro (107,532.00 esperado)');
+                                 'FM999G999G999G990D00', 'NLS_NUMERIC_CHARACTERS='',.''')) = 0 then
+            falla('L9', 'el neto del resumen no cuadra con el libro (107.532,00 esperado)');
         end if;
     exception
         when others then

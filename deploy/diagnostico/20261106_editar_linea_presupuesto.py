@@ -63,7 +63,8 @@ fuente = texto(cur.execute(
 fuente_norm = " ".join(fuente.lower().split())
 comprobar("el SELECT trae d.id_detalle en la lista", "select d.id_detalle," in fuente_norm)
 comprobar("el SELECT trae d.id_presupuesto en la lista", "d.id_presupuesto," in fuente_norm)
-comprobar("sigue filtrando por la empresa del usuario", "id_empresa in (select u.id_empresa" in fuente_norm)
+comprobar("sigue filtrando por la empresa del usuario",
+          "id_empresa in (select fn_clean_num(:f_empresa_activa) from dual)" in fuente_norm)
 
 print("== columna de accion ==")
 
@@ -116,7 +117,14 @@ presupuesto, detalle = cur.execute(
     " group by d.id_presupuesto having count(*) > 0 "
     " order by d.id_presupuesto fetch first 1 rows only").fetchone()
 
-cur.execute(fuente, {"P5_ID_PRESUPUESTO": presupuesto, "APP_USER": "prueba1"})
+# Desde la empresa activa (2026-11-17) la region filtra por :F_EMPRESA_ACTIVA y ya
+# no por :APP_USER: se sustituye la empresa y solo se pasa el bind que exista (un
+# bind de mas da DPY-4008).
+fuente = fuente.replace(":F_EMPRESA_ACTIVA", "1")
+binds = {"P5_ID_PRESUPUESTO": presupuesto}
+if ":APP_USER" in fuente:
+    binds["APP_USER"] = "prueba1"
+cur.execute(fuente, binds)
 cab = [c[0].lower() for c in cur.description]
 filas = cur.fetchall()
 comprobar("la consulta guardada se ejecuta con el bind de la pagina", len(filas) > 0,
@@ -153,7 +161,7 @@ invalidos = cur.execute("select count(*) from all_objects where owner = 'WKSP_SY
                         "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')").fetchone()[0]
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = cur.execute("select count(*) from apex_application_pages where application_id = 100").fetchone()[0]
-comprobar("siguen las 25 paginas", paginas == 25, f"({paginas})")
+comprobar("siguen las 33 paginas", paginas == 33, f"({paginas})")
 boton = cur.execute("select count(*) from apex_application_page_buttons "
                     "where application_id = 100 and page_id = 5 "
                     "and button_name = 'BTN_NUEVO_DETALLE'").fetchone()[0]

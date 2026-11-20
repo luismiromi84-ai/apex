@@ -7,7 +7,9 @@
 --   * el comprobante de retencion correlativo, sin saltos.
 --
 --   P1  los id de proveedores son 1..n, sin huecos
---   P2  la identidad de PROVEEDORES continua en n+1
+--   P2  la identidad de PROVEEDORES avanza de uno en uno y no reutiliza un id en
+--       uso (se mide con dos altas y su borrado; no se compara con max(id)+1, que
+--       depende de cuantas pruebas hayan dado de alta y borrado proveedores)
 --   R1  dos comprobantes seguidos salen con numeros consecutivos
 --   R2  una emision que se revierte NO consume numero (sin saltos)
 --
@@ -79,23 +81,44 @@ begin
         falla('P1', 'los proveedores van hasta ' || v_max || ' y hay ' || v_cnt || ' (hay huecos)');
     end if;
 
-    -- P2: la identidad continua en n+1 (se prueba insertando y revirtiendo)
-    if v_cnt > 0 then
-        savepoint sp_p2;
-        declare
-            v_nuevo number;
-        begin
-            insert into proveedores (id_empresa, rif, razon_social, tipo_persona, cod_pais,
-                                     estado, retener_iva, porcentaje_retencion, es_spe, dias_credito)
-            values (1, 'J-TESTP2-1', 'Proveedor P2', 'J', 'VE', 'ACTIVO', 'N', 0, 'N', 0)
-            returning id_proveedor into v_nuevo;
-            if v_nuevo <> v_cnt + 1 then
-                falla('P2', 'el siguiente proveedor salio con id ' || v_nuevo
-                            || ' y se esperaba ' || (v_cnt + 1));
-            end if;
-        end;
-        rollback to sp_p2;
-    end if;
+    -- P2: la identidad de PROVEEDORES avanza de uno en uno y no reutiliza un id que
+    -- ya esta en uso. Se mide insertando DOS proveedores y borrandolos.
+    --
+    -- NO se compara con max(id)+1: cada prueba que da de alta y borra un proveedor
+    -- consume un id y la identidad se queda por delante de los datos (hoy va muy por
+    -- delante), y esa comparacion solo pasaria la primera vez que se corre. La
+    -- renumeracion que la arreglaria (20261118_proveedores_secuencia.sql) aborta con
+    -- -20107 si hay compras, y hay una compra real. Lo que si tiene que cumplirse
+    -- siempre: el id nuevo no choca con ninguno existente y el siguiente es
+    -- exactamente uno mas (sin saltos dentro de la serie).
+    select nvl(max(id_proveedor), 0) into v_max from proveedores;
+
+    declare
+        v_id1 number;
+        v_id2 number;
+    begin
+        insert into proveedores (id_empresa, rif, razon_social, tipo_persona, cod_pais,
+                                 estado, retener_iva, porcentaje_retencion, es_spe, dias_credito)
+        values (1, 'J-TESTP2-1', 'Proveedor P2 uno', 'J', 'VE', 'ACTIVO', 'N', 0, 'N', 0)
+        returning id_proveedor into v_id1;
+
+        insert into proveedores (id_empresa, rif, razon_social, tipo_persona, cod_pais,
+                                 estado, retener_iva, porcentaje_retencion, es_spe, dias_credito)
+        values (1, 'J-TESTP2-2', 'Proveedor P2 dos', 'J', 'VE', 'ACTIVO', 'N', 0, 'N', 0)
+        returning id_proveedor into v_id2;
+
+        if v_id1 <= v_max then
+            falla('P2', 'la identidad reutilizo el id ' || v_id1 || ' (ya habia hasta ' || v_max || ')');
+        end if;
+        if v_id2 <> v_id1 + 1 then
+            falla('P2', 'dos altas seguidas dieron ' || v_id1 || ' y ' || v_id2
+                        || ' (la identidad tiene que avanzar de uno en uno)');
+        end if;
+
+        -- Se borran para no dejar basura (los dos estan dentro del savepoint general,
+        -- pero el borrado deja el caso medido sin depender del rollback final).
+        delete from proveedores where id_proveedor in (v_id1, v_id2);
+    end;
 
     -- R1: dos comprobantes seguidos
     insert into proveedores (id_empresa, rif, razon_social, tipo_persona, cod_pais,
@@ -105,9 +128,9 @@ begin
     returning id_proveedor into v_prov;
 
     v_compra := nueva_compra('CORR-1');
-    select max(numero_comprobante) into v_num1 from retenciones_iva where id_compra = v_compra;
+    select max(numero_comprobante) into v_num1 from retenciones where id_compra = v_compra and tipo = 'IVA';
     v_compra := nueva_compra('CORR-2');
-    select max(numero_comprobante) into v_num2 from retenciones_iva where id_compra = v_compra;
+    select max(numero_comprobante) into v_num2 from retenciones where id_compra = v_compra and tipo = 'IVA';
     if v_num1 is null or v_num2 is null then
         falla('R1', 'la compra registrada no emitio comprobante');
     elsif to_number(substr(v_num2, 7)) <> to_number(substr(v_num1, 7)) + 1 then

@@ -108,9 +108,10 @@ begin
     v_ret := pkg_retenciones.fn_retencion_bs(v_a);
     if v_ret <> 120 then falla('R6: retencion ' || v_ret || ' en vez de 120'); end if;
 
-    -- R2: emitir numera ...00000001.
+    -- R2: emitir numera ...00000001. El comprobante vive en RETENCIONES desde la
+    -- tarea 5 del spec de retenciones (RETENCIONES_IVA dejo de tener escritores).
     pkg_retenciones.prc_emitir(v_a, v_idret, 'TEST');
-    select numero_comprobante into v_num from retenciones_iva where id_retencion = v_idret;
+    select numero_comprobante into v_num from retenciones where id_retencion = v_idret;
     if v_num <> v_periodo || lpad(v_base + 1, 8, '0') or length(v_num) <> 14 then
         falla('R2: numero ' || v_num || ' en vez de ' || v_periodo || lpad(v_base + 1, 8, '0'));
     end if;
@@ -119,7 +120,7 @@ begin
     v_b := nueva_compra(v_prov, 'REGISTRADA', 'T-RET-B');
     linea(v_b, 1, 1000, 160, 16, 1);
     pkg_retenciones.prc_emitir(v_b, v_idret, 'TEST');
-    select numero_comprobante into v_num from retenciones_iva where id_retencion = v_idret;
+    select numero_comprobante into v_num from retenciones where id_retencion = v_idret;
     if v_num <> v_periodo || lpad(v_base + 2, 8, '0') then
         falla('R3: segundo numero ' || v_num || ' en vez de ' || v_periodo || lpad(v_base + 2, 8, '0'));
     end if;
@@ -163,14 +164,14 @@ begin
 
     -- R10: anular deja la retencion ANULADA y el numero no se reutiliza.
     pkg_retenciones.prc_anular(v_a, 'TEST');
-    select count(*) into v_ret from retenciones_iva
+    select count(*) into v_ret from retenciones
      where id_compra = v_a and estado = 'ANULADO';
     if v_ret <> 1 then falla('R10: la retencion no quedo ANULADO'); end if;
 
     v_c := nueva_compra(v_prov, 'REGISTRADA', 'T-RET-C');
     linea(v_c, 1, 1000, 160, 16, 1);
     pkg_retenciones.prc_emitir(v_c, v_idret, 'TEST');
-    select numero_comprobante into v_num from retenciones_iva where id_retencion = v_idret;
+    select numero_comprobante into v_num from retenciones where id_retencion = v_idret;
     if v_num <> v_periodo || lpad(v_base + 3, 8, '0') then
         falla('R10: tras anular el numero fue ' || v_num || ' en vez de '
               || v_periodo || lpad(v_base + 3, 8, '0'));

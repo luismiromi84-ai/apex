@@ -59,14 +59,19 @@ print("== la accion dinamica de la pagina 7 ==")
 # export, que es la fuente que se importa.
 export = open(os.path.join(REPO, "pagina_apex", "f100.sql"), encoding="utf-8").read()
 desde = export.index("p_name=>'TIPO_CAMBIO'")
-bloque = export[desde:desde + 2200]
+# 6000 y no 2200: el segundo evento (TIPO_CAMBIO_2, el de P7_COD_MONEDA) empieza a
+# 2397 caracteres del primero, y con la ventana corta el test no lo veia.
+bloque = export[desde:desde + 6000]
 
 comprobar("la pagina 7 usa la misma consulta que facturacion", "moneda_destino = ''VES''" in bloque)
 comprobar("no usa fn_tasa_cambio (devolvia 1 para USD)", "fn_tasa_cambio" not in bloque)
 comprobar("el tipo de accion es SQL_STATEMENT", "'type', 'SQL_STATEMENT'" in bloque)
 comprobar("se ejecuta al cargar la pagina", ",p_execute_on_page_init=>'Y'" in bloque)
-comprobar("dispara al cambiar la moneda",
-          "p_triggering_element=>'P7_FECHA_EMISION,P7_COD_MONEDA'" in bloque)
+# Una DA escucha UN item: desde el 2026-11-08 son dos eventos (P7_FECHA_EMISION y
+# P7_COD_MONEDA). Antes el test exigia el elemento combinado "P7_FECHA_EMISION,P7_COD_MONEDA",
+# que es justo el bug que hacia que la accion no se disparara nunca.
+comprobar("dispara al cambiar la moneda", "p_triggering_element=>'P7_COD_MONEDA'" in bloque)
+comprobar("dispara al cambiar la fecha", "p_triggering_element=>'P7_FECHA_EMISION'" in bloque)
 
 print("== el SQL de la accion, ejecutado ==")
 
@@ -122,7 +127,7 @@ invalidos = cur.execute("select count(*) from all_objects where owner = 'WKSP_SY
                         "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')").fetchone()[0]
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = cur.execute("select count(*) from apex_application_pages where application_id = 100").fetchone()[0]
-comprobar("siguen las 25 paginas", paginas == 25, f"({paginas})")
+comprobar("siguen las 33 paginas", paginas == 33, f"({paginas})")
 
 conn.close()
 print()

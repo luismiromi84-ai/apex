@@ -12,6 +12,19 @@
 --   -20084 proveedor de otra empresa
 --   -20085 sin lineas (o la compra no existe)
 --   -20087 datos obligatorios incompletos
+--
+-- CONCEPTO DE ISLR (p_id_concepto_islr), con CENTINELA: un mismo numero no puede
+-- significar a la vez "borralo" y "no lo mande", y confundirlos deja el comprobante
+-- de ISLR sin emitir sin que nadie se entere.
+--   -1         NO SE ENVIO (es el DEFECTO). En el ALTA se HEREDA del proveedor
+--              (PROVEEDORES.ID_CONCEPTO_ISLR); en la ACTUALIZACION se CONSERVA el
+--              que ya tenia. Es lo que impide que guardar un borrador desde una
+--              pantalla que no manda el item borre el concepto.
+--    0 o nulo  sin concepto: se guarda NULL. La pantalla manda 0 cuando el usuario
+--              elige "sin concepto"; nulo tambien borra al actualizar (en el alta,
+--              nulo se trata como -1 y hereda).
+--   otro       ese concepto (id de ISLR_CONCEPTOS).
+-- La emision del comprobante de ISLR lee COMPRAS.ID_CONCEPTO_ISLR.
 -- =============================================================================
 
 create or replace package pkg_compras as
@@ -30,6 +43,7 @@ create or replace package pkg_compras as
         p_id_compra_origen     in number default null,
         p_observaciones        in varchar2 default null,
         p_id_forma_pago        in number default null,
+        p_id_concepto_islr     in number default -1,
         p_usuario              in varchar2);
 
     procedure prc_registrar_compra(p_id_compra in number, p_usuario in varchar2);

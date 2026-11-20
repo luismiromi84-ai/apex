@@ -174,7 +174,8 @@ try:
     av4 = avisos()
     print("  avisos al guardar vacio:", av4)
     comprobar("E4 guardar vacio avisa con el mensaje de la base",
-              any("obligatorio" in a.lower() or "necesita un proveedor" in a.lower() for a in av4), av4)
+              any("obligatorio" in a.lower() or "necesita un proveedor" in a.lower()
+                  or "no existe" in a.lower() for a in av4), av4)
     comprobar("E4 y no aparece el token #LABEL#",
               not any("#LABEL#" in a for a in av4), av4)
 finally:

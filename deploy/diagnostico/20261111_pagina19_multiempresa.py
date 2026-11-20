@@ -39,6 +39,14 @@ USUARIO, CLAVE = "diag.pestanas2", "Diag#2026"
 fallas = 0
 
 
+def num(valor):
+    """fn_clean_num del lado de Python: '' o None valen 0."""
+    try:
+        return float(valor)
+    except (TypeError, ValueError):
+        return 0
+
+
 def comprueba(ok, texto, detalle=""):
     global fallas
     print("  [%s] %s%s" % ("OK   " if ok else "FALLA", texto,
@@ -144,10 +152,13 @@ try:
 
     comprueba(str(js('apex.item("P19_NOMBRE_EMPRESA").getValue()') or "") == "",
               "con dos empresas el formulario de Empresa abre en blanco (no se elige por la cuenta)")
-    comprueba(not js('apex.item("P19F_ID_EMPRESA").getValue()'),
-              "el selector de la pestana fiscal queda vacio")
-    comprueba(not js('apex.item("P19L_ID_EMPRESA").getValue()'),
-              "el selector de la pestana del logo queda vacio")
+    # Los dos selectores nacen con el defecto fn_clean_num(:F_EMPRESA_ACTIVA): con
+    # varias empresas y ninguna elegida eso da 0, no NULL (fn_clean_num devuelve 0).
+    # Lo que se mide es que NO se preseleccione una empresa, no la representacion.
+    comprueba(not num(js('apex.item("P19F_ID_EMPRESA").getValue()')),
+              "el selector de la pestana fiscal no preselecciona empresa")
+    comprueba(not num(js('apex.item("P19L_ID_EMPRESA").getValue()')),
+              "el selector de la pestana del logo no preselecciona empresa")
     comprueba(js("document.querySelector('[data-otel-label=\"BTN_GUARDAR_FISCAL\"]') !== null"),
               "los botones fiscales estan siempre (sin empresa avisan al guardar)")
 

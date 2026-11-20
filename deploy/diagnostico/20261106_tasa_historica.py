@@ -78,11 +78,18 @@ for tabla in ("presupuestos", "facturas"):
 
 print("== la tasa es la de la fecha de emision ==")
 
+# Tolerancia del 5 %: el documento guarda la tasa PUBLICADA el dia que se emitio, y
+# la tabla puede republicarse despues para esa misma fecha (medido el 2026-11-19:
+# el 18/11 paso de 915,7476 a 916,6477 y los documentos de ese dia quedaron a un
+# 0,19 %). Con igualdad exacta el caso fallaba por el dato, no por la app. Sigue
+# cazando lo que importa: una tasa en 1 o la de otra moneda se va por dos ordenes
+# de magnitud.
 for tabla in ("presupuestos", "facturas"):
     desfase = uno(f"select count(*) from {tabla} "
                   f" where upper(cod_moneda) not in ('VES', 'BS') "
                   f"   and fn_tasa_ves(fecha_emision, cod_moneda) is not null "
-                  f"   and abs(nvl(tipo_cambio, 0) - fn_tasa_ves(fecha_emision, cod_moneda)) > 0.001")
+                  f"   and abs(nvl(tipo_cambio, 0) - fn_tasa_ves(fecha_emision, cod_moneda))"
+                  f"       / fn_tasa_ves(fecha_emision, cod_moneda) > 0.05")
     comprobar(f"{tabla}: la tasa coincide con la de su fecha", desfase == 0, f"({desfase})")
 
 print("== montos en bolivares del detalle de factura ==")
@@ -130,7 +137,7 @@ invalidos = uno("select count(*) from all_objects where owner = 'WKSP_SYPEXWS' "
                 "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')")
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = uno("select count(*) from apex_application_pages where application_id = 100")
-comprobar("siguen las 25 paginas", paginas == 25, f"({paginas})")
+comprobar("siguen las 33 paginas", paginas == 33, f"({paginas})")
 
 conn.close()
 print()

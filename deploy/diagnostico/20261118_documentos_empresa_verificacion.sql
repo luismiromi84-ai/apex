@@ -40,6 +40,11 @@ declare
     v_id        number;
     v_n         number;
     v_folio     varchar2(30);
+    v_fac_ini   number;
+    v_ctl_ini   number;
+    v_pres_ini  number;
+    v_nc_ini    number;
+    v_nd_ini    number;
 
     procedure falla(p varchar2) is
     begin
@@ -60,6 +65,18 @@ begin
       from usuario_empresa ue
       join usuario u on u.usuario_id = ue.usuario_id
      where upper(u.username) = upper(v_user);
+
+    -- Los contadores de folio de esa empresa, tal como estan: los casos de abajo
+    -- crean documentos con folio y los borran, y el commit de D5 los dejaba por
+    -- delante (hueco en la numeracion fiscal). Se restauran al final.
+    select nvl(max(case when tipo = 'FAC'          then ultimo end), 0),
+           nvl(max(case when tipo = 'CONTROL'      then ultimo end), 0),
+           nvl(max(case when tipo = 'PRESUPUESTO' then ultimo end), 0),
+           nvl(max(case when tipo = 'NC'           then ultimo end), 0),
+           nvl(max(case when tipo = 'ND'           then ultimo end), 0)
+      into v_fac_ini, v_ctl_ini, v_pres_ini, v_nc_ini, v_nd_ini
+      from folio_contador
+     where id_empresa = v_emp_user;
 
     select min(p.id_empresa) into v_emp_otra
       from presupuestos p
@@ -239,6 +256,18 @@ begin
     if v_n > 0 then
         falla('D6: ' || v_n || ' item(s) de empresa ocultos siguen siendo obligatorios');
     end if;
+
+    -- Los casos de esta verificacion dan de alta documentos con folio del contador
+    -- y los borran; el commit de D5 dejaba los contadores POR DELANTE (un hueco en
+    -- la numeracion fiscal, que es justo lo que vigila 20261118_folios_verificacion).
+    -- Se devuelven al valor que tenian al empezar (medido: subian FAC, CONTROL y
+    -- PRESUPUESTO en 1 cada corrida).
+    update folio_contador set ultimo = v_fac_ini  where id_empresa = v_emp_user and tipo = 'FAC';
+    update folio_contador set ultimo = v_ctl_ini  where id_empresa = v_emp_user and tipo = 'CONTROL';
+    update folio_contador set ultimo = v_pres_ini where id_empresa = v_emp_user and tipo = 'PRESUPUESTO';
+    update folio_contador set ultimo = v_nc_ini   where id_empresa = v_emp_user and tipo = 'NC';
+    update folio_contador set ultimo = v_nd_ini   where id_empresa = v_emp_user and tipo = 'ND';
+    commit;
 end;
 /
 

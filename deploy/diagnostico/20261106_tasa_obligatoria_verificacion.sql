@@ -99,6 +99,11 @@ declare
         p_observaciones     => 'prueba de tasa',
         p_cod_moneda        => p_moneda,
         p_tipo_cambio       => p_tasa,
+        -- 0 explicito: este script mide TASAS, no retencion. Desde el
+        -- 2026-11-19 una FAC con % de retencion > 0 exige el comprobante de 14
+        -- digitos (-20064) y el primer cliente de la empresa puede ser agente
+        -- de retencion, asi que sin este 0 el caso fallaba por un motivo ajeno.
+        p_porcentaje_retencion => 0,
         p_usuario           => 'PRUEBA_TASA');
   end factu;
 

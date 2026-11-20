@@ -181,8 +181,11 @@ try:
     time.sleep(3)
 
     html = js("document.body.innerHTML") or ""
-    comprueba("facturas y notas" in (js("document.title") or "").lower(),
-              "el titulo es «Facturas y notas»", repr(js("document.title")))
+    # El titulo cambio el 2026-11-18 a «Reportes Factura y Notas C/D»: se comprueba
+    # que nombre el reporte (factura + nota) sin atarlo a la frase exacta.
+    titulo = (js("document.title") or "").lower()
+    comprueba("factura" in titulo and "nota" in titulo,
+              "el titulo nombra el reporte de facturas y notas", repr(js("document.title")))
     texto = js("document.body.innerText") or ""
     for col in ("Folio", "Tipo", "Cliente", "Total", "Saldo", "Estado"):
         comprueba(col in texto, "la columna «%s» esta" % col)
@@ -307,7 +310,7 @@ try:
     entrar(CONSULTA, CLAVE_C, 17)
     esperar('document.readyState === "complete" && !!window.apex', 60)
     time.sleep(3)
-    comprueba("facturas y notas" in (js("document.title") or "").lower()
+    comprueba("factura" in (js("document.title") or "").lower()
               and "No tiene permisos" not in (js("document.body.innerText") or ""),
               "CONSULTA puede ver el reporte")
 

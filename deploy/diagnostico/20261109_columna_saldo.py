@@ -14,19 +14,27 @@ cur.execute("alter session set current_schema = WKSP_SYPEXWS")
 sql = cur.execute("""select region_source from apex_application_page_regions
                       where region_id = 29963866505095675""").fetchone()[0].read()
 sql = sql.replace(":APP_USER", "'luis'").rstrip().rstrip(";")
+sql = sql.replace(":F_EMPRESA_ACTIVA", "1")
 
 fallas = 0
 try:
     filas = cur.execute(sql).fetchall()
     cols = [d[0].lower() for d in cur.description]
+    i_id = cols.index("id_factura")
     i_folio, i_total = cols.index("folio"), cols.index("total")
     i_notas, i_saldo = cols.index("notas_credito"), cols.index("saldo")
     for f in filas:
         print("  %-8s total %10.2f  notas %10.2f  saldo %10.2f"
               % (f[i_folio], f[i_total], f[i_notas], f[i_saldo]))
-        if abs((f[i_total] - f[i_notas]) - f[i_saldo]) > 0.01:
+        # El saldo ya no es total - notas: desde los cobros (2026-11-17) tambien
+        # resta lo cobrado y suma las notas de debito. La verdad es
+        # fn_saldo_factura, que es lo que usan el reporte y el boton «Cobrar».
+        esperado = cur.execute("select fn_saldo_factura(:i) from dual",
+                               {"i": f[i_id]}).fetchone()[0]
+        if abs(esperado - f[i_saldo]) > 0.01:
             fallas += 1
-            print("    MAL el saldo no es total - notas")
+            print("    MAL el saldo no es fn_saldo_factura (%0.2f vs %0.2f)"
+                  % (f[i_saldo], esperado))
 except Exception as ex:
     fallas += 1
     print("  MAL la consulta de la lista no corre:", str(ex)[:160])

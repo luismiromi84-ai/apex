@@ -2,6 +2,10 @@
 -- 20261116_compra_detalle_verificacion.sql
 --
 -- Detalle de la compra (Task 5). Todo el DML va dentro de un SAVEPOINT.
+-- D8: un usuario de otra empresa no puede borrar una linea ajena (el id llega de
+--     la pantalla en un item oculto y no protegido)
+-- D9: tampoco puede AGREGAR ni MODIFICAR una linea de una compra ajena, ni tocar
+--     una linea de otra compra pasando una propia
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261116_compra_detalle_verificacion.sql
 -- FALLAS=0 = EXITO.
 -- =============================================================================
@@ -35,7 +39,9 @@ declare
     v_tlinea number;
     v_origen number;
     v_linea3 number;
+    v_linea4 number;
     v_compra2 number;
+    v_compra3 number;
 
     procedure falla(p_texto varchar2) is
     begin
@@ -62,6 +68,10 @@ begin
     insert into usuario (username, email, estado, id_empresa, password_hash)
     values ('test_det_uno', 'test_det@local', 'ACTIVO', 1, 'x')
     returning usuario_id into v_usu;
+
+    -- D8: un usuario de la empresa 2, para intentar borrar una linea de la 1.
+    insert into usuario (username, email, estado, id_empresa, password_hash)
+    values ('test_det_dos', 'test_det2@local', 'ACTIVO', 2, 'x');
 
     v_compra := nueva('FAC', 'DET-1', null);
 
@@ -153,12 +163,116 @@ begin
             p_descripcion => 'Linea sin cantidad',
             p_cantidad => 0, p_precio_unitario => 10,
             p_porcentaje_descuento => 0, p_monto_descuento => 0,
-            p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'VERIFICACION');
+            p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'test_det_uno');
         falla('D7: acepto una linea con cantidad cero');
     exception
         when others then
             if sqlcode <> -20096 then falla('D7: codigo ' || sqlcode || ' en vez de -20096'); end if;
     end;
+
+    -- D8 (2026-11-20): el id de la linea llega de la pantalla en un item oculto y
+    -- NO protegido. Un usuario de otra empresa no puede borrar una linea ajena
+    -- aunque la compra este en BORRADOR: lo corta el paquete, no la pantalla.
+    pkg_compra_detalle.guardar_detalle(
+        p_id_detalle => v_linea3, p_id_compra => v_compra2, p_num_linea => null,
+        p_id_producto_servicio => null, p_descripcion => 'Linea de la empresa 1',
+        p_cantidad => 1, p_precio_unitario => 10,
+        p_porcentaje_descuento => 0, p_monto_descuento => 0,
+        p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'test_det_uno');
+
+    begin
+        pkg_compra_detalle.eliminar_detalle(p_id_detalle => v_linea3, p_usuario => 'test_det_dos');
+        falla('D8: un usuario de otra empresa borro una linea ajena');
+    exception
+        when others then
+            if sqlcode <> -20003 then falla('D8: codigo ' || sqlcode || ' en vez de -20003'); end if;
+    end;
+
+    select count(*) into v_sub from compras_det where id_detalle = v_linea3;
+    if v_sub <> 1 then
+        falla('D8: la linea ajena desaparecio de la base');
+    end if;
+
+    -- y el dueño de la compra si puede borrarla (la guarda no rompe lo legitimo)
+    pkg_compra_detalle.eliminar_detalle(p_id_detalle => v_linea3, p_usuario => 'test_det_uno');
+    select count(*) into v_sub from compras_det where id_detalle = v_linea3;
+    if v_sub <> 0 then
+        falla('D8: el dueño de la compra no pudo borrar su linea');
+    end if;
+
+
+    -- D9 (2026-11-20): guardar_detalle tambien comprueba la empresa. P29_ID_COMPRA y
+    -- P29_ID_DETALLE no estan protegidos: sin esto, un POST manipulado agregaria una
+    -- linea a la compra de otra empresa o reescribiria una linea ajena.
+    begin
+        pkg_compra_detalle.guardar_detalle(
+            p_id_detalle => v_linea4, p_id_compra => v_compra2, p_num_linea => null,
+            p_id_producto_servicio => null, p_descripcion => 'Linea intrusa',
+            p_cantidad => 1, p_precio_unitario => 10,
+            p_porcentaje_descuento => 0, p_monto_descuento => 0,
+            p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'test_det_dos');
+        falla('D9: un usuario de otra empresa agrego una linea a una compra ajena');
+    exception
+        when others then
+            if sqlcode <> -20003 then falla('D9: codigo ' || sqlcode || ' en vez de -20003'); end if;
+    end;
+
+    select count(*) into v_sub from compras_det where id_compra = v_compra2;
+    if v_sub <> 0 then
+        falla('D9: la linea intrusa quedo en la compra');
+    end if;
+
+    v_linea3 := null;
+    -- ...y tampoco puede modificar una linea ajena
+    pkg_compra_detalle.guardar_detalle(
+        p_id_detalle => v_linea3, p_id_compra => v_compra2, p_num_linea => null,
+        p_id_producto_servicio => null, p_descripcion => 'Linea legitima',
+        p_cantidad => 1, p_precio_unitario => 10,
+        p_porcentaje_descuento => 0, p_monto_descuento => 0,
+        p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'test_det_uno');
+    begin
+        pkg_compra_detalle.guardar_detalle(
+            p_id_detalle => v_linea3, p_id_compra => v_compra2, p_num_linea => null,
+            p_id_producto_servicio => null, p_descripcion => 'Cambiada por un ajeno',
+            p_cantidad => 99, p_precio_unitario => 99,
+            p_porcentaje_descuento => 0, p_monto_descuento => 0,
+            p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'test_det_dos');
+        falla('D9: un usuario de otra empresa modifico una linea ajena');
+    exception
+        when others then
+            if sqlcode <> -20003 then falla('D9: codigo ' || sqlcode || ' en vez de -20003'); end if;
+    end;
+    select nvl(max(cantidad), 0) into v_sub from compras_det where id_detalle = v_linea3;
+    if v_sub <> 1 then
+        falla('D9: la linea ajena cambio de importe (' || v_sub || ')');
+    end if;
+
+    -- ...y con una compra PROPIA no se puede tocar una linea de otra compra
+    v_compra3 := nueva('FAC', 'DET-3', null);
+    begin
+        pkg_compra_detalle.guardar_detalle(
+            p_id_detalle => v_linea3, p_id_compra => v_compra3, p_num_linea => null,
+            p_id_producto_servicio => null, p_descripcion => 'Cruzada',
+            p_cantidad => 5, p_precio_unitario => 5,
+            p_porcentaje_descuento => 0, p_monto_descuento => 0,
+            p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'test_det_uno');
+        falla('D9: se modifico una linea pasando otra compra');
+    exception
+        when others then
+            if sqlcode <> -20003 then falla('D9: codigo ' || sqlcode || ' en vez de -20003'); end if;
+    end;
+
+    -- el dueno de la compra si puede guardar
+    pkg_compra_detalle.guardar_detalle(
+        p_id_detalle => v_linea3, p_id_compra => v_compra2, p_num_linea => null,
+        p_id_producto_servicio => null, p_descripcion => 'Linea legitima',
+        p_cantidad => 3, p_precio_unitario => 10,
+        p_porcentaje_descuento => 0, p_monto_descuento => 0,
+        p_id_impuesto => null, p_porcentaje_impuesto => 16, p_usuario => 'test_det_uno');
+    select nvl(max(cantidad), 0) into v_sub from compras_det where id_detalle = v_linea3;
+    if v_sub <> 3 then
+        falla('D9: el dueno de la compra no pudo guardar su linea (' || v_sub || ')');
+    end if;
 
     rollback to sp_det;
 

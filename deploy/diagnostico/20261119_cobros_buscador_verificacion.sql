@@ -39,6 +39,9 @@ declare
     v_rif    varchar2(60);
     v_cli    varchar2(200);
     v_txt    varchar2(200);
+    v_base_t number;
+    v_base_s number;
+    v_base_n number;
 
     procedure falla(p_texto varchar2) is
     begin
@@ -110,7 +113,13 @@ begin
       from apex_260100.apex_application_page_regions
      where application_id = 100 and page_id = 24 and region_static_id = 'lista-cobros';
 
-    -- B4: con dos cobros de prueba, la consulta filtra.
+    -- B4: con dos cobros de prueba, la consulta filtra. Los conteos se miden
+    -- contra la BASE (los recibos reales de la empresa 1 en el periodo): desde
+    -- que el dueno cobra de verdad, esperar "2" a secas fallaba por sus cobros.
+    v_base_t := cuenta(null, 'TODOS');
+    v_base_s := cuenta(null, 'SI');
+    v_base_n := cuenta(null, 'NO');
+
     select f.id_factura, f.folio_factura, c.rif, c.razon_social
       into v_fac, v_folio, v_rif, v_cli
       from facturas f join clientes c on c.id_cliente = f.id_cliente
@@ -129,14 +138,17 @@ begin
     values (1, v_fac, to_date('16/11/2026', 'DD/MM/YYYY'), 'USD', 50, 45787.38, 50, 50,
             'CHQ-VERIF-2', 'N', 'ACTIVO', 'VERIF');
 
-    if cuenta(null, 'TODOS') <> 2 then
-        falla('B4: sin filtro de conciliado no salen los 2 cobros');
+    if cuenta(null, 'TODOS') <> v_base_t + 2 then
+        falla('B4: sin filtro de conciliado no salen los 2 cobros (hay '
+              || cuenta(null, 'TODOS') || ' y la base era ' || v_base_t || ')');
     end if;
-    if cuenta(null, 'SI') <> 1 then
-        falla('B4: el filtro conciliado=Si no deja 1');
+    if cuenta(null, 'SI') <> v_base_s + 1 then
+        falla('B4: el filtro conciliado=Si no deja 1 mas (hay '
+              || cuenta(null, 'SI') || ' y la base era ' || v_base_s || ')');
     end if;
-    if cuenta(null, 'NO') <> 1 then
-        falla('B4: el filtro conciliado=No no deja 1');
+    if cuenta(null, 'NO') <> v_base_n + 1 then
+        falla('B4: el filtro conciliado=No no deja 1 mas (hay '
+              || cuenta(null, 'NO') || ' y la base era ' || v_base_n || ')');
     end if;
     if cuenta('TRF-VERIF', 'TODOS') <> 1 then
         falla('B4: la busqueda por referencia no filtra');

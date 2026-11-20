@@ -41,9 +41,15 @@ prompt ============================================================
 @@../tabla/FACTURAS_DET.sql
 -- Compras (libro de compras y ventas, 2026-11-16): proveedores antes que compras
 -- por la FK, y las notas de compra despues de la cabecera.
+-- El catalogo de conceptos de ISLR va antes de proveedores y compras por la FK.
+@@../tabla/islr_conceptos.sql
 @@../tabla/proveedores.sql
 @@../tabla/compras.sql
 @@../tabla/compras_det.sql
+-- Retenciones de IVA e ISLR (2026-11-19): cabecera y lineas, despues de compras
+-- por las FK. RETENCIONES_IVA queda como historico.
+@@../tabla/retenciones.sql
+@@../tabla/retenciones_det.sql
 @@../tabla/retenciones_iva.sql
 @@../tabla/retencion_contador.sql
 -- Cobros (2026-11-17): recibos por factura; despues de FACTURAS y FORMA_PAGO por las FK.
@@ -79,6 +85,9 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_factura_editable.sql
 @@../funciones/fn_factura_cobrable.sql
 @@../funciones/fn_estado_factura.sql
+@@../funciones/fn_estado_compra.sql
+@@../funciones/fn_compra_tiene_islr.sql
+@@../funciones/fn_compra_tiene_iva.sql
 @@../funciones/fn_imprimir_retencion.sql
 @@../funciones/fn_forma_pago_pide_ref.sql
 @@../funciones/fn_presupuesto_editable.sql

@@ -15,7 +15,8 @@
 #      install_bodies.sql, contra ALL_OBJECTS/ALL_SEQUENCES/ALL_TABLES.
 #   2. Jobs del scheduler (no estan en ALL_OBJECTS).
 #   3. Roles de SYN_ROLES (sin al menos ADMIN nadie puede entrar).
-#   4. Columnas de cada tabla: lo que declara tabla/<tabla>.sql contra
+#   4. Catalogo de ISLR: los 16 conceptos en el script y en la base (13 activos).
+#   5. Columnas de cada tabla: lo que declara tabla/<tabla>.sql contra
 #      ALL_TAB_COLUMNS. Detecta el DDL canonico desfasado respecto a la base.
 #
 # Exclusiones (no son de la app): DEPT, EMP (tablas de ejemplo) y las de
@@ -51,6 +52,15 @@ EXCLUIDOS = {"DEPT", "EMP", "DEPT_TRG1", "EMP_TRG1", "DEPT_SEQ", "EMP_SEQ", "DBT
 # Contrato de la instalacion limpia: sin estos roles nadie puede autenticar
 # (fn_autenticar_usuario exige un rol y las guardas lo comparan por codigo).
 ROLES_MINIMOS = {"ADMIN", "GERENCIA", "VENTAS", "CONTABILIDAD", "ALMACEN", "CONSULTA", "FACTURACION"}
+
+# Catalogo de conceptos de ISLR que la instalacion tiene que sembrar
+# (deploy/install_datos.sql, el mismo merge que la migracion del 2026-11-19).
+# Sin catalogo no se puede calcular el ISLR ni emitir su comprobante, y una
+# instalacion limpia se quedaba con ISLR_CONCEPTOS vacia. De los 16, 13 son
+# elegibles (ACTIVO='S') y 3 son informativos (040, 065 y 067).
+ISLR_CODIGOS = {"002", "003", "018", "019", "040", "053", "054", "055", "057",
+                "058", "059", "061", "062", "063", "065", "067"}
+ISLR_ACTIVOS = 13
 
 # Jobs que debe dejar una instalacion limpia.
 JOBS_ESPERADOS = {"JOB_PURGA_LOGS", "JOB_ACTUALIZA_TASAS_BCV"}
@@ -123,17 +133,33 @@ def columnas_de_archivo(ruta):
                   re.IGNORECASE | re.DOTALL)
     if not m:
         return columnas
+    # Una definicion de columna termina en coma. Las lineas que siguen a una sin
+    # coma son CONTINUACION de la anterior (la clausula de una identity:
+    # "minvalue ...", "increment by 1 ...", o la segunda linea de un check:
+    # "or regexp_like(...)"). Sin esta regla el inventario inventaba columnas
+    # llamadas INCREMENT y OR y daba FALLAS por un DDL que estaba bien.
+    # Las palabras clave se comparan ENTERAS: con "startswith('OR')" se perdia
+    # la columna ORIGEN de LOG_TASAS_BCV.
+    claves = {"CONSTRAINT", "CHECK", "PRIMARY", "FOREIGN", "UNIQUE", "USING",
+              "TABLESPACE", "ENABLE", "DISABLE", "REFERENCES", "NOT", "NULL",
+              "DEFAULT", "MINVALUE", "MAXVALUE", "INCREMENT", "CACHE", "NOORDER",
+              "NOCYCLE", "NOKEEP", "NOSCALE", "START", "GENERATED", "IDENTITY", "OR"}
+    esperando_columna = True
     for linea in m.group(2).splitlines():
         linea = linea.strip()
         if not linea:
             continue
-        if linea.upper().startswith(("CONSTRAINT", "CHECK", "PRIMARY", "FOREIGN", "UNIQUE",
-                                     "USING", "TABLESPACE", "ENABLE", "DISABLE", "REFERENCES",
-                                     "NOT", "NULL", "DEFAULT", ")")):
+        if not esperando_columna:
+            esperando_columna = linea.endswith(",")
+            continue
+        palabra = re.match(r"[A-Za-z0-9_$#]+", linea)
+        if linea.startswith(")") or (palabra and palabra.group(0).upper() in claves):
+            esperando_columna = linea.endswith(",")
             continue
         mc = re.match(r'"?([A-Za-z0-9_$#]+)"?\s+[A-Za-z]', linea)
         if mc:
             columnas.add(mc.group(1).upper())
+        esperando_columna = linea.endswith(",")
     return columnas
 
 
@@ -176,6 +202,13 @@ def main():
              if re.search(r"(INSERT\s+INTO|MERGE\s+INTO)\s+SYN_ROLES[\s\S]{0,4000}?'" + re.escape(r) + "'",
                           texto_scripts)}
 
+    # --- 2b. Catalogo de ISLR: se comprueba en el SCRIPT y en la base ---
+    # (que la base de trabajo lo tenga no prueba que una instalacion nueva lo cree)
+    pos = texto_scripts.find("MERGE INTO ISLR_CONCEPTOS")
+    islr_script = set()
+    if pos >= 0:
+        islr_script = set(re.findall(r"SELECT\s+'([0-9]{3})'", texto_scripts[pos:pos + 6000]))
+
     # --- 3. Columnas ---
     drift = {}
     if not solo_objetos:
@@ -193,6 +226,16 @@ def main():
             sobran = declaradas - en_base
             if faltan or sobran:
                 drift[tabla] = (sorted(faltan), sorted(sobran))
+
+    # --- 4. Catalogo de ISLR en la base (lo que la app necesita para retener) ---
+    islr_base = None
+    try:
+        cur.execute("""select count(*),
+                              sum(case when activo = 'S' then 1 else 0 end)
+                         from islr_conceptos""")
+        islr_base = cur.fetchone()
+    except oracledb.DatabaseError:
+        islr_base = None
 
     con.close()
 
@@ -236,6 +279,26 @@ def main():
               ", ".join(sorted(ROLES_MINIMOS - roles)))
     else:
         print("[OK] la instalacion siembra los 7 roles de produccion")
+
+    if ISLR_CODIGOS - islr_script:
+        fallas += 1
+        print("\n[FALLA] conceptos de ISLR que la instalacion no siembra:",
+              ", ".join(sorted(ISLR_CODIGOS - islr_script)))
+    else:
+        print("[OK] la instalacion siembra los 16 conceptos de ISLR")
+
+    if islr_base is None:
+        fallas += 1
+        print("\n[FALLA] no se pudo leer ISLR_CONCEPTOS (la tabla no existe o no es accesible)")
+    else:
+        total, activos = islr_base
+        activos = activos or 0
+        if total < len(ISLR_CODIGOS) or activos != ISLR_ACTIVOS:
+            fallas += 1
+            print("\n[FALLA] catalogo de ISLR en la base: %s conceptos, %s activos (esperado %s y %s)"
+                  % (total, activos, len(ISLR_CODIGOS), ISLR_ACTIVOS))
+        else:
+            print("[OK] el catalogo de ISLR de la base tiene %s conceptos, %s activos" % (total, activos))
 
     if drift:
         fallas += 1

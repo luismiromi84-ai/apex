@@ -38,6 +38,7 @@ create table compras (
     porcentaje_retencion number(5,2)   default 0 not null enable,
     id_forma_pago        number,
     retencion_iva_bs     number(14,2)  default 0 not null enable,
+    id_concepto_islr     number,
     estado               varchar2(20)  default 'BORRADOR' not null enable,
     observaciones        varchar2(4000),
     id_compra_origen     number,
@@ -55,6 +56,8 @@ create table compras (
         references proveedores (id_proveedor) enable,
     constraint fk_compras_origen foreign key (id_compra_origen)
         references compras (id_compra) enable,
+    constraint fk_compras_islr foreign key (id_concepto_islr)
+        references islr_conceptos (id_concepto) enable,
     constraint chk_compras_tipo check (tipo_documento in ('FAC','NC','ND')) enable,
     constraint chk_compras_estado check (estado in ('BORRADOR','REGISTRADA','ANULADA')) enable,
     constraint chk_compras_pct check (porcentaje_retencion between 0 and 100) enable
@@ -69,4 +72,5 @@ comment on column compras.folio_factura is 'Numero de factura del proveedor (no 
 comment on column compras.nro_control is 'Numero de control impreso por el proveedor';
 comment on column compras.tipo_cambio is 'Bolivares por unidad de la moneda del documento (misma convencion que facturas)';
 comment on column compras.retencion_iva_bs is 'IVA retenido en bolivares, fijado al registrar; debe coincidir con el comprobante';
+comment on column compras.id_concepto_islr is 'Concepto de ISLR con el que se retiene esta compra; heredado del proveedor y editable en BORRADOR; nulo = no se retiene ISLR';
 comment on column compras.estado is 'BORRADOR = editable; REGISTRADA = cerrada y con comprobante; ANULADA = no cuenta';

@@ -35,6 +35,7 @@ declare
     v_src    clob;
     v_ret    varchar2(4000);
     v_tasa   number;
+    v_esp    number;
 
     procedure falla(p_caso varchar2, p_detalle varchar2) is
     begin
@@ -99,10 +100,26 @@ begin
         falla('T5', 'el proceso de carga no escribe P25_TIPO_CAMBIO');
     end if;
 
-    -- T6: el 18/11 no tiene fila propia: manda la ultima publicada (17/11)
+    -- T6: el 18/11 no tiene fila propia: manda la ultima publicada.
+    -- El valor esperado se lee de la TABLA, no se escribe a mano: la tasa del dia
+    -- cambia (el 19/11 el 18/11 ya tenia 916,6477 y la prueba fallaba por el
+    -- dato, no por la regla).
+    begin
+        select max(tasa_cambio) keep (dense_rank last order by fecha_vigencia)
+          into v_esp
+          from tipo_cambio
+         where moneda_origen = 'USD' and moneda_destino = 'VES'
+           and tipo_tasa = 'REAL'
+           and fecha_vigencia <= to_date('18/11/2026', 'DD/MM/YYYY');
+    exception
+        when no_data_found then v_esp := null;
+    end;
     v_tasa := fn_tasa_ves(to_date('18/11/2026', 'DD/MM/YYYY'), 'USD');
-    if v_tasa is null or abs(v_tasa - 915.7476) > 0.000001 then
-        falla('T6', 'fn_tasa_ves al 18/11 devolvio ' || nvl(to_char(v_tasa), '(nulo)'));
+    if v_esp is null then
+        falla('T6', 'no hay tasa USD->VES publicada hasta el 18/11/2026');
+    elsif v_tasa is null or abs(v_tasa - v_esp) > 0.000001 then
+        falla('T6', 'fn_tasa_ves al 18/11 devolvio ' || nvl(to_char(v_tasa), '(nulo)')
+                    || ' en vez de la ultima publicada (' || v_esp || ')');
     end if;
     if fn_tasa_ves(to_date('18/11/2026', 'DD/MM/YYYY'), 'VES') <> 1 then
         falla('T6', 'fn_tasa_ves en bolivares no devuelve 1');
