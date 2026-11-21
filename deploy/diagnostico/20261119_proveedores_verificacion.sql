@@ -14,8 +14,9 @@
 --       y lista de los activos con la tarifa en la etiqueta
 --   P10 la 22 trae la fila de indicadores (Proveedores/Activos/SPE/Retienen IVA)
 --   P11 «Retiene IVA» y «SPE» son insignias: chip en la columna y su clase
---   P12 la 23 tiene las cuatro secciones, la direccion es area de texto y los
---       flags de retencion/SPE nacen en «No» (2026-11-20)
+--   P12 la 23 tiene TRES secciones (2026-11-20: la de condiciones comerciales
+--       se fusiono en la fiscal), la direccion es area de texto y los flags de
+--       retencion/SPE nacen en "No"
 --   P13 la ficha del proveedor es contenido dinamico y el % se esconde con «No»
 --
 -- Todo el DML va dentro de un SAVEPOINT y se revierte.
@@ -40,6 +41,7 @@ declare
     v_n      number;
     v_sql    clob;
     v_id     number;
+    v_spe    number;
 
     procedure falla(p_texto varchar2) is
     begin
@@ -118,14 +120,18 @@ begin
       from apex_260100.apex_application_page_regions
      where application_id = 100 and page_id = 22 and region_static_id = 'proveedores-lista';
 
+    -- La consulta lleva dos binds desde los chips (2026-11-20): P22_FILTRO se
+    -- sustituye por null, que deja pasar todas las filas.
     execute immediate 'select count(*) from ('
-        || replace(v_sql, ':F_EMPRESA_ACTIVA', '1') || ')' into v_n;
+        || replace(replace(v_sql, ':F_EMPRESA_ACTIVA', '1'), ':P22_FILTRO', 'null') || ')'
+        into v_n;
     if v_n < 1 then
         falla('P7: la lista no trae el proveedor de la empresa 1');
     end if;
 
     execute immediate 'select count(*) from ('
-        || replace(v_sql, ':F_EMPRESA_ACTIVA', '2') || ')' into v_n;
+        || replace(replace(v_sql, ':F_EMPRESA_ACTIVA', '2'), ':P22_FILTRO', 'null') || ')'
+        into v_n;
     if v_n <> 0 then
         falla('P7: la lista trae proveedores de otra empresa (' || v_n || ')');
     end if;
@@ -214,14 +220,37 @@ begin
         falla('P11: faltan las columnas de clase del chip (' || v_n || '/2)');
     end if;
 
-    -- P12 (2026-11-20): el dialogo en cuatro secciones.
+    -- P12 (2026-11-20): el dialogo queda en tres secciones de formulario (Datos
+    -- fiscales, Contacto, Configuracion fiscal y comercial) mas la ficha y la
+    -- barra de acciones. «Condiciones comerciales» ya no existe como region.
     select count(*) into v_n
       from apex_260100.apex_application_page_regions
      where application_id = 100 and page_id = 23
        and region_static_id in ('proveedor-form', 'proveedor-contacto', 'proveedor-fiscal',
-                                'proveedor-condiciones', 'proveedor-ficha', 'proveedor-acciones');
-    if v_n <> 6 then
-        falla('P12: faltan secciones en el dialogo (' || v_n || '/6)');
+                                'proveedor-ficha', 'proveedor-acciones');
+    if v_n <> 5 then
+        falla('P12: faltan secciones en el dialogo (' || v_n || '/5)');
+    end if;
+
+    select count(*) into v_n
+      from apex_260100.apex_application_page_regions
+     where application_id = 100 and page_id = 23
+       and region_static_id = 'proveedor-condiciones';
+    if v_n <> 0 then
+        falla('P12: «Condiciones comerciales» sigue siendo una seccion aparte');
+    end if;
+
+    -- Dias de credito y Estado viven ahora en la seccion fiscal.
+    select count(*) into v_n
+      from apex_260100.apex_application_page_items i
+     where i.application_id = 100 and i.page_id = 23
+       and i.item_name in ('P23_DIAS_CREDITO', 'P23_ESTADO')
+       and i.region_id = (select r.region_id
+                            from apex_260100.apex_application_page_regions r
+                           where r.application_id = 100 and r.page_id = 23
+                             and r.region_static_id = 'proveedor-fiscal');
+    if v_n <> 2 then
+        falla('P12: dias de credito y estado no estan en la seccion fiscal (' || v_n || '/2)');
     end if;
 
     select count(*) into v_n from apex_260100.apex_application_page_items
@@ -260,6 +289,67 @@ begin
        and execute_on_page_init = 'Yes';
     if v_n = 0 then
         falla('P13: el % de retencion no se esconde con «No»');
+    end if;
+
+    -- P14 (2026-11-20): chips de filtro rapido, los mismos de Clientes (pagina 20).
+    select count(*) into v_n
+      from apex_260100.apex_application_page_regions
+     where application_id = 100 and page_id = 22
+       and region_static_id = 'chips-proveedores'
+       and instr(region_source, 'data-filtro="SPE"') > 0
+       and instr(region_source, 'data-filtro="RETIENE"') > 0
+       and instr(region_source, 'data-filtro="INACTIVOS"') > 0;
+    if v_n = 0 then
+        falla('P14: la lista no tiene los chips de filtro rapido');
+    end if;
+
+    select count(*) into v_n from apex_260100.apex_application_page_items
+     where application_id = 100 and page_id = 22 and item_name = 'P22_FILTRO';
+    if v_n <> 1 then
+        falla('P14: falta el item oculto P22_FILTRO');
+    end if;
+
+    select count(*) into v_n from apex_260100.apex_application_page_da_acts
+     where application_id = 100 and page_id = 22
+       and static_id = 'aplica-filtro-rapido';
+    if v_n = 0 then
+        falla('P14: el chip no tiene la accion que aplica el filtro');
+    end if;
+
+    select count(*) into v_n
+      from apex_260100.apex_application_page_regions
+     where application_id = 100 and page_id = 22
+       and region_static_id = 'proveedores-lista'
+       and instr(ajax_items_to_submit, 'P22_FILTRO') > 0;
+    if v_n = 0 then
+        falla('P14: el refresco del informe no envia P22_FILTRO');
+    end if;
+
+    -- P15 (2026-11-20): los chips filtran de verdad contra los datos.
+    execute immediate 'select count(*) from ('
+        || replace(replace(v_sql, ':F_EMPRESA_ACTIVA', '1'), ':P22_FILTRO', '''SPE''') || ')'
+        into v_n;
+    select count(*) into v_spe from proveedores
+     where id_empresa = 1 and nvl(es_spe, 'N') = 'S';
+    if v_n <> v_spe then
+        falla('P15: el chip SPE trae ' || v_n || ' y hay ' || v_spe);
+    end if;
+
+    execute immediate 'select count(*) from ('
+        || replace(replace(v_sql, ':F_EMPRESA_ACTIVA', '1'), ':P22_FILTRO', '''INACTIVOS''') || ')'
+        into v_n;
+    select count(*) into v_spe from proveedores
+     where id_empresa = 1 and estado = 'INACTIVO';
+    if v_n <> v_spe then
+        falla('P15: el chip Inactivos trae ' || v_n || ' y hay ' || v_spe);
+    end if;
+
+    execute immediate 'select count(*) from ('
+        || replace(replace(v_sql, ':F_EMPRESA_ACTIVA', '1'), ':P22_FILTRO', '''TODOS''') || ')'
+        into v_n;
+    select count(*) into v_spe from proveedores where id_empresa = 1;
+    if v_n <> v_spe then
+        falla('P15: el chip Todos trae ' || v_n || ' y hay ' || v_spe);
     end if;
 
     rollback to sp_prov;

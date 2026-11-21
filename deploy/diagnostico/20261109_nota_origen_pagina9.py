@@ -199,6 +199,15 @@ try:
     nav.js('(function(){var w=document.querySelector("iframe").contentWindow;'
            'w.apex.item("P9_ID_FACTURA_ORIGEN").setValue("%d");})()' % origen)
     time.sleep(6)
+    # Desde el 2026-11-21 el alta de la factura nace con la fecha de emision de
+    # hoy (defecto SQL_QUERY de P9_FECHA_EMISION). Antes habia que teclearla para
+    # poder guardar; ahora la prueba lo comprueba en vez de rellenarlo.
+    hoy = cur.execute("select to_char(sysdate, 'DD/MM/YYYY') from dual").fetchone()[0]
+    fecha = nav.js('(function(){var w=document.querySelector("iframe").contentWindow;'
+                   'return w.apex.item("P9_FECHA_EMISION").getValue();})()')
+    comprobar("C3a el alta de la nota ya trae la fecha de emision de hoy",
+              fecha == hoy, f"({fecha} vs {hoy})")
+    time.sleep(2)
 
     empresa = leer(nav, "P9_ID_EMPRESA")
     cliente = leer(nav, "P9_ID_CLIENTE")
@@ -214,22 +223,49 @@ try:
               f"({obs[:60]})")
     comprobar("C2 la region de lineas aparece", visible(nav, "lineas-factura-origen"))
 
-    # C3: marcar la primera linea y traerla
+    # C3: marcar la primera linea y guardar.
+    #
+    # El boton se pulsa DENTRO del documento del iframe (element.click()). Antes se
+    # calculaban sus coordenadas de pantalla y se mandaba un raton sintetico; desde
+    # que la region de lineas hizo crecer el dialogo, el punto caia fuera del area
+    # visible del iframe (y scrollIntoView no bastaba: las coordenadas se median
+    # antes de que el scroll asentara). Un clic nativo en el elemento no depende de
+    # la geometria: APEX engancha sus botones por delegacion y el evento burbujea.
     nav.js('(function(){var w=document.querySelector("iframe").contentWindow,d=w.document;'
            'var c=d.querySelector(".js-linea-sel[data-id=\\"%d\\"]");'
            'if(c){c.checked=true;c.dispatchEvent(new w.Event("change",{bubbles:true}));}'
            'return c ? "ok" : "no encontrada";})()' % primera_linea)
     time.sleep(1)
-    nav.clic('(function(){var f=document.querySelector("iframe"); var d=f.contentDocument;'
-             'var b=[...d.querySelectorAll("button")].find(function(x){return /Guardar/i.test(x.innerText);});'
-             'if(!b) return null; b.scrollIntoView({block:"center"});'
-             'var fb=f.getBoundingClientRect(), r=b.getBoundingClientRect();'
-             'return JSON.stringify({x:fb.left+r.left+r.width/2, y:fb.top+r.top+r.height/2});})()')
-    time.sleep(10)
+    pulsado = nav.js(
+        '(function(){var f=document.querySelector("iframe");'
+        'if(!f||!f.contentWindow) return "sin iframe";'
+        'var d=f.contentWindow.document;'
+        'var b=d.getElementById("B18162756611230481")'
+        '  || [...d.querySelectorAll("button")].find(function(x){'
+        '       var t=(x.innerText||"")+" "+(x.textContent||"")+" "+(x.getAttribute("aria-label")||"");'
+        '       return /Guardar/i.test(t);});'
+        'if(!b) return "sin boton";'
+        'b.scrollIntoView({block:"center"});'
+        'b.click();'
+        'return "pulsado";})()')
+    comprobar("C3 el boton Guardar del dialogo se pulso", pulsado == "pulsado", pulsado)
 
-    creada = cur.execute("""select max(id_factura) from facturas
-                             where tipo_documento = 'NC' and id_factura_origen = :o
-                               and creado_por = 'DIAG.DISENO'""", o=origen).fetchone()[0]
+    # Al guardar, APEX cierra el dialogo y refresca la lista. La prueba de verdad
+    # es la base (abajo); el iframe puede quedar en el DOM aunque el dialogo ya no
+    # se vea, asi que se informa sin convertirlo en fallo.
+    cerrado = nav.esperar('!document.querySelector("iframe")', 30)
+    print("  (info) el iframe del dialogo %s tras guardar"
+          % ("desaparecio" if cerrado else "sigue en el DOM (el dialogo ya no se ve)"))
+    time.sleep(2)
+
+    creada = None
+    fin = time.time() + 25
+    while creada is None and time.time() < fin:
+        creada = cur.execute("""select max(id_factura) from facturas
+                                 where tipo_documento = 'NC' and id_factura_origen = :o
+                                   and creado_por = 'DIAG.DISENO'""", o=origen).fetchone()[0]
+        if creada is None:
+            time.sleep(1)
     if creada is None:
         comprobar("C3 la nota se crea con la linea marcada", False, "(no se creo la nota)")
     else:
@@ -253,27 +289,78 @@ try:
                            'if(!as.length) return null; var r=as[0].getBoundingClientRect();'
                            'return JSON.stringify({x:r.left+r.width/2,y:r.top+r.height/2});})()')
         time.sleep(4)
-        comprobar("C4 con lineas no aparece la region",
-                  not visible(nav, "lineas-factura-origen"))
-        comprobar("C4 con lineas no aparece el boton",
-                  not bool(nav.js('(function(){var f=document.querySelector("iframe");'
-                                  'return !!(f && [...f.contentDocument.querySelectorAll("button")]'
-                                  '.find(function(x){return /Traer marcadas/i.test(x.innerText);}));})()')))
-        solo_lectura = nav.js('(function(){var w=document.querySelector("iframe").contentWindow,'
-                              'd=w.document,e=d.getElementById("P9_ID_FACTURA_ORIGEN");'
-                              'return e ? (e.readOnly || e.getAttribute("readonly") !== null) : null;})()')
-        comprobar("C4 la factura origen queda en solo lectura", bool(solo_lectura), f"({solo_lectura})")
+        # Se abre LA NOTA que se acaba de crear (no «la primera fila»): la region y
+        # el solo lectura solo tienen sentido en un documento con lineas copiadas.
+        folio_nc = cur.execute("select folio_factura from facturas where id_factura = :i",
+                               i=creada).fetchone()[0]
+        # El enlace «Editar» se pulsa por coordenadas DESPUES de scrollIntoView: la
+        # fila de indicadores empuja la lista hacia abajo y, sin el scroll, el punto
+        # cae fuera de la ventana y el dialogo no abre (medido en la prueba de la
+        # rejilla, 20261117_grid_dialogos_navegador.py).
+        pulsado_editar = nav.clic(
+            '(function(){var as=[...document.querySelectorAll("td a")].filter(function(a){'
+            'if(!/Editar/.test(a.innerText)) return false;'
+            'var tr=a.closest("tr"); return !!(tr && tr.innerText.indexOf(%s) >= 0);});'
+            'if(!as.length) return null;'
+            'as[0].scrollIntoView({block:"center"});'
+            'var r=as[0].getBoundingClientRect();'
+            'return JSON.stringify({x:r.left+r.width/2,y:r.top+r.height/2});})()'
+            % json.dumps(folio_nc))
+        abierto = bool(pulsado_editar) and nav.esperar(IFRAME_OK, 40)
+        # Sin el dialogo abierto las tres comprobaciones de C4 saldrian «bien» por
+        # la puerta de atras (no hay iframe donde mirar), asi que se exige primero.
+        comprobar("C4 el dialogo de la nota se abre", abierto, (folio_nc, pulsado_editar))
+        time.sleep(4)
+        if abierto:
+            # Diseno del 2026-11-20: la region se renderiza siempre (para que la
+            # accion dinamica pueda refrescarla) y lo que se cierra con una nota
+            # que ya tiene lineas es el BOTON «Traer marcadas» y el cambio de la
+            # factura origen (fn_nota_con_lineas). La region sigue enseñando las
+            # lineas de la factura para poder agregar las que falten.
+            comprobar("C4 la region sigue visible para consultar la factura origen",
+                      visible(nav, "lineas-factura-origen"))
+            comprobar("C4 con lineas no aparece el boton",
+                      not bool(nav.js('(function(){var f=document.querySelector("iframe");'
+                                      'return !!(f && [...f.contentDocument.querySelectorAll("button")]'
+                                      '.find(function(x){return /Traer marcadas/i.test(x.innerText);}));})()')))
+            # El solo lectura de un Popup LOV no esta en input.readOnly: APEX lo
+            # marca en el widget (aria-readonly / clase) o lo responde el propio
+            # item. Se miran las tres vias y se imprime el HTML si no cuadra.
+            solo_lectura = nav.js(
+                '(function(){var w=document.querySelector("iframe");'
+                'if(!w||!w.contentWindow) return "sin iframe";'
+                'var d=w.contentWindow.document,e=d.getElementById("P9_ID_FACTURA_ORIGEN");'
+                'if(!e) return "sin item";'
+                'try{var it=w.apex.item("P9_ID_FACTURA_ORIGEN");'
+                'if(it&&typeof it.isReadOnly==="function"&&it.isReadOnly())return "si";}catch(x){}'
+                'var inp=e.tagName==="INPUT"?e:e.querySelector("input");'
+                'var ro=(inp&&(inp.readOnly||inp.disabled||inp.getAttribute("aria-readonly")==="true"))'
+                '||e.getAttribute("aria-readonly")==="true"'
+                '||String(e.className).indexOf("readonly")>=0'
+                '||(inp&&String(inp.className).indexOf("readonly")>=0);'
+                'return ro?"si":("no|"+String(e.outerHTML).slice(0,180));})()')
+            comprobar("C4 la factura origen queda en solo lectura",
+                      solo_lectura == "si", solo_lectura)
+        else:
+            comprobar("C4 con lineas no aparece la region", False, "(no se abrio el dialogo)")
+            comprobar("C4 con lineas no aparece el boton", False, "(no se abrio el dialogo)")
+            comprobar("C4 la factura origen queda en solo lectura", False, "(no se abrio el dialogo)")
 finally:
     nav.cerrar()
     # limpieza: la nota de prueba y el usuario temporal
     if creada is not None:
         cur.execute("delete from facturas_det where id_factura = :i", i=creada)
         cur.execute("delete from facturas where id_factura = :i", i=creada)
-        cur.execute("""update folio_contador set ultimo = 0
-                        where tipo = 'NC'
-                          and not exists (select 1 from facturas f
-                                           where f.id_empresa = folio_contador.id_empresa
-                                             and f.tipo_documento = 'NC')""")
+        # El contador de NC vuelve al maximo real de cada empresa (no a 0: si ya
+        # habia notas, 0 repetiria folios). Una prueba no debe dejar huecos en una
+        # numeracion fiscal.
+        cur.execute("""update folio_contador fc
+                          set ultimo = nvl((select max(to_number(regexp_substr(f.folio_factura,
+                                                                              '[0-9]+$')))
+                                              from facturas f
+                                             where f.id_empresa = fc.id_empresa
+                                               and f.tipo_documento = 'NC'), 0)
+                        where fc.tipo = 'NC'""")
     cur.execute("delete from syn_login_log where upper(usuario_intentado) = 'DIAG.DISENO'")
     cur.execute("begin delete from usuario_empresa where usuario_id in (select usuario_id from usuario where upper(username) = 'DIAG.DISENO'); commit; delete from usuario where upper(username) = 'DIAG.DISENO'; commit; end;")
     conn.commit()

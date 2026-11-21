@@ -178,6 +178,28 @@ finally:
                 "(select usuario_id from usuario where upper(username)='DIAG.REFRESCA'); commit; "
                 "delete from usuario where upper(username)='DIAG.REFRESCA'; commit; end;")
     con.commit()
+    # La factura de prueba consumio folio y N de control: se dejan los contadores
+    # en el maximo real para no abrir un hueco en la numeracion fiscal (2026-11-21).
+    cur.execute("""merge into folio_contador f
+                   using (select 'FAC' tipo,
+                                 nvl(max(to_number(regexp_substr(folio_factura, '[0-9]+$'))), 0) ultimo
+                            from facturas where id_empresa = 1 and tipo_documento = 'FAC') d
+                      on (f.id_empresa = 1 and f.tipo = d.tipo)
+                   when matched then update set f.ultimo = d.ultimo
+                   when not matched then insert (id_empresa, tipo, ultimo)
+                        values (1, d.tipo, d.ultimo)""")
+    cur.execute("""merge into folio_contador f
+                   using (select 'CONTROL' tipo,
+                                 nvl(max(to_number(regexp_substr(nro_control, '[0-9]+$'))), 0) ultimo
+                            from facturas
+                           where nro_control is not null
+                             and regexp_like(trim(nro_control), '^[0-9]{2}-[0-9]{6}$')
+                             and id_empresa = 1) d
+                      on (f.id_empresa = 1 and f.tipo = d.tipo)
+                   when matched then update set f.ultimo = d.ultimo
+                   when not matched then insert (id_empresa, tipo, ultimo)
+                        values (1, d.tipo, d.ultimo)""")
+    con.commit()
     con.close()
 
 print()

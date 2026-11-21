@@ -205,8 +205,12 @@ try:
     ir(13, ses)
     emp13 = js('(function(){var e=document.getElementById("P13_ID_EMPRESA");return e?e.value:"SIN ITEM";})()')
     comprobar("N6 el Panel (13) toma la empresa activa", str(emp13) == "2", emp13)
-    tarjetas = js('(function(){var t=document.body.innerText||"";'
-                  'return t.indexOf("Facturado del mes")>=0 && t.indexOf("Tasa MXN a VES")>=0;})()')
+    # N6: el Panel pinta con la empresa activa.
+    # 2026-11-21: las etiquetas del Panel van en mayusculas por CSS, como las de
+    # la pagina 8 (innerText devuelve el texto ya transformado): se compara sin
+    # distinguir mayusculas.
+    tarjetas = js('(function(){var t=(document.body.innerText||"").toUpperCase();'
+                  'return t.indexOf("FACTURADO DEL MES")>=0 && t.indexOf("TASA MXN A VES")>=0;})()')
     comprobar("N6 el Panel pinta sus indicadores con la moneda de la empresa activa", tarjetas is True, tarjetas)
 
     png = cmd("Page.captureScreenshot", format="png")["data"]

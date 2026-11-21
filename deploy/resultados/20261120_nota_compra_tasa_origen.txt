@@ -1,0 +1,34 @@
+﻿=============================================================================
+20261120_nota_compra_tasa_origen.txt
+La nota de compra lleva la tasa de la factura que acredita (2026-11-20)
+
+Antes:  compra 1462 (NC, folio 3) cabecera 917.7751 / lineas 916.6477
+        libro (18): filas 8.145.890,49 vs totales 8.144.595,78 -> 1.294,71 Bs
+Despues: cabecera 916.6477 = lineas; monto_total * tasa = sum(total_bs) = 1.052.678,22
+         libro (18): filas 7.730.701,49 vs totales 7.730.701,48 -> 0,01 (redondeo)
+
+Comandos ejecutados (salida real):
+  python deploy/conexion/importar_export.py pagina_apex/f100.sql            -> 99 sentencias
+  python deploy/conexion/importar_export.py deploy/migrations/20261120_nota_compra_tasa_origen.sql
+  python deploy/conexion/compilar_objeto.py package_bodies/pkg_compras.sql
+  python deploy/diagnostico/20261118_libro_notas_verificacion.sql
+  python deploy/diagnostico/20261116_libro_compras_ventas_verificacion.sql
+  python deploy/diagnostico/20261119_compra_nota_afectada_verificacion.sql
+  python deploy/diagnostico/20261119_retenciones_verificacion.sql
+  python deploy/diagnostico/20261117_grid_paginas_verificacion.py
+  python deploy/diagnostico/20261109_compilar_procesos_pagina.py
+  python deploy/diagnostico/20261120_nota_compra_navegador.py
+
+=============================================================================
+20261118_libro_notas_verificacion.sql : FALLO en la sentencia 13 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0 |
+20261116_libro_compras_ventas_verificacion.sql : FALLO en la sentencia 21 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0 |
+20261119_compra_nota_afectada_verificacion.sql : FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+20261119_retenciones_verificacion.sql : FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=0
+20261117_grid_paginas_verificacion.py : RESULTADO: FALLAS=0
+20261109_compilar_procesos_pagina.py : procesos PL/SQL de pagina: 101 / RESULTADO: FALLAS=0
+20261120_nota_compra_navegador.py : N7 OK (nota creada con la tasa del dia 918,7662 abre a 900 USD) y N1-N6 OK / RESULTADO: FALLAS=0
+importar_export.py pagina_apex/f100.sql : 99 sentencias, ejecutadas OK
+importar_export.py 20261120_nota_compra_tasa_origen.sql : 2 sentencias, ejecutadas OK
+compilar_objeto.py package_bodies/pkg_compras.sql : compilado sin error; PKG_COMPRAS y su body VALID
+verificar_conexion.py : 0 invalidos, 35 paginas
+V1 (empresa 1, 11/2026): filas 7730701.49 / totales 7730701.48 / diferencia 0.01 (tolerancia 0.05)

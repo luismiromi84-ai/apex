@@ -33,6 +33,7 @@ declare
     v_proc    clob;
     v_filas   number;
     v_mal     number;
+    v_l4      number;
     v_usuario varchar2(100);
     v_emp     number;
     v_err     varchar2(200);
@@ -84,7 +85,12 @@ begin
         end if;
     end loop;
 
-    -- L4: los procesos que guardan documentos usan la empresa activa
+    -- L4: los procesos que guardan documentos usan la empresa activa.
+    -- Solo se exige a los que ASIGNAN empresa (escriben ID_EMPRESA). Un proceso
+    -- que anota una constancia sobre un documento que ya existe no elige
+    -- empresa: es el caso de «Guardar comprobante de retencion» (2026-11-20),
+    -- que trabaja sobre :P9_ID_FACTURA y la propiedad la valida el package.
+    v_l4 := 0;
     for r in (select page_id, process_name, to_clob(nvl(process_source, ' ')) src
                 from apex_application_page_proc
                where application_id = 100 and page_id in (7, 9, 16)
@@ -92,11 +98,31 @@ begin
                       or upper(process_name) like '%GUARDAR%'
                       or upper(process_name) like '%ACTUALIZAR%'))
     loop
-        if instr(lower(r.src), 'f_empresa_activa') = 0 then
-            insert into tmp_empfiltro_fallas
-            values ('L4 el proceso de la pagina ' || r.page_id || ' no usa F_EMPRESA_ACTIVA: ' || substr(r.process_name, 1, 40));
+        if instr(lower(r.src), 'id_empresa') > 0 then
+            v_l4 := v_l4 + 1;
+            if instr(lower(r.src), 'f_empresa_activa') = 0 then
+                insert into tmp_empfiltro_fallas
+                values ('L4 el proceso de la pagina ' || r.page_id || ' no usa F_EMPRESA_ACTIVA: ' || substr(r.process_name, 1, 40));
+            end if;
         end if;
     end loop;
+    if v_l4 = 0 then
+        insert into tmp_empfiltro_fallas
+        values ('L4 no se encontro ningun proceso que asigne empresa en 7, 9 o 16');
+    end if;
+
+    -- L4b: el proceso que registra el comprobante despues de emitir la factura
+    -- existe, lleva la guarda de rol y llama al package (que valida la empresa).
+    select count(*) into v_n
+      from apex_application_page_proc
+     where application_id = 100 and page_id = 9
+       and upper(process_name) like 'GUARDAR COMPROBANTE%'
+       and instr(upper(to_clob(nvl(process_source, ' '))), 'FN_TIENE_ROL') > 0
+       and instr(upper(to_clob(nvl(process_source, ' '))), 'PRC_REGISTRAR_COMPROBANTE_RETENCION') > 0;
+    if v_n = 0 then
+        insert into tmp_empfiltro_fallas
+        values ('L4b falta el proceso de la pagina 9 que registra el comprobante de retencion');
+    end if;
 
     -- L5: cada página con ítem oculto lo fija desde la empresa activa
     for r in (select distinct page_id from apex_application_page_items

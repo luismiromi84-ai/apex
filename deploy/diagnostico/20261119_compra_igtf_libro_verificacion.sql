@@ -43,6 +43,10 @@ declare
     v_val    number;
     v_html   clob;
     v_alic   number;
+    v_sum    number;
+    v_sin    number;
+    v_islr   number;
+    v_concepto number;
 
     procedure falla(p_caso varchar2, p_detalle varchar2) is
     begin
@@ -193,11 +197,19 @@ begin
         v_sql := replace(v_sql, ':P18_PERIODO', '''MES''');
         v_sql := replace(v_sql, 'return ', ':v_out := ');
         execute immediate to_clob(v_sql) using out v_html;
+        -- El bloque de totales suma el mes entero: con otros documentos abiertos
+        -- el IGTF del periodo no es el de esta compra sola, asi que se compara
+        -- contra lo que suman las FILAS del libro (que incluyen la de prueba).
+        execute immediate 'select round(sum(nvl(igtf_compra, 0)), 2) from (' || consulta_libro() || ')'
+            into v_sum;
+        execute immediate 'select round(sum(nvl(igtf_compra, 0)), 2) from (' || consulta_libro()
+            || ') where folio <> ''LIBROIGTF-1''' into v_sin;
         if instr(upper(v_html), 'IGTF') = 0 then
             falla('L7', 'los totales del mes no muestran el IGTF de compras');
-        elsif instr(v_html, to_char(round(round(116 * v_alic / 100, 2) * 900, 2),
-                                    'FM999G999G999G990D00')) = 0 then
-            falla('L7', 'los totales del mes no suman el IGTF de compras');
+        elsif instr(v_html, to_char(v_sum, 'FM999G999G999G990D00')) = 0 then
+            falla('L7', 'los totales del mes no son la suma de las filas del libro (' || v_sum || ')');
+        elsif abs(v_sum - v_sin) < 0.005 then
+            falla('L7', 'la compra de prueba no aporta IGTF a los totales del mes');
         end if;
     exception
         when others then
@@ -234,6 +246,16 @@ begin
         v_sql := replace(v_sql, ':P28_ID_COMPRA', to_char(v_id));
         v_sql := replace(v_sql, 'return ', ':v_out := ');
         execute immediate to_clob(v_sql) using out v_html;
+        -- El neto del resumen es total + IGTF - retencion de ISLR (el concepto se
+        -- hereda del proveedor, 2026-11-20). Se calcula con la misma funcion que
+        -- usa la pantalla, o el esperado se queda corto en cuanto el proveedor
+        -- retiene ISLR.
+        select id_concepto_islr into v_concepto from compras where id_compra = v_id;
+        if v_concepto is null then
+            v_islr := 0;
+        else
+            v_islr := nvl(pkg_retenciones.fn_islr_retencion_bs(v_id, v_concepto), 0);
+        end if;
         -- El resumen pinta los bolivares con NLS_NUMERIC_CHARACTERS=',.' (miles con
         -- punto y decimales con coma), como el impreso; el esperado se formatea igual
         -- o el instr no encuentra nada aunque el numero sea el correcto.
@@ -241,9 +263,11 @@ begin
                                  'NLS_NUMERIC_CHARACTERS='',.''')) = 0 then
             falla('L9', 'el resumen de la compra no muestra el IGTF en Bs');
         end if;
-        if instr(v_html, to_char(104400 + round(round(116 * v_alic / 100, 2) * 900, 2),
-                                 'FM999G999G999G990D00', 'NLS_NUMERIC_CHARACTERS='',.''')) = 0 then
-            falla('L9', 'el neto del resumen no cuadra con el libro (107.532,00 esperado)');
+        v_sum := 104400 + round(round(116 * v_alic / 100, 2) * 900, 2) - v_islr;
+        if instr(v_html, to_char(v_sum, 'FM999G999G999G990D00',
+                                 'NLS_NUMERIC_CHARACTERS='',.''')) = 0 then
+            falla('L9', 'el neto del resumen no cuadra con el libro (' || to_char(v_sum,
+                     'FM999G999G999G990D00', 'NLS_NUMERIC_CHARACTERS='',.''') || ' esperado)');
         end if;
     exception
         when others then
