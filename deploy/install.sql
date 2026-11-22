@@ -110,6 +110,8 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_periodo_desde.sql
 @@../funciones/fn_periodo_hasta.sql
 @@../funciones/fn_libro_excel.sql  
+-- Recibo de cobro en papel (lo usa la region de la pagina 35).
+@@../funciones/fn_imprimir_recibo.sql
 
 -- Monitoreo de errores: el procedimiento va antes porque fn_error_handler lo llama.
 @@../procedimientos/prc_log_error.sql

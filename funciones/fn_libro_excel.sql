@@ -37,6 +37,8 @@ create or replace function fn_libro_excel (
     v_empresa varchar2(200);
     v_rif     varchar2(40);
     v_pais    varchar2(2);
+    v_cab     clob;
+    v_logo    clob;
     v_filas   number := 0;
     v_hay     number;
     v_mes_tx  varchar2(20);
@@ -72,6 +74,41 @@ begin
     -- 2. Membrete (la empresa ya se leyo arriba, para elegir el libro)
     v_mes_tx := lpad(to_char(p_mes), 2, '0') || '/' || to_char(p_anio);
 
+    v_cab := '<div class="titulo">' || sys.htf.escape_sc(v_empresa) || '</div>'
+          || '<div class="sub">'
+          || case when v_pais = 'MX' then 'RFC: ' else 'RIF: ' end
+          || sys.htf.escape_sc(v_rif)
+          || ' &nbsp;&nbsp; Libro de compras y ventas - ' || v_mes_tx
+          || case upper(nvl(p_periodo, 'MES'))
+                 when 'Q1' then ' (1ra quincena: 1 al 15)'
+                 when 'Q2' then ' (2da quincena: 16 al final)'
+                 else ' (mes completo)'
+             end
+          || ' &nbsp;&nbsp; Documentos: '
+          || case upper(nvl(p_libro, 'TODOS'))
+                 when 'VENTAS'  then 'ventas'
+                 when 'COMPRAS' then 'compras'
+                 else 'compras y ventas'
+             end
+          || '</div>';
+
+    -- EL LOGO SOLO EN LA VERSION IMPRIMIBLE (2026-11-21), al lado del nombre, el
+    -- RIF y el periodo. En el Excel (p_imprimir='N') NO se pone a proposito: un
+    -- <img> con data URI dentro del HTML que abre Excel no es fiable y romperia
+    -- el archivo que el cliente ya usa a diario. Esa asimetria es deliberada.
+    if upper(nvl(p_imprimir, 'N')) = 'S' then
+        v_logo := pkg_empresa_logo.fn_logo_img(
+            p_id_empresa,
+            'max-height:64px;max-width:220px;display:block;');
+        if v_logo is not null then
+            v_cab := '<table style="border:none;margin:0 0 6px 0"><tr>'
+                  || '<td style="border:none;padding:0 12px 0 0;vertical-align:middle">'
+                  || v_logo || '</td>'
+                  || '<td style="border:none;padding:0;vertical-align:middle">'
+                  || v_cab || '</td></tr></table>';
+        end if;
+    end if;
+
     v_html := '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">'
            || '<style>'
            || 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }'
@@ -100,23 +137,7 @@ begin
                   || '  window.print();});</script>'
               else '' end
            || '</head><body>'
-           || '<div class="titulo">' || sys.htf.escape_sc(v_empresa) || '</div>'
-           || '<div class="sub">'
-           || case when v_pais = 'MX' then 'RFC: ' else 'RIF: ' end
-           || sys.htf.escape_sc(v_rif)
-           || ' &nbsp;&nbsp; Libro de compras y ventas - ' || v_mes_tx
-           || case upper(nvl(p_periodo, 'MES'))
-                  when 'Q1' then ' (1ra quincena: 1 al 15)'
-                  when 'Q2' then ' (2da quincena: 16 al final)'
-                  else ' (mes completo)'
-              end
-           || ' &nbsp;&nbsp; Documentos: '
-           || case upper(nvl(p_libro, 'TODOS'))
-                  when 'VENTAS'  then 'ventas'
-                  when 'COMPRAS' then 'compras'
-                  else 'compras y ventas'
-              end
-           || '</div>';
+           || v_cab;
 
     -- 3. La consulta, en un cursor dinámico
     v_c := dbms_sql.open_cursor;

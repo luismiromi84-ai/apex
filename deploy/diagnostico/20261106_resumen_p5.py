@@ -134,7 +134,7 @@ invalidos = cur.execute("select count(*) from all_objects where owner = 'WKSP_SY
                         "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')").fetchone()[0]
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = cur.execute("select count(*) from apex_application_pages where application_id = 100").fetchone()[0]
-comprobar("siguen las 34 paginas", paginas == 34, f"({paginas})")
+comprobar("siguen las 37 paginas", paginas == 37, f"({paginas})")
 
 conn.close()
 print()

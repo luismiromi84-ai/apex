@@ -32,7 +32,11 @@ ESPERADO = ["Home", "Administración", "Compras", "Facturación", "Recibos",
             "Gestión de Usuarios", "Panel general", "Presupuestos"]
 # 2026-11-19: «Clientes» cuelga de Facturación y «Gasto real» de Presupuestos
 # 2026-11-20: «Facturación» es el grupo y «Factura de Venta» (la pagina 8) su primera hija
-HIJOS = {"Compras": ["Facturas de compras", "Proveedores"],
+# 2026-11-20: «Conceptos de ISLR» (pagina 34) cuelga de Administración. No lo
+#             introdujo el acabado del 2026-11-21: la entrada existe desde el
+#             catalogo de ISLR y esta prueba se quedo con la lista vieja.
+HIJOS = {"Administración": ["Conceptos de ISLR"],
+         "Compras": ["Facturas de compras", "Proveedores"],
          "Facturación": ["Factura de Venta", "Clientes"],
          "Presupuestos": ["Gasto real"]}
 fallas = 0

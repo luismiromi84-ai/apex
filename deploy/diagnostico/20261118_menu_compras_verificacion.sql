@@ -102,13 +102,15 @@ begin
 
     -- V6: nadie mas cuelga de nadie (2026-11-19: ahora son cuatro: las dos de
     -- Compras, «Clientes» bajo Facturación y «Gasto real» bajo Presupuestos;
-    -- 2026-11-20: cinco, con «Factura de Venta» bajo Facturación)
+    -- 2026-11-20: cinco, con «Factura de Venta» bajo Facturación; y seis desde
+    -- el mismo 2026-11-20 por la tarde, con «Conceptos de ISLR» bajo
+    -- Administración (hija legítima: por eso el caso estaba en rojo)
     select count(*) into v_n
       from apex_260100.apex_application_list_entries
      where application_id = 100 and list_name = 'Navigation Menu'
        and list_entry_parent_id is not null;
-    if v_n <> 5 then
-        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 5)');
+    if v_n <> 6 then
+        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 6)');
     end if;
 
     -- V7: el padre usa «Ver Compras» y de él cuelga «Proveedores» con «Ver Proveedores».

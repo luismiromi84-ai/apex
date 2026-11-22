@@ -32,6 +32,7 @@ USUARIO, CLAVE = "diag.pestanas", "Diag#2026"
 TEL_PRUEBA = "0212-5550000"
 TEL_IMP_PRUEBA = "0212-5551111"
 fallas = 0
+omitidos = []
 
 
 def comprueba(ok, texto, detalle=""):
@@ -40,6 +41,16 @@ def comprueba(ok, texto, detalle=""):
                            "" if not detalle else " (%s)" % detalle))
     if not ok:
         fallas += 1
+
+
+def omite(texto, motivo):
+    """Caso que depende de un dato opcional que pone el cliente.
+
+    No es falla (la pantalla esta bien aunque el dato no exista) pero se dice
+    en voz alta y se resume al final: nada pasa en silencio.
+    """
+    print("  [OMITIDO] %s -- %s" % (texto, motivo))
+    omitidos.append((texto, motivo))
 
 
 c = credenciales()
@@ -163,11 +174,29 @@ try:
               "el selector tiene la pestana «Datos de la imprenta»")
     comprueba("Empresa" in (rds or ""), "«Empresa» tambien es pestana")
 
-    # 2) La fila de EMPRESA_FISCAL se cargo en los items.
-    comprueba(valor("P19F_NRO_PROVIDENCIA") == prov_original,
-              "carga la providencia de la empresa 1", repr(valor("P19F_NRO_PROVIDENCIA")))
-    comprueba(valor("P19F_IMPRENTA_NOMBRE") == imp_original,
-              "carga el nombre de la imprenta", repr(valor("P19F_IMPRENTA_NOMBRE")))
+    # 2) La fila de EMPRESA_FISCAL se cargo en los items. La providencia y el
+    #    nombre de la imprenta son datos OPCIONALES que teclea el cliente: si no
+    #    estan, se omite la comparacion (no es un fallo de la pantalla) pero se
+    #    exige que el campo salga vacio y no con un texto inventado.
+    if prov_original is None:
+        omite("carga la providencia de la empresa 1",
+              "la empresa 1 no tiene providencia configurada (dato del cliente)")
+        comprueba((valor("P19F_NRO_PROVIDENCIA") or "") == "",
+                  "sin providencia el campo sale vacio, sin texto inventado",
+                  repr(valor("P19F_NRO_PROVIDENCIA")))
+    else:
+        comprueba(valor("P19F_NRO_PROVIDENCIA") == prov_original,
+                  "carga la providencia de la empresa 1", repr(valor("P19F_NRO_PROVIDENCIA")))
+
+    if imp_original is None:
+        omite("carga el nombre de la imprenta",
+              "la empresa 1 no tiene imprenta configurada (dato del cliente)")
+        comprueba((valor("P19F_IMPRENTA_NOMBRE") or "") == "",
+                  "sin imprenta el campo sale vacio", repr(valor("P19F_IMPRENTA_NOMBRE")))
+    else:
+        comprueba(valor("P19F_IMPRENTA_NOMBRE") == imp_original,
+                  "carga el nombre de la imprenta", repr(valor("P19F_IMPRENTA_NOMBRE")))
+
     comprueba(str(valor("P19F_ID_EMPRESA")) == "1",
               "la empresa por defecto es la del usuario", repr(valor("P19F_ID_EMPRESA")))
 
@@ -229,5 +258,9 @@ finally:
     if restaurado != (original[1], original[10]):
         print("  AVISO: no se pudo restaurar la fila")
 
-print("\nRESULTADO: FALLAS=%d" % fallas)
+print("\nRESULTADO: FALLAS=%d OMITIDOS=%d" % (fallas, len(omitidos)))
+if omitidos:
+    print("  Casos omitidos (no son fallas: dependen de datos del cliente):")
+    for texto, motivo in omitidos:
+        print("   * %s: %s" % (texto, motivo))
 sys.exit(1 if fallas else 0)
