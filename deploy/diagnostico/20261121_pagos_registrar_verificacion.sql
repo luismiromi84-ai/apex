@@ -393,6 +393,49 @@ begin
         end;
     end;
 
+    -- P27: MISMA MONEDA, UNO A UNO. Un pago de 500 USD aplicado a una factura en USD
+    -- con otra tasa descontaba 501,16 (el usuario teclea 500 y ve otra cifra).
+    declare
+        v_usd number;
+        v_pg  number;
+    begin
+        nueva_compra(100, 'REGISTRADA', 'USD', 900, 0, 0, 'FAC', null, v_usd);
+        pkg_pagos.prc_registrar_pago(
+            p_id_proveedor => v_prov, p_fecha => date '2026-11-21', p_moneda => 'USD',
+            p_tasa => 950, p_monto => 100, p_id_forma_pago => null,
+            p_aplicaciones => '[{"id_compra":' || v_usd || ',"monto":100}]',
+            p_usuario => v_user, p_id_pago => v_pg);
+        espera_num('P27', fn_saldo_compra(v_usd), 0, 'saldo con la misma moneda');
+        declare
+            v_apl number;
+        begin
+            select d.monto_aplicado into v_apl
+              from pagos_detalle d where d.id_pago = v_pg;
+            espera_num('P27', v_apl, 100, 'lo aplicado es lo tecleado, no la conversion');
+        end;
+    end;
+
+    -- P28: usar el saldo a favor desde la pantalla. Un anticipo cubre una compra nueva
+    -- sin que salga dinero otra vez; sin esto el saldo a favor queda muerto.
+    declare
+        v_ant  number;
+        v_comp number;
+        v_apl  number;
+    begin
+        pkg_pagos.prc_registrar_pago(
+            p_id_proveedor => v_prov, p_fecha => date '2026-11-21', p_moneda => 'VES',
+            p_tasa => 1, p_monto => 400, p_id_forma_pago => null,
+            p_aplicaciones => null, p_usuario => v_user, p_id_pago => v_ant);
+
+        nueva_compra(400, 'REGISTRADA', 'VES', 1, 0, 0, 'FAC', null, v_comp);
+
+        pkg_pagos.prc_usar_favor(v_prov, v_comp, v_user, v_apl);
+        espera_num('P28', v_apl, 400, 'aplicado con saldo a favor');
+        espera_num('P28', fn_saldo_compra(v_comp), 0, 'saldo de la compra cubierta');
+        espera_estado('P28', v_comp, 'PAGADA');
+
+    end;
+
     rollback to sp_pagos;
 
     raise_application_error(-20100,

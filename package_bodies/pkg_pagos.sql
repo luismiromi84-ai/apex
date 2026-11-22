@@ -27,8 +27,12 @@ create or replace package body pkg_pagos as
           from pagos p
          where p.id_pago = p_id_pago;
 
-        select nvl(sum(d.monto_aplicado * nvl(nullif(c.tipo_cambio, 0), 1)
-                       / nvl(nullif(p.tipo_cambio, 0), 1)), 0)
+        select nvl(sum(case
+                          when upper(nvl(c.cod_moneda, 'VES')) = upper(nvl(p.cod_moneda, 'VES'))
+                          then d.monto_aplicado
+                          else d.monto_aplicado * nvl(nullif(c.tipo_cambio, 0), 1)
+                               / nvl(nullif(p.tipo_cambio, 0), 1)
+                        end), 0)
           into v_aplicado
           from pagos_detalle d
           join pagos p on p.id_pago = d.id_pago
@@ -83,10 +87,12 @@ create or replace package body pkg_pagos as
                                 p_id_pago_prov in number,
                                 p_monto in number,
                                 p_tasa_pago in number,
-                                p_id_empresa in number) return number is
+                                p_id_empresa in number,
+                                p_moneda_pago in varchar2) return number is
         v_prov   number;
         v_emp    number;
         v_tc     number;
+        v_mon    varchar2(3);
         v_saldo  number;
     begin
         if p_monto is null or p_monto <= 0 then
@@ -94,8 +100,9 @@ create or replace package body pkg_pagos as
         end if;
 
         begin
-            select c.id_proveedor, c.id_empresa, nvl(nullif(c.tipo_cambio, 0), 1)
-              into v_prov, v_emp, v_tc
+            select c.id_proveedor, c.id_empresa, nvl(nullif(c.tipo_cambio, 0), 1),
+                   nvl(c.cod_moneda, 'VES')
+              into v_prov, v_emp, v_tc, v_mon
               from compras c
              where c.id_compra = p_id_compra;
         exception
@@ -119,6 +126,13 @@ create or replace package body pkg_pagos as
             raise_application_error(-20111,
                 'Lo aplicado a la compra ' || p_id_compra || ' supera su saldo de '
                 || to_char(v_saldo, 'FM999G999G999G990D00') || '.');
+        end if;
+
+        -- Misma moneda = mismas unidades (2026-11-22). Sin esto, un pago de 500 USD
+        -- aplicado a una factura en USD con otra tasa descontaba 501,16: el usuario
+        -- teclea 500 y ve otra cifra.
+        if upper(nvl(v_mon, 'VES')) = upper(nvl(p_moneda_pago, 'VES')) then
+            return round(p_monto, 2);
         end if;
 
         return round(p_monto * v_tc / nvl(nullif(p_tasa_pago, 0), 1), 2);
@@ -217,7 +231,7 @@ create or replace package body pkg_pagos as
             v_vistos := v_vistos || r.id_compra || ',';
 
             v_en_pago := valida_aplicacion(r.id_compra, p_id_proveedor, r.monto,
-                                           v_tasa, v_emp);
+                                           v_tasa, v_emp, p_moneda);
             v_total   := v_total + v_en_pago;
         end loop;
 
@@ -353,11 +367,12 @@ create or replace package body pkg_pagos as
         v_favor      number;
         v_en_pago    number;
         v_tasa       number;
+        v_mon        varchar2(3);
     begin
         begin
             select p.estado, nvl(p.conciliado, 'N'), p.id_empresa, p.id_proveedor,
-                   nvl(nullif(p.tipo_cambio, 0), 1)
-              into v_estado, v_conciliado, v_emp, v_prov, v_tasa
+                   nvl(nullif(p.tipo_cambio, 0), 1), nvl(p.cod_moneda, 'VES')
+              into v_estado, v_conciliado, v_emp, v_prov, v_tasa, v_mon
               from pagos p
              where p.id_pago = p_id_pago;
         exception
@@ -378,7 +393,7 @@ create or replace package body pkg_pagos as
                 'El pago esta conciliado: desmarca la conciliacion antes de aplicarle saldo.');
         end if;
 
-        v_en_pago := valida_aplicacion(p_id_compra, v_prov, p_monto, v_tasa, v_emp);
+        v_en_pago := valida_aplicacion(p_id_compra, v_prov, p_monto, v_tasa, v_emp, v_mon);
 
         v_favor := fn_favor_pago(p_id_pago);
         if v_en_pago > v_favor + 0.01 then
@@ -406,6 +421,65 @@ create or replace package body pkg_pagos as
     -- Recalcula el estado de una compra por su saldo. Se expone porque lo llama
     -- pkg_compras al registrar o anular una nota (2026-11-22): una nota cambia la
     -- deuda de la factura que acredita y su estado tiene que seguirlo.
+    procedure prc_usar_favor (
+        p_id_proveedor in number,
+        p_id_compra    in number,
+        p_usuario      in varchar2,
+        p_aplicado     out number
+    ) is
+        v_saldo  number;
+        v_tc     number;
+        v_mon    varchar2(3);
+        v_libre  number;
+        v_en_com number;
+        v_apl    number;
+    begin
+        p_aplicado := 0;
+
+        select nvl(nullif(c.tipo_cambio, 0), 1), nvl(c.cod_moneda, 'VES')
+          into v_tc, v_mon
+          from compras c
+         where c.id_compra = p_id_compra;
+
+        v_saldo := fn_saldo_compra(p_id_compra);
+        if v_saldo <= 0.01 then
+            raise_application_error(-20121, 'La compra no tiene saldo que aplicar.');
+        end if;
+
+        for r in (select p.id_pago,
+                         nvl(nullif(p.tipo_cambio, 0), 1) as tc,
+                         nvl(p.cod_moneda, 'VES') as mon
+                    from pagos p
+                   where p.id_proveedor = p_id_proveedor
+                     and p.estado = 'ACTIVO'
+                     and nvl(p.conciliado, 'N') = 'N'
+                   order by p.fecha_pago, p.id_pago) loop
+            exit when v_saldo <= 0.01;
+
+            v_libre := fn_favor_pago(r.id_pago);
+            if v_libre > 0.01 then
+                -- el saldo a favor vive en la moneda del pago; se lleva a la de la compra
+                if upper(r.mon) = upper(v_mon) then
+                    v_en_com := v_libre;
+                else
+                    v_en_com := round(v_libre * r.tc / v_tc, 2);
+                end if;
+
+                v_apl := least(v_en_com, v_saldo);
+                if v_apl > 0.01 then
+                    prc_aplicar_saldo(r.id_pago, p_id_compra, v_apl, p_usuario);
+                    p_aplicado := p_aplicado + v_apl;
+                    v_saldo    := v_saldo - v_apl;
+                end if;
+            end if;
+        end loop;
+
+        if p_aplicado <= 0.01 then
+            raise_application_error(-20121,
+                'El proveedor no tiene saldo a favor disponible en este momento.');
+        end if;
+    end prc_usar_favor;
+
     procedure prc_recalcular_compra (
         p_id_compra in number
     ) is
