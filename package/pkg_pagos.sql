@@ -56,6 +56,16 @@ create or replace package pkg_pagos as
         p_usuario   in varchar2
     );
 
+    -- Aplica el saldo a favor del proveedor a una compra, consumiendo primero los
+    -- pagos mas antiguos (2026-11-22). Devuelve cuanto se aplico, en la moneda de
+    -- la compra. Si no hay saldo a favor lanza -20121.
+    procedure prc_usar_favor (
+        p_id_proveedor in number,
+        p_id_compra    in number,
+        p_usuario      in varchar2,
+        p_aplicado     out number
+    );
+
     -- Recalcula el estado de una compra segun su saldo (lo llama pkg_compras al
     -- registrar o anular una nota de credito o debito).
     procedure prc_recalcular_compra (

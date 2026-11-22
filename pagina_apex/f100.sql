@@ -32688,7 +32688,9 @@ wwv_flow_imp_page.create_page(
 '        if (chk && chk.checked && inp) {',
 '            var tc = spxNum(filas[i].getAttribute(''data-tc'')) || 1;',
 '            var tasa = spxNum(apex.item(''P37_TIPO_CAMBIO'').getValue()) || 1;',
-'            apl = apl + (spxNum(inp.value) * tc / tasa);',
+'            var mon = (filas[i].getAttribute(''data-mon'') || ''VES'').toUpperCase();',
+'            var pagMon = (apex.item(''P37_COD_MONEDA'').getValue() || ''VES'').toUpperCase();',
+'            apl = apl + (mon === pagMon ? spxNum(inp.value) : spxNum(inp.value) * tc / tasa);',
 '        }',
 '    }',
 '    var monto = spxNum(apex.item(''P37_MONTO'').getValue());',
@@ -32708,10 +32710,14 @@ wwv_flow_imp_page.create_page(
 '        var saldo = spxNum(filas[i].getAttribute(''data-saldo''));',
 '        var tc = spxNum(filas[i].getAttribute(''data-tc'')) || 1;',
 '        var tasa = spxNum(apex.item(''P37_TIPO_CAMBIO'').getValue()) || 1;',
-'        var disponible = resta * tasa / tc;',
+'        var mon = (filas[i].getAttribute(''data-mon'') || ''VES'').toUpperCase();',
+'        var pagMon = (apex.item(''P37_COD_MONEDA'').getValue() || ''VES'').toUpperCase();',
+'        var misma = (mon === pagMon);',
+'        var disponible = misma ? resta : resta * tasa / tc;',
 '        var aplica = Math.min(saldo, disponible);',
 '        if (aplica > 0.01 && resta > 0.01) {',
-'            chk.checked = true; inp.value = aplica.toFixed(2); resta = resta - (aplica * tc / tasa);',
+'            chk.checked = true; inp.value = aplica.toFixed(2);',
+'            resta = resta - (misma ? aplica : aplica * tc / tasa);',
 '        } else { chk.checked = false; inp.value = ''''; }',
 '    }',
 '    spxResumen();',
@@ -32821,7 +32827,12 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000001590)
 ,p_prompt=>'Moneda del pago'
 ,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC2:VES;VES,USD;USD'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select nvl(pa.moneda_local, ''USD'') as display_value, nvl(pa.moneda_local, ''USD'') as return_value',
+'  from empresas e left join paises pa on pa.cod_pais = e.cod_pais',
+' where e.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
+' union',
+'select ''USD'', ''USD'' from dual'))
 ,p_cSize=>10
 ,p_colspan=>4
 ,p_field_template=>1610598304472262251
@@ -32962,6 +32973,7 @@ wwv_flow_imp_page.create_page_plug(
 '            v_html := v_html || ''<tr class="spx-pago-fila" data-compra="'' || to_char(r.id_compra)',
 '                   || ''" data-saldo="'' || to_char(v_saldo)',
 '                   || ''" data-tc="'' || to_char(nvl(nullif(r.tipo_cambio, 0), 1))',
+'                   || ''" data-mon="'' || r.cod_moneda',
 '                   || ''"><td><input type="checkbox" class="spx-sel" onclick="spxResumen()"></td>''',
 '                   || ''<td>'' || sys.htf.escape_sc(r.folio_factura) || ''</td>''',
 '                   || ''<td>'' || to_char(r.fecha_emision, ''DD/MM/YYYY'') || ''</td>''',
@@ -33065,6 +33077,34 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_redirect_url=>'f?p=&APP_ID.:36:&APP_SESSION.::&DEBUG.:::'
 ,p_button_css_classes=>'u-pullRight'
 ,p_icon_css_classes=>'fa-arrow-left'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001671)
+,p_process_sequence=>3
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Sugiere la tasa del pago'
+,p_static_id=>'sugiere-tasa-pago'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_mon varchar2(3) := nvl(:P37_COD_MONEDA, ''VES'');',
+'    v_tasa number := fn_clean_num(:P37_TIPO_CAMBIO);',
+'begin',
+'    -- En bolivares la tasa es 1; en divisa se propone la del dia (2026-11-22).',
+'    -- Solo se toca si esta vacia o si vale 1 en una moneda que no es el bolivar.',
+'    if upper(v_mon) in (''VES'', ''BS'') then',
+'        if v_tasa is null or v_tasa = 0 then',
+'            apex_util.set_session_state(''P37_TIPO_CAMBIO'', 1);',
+'        end if;',
+'        return;',
+'    end if;',
+'',
+'    if v_tasa is null or v_tasa <= 1 then',
+'        apex_util.set_session_state(''P37_TIPO_CAMBIO'',',
+'            fn_tasa_ves(trunc(sysdate), upper(v_mon)));',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000001670)
