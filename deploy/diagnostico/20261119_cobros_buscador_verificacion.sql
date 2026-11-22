@@ -103,7 +103,10 @@ begin
      where application_id = 100 and page_id = 24 and item_name = 'P24_CONCILIADO'
        and lov_definition like 'STATIC2:%'
        and instr(upper(lov_definition), 'TODOS') > 0
-       and instr(upper(lov_definition), 'SI;') > 0
+       -- El valor de retorno sigue siendo SI; lo que lleva tilde es el rotulo
+       -- («Sí»), que es lo que lee la persona. Se comprueban las dos cosas.
+       and instr(upper(lov_definition), ';SI') > 0
+       and instr(lov_definition, 'Sí') > 0
        and instr(upper(lov_definition), 'NO') > 0;
     if v_n = 0 then
         falla('B3: el filtro Conciliado no es la lista Todos/Si/No');
@@ -200,6 +203,29 @@ begin
        and static_id = 'valida-rol-cobros';
     if v_n = 0 then
         falla('B7: falta la guarda de rol de la pagina 24');
+    end if;
+
+    -- B8 (2026-11-20): los cinco filtros tienen que quedar en el estado de sesion.
+    -- Estaban declarados p_is_persistent=>'N' y su accion hace apex.submit: APEX
+    -- descartaba el valor antes de renderizar, asi que el informe salia SIN filtrar
+    -- y el combo volvia a «Todos». La pagina 17 no los marca y sus filtros si filtran.
+    select count(*) into v_n
+      from apex_260100.apex_application_page_items
+     where application_id = 100 and page_id = 24
+       and item_name in ('P24_BUSCAR', 'P24_DESDE', 'P24_HASTA', 'P24_ESTADO', 'P24_CONCILIADO')
+       and maintain_session_state = 'Per Session';
+    if v_n <> 5 then
+        falla('B8: ' || v_n || ' de 5 filtros se guardan en sesion; sin eso no filtran');
+    end if;
+
+    -- B9: el filtro de estado dice «Emitidos» y su valor sigue siendo ACTIVO.
+    select count(*) into v_n
+      from apex_260100.apex_application_page_items
+     where application_id = 100 and page_id = 24 and item_name = 'P24_ESTADO'
+       and instr(lov_definition, 'Emitidos;ACTIVO') > 0
+       and instr(lov_definition, 'Activos;') = 0;
+    if v_n = 0 then
+        falla('B9: el filtro de Estado no dice Emitidos con el valor ACTIVO');
     end if;
 
     for i in 1 .. v_fallas.count loop

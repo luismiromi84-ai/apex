@@ -209,9 +209,11 @@ try:
     prev = js("(function(){var p=document.querySelector('#R43000000000000411 .spx-preview');"
               "return p ? p.innerText : 'SIN';})()") or ""
     print("  resumen imprenta: %r" % prev)
-    comprueba(prev.startswith("Imprenta configurada:") and (IMP[0] in prev) and (IMP[1] in prev)
-              and (IMP[2] in prev) and (IMP[3] in prev),
-              "F3 la linea de resumen trae nombre, RIF, telefono y correo", prev)
+    datos_imp = [x for x in IMP if x]
+    comprueba(prev.startswith("Imprenta configurada:") and datos_imp
+              and all(x in prev for x in datos_imp),
+              "F3 la linea de resumen trae nombre, RIF, telefono y correo",
+              "la base tiene %r" % (IMP,))
     subs2 = js("""(function(){
       var r=document.getElementById('R43000000000000411');
       return [...r.querySelectorAll('.spx-sub')].map(function(x){return x.innerText;}).join(' | ');
@@ -292,19 +294,22 @@ try:
     comprueba("P23_ID_CONCEPTO_ISLR+P23_ES_SPE" in filas,
               "P1 Concepto de ISLR y SPE en la misma fila", filas)
     comprueba("P23_DIAS_CREDITO+P23_ESTADO" in filas,
-              "P1 Dias de credito y Estado en la misma fila", filas)
+              "P1 Dias de credito y Estado en la misma fila (seccion fusionada)", filas)
 
     cab = mm.get("cabecera") or 0
     comprueba(50 <= cab <= 62, "P2 la cabecera de seccion baja a ~56 px (de 80)", cab)
-    comprueba(mm.get("relleno") == "13px", "P2 el relleno de la tarjeta baja a 13 px (de 16)",
+    comprueba(mm.get("relleno") == "9px", "P2 el relleno de la tarjeta baja a 9 px (de 16)",
               mm.get("relleno"))
-    comprueba(mm.get("margen") == "12px", "P2 hay 12 px entre secciones (de 16)",
+    comprueba(mm.get("margen") == "9px", "P2 hay 9 px entre secciones (de 16)",
               mm.get("margen"))
 
     alto_if = mm.get("iframe") or 0
     comprueba(0 < alto_if <= 765, "P3 el dialogo ocupa menos del 85 % de 900 px", alto_if)
     resto = (mm.get("fondo") or 0) - alto_if
-    comprueba(resto <= 120, "P3 lo que queda por debajo es un scroll corto", resto)
+    # Desde el 2026-11-20 el formulario entra entero: no queda nada por debajo.
+    comprueba(resto <= 2, "P3 el formulario entra sin scroll en 900 px", resto)
+    comprueba((mm.get("scroll") or 0) <= 0, "P3 no hay contenedor con scroll",
+              mm.get("scroll"))
 
     captura("20261120_cierre_p23_900.png", 1440, 900, completo=False)
     captura("20261120_cierre_p23.png", 1440, 900)

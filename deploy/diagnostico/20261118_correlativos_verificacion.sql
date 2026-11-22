@@ -21,6 +21,15 @@
 alter session set current_schema = WKSP_SYPEXWS
 /
 
+-- Esta ADB tiene parallel_degree_policy = AUTO. En un bloque largo como este,
+-- un DML puede salir en paralelo y el siguiente acceso serial al MISMO objeto
+-- de la misma transaccion revienta con ORA-12839 («cannot modify an object in
+-- parallel after modifying it»), que es lo que pasaba el 2026-11-20 al emitir
+-- el comprobante dentro del bloque. Se desactiva el DML en paralelo para esta
+-- sesion: no cambia nada de lo que se mide (son 3 filas).
+alter session disable parallel dml
+/
+
 declare
     v_fallas number := 0;
     v_lista  varchar2(3000) := '';

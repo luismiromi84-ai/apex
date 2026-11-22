@@ -439,6 +439,18 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_current_for_pages=>'19'
 );
 wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(43000000000001461)
+,p_list_item_display_sequence=>1
+,p_parent_list_item_id=>wwv_flow_imp.id(43000000000000391)
+,p_list_item_link_text=>'Conceptos de ISLR'
+,p_static_id=>'islr-conceptos'
+,p_list_item_link_target=>'f?p=&APP_ID.:34:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-percent'
+,p_security_scheme=>wwv_flow_imp.id(9149896901584567)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'34'
+);
+wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(43000000000000550)
 ,p_list_item_display_sequence=>2
 ,p_parent_list_item_id=>wwv_flow_imp.id(18272401440108059)
@@ -7991,6 +8003,7 @@ wwv_flow_imp_page.create_page(
 ,p_autocomplete_on_off=>'OFF'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<style>',
+'  /* --- Logo del sistema: la animacion la comparten la barra y el login --- */',
 '  @keyframes spxGlow {',
 '    0%, 100% { filter: drop-shadow(0 0 0 rgba(2,132,199,0)); transform: scale(1); }',
 '    50%      { filter: drop-shadow(0 0 10px rgba(56,189,248,0.9)); transform: scale(1.05); }',
@@ -7998,315 +8011,121 @@ wwv_flow_imp_page.create_page(
 '  @keyframes spxTrace { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }',
 '  .synpex-brand svg, .synpex-login-brand svg { animation: spxGlow 3.2s ease-in-out infinite; }',
 '  .synpex-brand svg path:last-child, .synpex-login-brand svg path:last-child { animation: spxTrace 2.4s ease-in-out infinite; }',
-'  /* Layout principal Grid */',
-'  .synpex-welcome-grid {',
-'    display: grid;',
-'    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));',
-'    gap: 24px;',
-'    margin-top: 10px;',
-'    width: 100%;',
-'  }',
 '',
-'  /* Tarjeta principal */',
-'  .synpex-welcome-card {',
-'    display: flex;',
-'    flex-wrap: wrap;',
-'    align-items: center;',
-'    justify-content: space-between;',
-'    background: #ffffff;',
-'    border: 1px solid #e2e8f0;',
-'    border-radius: 16px;',
-'    padding: 28px;',
-'    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);',
-'    gap: 20px;',
-'  }',
+'  /* --- Cabecera: empresa, usuario y fecha --- */',
+'  .spx-home-cab { background: #ffffff; border: 1px solid #e5e7eb; border-left: 4px solid #0ea5e9; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 15px 18px; margin: 16px 16px 0; }',
+'  .spx-home-kicker { font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'  .spx-home-title { font-size: 1.4rem; font-weight: 700; color: #17364a; line-height: 1.2; margin: 2px 0 0; }',
+'  .spx-home-title b { color: #0b807c; }',
+'  .spx-home-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 20px; margin-top: 8px; font-size: .86rem; color: #5f7b8c; }',
+'  .spx-home-meta span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }',
+'  .spx-home-meta .fa { color: #94a3b8; }',
+'  .spx-chip { display: inline-flex; align-items: center; font-size: .72rem; font-weight: 600; color: #0f766e; background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 999px; padding: 1px 9px; }',
 '',
-'  .synpex-welcome-content {',
-'    flex: 1 1 220px;',
-'    max-width: 100%;',
-'  }',
+'  /* --- La region hero: sin aire de mas, la cabecera manda --- */',
+'  .t-HeroRegion { padding-top: 0 !important; }',
+'  .t-HeroRegion-wrap { padding: 0 !important; }',
+'  .t-HeroRegion-title:empty { display: none !important; }',
 '',
-'  .synpex-badge {',
-'    display: inline-block;',
-'    background-color: #e0f2fe;',
-'    color: #0284c7;',
-'    font-size: 11px;',
-'    font-weight: 700;',
-'    letter-spacing: 1px;',
-'    padding: 4px 12px;',
-'    border-radius: 20px;',
-'    margin-bottom: 12px;',
-'  }',
+'  /* --- Rejilla de los dos accesos: se apila sola al estrechar --- */',
+'  .synpex-welcome-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; }',
+'  .synpex-welcome-card { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; height: 100%; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 20px 22px; min-width: 0; }',
+'  .synpex-welcome-content { flex: 1 1 250px; min-width: 0; }',
+'  .synpex-badge { display: inline-block; background: #eef6ff; color: #0b4f7a; font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; }',
+'  .synpex-badge-emerald { background: #ecfdf5; color: #047857; }',
+'  .synpex-welcome-title { font-size: 1.15rem; font-weight: 700; color: #17364a; margin: 0 0 6px; line-height: 1.25; }',
+'  .synpex-welcome-desc { color: #6b7280; font-size: .84rem; line-height: 1.55; margin: 0 0 16px; }',
 '',
-'  .synpex-badge-emerald {',
-'    background-color: #d1fae5;',
-'    color: #059669;',
-'  }',
+'  /* --- Boton de cada tarjeta: el mismo azul de la app --- */',
+'  .synpex-btn-custom { display: inline-flex !important; align-items: center !important; gap: 8px !important; background: linear-gradient(135deg, #0076ce, #005291) !important; color: #ffffff !important; border: 1px solid #005291 !important; padding: 9px 18px !important; border-radius: 8px !important; font-weight: 600 !important; font-size: .85rem !important; text-decoration: none !important; box-shadow: 0 1px 3px rgba(0,82,145,.25) !important; transition: box-shadow .2s ease, transform .2s ease !important; }',
+'  .synpex-btn-custom:hover { color: #ffffff !important; box-shadow: 0 4px 12px rgba(0,82,145,.30) !important; transform: translateY(-1px) !important; }',
+'  .synpex-btn-emerald { background: linear-gradient(135deg, #0b807c, #0f766e) !important; border-color: #0f766e !important; box-shadow: 0 1px 3px rgba(15,118,110,.25) !important; }',
+'  .synpex-btn-emerald:hover { box-shadow: 0 4px 12px rgba(15,118,110,.30) !important; }',
+'  .synpex-btn-custom .t-Icon, .synpex-btn-custom .t-Button-label { color: #ffffff !important; }',
 '',
-'  .synpex-welcome-title {',
-'    font-size: 24px;',
-'    font-weight: 800;',
-'    color: #0f172a;',
-'    margin: 0 0 10px 0;',
-'    line-height: 1.2;',
-'  }',
+'  /* --- Panel de cada tarjeta: que se hace en el modulo --- */',
+'  .spx-card-list { list-style: none; margin: 0; padding: 12px 14px; background: #f8fafc; border: 1px solid #eef2f6; border-radius: 10px; display: grid; gap: 7px; flex: 1 1 210px; min-width: 0; }',
+'  .spx-card-list li { display: flex; align-items: flex-start; gap: 9px; font-size: .8rem; color: #475569; line-height: 1.4; }',
+'  .spx-card-list .fa { color: #0ea5e9; font-size: .72rem; margin-top: 3px; }',
 '',
-'  .synpex-welcome-desc {',
-'    color: #64748b;',
-'    font-size: 13px;',
-'    line-height: 1.5;',
-'    margin-bottom: 20px;',
+'  /* --- Movil: una tarjeta por fila --- */',
+'  @media (max-width: 900px) {',
+'    .synpex-welcome-grid { grid-template-columns: 1fr; gap: 12px; }',
+'    .synpex-welcome-card { padding: 16px 18px; }',
 '  }',
-'',
-unistr('  /* Bot\00F3n Principal */'),
-'  .synpex-btn-custom {',
-'    display: inline-flex !important;',
-'    align-items: center !important;',
-'    gap: 8px !important;',
-'    background-color: #0284c7 !important;',
-'    color: #ffffff !important;',
-'    border-color: #0284c7 !important;',
-'    padding: 9px 18px !important;',
-'    border-radius: 8px !important;',
-'    font-weight: 600 !important;',
-'    font-size: 13px !important;',
-'    text-decoration: none !important;',
-'    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3) !important;',
-'    transition: all 0.2s ease-in-out !important;',
+'  @media (max-width: 640px) {',
+'    .spx-home-cab { padding: 13px 15px; margin: 12px 8px 0; }',
+'    .spx-home-title { font-size: 1.15rem; }',
+'    .synpex-welcome-title { font-size: 1.05rem; }',
+'    .spx-card-list { padding: 10px 12px; }',
 '  }',
-'',
-'  .synpex-btn-custom:hover {',
-'    background-color: #0369a1 !important;',
-'    border-color: #0369a1 !important;',
-'    color: #ffffff !important;',
-'    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4) !important;',
-'    transform: translateY(-1px) !important;',
-'  }',
-'',
-unistr('  /* Variaci\00F3n Bot\00F3n Verde (Facturaci\00F3n) */'),
-'  .synpex-btn-emerald {',
-'    background-color: #10b981 !important;',
-'    border-color: #10b981 !important;',
-'    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3) !important;',
-'  }',
-'',
-'  .synpex-btn-emerald:hover {',
-'    background-color: #059669 !important;',
-'    border-color: #059669 !important;',
-'    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;',
-'  }',
-'',
-'  .synpex-btn-custom .t-Icon,',
-'  .synpex-btn-custom .t-Button-label {',
-'    color: #ffffff !important;',
-'  }',
-'',
-unistr('  /* Ilustraci\00F3n / Mockup */'),
-'  .synpex-system-illustration {',
-'    flex: 1 1 200px;',
-'    max-width: 100%;',
-'  }',
-'',
-'  .synpex-window-mockup {',
-'    background: #f8fafc;',
-'    border: 1px solid #cbd5e1;',
-'    border-radius: 12px;',
-'    overflow: hidden;',
-'    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);',
-'  }',
-'',
-'  .synpex-window-header {',
-'    background: #e2e8f0;',
-'    padding: 8px 14px;',
-'    display: flex;',
-'    align-items: center;',
-'    gap: 6px;',
-'  }',
-'',
-'  .dot {',
-'    width: 9px;',
-'    height: 9px;',
-'    border-radius: 50%;',
-'  }',
-'  .dot.red { background-color: #ef4444; }',
-'  .dot.yellow { background-color: #f59e0b; }',
-'  .dot.green { background-color: #10b981; }',
-'',
-'  .window-title {',
-'    margin-left: 8px;',
-'    font-size: 11px;',
-'    font-weight: 600;',
-'    color: #64748b;',
-'  }',
-'',
-'  .synpex-window-body {',
-'    padding: 14px;',
-'    display: flex;',
-'    flex-direction: column;',
-'    gap: 10px;',
-'  }',
-'',
-'  .system-metrics {',
-'    display: flex;',
-'    gap: 8px;',
-'  }',
-'',
-'  .metric-box {',
-'    flex: 1;',
-'    background: #ffffff;',
-'    border: 1px solid #e2e8f0;',
-'    padding: 8px 10px;',
-'    border-radius: 8px;',
-'    display: flex;',
-'    flex-direction: column;',
-'  }',
-'',
-'  .metric-label {',
-'    font-size: 9px;',
-'    color: #94a3b8;',
-'    text-transform: uppercase;',
-'    font-weight: 600;',
-'  }',
-'',
-'  .metric-value {',
-'    font-size: 15px;',
-'    font-weight: 700;',
-'    color: #0f172a;',
-'  }',
-'',
-'  .metric-status.active {',
-'    font-size: 11px;',
-'    font-weight: 700;',
-'    color: #16a34a;',
-'  }',
-'',
-'  .system-chart-box {',
-'    background: #ffffff;',
-'    border: 1px solid #e2e8f0;',
-'    border-radius: 8px;',
-'    padding: 8px;',
-'  }',
-'',
-'  .chart-title {',
-'    font-size: 10px;',
-'    font-weight: 600;',
-'    color: #475569;',
-'    display: block;',
-'    margin-bottom: 4px;',
-'  }',
-'',
-'  .system-chart {',
-'    width: 100%;',
-'    height: 45px;',
-'  }',
-'',
-'  .system-list {',
-'    display: flex;',
-'    flex-direction: column;',
-'    gap: 6px;',
-'  }',
-'',
-'  .list-item {',
-'    background: #ffffff;',
-'    border: 1px solid #f1f5f9;',
-'    padding: 5px 8px;',
-'    border-radius: 6px;',
-'    display: flex;',
-'    align-items: center;',
-'    font-size: 10px;',
-'  }',
-'',
-'  .status-dot {',
-'    width: 6px;',
-'    height: 6px;',
-'    border-radius: 50%;',
-'    margin-right: 8px;',
-'  }',
-'  .status-dot.green { background-color: #22c55e; }',
-'  .status-dot.blue { background-color: #0284c7; }',
-'',
-'  .item-text {',
-'    color: #334155;',
-'    font-weight: 500;',
-'    flex: 1;',
-'  }',
-'',
-'  .item-badge {',
-'    font-size: 9px;',
-'    font-weight: 700;',
-'    color: #0284c7;',
-'    background: #f0f9ff;',
-'    padding: 2px 6px;',
-'    border-radius: 4px;',
-'  }',
-'',
-'  .item-badge.badge-green {',
-'    color: #059669;',
-'    background: #ecfdf5;',
-'  }',
-'</style>',
-'<style>',
-'  @keyframes spxGlow {',
-'    0%, 100% { filter: drop-shadow(0 0 0 rgba(2,132,199,0)); transform: scale(1); }',
-'    50%      { filter: drop-shadow(0 0 10px rgba(56,189,248,0.9)); transform: scale(1.05); }',
-'  }',
-'  @keyframes spxTrace { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }',
-'  .synpex-brand svg, .synpex-login-brand svg { animation: spxGlow 3.2s ease-in-out infinite; }',
-'  .synpex-brand svg path:last-child, .synpex-login-brand svg path:last-child { animation: spxTrace 2.4s ease-in-out infinite; }',
-unistr('  /* Layout principal Grid en 2 columnas autom\00E1ticas */'),
-'  .synpex-welcome-grid {',
-'    display: grid;',
-'    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));',
-'    gap: 24px;',
-'    margin-top: 10px;',
-'    width: 100%;',
-'  }',
-'',
-'  /* El resto de tus estilos se mantienen exactamente igual */',
-'  .synpex-welcome-card {',
-'    display: flex;',
-'    flex-wrap: wrap;',
-'    align-items: center;',
-'    justify-content: space-between;',
-'    background: #ffffff;',
-'    border: 1px solid #e2e8f0;',
-'    border-radius: 16px;',
-'    padding: 28px;',
-'    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);',
-'    gap: 20px;',
-'  }',
-'  ',
-unistr('  /* ... (pega aqu\00ED el resto de tus clases CSS anteriores) ... */'),
-'</style><style>',
-unistr('  /* Layout principal Grid en 2 columnas autom\00E1ticas */'),
-'  .synpex-welcome-grid {',
-'    display: grid;',
-'    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));',
-'    gap: 24px;',
-'    margin-top: 10px;',
-'    width: 100%;',
-'  }',
-'',
-'  /* El resto de tus estilos se mantienen exactamente igual */',
-'  .synpex-welcome-card {',
-'    display: flex;',
-'    flex-wrap: wrap;',
-'    align-items: center;',
-'    justify-content: space-between;',
-'    background: #ffffff;',
-'    border: 1px solid #e2e8f0;',
-'    border-radius: 16px;',
-'    padding: 28px;',
-'    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);',
-'    gap: 20px;',
-'  }',
-'  ',
-unistr('  /* ... (pega aqu\00ED el resto de tus clases CSS anteriores) ... */'),
-'</style>'))
+'</style>'
+))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_page_component_map=>'13'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001501)
+,p_plug_name=>'Cabecera de la Home'
+,p_static_id=>'home-cabecera'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>5
+,p_plug_display_point=>'REGION_POSITION_01'
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp    number := nullif(fn_clean_num(v(''F_EMPRESA_ACTIVA'')), 0);',
+'    v_nombre varchar2(200);',
+'    v_pais   varchar2(10);',
+'    v_html   clob;',
+'begin',
+'    -- La empresa activa de la barra. Si el usuario tiene varias y no ha elegido,',
+'    -- se le dice en vez de inventarse una.',
+'    begin',
+'        select e.nombre_empresa, e.cod_pais',
+'          into v_nombre, v_pais',
+'          from empresas e',
+'         where e.id_empresa = v_emp;',
+'    exception',
+'        when others then',
+'            v_nombre := null;',
+'            v_pais   := null;',
+'    end;',
+'',
+'    v_html := ''<div class="spx-home-cab">''',
+'        || ''<div class="spx-home-kicker">Synpex &middot; Sistema de gesti&oacute;n</div>''',
+'        || ''<h1 class="spx-home-title">Hola, <b>'' || sys.htf.escape_sc(lower(:APP_USER)) || ''</b></h1>''',
+'        || ''<div class="spx-home-meta">'';',
+'',
+'    if v_nombre is not null then',
+'        v_html := v_html',
+'            || ''<span><span class="fa fa-building-o" aria-hidden="true"></span>''',
+'            || sys.htf.escape_sc(v_nombre)',
+'            || case when v_pais is not null',
+'                    then '' <span class="spx-chip">'' || sys.htf.escape_sc(v_pais) || ''</span>''',
+'                    else '''' end',
+'            || ''</span>'';',
+'    else',
+'        v_html := v_html',
+'            || ''<span><span class="fa fa-building-o" aria-hidden="true"></span>''',
+'            || ''Elige la empresa en la barra de arriba</span>'';',
+'    end if;',
+'',
+'    v_html := v_html',
+'        || ''<span><span class="fa fa-calendar-o" aria-hidden="true"></span>''',
+'        || to_char(sysdate, ''DD/MM/YYYY'') || ''</span>''',
+'        || ''</div></div>'';',
+'',
+'    return v_html;',
+'end;'
+))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(9157689704584633)
@@ -8321,152 +8140,43 @@ wwv_flow_imp_page.create_page_plug(
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="synpex-welcome-grid">',
-unistr('  <!-- TARJETA 1: GESTI\00D3N DE PRESUPUESTOS -->'),
+'  <!-- Tarjeta 1: presupuestos -->',
 '  <div class="synpex-welcome-card">',
-unistr('    <!-- COLUMNA IZQUIERDA: TEXTO Y BOT\00D3N -->'),
 '    <div class="synpex-welcome-content">',
-'      <span class="synpex-badge">SYNPEX SYSTEMS V1.0</span>',
-unistr('      <h2 class="synpex-welcome-title">M\00F3dulo de Presupuestos</h2>'),
-'      <p class="synpex-welcome-desc">',
-'        Crea, edita y administra las cotizaciones y presupuestos de tus clientes de forma centralizada y eficiente.',
-'      </p>',
-'      ',
-unistr('      <!-- Bot\00F3n a Presupuestos -->'),
-'      <a href="f?p=&APP_ID.:5:&APP_SESSION." ',
-'         class="t-Button t-Button--hot t-Button--icon t-Button--iconLeft synpex-btn-custom">',
+'      <span class="synpex-badge">M&oacute;dulo</span>',
+'      <h2 class="synpex-welcome-title">Presupuestos</h2>',
+'      <p class="synpex-welcome-desc">Crea, edita y administra las cotizaciones y presupuestos de tus clientes de forma centralizada y eficiente.</p>',
+'      <a href="f?p=&APP_ID.:5:&APP_SESSION." class="t-Button synpex-btn-custom">',
 '        <span class="t-Icon fa fa-file-text-o" aria-hidden="true"></span>',
-unistr('        <span class="t-Button-label">Gesti\00F3n de Presupuestos</span>'),
+'        <span class="t-Button-label">Gesti&oacute;n de Presupuestos</span>',
 '      </a>',
 '    </div>',
-'',
-unistr('    <!-- COLUMNA DERECHA: ILUSTRACI\00D3N -->'),
-'    <div class="synpex-system-illustration">',
-'      <div class="synpex-window-mockup">',
-'        <div class="synpex-window-header">',
-'          <span class="dot red"></span>',
-'          <span class="dot yellow"></span>',
-'          <span class="dot green"></span>',
-'          <span class="window-title">Resumen de Presupuestos</span>',
-'        </div>',
-'        ',
-'        <div class="synpex-window-body">',
-'          <div class="system-metrics">',
-'            <div class="metric-box">',
-'              <span class="metric-label">Folios Emitidos</span>',
-'              <span class="metric-value">342</span>',
-'            </div>',
-'            <div class="metric-box">',
-'              <span class="metric-label">Estado</span>',
-unistr('              <span class="metric-status active">Al D\00EDa</span>'),
-'            </div>',
-'          </div>',
-'',
-'          <div class="system-chart-box">',
-unistr('            <span class="chart-title">Emisi\00F3n Mensual</span>'),
-'            <svg viewBox="0 0 200 60" class="system-chart">',
-'              <defs>',
-'                <linearGradient id="chartGradPres" x1="0" y1="0" x2="0" y2="1">',
-'                  <stop offset="0%" stop-color="#0284c7" stop-opacity="0.4"/>',
-'                  <stop offset="100%" stop-color="#0284c7" stop-opacity="0.0"/>',
-'                </linearGradient>',
-'              </defs>',
-'              <path d="M 0 45 Q 30 20 60 35 T 120 15 T 180 25 L 200 10 L 200 60 L 0 60 Z" fill="url(#chartGradPres)"/>',
-'              <path d="M 0 45 Q 30 20 60 35 T 120 15 T 180 25 L 200 10" fill="none" stroke="#0284c7" stroke-width="2.5"/>',
-'              <circle cx="180" cy="25" r="3" fill="#0284c7"/>',
-'              <circle cx="200" cy="10" r="4" fill="#22c55e"/>',
-'            </svg>',
-'          </div>',
-'',
-'          <div class="system-list">',
-'            <div class="list-item">',
-'              <span class="status-dot green"></span>',
-unistr('              <span class="item-text">M\00F3dulo de Facturaci\00F3n / IVA</span>'),
-'              <span class="item-badge">OK</span>',
-'            </div>',
-'            <div class="list-item">',
-'              <span class="status-dot blue"></span>',
-unistr('              <span class="item-text">Cat\00E1logo de Productos</span>'),
-'              <span class="item-badge">Active</span>',
-'            </div>',
-'          </div>',
-'        </div>',
-'      </div>',
-'    </div>',
+'    <ul class="spx-card-list">',
+'      <li><span class="fa fa-check" aria-hidden="true"></span>Alta, edici&oacute;n y estados del presupuesto</li>',
+'      <li><span class="fa fa-check" aria-hidden="true"></span>L&iacute;neas con producto, impuesto y descuento</li>',
+'      <li><span class="fa fa-check" aria-hidden="true"></span>Impresi&oacute;n y gasto real del presupuesto</li>',
+'    </ul>',
 '  </div>',
 '',
-unistr('  <!-- TARJETA 2: GESTI\00D3N DE FACTURACI\00D3N -->'),
+'  <!-- Tarjeta 2: facturacion -->',
 '  <div class="synpex-welcome-card">',
-unistr('    <!-- COLUMNA IZQUIERDA: TEXTO Y BOT\00D3N -->'),
 '    <div class="synpex-welcome-content">',
-'      <span class="synpex-badge synpex-badge-emerald">SYNPEX SYSTEMS V1.0</span>',
-unistr('      <h2 class="synpex-welcome-title">M\00F3dulo de Facturaci\00F3n</h2>'),
-'      <p class="synpex-welcome-desc">',
-unistr('        Genera, consulta y gestiona las facturas electr\00F3nicas e impuestos asociados de forma r\00E1pida y confiable.'),
-'      </p>',
-'      ',
-unistr('      <!-- Bot\00F3n a Facturaci\00F3n (Ajusta la p\00E1gina de destino si no es la 6) -->'),
-'      <a href="f?p=&APP_ID.:8:&APP_SESSION." ',
-'         class="t-Button t-Button--hot t-Button--icon t-Button--iconLeft synpex-btn-custom synpex-btn-emerald">',
+'      <span class="synpex-badge synpex-badge-emerald">M&oacute;dulo</span>',
+'      <h2 class="synpex-welcome-title">Facturaci&oacute;n</h2>',
+'      <p class="synpex-welcome-desc">Genera, consulta y gestiona las facturas electr&oacute;nicas y sus impuestos de forma r&aacute;pida y confiable.</p>',
+'      <a href="f?p=&APP_ID.:8:&APP_SESSION." class="t-Button synpex-btn-custom synpex-btn-emerald">',
 '        <span class="t-Icon fa fa-file-code-o" aria-hidden="true"></span>',
-unistr('        <span class="t-Button-label">Gesti\00F3n de Facturaci\00F3n</span>'),
+'        <span class="t-Button-label">Gesti&oacute;n de Facturaci&oacute;n</span>',
 '      </a>',
 '    </div>',
-'',
-unistr('    <!-- COLUMNA DERECHA: ILUSTRACI\00D3N -->'),
-'    <div class="synpex-system-illustration">',
-'      <div class="synpex-window-mockup">',
-'        <div class="synpex-window-header">',
-'          <span class="dot red"></span>',
-'          <span class="dot yellow"></span>',
-'          <span class="dot green"></span>',
-unistr('          <span class="window-title">Resumen de Facturaci\00F3n</span>'),
-'        </div>',
-'        ',
-'        <div class="synpex-window-body">',
-'          <div class="system-metrics">',
-'            <div class="metric-box">',
-'              <span class="metric-label">Facturas Mes</span>',
-'              <span class="metric-value">128</span>',
-'            </div>',
-'            <div class="metric-box">',
-'              <span class="metric-label">Estado SAT/CFDI</span>',
-'              <span class="metric-status active">Conectado</span>',
-'            </div>',
-'          </div>',
-'',
-'          <div class="system-chart-box">',
-unistr('            <span class="chart-title">Facturaci\00F3n ($)</span>'),
-'            <svg viewBox="0 0 200 60" class="system-chart">',
-'              <defs>',
-'                <linearGradient id="chartGradFact" x1="0" y1="0" x2="0" y2="1">',
-'                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.4"/>',
-'                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>',
-'                </linearGradient>',
-'              </defs>',
-'              <path d="M 0 50 Q 40 40 80 20 T 140 30 T 200 8 L 200 60 L 0 60 Z" fill="url(#chartGradFact)"/>',
-'              <path d="M 0 50 Q 40 40 80 20 T 140 30 T 200 8" fill="none" stroke="#10b981" stroke-width="2.5"/>',
-'              <circle cx="140" cy="30" r="3" fill="#10b981"/>',
-'              <circle cx="200" cy="8" r="4" fill="#0284c7"/>',
-'            </svg>',
-'          </div>',
-'',
-'          <div class="system-list">',
-'            <div class="list-item">',
-'              <span class="status-dot green"></span>',
-unistr('              <span class="item-text">Timbrado Electr\00F3nico</span>'),
-'              <span class="item-badge badge-green">Activo</span>',
-'            </div>',
-'            <div class="list-item">',
-'              <span class="status-dot blue"></span>',
-'              <span class="item-text">Reportes Fiscales / IVA</span>',
-'              <span class="item-badge">Listo</span>',
-'            </div>',
-'          </div>',
-'        </div>',
-'      </div>',
-'    </div>',
+'    <ul class="spx-card-list">',
+'      <li><span class="fa fa-check" aria-hidden="true"></span>Facturas, notas de cr&eacute;dito y d&eacute;bito</li>',
+'      <li><span class="fa fa-check" aria-hidden="true"></span>Cobros, saldo y comprobantes de retenci&oacute;n</li>',
+'      <li><span class="fa fa-check" aria-hidden="true"></span>Libro de ventas y reportes del per&iacute;odo</li>',
+'    </ul>',
 '  </div>',
-'</div>'))
+'</div>'
+))
 ,p_plug_query_num_rows=>15
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -8817,11 +8527,115 @@ unistr('/* Colores seg\00FAn el estado */'),
 '}',
 '.status-BLOQUEADO .status-dot {',
 '    background-color: #dc2626;',
+'}',
+'',
+'/* Clave obligatoria por cambiar: el mismo badge, en verde azulado, porque pide',
+'   accion del administrador. La clase la sigue dando SITUACION_CLASE (ACTIVO);',
+'   el texto completo viaja en data-spx para poder distinguirla sin tocar la',
+'   consulta. */',
+'.status-badge[data-spx*="CLAVE POR CAMBIAR"] { color: #0f766e; background-color: #ccfbf1; }',
+'.status-badge[data-spx*="CLAVE POR CAMBIAR"] .status-dot { background-color: #0d9488; }',
+'',
+'/* Fila de indicadores: las mismas tarjetas de Facturacion, Presupuestos y Clientes,',
+'   cuatro en linea, encima de las pestanas. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--iva { background: #eff6ff; border-color: #bfdbfe; } .spx-card--iva .spx-card-lbl { color: #1d4ed8; } .spx-card--iva .spx-card-val { color: #1e3a8a; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'.spx-card--venc { background: #fef2f2; border-color: #fecaca; } .spx-card--venc .spx-card-lbl { color: #b91c1c; } .spx-card--venc .spx-card-val { color: #991b1b; }',
+'',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 767px) {',
+'  .spx-kpis { gap: 8px; }',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.15rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
 '}'))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_page_component_map=>'18'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001441)
+,p_plug_name=>'Indicadores de usuarios'
+,p_static_id=>'kpi-usuarios'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>2
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_tot  number := 0;',
+'    v_act  number := 0;',
+'    v_blq  number := 0;',
+'    v_pen  number := 0;',
+'    v_html clob;',
+'',
+'    -- Sin usuarios en el alcance del administrador no se pintan ceros: se pinta un guion.',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if v_tot = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0));',
+'    end;',
+'begin',
+'    -- El mismo alcance que la lista de usuarios: los que comparten alguna empresa',
+'    -- con el administrador, mas los que todavia no tienen ninguna (los PENDIENTE',
+'    -- que hay que activar). Un administrador no ve los de otra empresa.',
+'    -- Activos excluye a los bloqueados para que los cuatro numeros no se solapen:',
+'    -- es la misma prioridad que usa la columna Situacion.',
+'    select count(*),',
+'           count(case when upper(nvl(u.estado, ''#'')) in (''ACTIVO'', ''A'', ''1'')',
+'                       and nvl(u.bloqueado_hasta, sysdate - 1) <= sysdate then 1 end),',
+'           count(case when u.bloqueado_hasta > sysdate then 1 end),',
+'           count(case when upper(nvl(u.estado, ''#'')) = ''PENDIENTE'' then 1 end)',
+'      into v_tot, v_act, v_blq, v_pen',
+'      from usuario u',
+'     where exists (select 1',
+'                     from usuario_empresa ue',
+'                     join usuario_empresa mia on mia.id_empresa = ue.id_empresa',
+'                     join usuario a on a.usuario_id = mia.usuario_id',
+'                    where ue.usuario_id = u.usuario_id',
+'                      and upper(a.username) = upper(:APP_USER))',
+'        or not exists (select 1 from usuario_empresa x where x.usuario_id = u.usuario_id);',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card spx-card--iva">''',
+'        || ''<div class="spx-card-lbl">Usuarios</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_tot) || ''</div>''',
+'        || ''<div class="spx-card-sub">en tus empresas, mas los pendientes sin empresa</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Activos</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_act) || ''</div>''',
+'        || ''<div class="spx-card-sub">pueden entrar</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--venc">''',
+'        || ''<div class="spx-card-lbl">Bloqueados</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_blq) || ''</div>''',
+'        || ''<div class="spx-card-sub">por intentos fallidos; se desbloquean en la 4</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Pendientes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_pen) || ''</div>''',
+'        || ''<div class="spx-card-sub">registrados y sin activar</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000540)
@@ -8976,7 +8790,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'G'
 ,p_column_label=>unistr('Situaci\00F3n')
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<span class="status-badge status-#SITUACION_CLASE#">',
+'<span class="status-badge status-#SITUACION_CLASE#" data-spx="#SITUACION#">',
 '    <span class="status-dot"></span>',
 '    #SITUACION#',
 '</span>'))
@@ -9870,17 +9684,24 @@ unistr('        $b.attr("title", habilitado ? "" : "Solo se puede procesar un pr
 '});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado: la pagina global (0) no emite su CSS, asi que cada pagina */',
-'/* que las usa lleva su copia (medido el 2026-11-07). */',
-'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; }',
+'/* que las usa lleva su copia (medido el 2026-11-07). Mismas clases, forma de */',
+'/* pildora y colores que Facturacion (pagina 8): la app se lee como un producto. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
 '.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
-'.status-PENDIENTE { color: #b45309; background-color: #fffbeb; } .status-PENDIENTE .status-dot { background-color: #f59e0b; }',
-'.status-ENVIADO { color: #1d4ed8; background-color: #eff6ff; } .status-ENVIADO .status-dot { background-color: #3b82f6; }',
-'.status-APROBADO { color: #15803d; background-color: #f0fdf4; } .status-APROBADO .status-dot { background-color: #22c55e; }',
-'.status-RECHAZADO { color: #b91c1c; background-color: #fef2f2; } .status-RECHAZADO .status-dot { background-color: #ef4444; }',
-'.status-CANCELADO { color: #475569; background-color: #f1f5f9; } .status-CANCELADO .status-dot { background-color: #94a3b8; }',
-'.status-FACTURADO { color: #6d28d9; background-color: #f5f3ff; } .status-FACTURADO .status-dot { background-color: #8b5cf6; }',
-'.status-ACTIVO { color: #15803d; background-color: #f0fdf4; } .status-ACTIVO .status-dot { background-color: #22c55e; }',
-'.status-INACTIVO { color: #b91c1c; background-color: #fef2f2; } .status-INACTIVO .status-dot { background-color: #ef4444; }',
+'/* Pendiente (ambar) */',
+'.status-PENDIENTE { color: #d97706; background-color: #fef3c7; } .status-PENDIENTE .status-dot { background-color: #d97706; }',
+'/* Enviado (azul) */',
+'.status-ENVIADO { color: #2563eb; background-color: #dbeafe; } .status-ENVIADO .status-dot { background-color: #2563eb; }',
+'/* Aprobado (verde) */',
+'.status-APROBADO { color: #16a34a; background-color: #dcfce7; } .status-APROBADO .status-dot { background-color: #16a34a; }',
+'/* Rechazado (rojo) */',
+'.status-RECHAZADO { color: #b91c1c; background-color: #fee2e2; } .status-RECHAZADO .status-dot { background-color: #dc2626; }',
+'/* Cancelado (gris) */',
+'.status-CANCELADO { color: #5f6368; background-color: #f1f3f4; } .status-CANCELADO .status-dot { background-color: #9aa0a6; }',
+'/* Facturado (violeta) */',
+'.status-FACTURADO { color: #7c3aed; background-color: #ede9fe; } .status-FACTURADO .status-dot { background-color: #7c3aed; }',
+'.status-ACTIVO { color: #16a34a; background-color: #dcfce7; } .status-ACTIVO .status-dot { background-color: #16a34a; }',
+'.status-INACTIVO { color: #b91c1c; background-color: #fee2e2; } .status-INACTIVO .status-dot { background-color: #dc2626; }',
 '.status-BLOQUEADO { color: #991b1b; background-color: #fee2e2; } .status-BLOQUEADO .status-dot { background-color: #dc2626; }',
 '/* Barra del cuadro de dialogo: la pinta el navegador en ESTA pagina, no el modal. */',
 '.ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; padding: 12px 18px !important; }',
@@ -9937,6 +9758,40 @@ unistr('  /* Sombra 3D aumentada y m\00E1s marcada */'),
 '    height: 0 !important;',
 '    padding: 0 !important;',
 '}',
+'',
+'/* Fila de indicadores: las mismas tarjetas de Facturacion (8), Clientes (20) y */',
+'/* Proveedores (22), cuatro en linea. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--iva { background: #eff6ff; border-color: #bfdbfe; } .spx-card--iva .spx-card-lbl { color: #1d4ed8; } .spx-card--iva .spx-card-val { color: #1e3a8a; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'.spx-card--total { background: #f0fffa; border: 2px solid #16a085; padding: 16px 18px; box-shadow: 0 2px 12px rgba(22, 160, 133, .16); }',
+'.spx-card--total .spx-card-lbl { color: #0f766e; }',
+'.spx-card--total .spx-card-val { font-size: 1.7rem; line-height: 1.1; font-weight: 700; color: #0f766e; }',
+'.spx-card--total .spx-card-sub { color: #0f766e; opacity: .85; }',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 767px) {',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.05rem; }',
+'  .spx-card--total { padding: 12px 14px; }',
+'  .spx-card--total .spx-card-val { font-size: 1.3rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
+'}',
+'/* Resumen Financiero: el mismo tratamiento de tarjeta que el resumen de la compra */',
+'/* (borde suave y sombra ligera). No cambia el contenido ni el formato de las cifras. */',
+'#R12541094704283236 { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); padding: 6px 16px 12px; }',
+'#R12541094704283236 .t-Region-body { padding: 8px 4px 4px; }',
+'/* La tabla de la lista se desplaza dentro de su tarjeta en pantallas angostas, */',
+'/* como en Facturacion (8), en vez de empujar la pagina entera a lo ancho. */',
+'#R11950647600514906 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
 '',
 ''))
 ,p_step_template=>4073832297226169690
@@ -10117,6 +9972,84 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_report_columns=>'ID_DETALLE:DESCRIPCION:CANTIDAD:PRECIO_UNITARIO:DESCUENTO_PCT:MONTO_DESCUENTO:IMPUESTO_PCT:MONTO_IMPUESTO:SUBTOTAL_LINEA:MONTO_TOTAL_LINEA'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001410)
+,p_plug_name=>'Indicadores de presupuestos'
+,p_static_id=>'kpi-presupuestos'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp  number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_n    number := 0;',
+'    v_pen  number := 0;',
+'    v_env  number := 0;',
+'    v_apr  number := 0;',
+'    v_tot  number := 0;',
+'    v_nls  varchar2(40) := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'    v_html clob;',
+'',
+'    -- Con la empresa sin presupuestos la fila no se pinta con ceros: se pinta un guion.',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if v_n = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0));',
+'    end;',
+'',
+'    function f_bs(p_val number) return varchar2 is',
+'    begin',
+'        if v_n = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0), ''FM999G999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    -- Lo que el usuario puede accionar: lo que falta por procesar, lo enviado,',
+'    -- lo aprobado y el dinero comprometido en esos tres estados. Los cerrados',
+'    -- (RECHAZADO, CANCELADO y FACTURADO) no cuentan como cartera vigente.',
+'    select count(*),',
+'           count(case when estado = ''PENDIENTE'' then 1 end),',
+'           count(case when estado = ''ENVIADO'' then 1 end),',
+'           count(case when estado = ''APROBADO'' then 1 end),',
+'           nvl(sum(case when estado in (''PENDIENTE'', ''ENVIADO'', ''APROBADO'')',
+'                        then nvl(total, 0) * nvl(tipo_cambio, 1) end), 0)',
+'      into v_n, v_pen, v_env, v_apr, v_tot',
+'      from presupuestos',
+'     where id_empresa = v_emp;',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Pendientes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_pen) || ''</div>''',
+'        || ''<div class="spx-card-sub">sin procesar</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--iva">''',
+'        || ''<div class="spx-card-lbl">Enviados</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_env) || ''</div>''',
+'        || ''<div class="spx-card-sub">al cliente</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Aprobados</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_apr) || ''</div>''',
+'        || ''<div class="spx-card-sub">listos para facturar</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--total">''',
+'        || ''<div class="spx-card-lbl">Total presupuestado (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_tot) || ''</div>''',
+'        || ''<div class="spx-card-sub">vigentes: pendientes, enviados y aprobados</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(11950647600514906)
@@ -11782,6 +11715,30 @@ unistr('/* Estilo del t\00EDtulo blanco */'),
 '    letter-spacing: 0.5px !important;',
 '}',
 ''))
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Las acciones que llenan un campo (tasa, folio, cliente) devuelven el valor sin',
+'   pasar por el "change" del navegador y APEX no marca el campo como "con valor":',
+'   la etiqueta flotante se quedaba encima de la cifra. Se decide con el valor real,',
+'   como hace APEX al teclear. */',
+'function spxFlotaEtiquetas() {',
+'    document.querySelectorAll(".t-Form-fieldContainer").forEach(function (c) {',
+'        var i = c.querySelector("input, select, textarea");',
+'        if (!i) { return; }',
+'        var v = (i.value || "").toString().trim();',
+'        if (v !== "") { c.classList.add("js-show-label"); }',
+'        else { c.classList.remove("js-show-label"); }',
+'    });',
+'}',
+'var spxFlotaT = null;',
+'function spxFlotaLuego() {',
+'    if (spxFlotaT) { clearTimeout(spxFlotaT); }',
+'    spxFlotaT = setTimeout(spxFlotaEtiquetas, 80);',
+'}',
+'apex.jQuery(function ($) {',
+'    $(document).on("apexafterrefresh", spxFlotaEtiquetas);',
+'    $(document).ajaxComplete(spxFlotaLuego);',
+'    spxFlotaEtiquetas();',
+'});'))
 ,p_step_template=>2101883943284197310
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_resizable=>'Y'
@@ -13916,7 +13873,30 @@ wwv_flow_imp_page.create_page(
 '    r.style.display = vacio ? "none" : "";',
 '};',
 'apex.jQuery(document).on("apexafterrefresh", function () { window.spxNotaLineas(); });',
-'setTimeout(function () { window.spxNotaLineas(); }, 900);'))
+'setTimeout(function () { window.spxNotaLineas(); }, 900);',
+'/* Las acciones que llenan un campo (tasa, folio, control, retencion) devuelven el',
+'   valor sin pasar por el "change" del navegador y APEX no marca el campo como',
+'   "con valor": la etiqueta flotante se quedaba encima de la cifra. Se decide con',
+'   el valor real, como hace APEX al teclear. */',
+'function spxFlotaEtiquetas() {',
+'    document.querySelectorAll(".t-Form-fieldContainer").forEach(function (c) {',
+'        var i = c.querySelector("input, select, textarea");',
+'        if (!i) { return; }',
+'        var v = (i.value || "").toString().trim();',
+'        if (v !== "") { c.classList.add("js-show-label"); }',
+'        else { c.classList.remove("js-show-label"); }',
+'    });',
+'}',
+'var spxFlotaT = null;',
+'function spxFlotaLuego() {',
+'    if (spxFlotaT) { clearTimeout(spxFlotaT); }',
+'    spxFlotaT = setTimeout(spxFlotaEtiquetas, 80);',
+'}',
+'apex.jQuery(function ($) {',
+'    $(document).on("apexafterrefresh", spxFlotaEtiquetas);',
+'    $(document).ajaxComplete(spxFlotaLuego);',
+'    spxFlotaEtiquetas();',
+'});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 unistr('/* Cabecera uniforme en azul degradado sin sombras/recuadros extra\00F1os */'),
 '.t-DialogRegion-header,',
@@ -14716,6 +14696,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>60
 ,p_item_plug_id=>wwv_flow_imp.id(32589573944518258)
 ,p_item_source_plug_id=>wwv_flow_imp.id(32589573944518258)
+,p_item_default_type=>'SQL_QUERY'
+,p_item_default=>'select sysdate from dual'
 ,p_prompt=>'Fecha Emision'
 ,p_format_mask=>'DD/MM/YYYY'
 ,p_source=>'FECHA_EMISION'
@@ -17726,30 +17708,111 @@ wwv_flow_imp_page.create_page(
 ,p_step_title=>unistr('Synpex \00B7 Sistema de gesti\00F3n')
 ,p_warn_on_unsaved_changes=>'N'
 ,p_autocomplete_on_off=>'OFF'
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Los indicadores llegan como un solo texto ("1,035.00 VES  -  1 documentos").',
+'   Se parte en valor y detalle para que la tarjeta se lea como las de Facturacion.',
+'   Es solo presentacion: no toca la consulta ni el estado de la pagina. */',
+'(function () {',
+'    function spxParte() {',
+'        var zonas = ["#R23600000000000010", "#R23600000000000070"];',
+'        for (var z = 0; z < zonas.length; z++) {',
+'            var cont = document.querySelectorAll(zonas[z] + " .a-CardView-mainContent");',
+'            for (var i = 0; i < cont.length; i++) {',
+'                var el = cont[i];',
+'                if (el.getAttribute("data-spx") === "1") { continue; }',
+'                var txt = (el.textContent || "").trim();',
+'                var partes = txt.split(/\s+-\s+/);',
+'                var v = document.createElement("div");',
+'                v.className = "spx-val";',
+'                var s = document.createElement("div");',
+'                s.className = "spx-sub";',
+'                if (!txt) {',
+'                    v.textContent = String.fromCharCode(8212);',
+'                } else if (partes.length < 2) {',
+'                    continue;',
+'                } else {',
+'                    v.textContent = partes[0];',
+'                    s.textContent = partes.slice(1).join(" - ");',
+'                }',
+'                while (el.firstChild) { el.removeChild(el.firstChild); }',
+'                el.appendChild(v);',
+'                if (s.textContent) { el.appendChild(s); }',
+'                el.setAttribute("data-spx", "1");',
+'            }',
+'        }',
+'    }',
+'    spxParte();',
+'    setTimeout(spxParte, 200);',
+'    setTimeout(spxParte, 700);',
+'    document.addEventListener("apexafterrefresh", spxParte);',
+'})();'
+))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'/* --- Fondo del panel --- */',
-'body, .a-Body, .t-Body {',
-'    background-color: #f4f6f9 !important;',
-'}',
+'/* Encabezado azul de la app (la pagina global no emite su CSS). */',
+'.t-Region-header { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 13px 18px !important; }',
+'.t-Region-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }',
 '',
-'/* --- Tarjetas y regiones con relieve --- */',
-'.t-Region, .t-Region-wrap, .t-Card, .a-CardView, .a-DhtmlChart {',
-'    border-radius: 16px !important;',
-'    background-color: #ffffff !important;',
-'    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.10), 0 4px 10px rgba(0, 0, 0, 0.05), inset 0 2px 0 rgba(255, 255, 255, 1) !important;',
-'    border: 1px solid rgba(200, 210, 225, 0.85) !important;',
-'    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;',
-'}',
+'/* Las tarjetas del panel: el mismo relieve suave del resto de la app. */',
+'.metric-card { border: 1px solid #e5e7eb !important; border-radius: 12px !important; background: #ffffff !important; box-shadow: 0 1px 3px rgba(0, 0, 0, .08) !important; overflow: hidden; }',
+'.metric-card .t-Region-body { padding: 14px 16px !important; }',
 '',
-'.t-Region-body, .t-Region-header {',
-'    background: transparent !important;',
-'}',
+'/* Graficos: la misma altura de tarjeta para leer la pagina como una rejilla.',
+'   El JET mide 340 o 320 px (es su definicion): el cuerpo se iguala aqui. */',
+'.spx-chart .t-Region-body { min-height: 390px; }',
 '',
-unistr('/* --- Elevaci\00F3n al pasar el cursor --- */'),
-'.t-Region:hover, .t-Card:hover, .a-CardView:hover, .a-DhtmlChart:hover {',
-'    transform: translateY(-4px) !important;',
-'    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.08), inset 0 2px 0 rgba(255, 255, 255, 1) !important;',
-'}'))
+'/* Indicadores: las mismas tarjetas de Facturacion (pagina 8). */',
+'#R23600000000000010 { background: transparent !important; border: none !important; box-shadow: none !important; }',
+'#R23600000000000010 .t-Region-body { padding: 0 !important; }',
+'#R23600000000000010 .a-CardView-items { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }',
+'#R23600000000000010 .a-CardView { border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); padding: 14px 16px; height: 100%; }',
+'#R23600000000000010 .a-CardView-title { font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'#R23600000000000010 .a-CardView-subTitle, #R23600000000000010 .a-CardView-icon { display: none !important; }',
+'#R23600000000000010 .a-CardView-header { padding: 0 0 2px; border-bottom: none; }',
+'#R23600000000000010 .a-CardView-body { padding: 0; }',
+'.spx-val { font-size: 1.5rem; font-weight: 700; color: #17364a; line-height: 1.15; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-sub { font-size: .76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'',
+'/* Tasa del dia: la banda informativa de la compra (fondo suave, acento a la izquierda). */',
+'#R23600000000000070 { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-left: 4px solid #0ea5e9 !important; border-radius: 6px !important; box-shadow: none !important; padding: 9px 15px !important; }',
+'#R23600000000000070 .a-TMV, #R23600000000000070 .a-TMV-body, #R23600000000000070 .a-CardView-items { padding: 0 !important; margin: 0 !important; }',
+'#R23600000000000070 .a-CardView-items { display: block; }',
+'#R23600000000000070 .a-CardView { display: block; border: none; background: transparent; box-shadow: none; padding: 0; margin: 0; }',
+'#R23600000000000070 .a-CardView-header, #R23600000000000070 .a-CardView-body { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding: 0; border: none; vertical-align: baseline; }',
+'#R23600000000000070 .a-CardView-title { font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #64748b; }',
+'#R23600000000000070 .spx-val { display: inline; font-size: .95rem; font-weight: 700; color: #0f172a; margin: 0; }',
+'#R23600000000000070 .spx-sub { display: inline; font-size: .78rem; color: #94a3b8; margin: 0 0 0 6px; }',
+'',
+'/* Ultimos documentos: lista compacta en dos columnas dentro de su tarjeta. */',
+'#R23600000000000060 .a-CardView-items { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }',
+'#R23600000000000060 .a-CardView { display: block; border: 1px solid #e5e7eb; border-left: 3px solid #0ea5e9; border-radius: 10px; background: #ffffff; padding: 9px 12px; }',
+'#R23600000000000060 .a-CardView-header { padding: 0; border-bottom: none; }',
+'#R23600000000000060 .a-CardView-body { padding: 0; }',
+'#R23600000000000060 .a-CardView-title { font-size: .82rem; font-weight: 600; color: #17364a; }',
+'#R23600000000000060 .a-CardView-mainContent div { margin-top: 4px !important; font-size: .78rem !important; color: #64748b !important; }',
+'',
+'/* Filtros: una barra blanca, como el resto de la app. */',
+'#R23600000000000001 { border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }',
+'#R23600000000000001 .t-Region-body { padding: 10px 14px !important; }',
+'',
+'@media (max-width: 1199px) {',
+'  #R23600000000000010 .a-CardView-items { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 1023px) {',
+'  .spx-chart .t-Region-body { min-height: 0; }',
+'}',
+'@media (max-width: 767px) {',
+'  /* Los graficos, uno por fila: a media pantalla no se leen. */',
+'  .t-Body-main .col.col-5, .t-Body-main .col.col-6, .t-Body-main .col.col-7 { flex: 0 0 100% !important; max-width: 100% !important; }',
+'  #R23600000000000010 .a-CardView-items { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'  #R23600000000000010 .a-CardView { padding: 10px 12px; }',
+'  #R23600000000000060 .a-CardView-items { grid-template-columns: 1fr; }',
+'  .spx-val { font-size: 1.15rem; }',
+'  .metric-card .t-Region-body { padding: 12px !important; }',
+'}',
+'@media (max-width: 420px) {',
+'  #R23600000000000010 .a-CardView-items { grid-template-columns: 1fr; }',
+'}'
+))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -17760,10 +17823,10 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Facturacion 6 meses'
 ,p_static_id=>'facturacion-6-meses'
 ,p_title=>unistr('Facturaci\00F3n de los \00FAltimos 6 meses')
-,p_region_css_classes=>'metric-card'
-,p_region_template_options=>'#DEFAULT#:t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc'
+,p_region_css_classes=>'metric-card spx-chart'
+,p_region_template_options=>'#DEFAULT#'
 ,p_escape_on_http_output=>'Y'
-,p_plug_template=>2074200852440250129
+,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>30
 ,p_plug_grid_column_span=>7
 ,p_plug_item_display_point=>'ABOVE'
@@ -17877,10 +17940,10 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Facturas por estado'
 ,p_static_id=>'facturas-por-estado'
 ,p_title=>'Facturas por estado'
-,p_region_css_classes=>'metric-card'
-,p_region_template_options=>'#DEFAULT#:t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc'
+,p_region_css_classes=>'metric-card spx-chart'
+,p_region_template_options=>'#DEFAULT#'
 ,p_escape_on_http_output=>'Y'
-,p_plug_template=>2074200852440250129
+,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>40
 ,p_plug_new_grid_row=>false
 ,p_plug_grid_column_span=>5
@@ -18040,10 +18103,10 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Presupuestos por estado'
 ,p_static_id=>'presupuestos-por-estado'
 ,p_title=>'Presupuestos por estado'
-,p_region_css_classes=>'metric-card'
-,p_region_template_options=>'#DEFAULT#:t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc'
+,p_region_css_classes=>'metric-card spx-chart'
+,p_region_template_options=>'#DEFAULT#'
 ,p_escape_on_http_output=>'Y'
-,p_plug_template=>2074200852440250129
+,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>50
 ,p_plug_grid_column_span=>6
 ,p_plug_item_display_point=>'ABOVE'
@@ -18142,7 +18205,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_css_classes=>'metric-card'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4502917002193490937
-,p_plug_display_sequence=>80
+,p_plug_display_sequence=>25
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -18183,10 +18246,10 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Top clientes'
 ,p_static_id=>'top-clientes'
 ,p_title=>'Top 5 clientes facturados'
-,p_region_css_classes=>'metric-card'
-,p_region_template_options=>'#DEFAULT#:t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc'
+,p_region_css_classes=>'metric-card spx-chart'
+,p_region_template_options=>'#DEFAULT#'
 ,p_escape_on_http_output=>'Y'
-,p_plug_template=>2074200852440250129
+,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>60
 ,p_plug_new_grid_row=>false
 ,p_plug_grid_column_span=>6
@@ -18299,7 +18362,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_title=>unistr('\00DAltimos documentos')
 ,p_region_css_classes=>'metric-card'
 ,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4502917002193490937
+,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>70
 ,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
@@ -18409,7 +18472,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov_cascade_parent_items=>'P13_ID_EMPRESA'
 ,p_cSize=>10
 ,p_begin_on_new_line=>'N'
-,p_colspan=>2
+,p_colspan=>4
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
@@ -20539,6 +20602,32 @@ wwv_flow_imp_page.create_page(
 '}',
 '#R43000000000000711 th, #R43000000000000711 td { text-align: center; }',
 '#R43000000000000711 td.num { text-align: right; }',
+'/* Totales del mes: la misma banda informativa de la compra (fondo suave y',
+'   acento a la izquierda) en vez de una tabla suelta con las cifras repartidas. */',
+'.spx-banda { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 28px;',
+'    background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0ea5e9;',
+'    border-radius: 6px; padding: 12px 16px; font-size: 0.9rem; color: #475569; }',
+'.spx-banda-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }',
+'.spx-banda-lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: .05em;',
+'    text-transform: uppercase; color: #64748b; }',
+'.spx-banda b { color: #0f172a; font-weight: 700; font-variant-numeric: tabular-nums; }',
+'.spx-banda .spx-banda-neto b { color: #0f766e; font-size: 1.05rem; }',
+'/* El informe clasico del IGTF se pinta como una tabla de verdad: ocupa el',
+'   ancho de la tarjeta, el encabezado a la izquierda y las cifras a la derecha. */',
+'#R43000000000000890 table.standardLook { border-collapse: collapse; }',
+'#R43000000000000890 table.standardLook th { text-align: right; padding: 9px 26px 9px 0;',
+'    border-bottom: 1px solid #e5e7eb; color: #334155; }',
+'#R43000000000000890 table.standardLook th:first-child { text-align: left; }',
+'#R43000000000000890 table.standardLook td { padding: 9px 26px 9px 0; text-align: right;',
+'    font-variant-numeric: tabular-nums; }',
+'#R43000000000000890 table.standardLook td:first-child { text-align: left; }',
+'#R43000000000000890 table.standardLook tr:nth-child(even) td { background: #fafafa; }',
+'@media (max-width: 767px) {',
+'    .spx-banda { gap: 4px 16px; font-size: 0.82rem; }',
+'    /* Los cuatro filtros a media fila: con la rejilla de 12 en un telefono',
+'       cada uno se quedaba en 75 px y solo se leia "M..." y "Li...". */',
+'    #R43000000000000700 .col { flex: 0 0 50% !important; max-width: 50% !important; }',
+'}',
 '/* El boton del Excel va en la casilla que queda libre en la fila de filtros',
 '   (Mes 3 + Anio 3 + Libro 3 de 12), alineado con los campos y sin gastar una',
 '   fila entera encima de ellos. En pantallas angostas vuelve a su sitio. */',
@@ -21179,6 +21268,8 @@ unistr('       round(sum(r.monto_neto), 2) as neto_cobrado'),
 '   and extract(year from r.fecha_cobro) = to_number(:P18_ANIO)',
 ' group by r.cod_moneda',
 ' order by r.cod_moneda'))
+,p_plug_query_headings_type=>'COLON_DELMITED_LIST'
+,p_plug_query_headings=>'Moneda:Cobros:IGTF en divisa:IGTF Bs:Neto cobrado'
 ,p_plug_query_no_data_found=>'No se percibio IGTF en el periodo.'
 ,p_plug_source_type=>'NATIVE_SQL_REPORT'
 );
@@ -21586,16 +21677,16 @@ wwv_flow_imp_page.create_page_plug(
  '',
  '    v_tot := v_tot + v_igtf;',
  '',
- '    return ''<table class="a-Report-table" style="width:100%"><tbody>''',
- '        || ''<tr><td>Total Bs del periodo</td>''',
- '        || ''<td style="text-align:right;font-weight:700">'' || to_char(v_tot, ''FM999G999G999G990D00'') || ''</td></tr>''',
- '        || ''<tr><td>IGTF de compras Bs</td>''',
- '        || ''<td class="spx-num">'' || to_char(v_igtf, ''FM999G999G999G990D00'') || ''</td></tr>''',
- '        || ''<tr><td>IVA retenido Bs</td>''',
- '        || ''<td class="spx-num">'' || to_char(v_ret, ''FM999G999G999G990D00'') || ''</td></tr>''',
- '        || ''<tr><td>Neto Bs</td>''',
- '        || ''<td style="text-align:right;font-weight:700">'' || to_char(v_tot - v_ret, ''FM999G999G999G990D00'') || ''</td></tr>''',
- '        || ''</tbody></table>'';',
+ '    return ''<div class="spx-banda">''',
+ '        || ''<span class="spx-banda-item"><span class="spx-banda-lbl">Total Bs del periodo</span><b>''',
+ '        || to_char(v_tot, ''FM999G999G999G990D00'') || ''</b></span>''',
+ '        || ''<span class="spx-banda-item"><span class="spx-banda-lbl">IGTF de compras</span><b>''',
+ '        || to_char(v_igtf, ''FM999G999G999G990D00'') || ''</b></span>''',
+ '        || ''<span class="spx-banda-item"><span class="spx-banda-lbl">IVA retenido</span><b>''',
+ '        || to_char(v_ret, ''FM999G999G999G990D00'') || ''</b></span>''',
+ '        || ''<span class="spx-banda-item spx-banda-neto"><span class="spx-banda-lbl">Neto</span><b>''',
+ '        || to_char(v_tot - v_ret, ''FM999G999G999G990D00'') || ''</b></span>''',
+ '        || ''</div>'';',
  'end;'))
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 ,p_function_body_language=>'PLSQL'
@@ -21632,14 +21723,14 @@ wwv_flow_imp_page.create_page_plug(
  '         and f.fecha_emision <  fn_periodo_hasta(:P18_MES, :P18_ANIO, :P18_PERIODO)',
  '      ) t;',
  '',
- '    return ''<table class="a-Report-table" style="width:100%"><tbody>''',
- '        || ''<tr><td>Total Bs del periodo</td>''',
- '        || ''<td style="text-align:right;font-weight:700">'' || to_char(v_tot, ''FM999G999G999G990D00'') || ''</td></tr>''',
- '        || ''<tr><td>IVA retenido Bs</td>''',
- '        || ''<td class="spx-num">'' || to_char(v_ret, ''FM999G999G999G990D00'') || ''</td></tr>''',
- '        || ''<tr><td>Neto Bs</td>''',
- '        || ''<td style="text-align:right;font-weight:700">'' || to_char(v_tot - v_ret, ''FM999G999G999G990D00'') || ''</td></tr>''',
- '        || ''</tbody></table>'';',
+ '    return ''<div class="spx-banda">''',
+ '        || ''<span class="spx-banda-item"><span class="spx-banda-lbl">Total Bs del periodo</span><b>''',
+ '        || to_char(v_tot, ''FM999G999G999G990D00'') || ''</b></span>''',
+ '        || ''<span class="spx-banda-item"><span class="spx-banda-lbl">IVA retenido</span><b>''',
+ '        || to_char(v_ret, ''FM999G999G999G990D00'') || ''</b></span>''',
+ '        || ''<span class="spx-banda-item spx-banda-neto"><span class="spx-banda-lbl">Neto</span><b>''',
+ '        || to_char(v_tot - v_ret, ''FM999G999G999G990D00'') || ''</b></span>''',
+ '        || ''</div>'';',
  'end;'))
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 ,p_function_body_language=>'PLSQL'
@@ -22369,6 +22460,9 @@ wwv_flow_imp_page.create_page_process(
 '            when ''BTN_GUARDAR_IMPRENTA'' then ''43000000000000411''',
 '            when ''BTN_SUBIR_LOGO''       then ''43000000000000434''',
 '            when ''BTN_QUITAR_LOGO''      then ''43000000000000434''',
+'            -- Cualquier otro boton (el de la UT, que no es de ninguna pestana)',
+'            -- deja la pestana donde estaba.',
+'            else :P19_TAB',
 '        end);',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
@@ -23189,6 +23283,112 @@ wwv_flow_imp_page.create_page_process(
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000000441)
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001462)
+,p_plug_name=>unistr('Par\00E1metros del sistema')
+,p_static_id=>'admin-parametros'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>12
+,p_plug_item_display_point=>'ABOVE'
+,p_plug_display_condition_type=>'EXPRESSION'
+,p_plug_display_when_condition=>'fn_tiene_rol(''ADMIN'')'
+,p_plug_display_when_cond2=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001463)
+,p_name=>'P19_UT_ISLR'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001462)
+,p_prompt=>'Unidad Tributaria (UT)'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>15
+,p_format_mask=>'FM999G990D00'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>unistr('Valor en bol\00EDvares de la unidad tributaria con la que se calcula el sustraendo del ISLR. Es un par\00E1metro global del sistema (SYN_PARAMETROS, clave UT_ISLR), no de la empresa. Cambiarla no toca los comprobantes ya emitidos: cada uno guarda su propio valor de UT.')
+,p_colspan=>4
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001464)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001462)
+,p_button_name=>'BTN_GUARDAR_UT'
+,p_static_id=>'btn-guardar-ut'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar UT'
+,p_icon_css_classes=>'fa-floppy-o'
+,p_button_condition=>'fn_tiene_rol(''ADMIN'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001465)
+,p_process_sequence=>3
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Carga la UT'
+,p_static_id=>'carga-ut'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_ut number;',
+'begin',
+'    -- La UT es global y no de la empresa: va en su propia tarjeta, fuera del',
+'    -- selector de pestanas. En el submit de guardado NO se recarga, o el valor',
+'    -- que el usuario acaba de teclear se pisaria con el de la tabla.',
+'    if nvl(:REQUEST, ''#'') <> ''BTN_GUARDAR_UT'' then',
+'        begin',
+'            select valor into v_ut from syn_parametros where clave = ''UT_ISLR'';',
+'        exception',
+'            when no_data_found then v_ut := null;',
+'        end;',
+'        apex_util.set_session_state(''P19_UT_ISLR'', v_ut);',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001466)
+,p_process_sequence=>30
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar UT'
+,p_static_id=>'guardar-ut'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_ut number := fn_clean_num(:P19_UT_ISLR);',
+'begin',
+'    if not fn_tiene_rol(''ADMIN'') then',
+'        raise_application_error(-20003, ''Solo un administrador cambia la UT.'');',
+'    end if;',
+'    -- fn_clean_num devuelve 0 ante una entrada vacia, asi que 0 tambien es error.',
+'    if v_ut is null or v_ut <= 0 then',
+'        raise_application_error(-20023, ''La UT debe ser mayor que cero.'');',
+'    end if;',
+'    if v_ut < 1 or v_ut > 100000 then',
+'        raise_application_error(-20023, ''La UT debe estar entre 1 y 100000 Bs.'');',
+'    end if;',
+'',
+'    merge into syn_parametros p',
+'    using (select ''UT_ISLR'' as clave from dual) s',
+'       on (p.clave = s.clave)',
+'    when matched then',
+'         update set valor = v_ut',
+'    when not matched then',
+'         insert (clave, valor, descripcion)',
+'         values (''UT_ISLR'', v_ut, ''Unidad Tributaria del ISLR en bolivares'');',
+'',
+'    apex_application.g_print_success_message := ''UT guardada: ''',
+'        || to_char(v_ut, ''FM999G990D00'') || '' Bs.'';',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000001464)
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000000444)
@@ -24291,6 +24491,18 @@ wwv_flow_imp_page.create_page(
 '.spx-chip--SPE { color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; }',
 '.spx-chip--NOSPE { color: #9aa0a6; background: #ffffff; border: 1px solid #e5e7eb; }',
 '',
+'/* Chips de filtro rapido, los mismos de Clientes (pagina 20). */',
+'.spx-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }',
+'.spx-filtro { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 1px solid #d7e2ea; background: #ffffff; color: #17364a; font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer; }',
+'.spx-filtro:hover { background: #eef6fc; border-color: #9cc7e8; color: #0b4f7a; text-decoration: none; }',
+'.spx-filtro.is-active { background: linear-gradient(135deg, #0076ce, #005291); border-color: #005291; color: #ffffff; }',
+'',
+'/* El nombre es el enlace a la ficha del proveedor (pagina 33); el lapiz de la',
+'   primera columna sigue abriendo el dialogo de edicion (23). */',
+'.spx-nombre { font-weight: 600; }',
+'a.spx-nombre-link { text-decoration: none; }',
+'a.spx-nombre-link:hover .spx-nombre { color: #0076ce; text-decoration: underline; }',
+'',
 '/* Fila de indicadores: las mismas tarjetas de Clientes, Facturacion y Compras. */',
 '.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
 '.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
@@ -24320,6 +24532,14 @@ wwv_flow_imp_page.create_page(
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
 '}'))
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'apex.jQuery(function($) {',
+'    // Chip activo al cargar: el que diga el item que filtra la consulta.',
+'    var f = $v("P22_FILTRO") || "TODOS";',
+'    $(".spx-filtro").each(function() {',
+'        $(this).toggleClass("is-active", $(this).attr("data-filtro") === f);',
+'    });',
+'});'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -24385,6 +24605,23 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001450)
+,p_plug_name=>'Filtros rapidos'
+,p_static_id=>'chips-proveedores'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>7
+,p_plug_item_display_point=>'ABOVE'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="spx-filtros">',
+'  <a href="#" class="spx-filtro" data-filtro="TODOS"><span class="fa fa-list" aria-hidden="true"></span>Todos</a>',
+'  <a href="#" class="spx-filtro" data-filtro="ACTIVOS"><span class="fa fa-check-circle" aria-hidden="true"></span>Activos</a>',
+'  <a href="#" class="spx-filtro" data-filtro="RETIENE"><span class="fa fa-percent" aria-hidden="true"></span>Retienen IVA</a>',
+'  <a href="#" class="spx-filtro" data-filtro="SPE"><span class="fa fa-certificate" aria-hidden="true"></span>SPE</a>',
+'  <a href="#" class="spx-filtro" data-filtro="INACTIVOS"><span class="fa fa-ban" aria-hidden="true"></span>Inactivos</a>',
+'</div>'))
+);
+wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000600)
 ,p_plug_name=>'Proveedores'
 ,p_static_id=>'proveedores-lista'
@@ -24415,8 +24652,17 @@ wwv_flow_imp_page.create_page_plug(
 '  from proveedores p',
 '  join empresas e on e.id_empresa = p.id_empresa',
 ' where p.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
+'   -- Chips de filtro rapido (P22_FILTRO). No tocan la busqueda del informe: se',
+'   -- suman a ella como una condicion mas de la consulta.',
+'   and (:P22_FILTRO is null',
+'        or :P22_FILTRO = ''TODOS''',
+'        or (:P22_FILTRO = ''ACTIVOS''   and p.estado = ''ACTIVO'')',
+'        or (:P22_FILTRO = ''INACTIVOS'' and p.estado = ''INACTIVO'')',
+'        or (:P22_FILTRO = ''RETIENE''   and nvl(p.retener_iva, ''S'') = ''S'')',
+'        or (:P22_FILTRO = ''SPE''       and nvl(p.es_spe, ''N'') = ''S''))',
 ' order by p.razon_social'))
 ,p_plug_source_type=>'NATIVE_IR'
+,p_ajax_items_to_submit=>'P22_FILTRO'
 );
 wwv_flow_imp_page.create_worksheet(
  p_id=>wwv_flow_imp.id(43000000000000601)
@@ -24467,9 +24713,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>20
 ,p_column_identifier=>'D'
 ,p_column_label=>'Nombre'
+,p_column_link=>'f?p=&APP_ID.:33:&APP_SESSION.::&DEBUG.::P33_ID_PROVEEDOR:#ID_PROVEEDOR#'
+,p_column_linktext=>'<span class="spx-nombre">#RAZON_SOCIAL#</span>'
+,p_column_link_attr=>'class="spx-nombre-link"'
 ,p_column_type=>'STRING'
 ,p_use_as_row_header=>'N'
-,p_available_clientside=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000000606)
@@ -24593,6 +24841,17 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_is_default=>'Y'
 ,p_report_columns=>'ID_PROVEEDOR:RIF:EMPRESA:RAZON_SOCIAL:COD_PAIS:TIPO:EMAIL:TELEFONO:RETENCION:SPE:DIAS_CREDITO:ESTADO'
 );
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001451)
+,p_name=>'P22_FILTRO'
+,p_item_default=>'TODOS'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000600)
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000615)
 ,p_button_sequence=>10
@@ -24650,6 +24909,38 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'maintain_pagination', 'N')).to_clob
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001452)
+,p_name=>'Filtro rapido de proveedores'
+,p_static_id=>'proveedores-filtro-rapido'
+,p_event_sequence=>20
+,p_triggering_element_type=>'JQUERY_SELECTOR'
+,p_triggering_element=>'.spx-filtro'
+,p_bind_type=>'bind'
+,p_bind_delegate_to_selector=>'Y'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'click'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001453)
+,p_event_id=>wwv_flow_imp.id(43000000000001452)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'Aplica el filtro'
+,p_static_id=>'aplica-filtro-rapido'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'try { if (this.browserEvent) { this.browserEvent.preventDefault(); } } catch (e) {}',
+    'var f = this.triggeringElement.getAttribute("data-filtro");',
+    'apex.item("P22_FILTRO").setValue(f);',
+    'document.querySelectorAll(".spx-filtro").forEach(function (a) {',
+    '    a.classList.toggle("is-active", a.getAttribute("data-filtro") === f);',
+    '});',
+    'apex.region("R43000000000000600").refresh();',
+    'return false;')))).to_clob
+);
 end;
 /
 
@@ -24667,7 +24958,7 @@ wwv_flow_imp_page.create_page(
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_resizable=>'Y'
 ,p_dialog_width=>'900'
-,p_dialog_height=>'760'
+,p_dialog_height=>'780'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias y chips: copia local porque el CSS de la pagina global no se emite. */',
 '.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
@@ -24679,7 +24970,7 @@ wwv_flow_imp_page.create_page(
 '.spx-chip--SINRET { color: #5f6368; background: #f1f3f4; border: 1px solid #e5e7eb; }',
 '.spx-chip--SPE { color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; }',
 '/* Cabecera azul de cada tarjeta, la misma de las paginas 3, 5, 8 y 21, pero mas',
-'   baja: el dialogo tiene cinco secciones y cada barra se comia una franja entera.',
+'   baja: el dialogo tiene cuatro secciones y cada barra se comia una franja entera.',
 '   Todo cuelga de .spx-prov, la clase que llevan las regiones de este dialogo,',
 '   asi que ninguna otra pagina cambia. Medido antes: cabecera de 80 px; con',
 '   esto queda en 56 px (30 % menos). */',
@@ -24687,9 +24978,9 @@ wwv_flow_imp_page.create_page(
 '.spx-prov .t-Region-headerItems { padding: 8px 12px !important; }',
 '.spx-prov .t-Region-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }',
 '/* Menos relleno dentro de cada tarjeta (20 %) y menos aire entre secciones (25 %). */',
-'.spx-prov .t-Region-body { padding: 13px 16px !important; }',
-'.spx-prov { margin-bottom: 12px !important; }',
-'.spx-prov .t-Form-fieldContainer { padding-top: 0; padding-bottom: 2px; }',
+'.spx-prov .t-Region-body { padding: 9px 16px 11px !important; }',
+'.spx-prov { margin-bottom: 9px !important; }',
+'.spx-prov .t-Form-fieldContainer { padding-top: 0; padding-bottom: 1px; }',
 '/* La tarjeta de los botones no lleva contenido propio: se aprieta para que el',
 '   formulario entre sin scroll y se pega al ultimo bloque. */',
 '#R43000000000001318 .t-Region-body { padding: 4px 16px 8px !important; }',
@@ -24699,7 +24990,7 @@ wwv_flow_imp_page.create_page(
 '  .spx-prov .row > .col { flex: 0 0 100% !important; max-width: 100% !important; }',
 '}',
 '/* Ficha del proveedor, arriba del formulario: lo que hay que ver antes de editar. */',
-'.spx-ficha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 14px 16px; border: 1px solid #e0e9f0; border-radius: 12px; background: #f7fafc; }',
+'.spx-ficha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 8px 14px; border: 1px solid #e0e9f0; border-radius: 10px; background: #f7fafc; }',
 '.spx-ficha-icono { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #e8f1fb; color: #1d4ed8; font-size: 1.05rem; }',
 '.spx-ficha-txt { min-width: 0; flex: 1 1 200px; }',
 '.spx-ficha-nombre { font-size: 1.05rem; font-weight: 700; color: #17364a; line-height: 1.25; }',
@@ -24811,22 +25102,12 @@ wwv_flow_imp_page.create_page_plug(
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000001316)
-,p_plug_name=>unistr('Configuraci\00F3n fiscal')
+,p_plug_name=>unistr('Configuraci\00F3n fiscal y comercial')
 ,p_static_id=>'proveedor-fiscal'
 ,p_region_css_classes=>'card-3d spx-prov'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4073835273271169698
 ,p_plug_display_sequence=>20
-,p_plug_item_display_point=>'ABOVE'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(43000000000001317)
-,p_plug_name=>'Condiciones comerciales'
-,p_static_id=>'proveedor-condiciones'
-,p_region_css_classes=>'card-3d spx-prov'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4073835273271169698
-,p_plug_display_sequence=>25
 ,p_plug_item_display_point=>'ABOVE'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -24963,8 +25244,8 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000630)
 ,p_name=>'P23_ESTADO'
-,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(43000000000001317)
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001316)
 ,p_prompt=>'Estado'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>'STATIC2:ACTIVO;ACTIVO,INACTIVO;INACTIVO'
@@ -25021,8 +25302,8 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000634)
 ,p_name=>'P23_DIAS_CREDITO'
-,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(43000000000001317)
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001316)
 ,p_prompt=>unistr('D\00EDas de cr\00E9dito')
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
 ,p_cSize=>10
@@ -25301,14 +25582,148 @@ wwv_flow_imp_page.create_page(
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; }',
+'/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
 '.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
-'.status-BORRADOR { color: #b45309; background-color: #fffbeb; } .status-BORRADOR .status-dot { background-color: #f59e0b; }',
-'.status-REGISTRADA { color: #15803d; background-color: #f0fdf4; } .status-REGISTRADA .status-dot { background-color: #22c55e; }',
-'.status-ANULADA { color: #5f6368; background-color: #f1f3f4; } .status-ANULADA .status-dot { background-color: #9aa0a6; }',
+'/* La clase sale de la etiqueta que se lee (fn_estado_compra devuelve Procesada,',
+'   Borrador y Anulada), asi que se declaran las dos formas: la palabra y el codigo',
+'   guardado en COMPRAS.ESTADO. Asi el color no depende de cual de las dos se use. */',
+'.status-BORRADOR, .status-Borrador { color: #b45309; background-color: #fffbeb; } .status-BORRADOR .status-dot, .status-Borrador .status-dot { background-color: #f59e0b; }',
+'.status-REGISTRADA, .status-Procesada { color: #15803d; background-color: #f0fdf4; } .status-REGISTRADA .status-dot, .status-Procesada .status-dot { background-color: #22c55e; }',
+'.status-ANULADA, .status-Anulada { color: #5f6368; background-color: #f1f3f4; } .status-ANULADA .status-dot, .status-Anulada .status-dot { background-color: #9aa0a6; }',
+'/* Cabecera azul de la tarjeta, el mismo de las paginas 3, 5 y 8. */',
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
-'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }',
+'',
+'/* Chips de filtro rapido, los mismos de Clientes (20) y Proveedores (22). */',
+'.spx-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }',
+'.spx-filtro { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 1px solid #d7e2ea; background: #ffffff; color: #17364a; font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer; }',
+'.spx-filtro:hover { background: #eef6fc; border-color: #9cc7e8; color: #0b4f7a; text-decoration: none; }',
+'.spx-filtro.is-active { background: linear-gradient(135deg, #0076ce, #005291); border-color: #005291; color: #ffffff; }',
+'',
+'/* Fila de indicadores: las mismas tarjetas de Facturacion (8), Clientes (20) y',
+'   Proveedores (22). */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--sub { background: #f9fafb; border-color: #e5e7eb; }',
+'.spx-card--iva { background: #eff6ff; border-color: #bfdbfe; } .spx-card--iva .spx-card-lbl { color: #1d4ed8; } .spx-card--iva .spx-card-val { color: #1e3a8a; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'',
+'/* Pantalla estrecha: el informe se desplaza en horizontal y las columnas de',
+'   fecha, control, importes y estado no se parten en dos lineas. */',
+'#R43000000000001000 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
+'#R43000000000001000 .a-IRR-table td:nth-child(n+6) { white-space: nowrap; }',
+'@media (max-width: 1023px) { .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }',
+'@media (max-width: 600px) { .spx-card { padding: 10px 12px; } .spx-card-val { font-size: 1.15rem; } }'))
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'apex.jQuery(function($) {',
+'    // Chip activo al cargar: el que diga el item que filtra la consulta.',
+'    var f = $v("P27_FILTRO") || "TODOS";',
+'    $(".spx-filtro").each(function() {',
+'        $(this).toggleClass("is-active", $(this).attr("data-filtro") === f);',
+'    });',
+'});'))
 ,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001560)
+,p_plug_name=>'Indicadores de compras'
+,p_static_id=>'kpi-compras'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>5
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp  number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_n    number := 0;',
+'    v_mes  number := 0;',
+'    v_tot  number := 0;',
+'    v_ret  number := 0;',
+'    v_bor  number := 0;',
+'    v_nls  varchar2(40) := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'    v_html clob;',
+'',
+'    -- Con la empresa sin compras la fila no se pinta con ceros: se pinta un guion.',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if v_n = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0));',
+'    end;',
+'',
+'    function f_bs(p_val number) return varchar2 is',
+'    begin',
+'        if v_n = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0), ''FM999G999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    -- Solo facturas de compra y nunca las anuladas: una nota de credito no es',
+'    -- una compra del periodo y una anulada no cuenta. Lo que se mide son los',
+'    -- tres numeros del mes en curso; "En borrador" es trabajo pendiente y por eso',
+'    -- mira cualquier fecha.',
+'    select count(*),',
+'           count(case when trunc(fecha_emision, ''MM'') = trunc(sysdate, ''MM'') then 1 end),',
+'           nvl(sum(case when trunc(fecha_emision, ''MM'') = trunc(sysdate, ''MM'')',
+'                        then monto_total * nvl(tipo_cambio, 1) end), 0),',
+'           nvl(sum(case when trunc(fecha_emision, ''MM'') = trunc(sysdate, ''MM'')',
+'                        then retencion_iva_bs end), 0),',
+'           count(case when estado = ''BORRADOR'' then 1 end)',
+'      into v_n, v_mes, v_tot, v_ret, v_bor',
+'      from compras',
+'     where id_empresa = v_emp',
+'       and tipo_documento = ''FAC''',
+'       and nvl(estado, ''#'') <> ''ANULADA'';',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card">''',
+'        || ''<div class="spx-card-lbl">Compras del mes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_mes) || ''</div>''',
+'        || ''<div class="spx-card-sub">facturas del mes en curso</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--iva">''',
+'        || ''<div class="spx-card-lbl">Total compras (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_tot) || ''</div>''',
+'        || ''<div class="spx-card-sub">monto total del mes en bol&iacute;vares</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Retenci&oacute;n IVA (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_ret) || ''</div>''',
+'        || ''<div class="spx-card-sub">IVA retenido en el mes</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--sub">''',
+'        || ''<div class="spx-card-lbl">En borrador</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_bor) || ''</div>''',
+'        || ''<div class="spx-card-sub">de cualquier fecha: trabajo pendiente</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001561)
+,p_plug_name=>'Filtros rapidos'
+,p_static_id=>'chips-compras'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>7
+,p_plug_item_display_point=>'ABOVE'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="spx-filtros">',
+'  <a href="#" class="spx-filtro" data-filtro="TODOS"><span class="fa fa-list" aria-hidden="true"></span>Todos</a>',
+'  <a href="#" class="spx-filtro" data-filtro="PROCESADA"><span class="fa fa-check-circle" aria-hidden="true"></span>Procesada</a>',
+'  <a href="#" class="spx-filtro" data-filtro="BORRADOR"><span class="fa fa-pencil" aria-hidden="true"></span>Borrador</a>',
+'  <a href="#" class="spx-filtro" data-filtro="ANULADA"><span class="fa fa-ban" aria-hidden="true"></span>Anulada</a>',
+'</div>'))
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000001000)
@@ -25336,8 +25751,16 @@ wwv_flow_imp_page.create_page_plug(
 '  from compras c',
 '  join proveedores p on p.id_proveedor = c.id_proveedor',
 ' where c.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
+'   -- Chips de filtro rapido (P27_FILTRO). No tocan la busqueda del informe: se',
+'   -- suman a ella como una condicion mas de la consulta.',
+'   and (:P27_FILTRO is null',
+'        or :P27_FILTRO = ''TODOS''',
+'        or (:P27_FILTRO = ''PROCESADA'' and c.estado = ''REGISTRADA'')',
+'        or (:P27_FILTRO = ''BORRADOR''  and c.estado = ''BORRADOR'')',
+'        or (:P27_FILTRO = ''ANULADA''   and c.estado = ''ANULADA''))',
 ' order by c.fecha_emision desc, c.id_compra desc'))
 ,p_plug_source_type=>'NATIVE_IR'
+,p_ajax_items_to_submit=>'P27_FILTRO'
 );
 wwv_flow_imp_page.create_worksheet(
  p_id=>wwv_flow_imp.id(43000000000001001)
@@ -25470,7 +25893,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'K'
 ,p_column_label=>'Estado'
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<span class="status-badge status-#ESTADO_COD#">',
+'<span class="status-badge status-#ESTADO#">',
 '    <span class="status-dot"></span>',
 '    #ESTADO#',
 '</span>'))
@@ -25497,6 +25920,17 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_report_columns=>'ID_COMPRA:PROVEEDOR:RIF:TIPO_DOCUMENTO:FOLIO_FACTURA:NRO_CONTROL:FECHA_EMISION:COD_MONEDA:MONTO_TOTAL:RETENCION_IVA_BS:ESTADO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001562)
+,p_name=>'P27_FILTRO'
+,p_item_default=>'TODOS'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001000)
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000001014)
@@ -25555,6 +25989,38 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'maintain_pagination', 'N')).to_clob
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001563)
+,p_name=>'Filtro rapido de compras'
+,p_static_id=>'compras-filtro-rapido'
+,p_event_sequence=>20
+,p_triggering_element_type=>'JQUERY_SELECTOR'
+,p_triggering_element=>'.spx-filtro'
+,p_bind_type=>'bind'
+,p_bind_delegate_to_selector=>'Y'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'click'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001564)
+,p_event_id=>wwv_flow_imp.id(43000000000001563)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'Aplica el filtro'
+,p_static_id=>'aplica-filtro-rapido'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'try { if (this.browserEvent) { this.browserEvent.preventDefault(); } } catch (e) {}',
+    'var f = this.triggeringElement.getAttribute("data-filtro");',
+    'apex.item("P27_FILTRO").setValue(f);',
+    'document.querySelectorAll(".spx-filtro").forEach(function (a) {',
+    '    a.classList.toggle("is-active", a.getAttribute("data-filtro") === f);',
+    '});',
+    'apex.region("R43000000000001000").refresh();',
+    'return false;')))).to_clob
+);
 end;
 /
 
@@ -25612,6 +26078,30 @@ wwv_flow_imp_page.create_page(
 '} else {',
 '    spxObservaciones();',
 '}'))
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Las acciones que llenan un campo (tasa, folio, control, retencion, producto)',
+'   devuelven el valor sin pasar por el "change" del navegador y APEX no marca el',
+'   campo como "con valor": la etiqueta flotante se quedaba encima de la cifra. Se',
+'   decide con el valor real, como hace APEX al teclear. */',
+'function spxFlotaEtiquetas() {',
+'    document.querySelectorAll(".t-Form-fieldContainer").forEach(function (c) {',
+'        var i = c.querySelector("input, select, textarea");',
+'        if (!i) { return; }',
+'        var v = (i.value || "").toString().trim();',
+'        if (v !== "") { c.classList.add("js-show-label"); }',
+'        else { c.classList.remove("js-show-label"); }',
+'    });',
+'}',
+'var spxFlotaT = null;',
+'function spxFlotaLuego() {',
+'    if (spxFlotaT) { clearTimeout(spxFlotaT); }',
+'    spxFlotaT = setTimeout(spxFlotaEtiquetas, 80);',
+'}',
+'apex.jQuery(function ($) {',
+'    $(document).on("apexafterrefresh", spxFlotaEtiquetas);',
+'    $(document).ajaxComplete(spxFlotaLuego);',
+'    spxFlotaEtiquetas();',
+'});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Insignias de estado (copia local: la pagina 0 no emite su CSS). */',
 '.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.8rem; padding: 4px 12px; border-radius: 999px; }',
@@ -26442,6 +26932,43 @@ wwv_flow_imp_page.create_page_process(
 ,p_internal_uid=>43000000000001116
 );
 wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001430)
+,p_process_sequence=>35
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Tasa de la nota'
+,p_static_id=>'tasa-nota-origen'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_tipo varchar2(10) := upper(nvl(:P28_TIPO_DOCUMENTO, ''FAC''));',
+'    v_ori  number := nullif(fn_clean_num(:P28_ID_COMPRA_ORIGEN), 0);',
+'    v_tasa number;',
+'begin',
+'    -- La nota de compra lleva la TASA de la factura que acredita, no la del dia',
+'    -- (regla de las notas de venta desde el 2026-11-09). Se fija tambien aqui,',
+'    -- en el servidor, porque la accion dinamica del navegador puede no correr.',
+'    -- Si la factura no existe, es de otra empresa, es una nota o esta ANULADA,',
+'    -- no se toca nada y el package decide al guardar.',
+'    if v_tipo not in (''NC'', ''ND'') or v_ori is null then',
+'        return;',
+'    end if;',
+'    begin',
+'        select tipo_cambio into v_tasa',
+'          from compras',
+'         where id_compra = v_ori',
+'           and nvl(tipo_documento, ''FAC'') = ''FAC''',
+'           and estado <> ''ANULADA''',
+'           and id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    exception',
+'        when no_data_found then',
+'            return;',
+'    end;',
+'    apex_util.set_session_state(''P28_TIPO_CAMBIO'', v_tasa);',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001430
+);
+wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(43000000000001040)
 ,p_process_sequence=>10
 ,p_process_point=>'AFTER_SUBMIT'
@@ -26453,6 +26980,8 @@ wwv_flow_imp_page.create_page_process(
 '    v_id  number := nullif(fn_clean_num(:P28_ID_COMPRA), 0);',
 '    v_emp number := fn_clean_num(:F_EMPRESA_ACTIVA);',
 '    v_prov number := fn_clean_num(:P28_ID_PROVEEDOR);',
+'    v_tasa_g number;',
+'    v_mon_g  varchar2(5);',
 'begin',
 '    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,PRUEBA'') then',
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
@@ -26492,6 +27021,18 @@ unistr('        p_fecha_emision        => to_date(:P28_FECHA_EMISION, ''DD/MM/YY
 '        p_id_forma_pago        => nullif(fn_clean_num(:P28_ID_FORMA_PAGO), 0),',
 '        p_id_concepto_islr     => nvl(fn_clean_num(:P28_ID_CONCEPTO_ISLR), 0),',
 '        p_usuario              => :APP_USER);',
+'',
+'    -- La nota toma la tasa de la FACTURA que acredita (lo decide el package,',
+'    -- 2026-11-20). Se refresca el item para que la pantalla muestre la que quedo',
+'    -- guardada y no la que se tecleo.',
+'    begin',
+'        select tipo_cambio, cod_moneda into v_tasa_g, v_mon_g',
+'          from compras where id_compra = v_id;',
+'        apex_util.set_session_state(''P28_TIPO_CAMBIO'', v_tasa_g);',
+'        apex_util.set_session_state(''P28_COD_MONEDA'', v_mon_g);',
+'    exception',
+'        when others then null;',
+'    end;',
 '',
 '    :P28_ID_COMPRA := v_id;',
 '    apex_application.g_print_success_message := ''Compra guardada.'';',
@@ -27120,6 +27661,64 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'js_code', 'spxAfectada();')).to_clob
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(43000000000001420)
+,p_name=>'TASA_NOTA_ORIGEN'
+,p_static_id=>'tasa-nota-origen'
+,p_event_sequence=>60
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P28_ID_COMPRA_ORIGEN'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001421)
+,p_event_id=>wwv_flow_imp.id(43000000000001420)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_name=>'Toma la tasa de la factura que acredita'
+,p_static_id=>'tasa-nota-origen'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P28_TIPO_CAMBIO,P28_COD_MONEDA',
+  'items_to_submit', 'P28_ID_COMPRA_ORIGEN,P28_TIPO_DOCUMENTO',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_ori  number := nullif(fn_clean_num(:P28_ID_COMPRA_ORIGEN), 0);',
+'    v_tipo varchar2(10) := upper(nvl(:P28_TIPO_DOCUMENTO, ''FAC''));',
+'    v_tasa number;',
+'    v_mon  varchar2(5);',
+'begin',
+'    -- La nota de compra lleva la tasa (y la moneda) de la FACTURA que acredita,',
+'    -- no la del dia: es la regla de las notas de venta desde el 2026-11-09.',
+'    -- Es una accion de apoyo: si algo falla se sale en silencio y no puede',
+'    -- tumbar la pagina ni bloquear el guardado (el package lo decide igual).',
+'    if v_ori is null or v_tipo not in (''NC'', ''ND'') then',
+'        return;',
+'    end if;',
+'    begin',
+'        select tipo_cambio, cod_moneda into v_tasa, v_mon',
+'          from compras',
+'         where id_compra = v_ori',
+'           and nvl(tipo_documento, ''FAC'') = ''FAC''',
+'           and estado <> ''ANULADA''',
+'           and id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    exception',
+'        when no_data_found then',
+'            return;',
+'    end;',
+'    :P28_TIPO_CAMBIO := to_char(v_tasa);',
+'    :P28_COD_MONEDA  := v_mon;',
+'exception',
+'    when others then null;',
+'end;')),
+  'show_processing', 'N',
+  'suppress_change_event', 'Y')).to_clob
+,p_wait_for_result=>'Y'
+);
 end;
 /
 
@@ -27707,6 +28306,47 @@ wwv_flow_imp_page.create_page(
 '    color: #ffffff !important;',
 '    font-weight: 600 !important;',
 '    font-size: 1.25rem !important;',
+'}',
+'',
+'/* Insignias de estado: copia local porque el CSS de la pagina global no se emite. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'/* Emitido (verde): el recibo vivo. En la base el estado es ACTIVO. */',
+'.status-EMITIDO { color: #16a34a; background-color: #dcfce7; } .status-EMITIDO .status-dot { background-color: #16a34a; }',
+'/* Anulado (gris): conserva el rastro y no cuenta para el saldo. */',
+'.status-ANULADO { color: #5f6368; background-color: #f1f3f4; } .status-ANULADO .status-dot { background-color: #9aa0a6; }',
+'',
+'/* Chip de conciliado: verde azulado si, gris no. */',
+'.spx-chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.8rem; padding: 3px 12px; border-radius: 999px; }',
+'.spx-chip--Si { color: #0f766e; background-color: #ccfbf1; }',
+'.spx-chip--No { color: #5f6368; background-color: #f1f3f4; }',
+'',
+'/* Fila de indicadores: las mismas tarjetas de Facturacion, Presupuestos y Clientes, cuatro en linea. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--sub { background: #f9fafb; border-color: #e5e7eb; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'.spx-card--total { background: #f0fffa; border: 2px solid #16a085; padding: 16px 18px; box-shadow: 0 2px 12px rgba(22, 160, 133, .16); }',
+'.spx-card--total .spx-card-lbl { color: #0f766e; }',
+'.spx-card--total .spx-card-val { font-size: 1.7rem; line-height: 1.1; font-weight: 700; color: #0f766e; }',
+'.spx-card--total .spx-card-sub { color: #0f766e; opacity: .85; }',
+'',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 767px) {',
+'  .spx-kpis { gap: 8px; }',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.15rem; }',
+'  .spx-card--total { padding: 12px 14px; }',
+'  .spx-card--total .spx-card-val { font-size: 1.3rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
 '}'))
 ,p_page_component_map=>'25'
 ,p_last_updated_by=>'ADMIN'
@@ -27732,7 +28372,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_colspan=>6
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
 ,p_help_text=>'Referencia bancaria, numero de factura, numero de control o RIF del cliente.'
 );
 wwv_flow_imp_page.create_page_item(
@@ -27758,7 +28397,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'display_as', 'POPUP',
   'max_date', 'NONE',
@@ -27782,7 +28420,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'display_as', 'POPUP',
   'max_date', 'NONE',
@@ -27802,12 +28439,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000800)
 ,p_prompt=>'Estado'
 ,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC2:Todos;TODOS,Activos;ACTIVO,Anulados;ANULADO'
+,p_lov=>'STATIC2:Todos;TODOS,Emitidos;ACTIVO,Anulados;ANULADO'
 ,p_lov_display_null=>'NO'
 ,p_cSize=>15
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select ''TODOS'' from dual'))
@@ -27819,15 +28455,96 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000800)
 ,p_prompt=>'Conciliado'
 ,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC2:Todos;TODOS,Si;SI,No;NO'
+,p_lov=>'STATIC2:Todos;TODOS,Sí;SI,No;NO'
 ,p_lov_display_null=>'NO'
 ,p_cSize=>15
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
 ,p_item_default_type=>'SQL_QUERY'
 ,p_item_default=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select ''TODOS'' from dual'))
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001440)
+,p_plug_name=>'Indicadores de recibos'
+,p_static_id=>'kpi-recibos'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>15
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp  number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_tot  number := 0;',
+'    v_n    number := 0;',
+'    v_bs   number := 0;',
+'    v_igtf number := 0;',
+'    v_sinc number := 0;',
+'    v_nls  varchar2(40) := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'    v_html clob;',
+'',
+'    -- Con la empresa sin recibos la fila no se pinta con ceros: se pinta un guion.',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if v_tot = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0));',
+'    end;',
+'',
+'    function f_bs(p_val number) return varchar2 is',
+'    begin',
+'        if v_tot = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0), ''FM999G999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    -- Lo que el dueno puede accionar hoy: cuanto se cobro este mes, cuanto IGTF',
+'    -- hay por enterar y cuantos recibos siguen sin conciliar con el banco.',
+'    -- MONTO_BS es el equivalente en bolivares que ya guarda el recibo; si',
+'    -- viniera nulo se deriva con la tasa del propio cobro.',
+'    select count(*),',
+'           count(case when estado = ''ACTIVO''',
+'                       and trunc(fecha_cobro, ''MM'') = trunc(sysdate, ''MM'') then 1 end),',
+'           nvl(sum(case when estado = ''ACTIVO''',
+'                         and trunc(fecha_cobro, ''MM'') = trunc(sysdate, ''MM'')',
+'                        then nvl(monto_bs, monto_cobrado * nvl(tipo_cambio, 1)) end), 0),',
+'           nvl(sum(case when estado = ''ACTIVO''',
+'                         and trunc(fecha_cobro, ''MM'') = trunc(sysdate, ''MM'')',
+'                        then nvl(igtf_bs, 0) end), 0),',
+'           count(case when estado = ''ACTIVO'' and conciliado = ''N'' then 1 end)',
+'      into v_tot, v_n, v_bs, v_igtf, v_sinc',
+'      from recibos',
+'     where id_empresa = v_emp;',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Recibos del mes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_n) || ''</div>''',
+'        || ''<div class="spx-card-sub">emitidos este mes</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--total spx-card--money">''',
+'        || ''<div class="spx-card-lbl">Cobrado (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_bs) || ''</div>''',
+'        || ''<div class="spx-card-sub">equivalente en bolivares del mes</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ret spx-card--money">''',
+'        || ''<div class="spx-card-lbl">IGTF (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_igtf) || ''</div>''',
+'        || ''<div class="spx-card-sub">impuesto por enterar, no es ingreso</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--sub">''',
+'        || ''<div class="spx-card-lbl">Sin conciliar</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_sinc) || ''</div>''',
+'        || ''<div class="spx-card-sub">emitidos y sin conciliar, de cualquier fecha</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000801)
@@ -27852,8 +28569,12 @@ wwv_flow_imp_page.create_page_plug(
 '       r.retencion_iva_bs,',
 '       r.monto_neto,',
 '       r.referencia,',
-'       case r.conciliado when ''S'' then ''Si'' else ''No'' end as conciliado,',
-'       r.estado',
+'       -- El rotulo lleva tilde (unistr); el filtro y el chip siguen con S/N.',
+'       case r.conciliado when ''S'' then ''S'' || to_char(unistr(''\00ED'')) else ''No'' end as conciliado,',
+'       case r.conciliado when ''S'' then ''Si'' else ''No'' end as conciliado_clase,',
+'       -- El recibo vivo se muestra como EMITIDO; en la base el estado es ACTIVO',
+'       -- (el CHECK de RECIBOS solo admite ACTIVO y ANULADO).',
+'       case r.estado when ''ACTIVO'' then ''EMITIDO'' else r.estado end as estado',
 '  from recibos r',
 '  join facturas f on f.id_factura = r.id_factura',
 '  left join clientes c on c.id_cliente = f.id_cliente',
@@ -28041,8 +28762,21 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>140
 ,p_column_identifier=>'N'
 ,p_column_label=>'Conciliado'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="spx-chip spx-chip--#CONCILIADO_CLASE#">#CONCILIADO#</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001500)
+,p_db_column_name=>'CONCILIADO_CLASE'
+,p_display_order=>145
+,p_column_identifier=>'P'
+,p_column_label=>'Conciliado Clase'
+,p_column_type=>'STRING'
+,p_display_text_as=>'HIDDEN_ESCAPE_SC'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
 );
@@ -28052,6 +28786,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>150
 ,p_column_identifier=>'O'
 ,p_column_label=>'Estado'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="status-badge status-#ESTADO#">',
+'    <span class="status-dot"></span>',
+'    #ESTADO#',
+'</span>'))
 ,p_column_type=>'STRING'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -28275,7 +29014,44 @@ wwv_flow_imp_page.create_page(
 '    font-weight: 600 !important;',
 '    font-size: 1.25rem !important;',
 '}',
-'input[type="password"]::-ms-reveal { display: none; }'))
+'input[type="password"]::-ms-reveal { display: none; }',
+'/* Cabecera del recibo: la factura que cobra, el cliente, la fecha y el estado.',
+'   El mismo trato que la cabecera de la compra (2026-11-21). */',
+'.spx-cab { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 14px; padding: 2px; }',
+'.spx-cab-linea { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; }',
+'.spx-cab-tit { font-size: 1.35rem; font-weight: 700; color: #17364a; line-height: 1.15; letter-spacing: -0.01em; }',
+'.spx-cab-tit b { color: #0b807c; }',
+'.spx-cab-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; width: 100%; font-size: 0.88rem; color: #5f7b8c; }',
+'.spx-cab-sub, .spx-cab-fecha { display: inline-flex; align-items: center; gap: 6px; }',
+'.spx-cab-sub .fa, .spx-cab-fecha .fa { color: #94a3b8; }',
+'/* Insignia del recibo. En la base el estado es ACTIVO: se rotula EMITIDO. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 700;',
+'    letter-spacing: .04em; border-radius: 999px; padding: 3px 10px; }',
+'.status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }',
+'.status-EMITIDO { color: #15803d; background-color: #dcfce7; } .status-EMITIDO .status-dot { background-color: #22c55e; }',
+'.status-ANULADO { color: #5f6368; background-color: #f1f3f4; } .status-ANULADO .status-dot { background-color: #9aa0a6; }',
+'.status-NUEVO { color: #1d4ed8; background-color: #eff6ff; } .status-NUEVO .status-dot { background-color: #3b82f6; }',
+'/* Resumen del recibo: las cuatro tarjetas de la compra, con el neto en verde y grande. */',
+'.spx-resumen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 12px 14px;',
+'    box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.66rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.35rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere;',
+'    font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.74rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-rec-mon { font-size: 0.74rem; font-weight: 600; color: #94a3b8; margin-left: 5px; }',
+'.spx-card--sub { background: #f9fafb; border-color: #e5e7eb; }',
+'.spx-card--iva { background: #eff6ff; border-color: #bfdbfe; } .spx-card--iva .spx-card-lbl { color: #1d4ed8; }',
+'.spx-card--iva .spx-card-val { color: #1e3a8a; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; }',
+'.spx-card--ret .spx-card-val { color: #92400e; }',
+'.spx-card--total { background: #f0fffa; border: 2px solid #16a085; box-shadow: 0 2px 12px rgba(22, 160, 133, .16); }',
+'.spx-card--total .spx-card-lbl { color: #0f766e; }',
+'.spx-card--total .spx-card-val { font-size: 1.75rem; line-height: 1.05; color: #0f766e; }',
+'.spx-card--total .spx-card-sub { color: #0f766e; opacity: .85; }',
+'/* El dialogo se pinta en un iframe de 720 px: el corte va en 640, no en 768. */',
+'@media (min-width: 640px) { .spx-resumen { grid-template-columns: repeat(3, minmax(0, 1fr)) 1.3fr; } }',
+'@media (max-width: 639px) { .spx-card--total { grid-column: span 2; } }'))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'function spxReferencia() {',
 '    var s = document.getElementById("P25_ID_FORMA_PAGO");',
@@ -28291,13 +29067,168 @@ wwv_flow_imp_page.create_page(
 '        apex.item("P25_REFERENCIA").setValue("");',
 '    }',
 '}',
+'/* Las acciones que calculan el cobro devuelven valores a los campos sin pasar',
+'   por el change del navegador, y la etiqueta flotante se quedaba encima de la',
+'   cifra. Se vuelve a decidir con el valor real, como hace APEX al teclear. */',
+'function spxFlotaEtiquetas() {',
+'    document.querySelectorAll(".t-Form-fieldContainer").forEach(function (c) {',
+'        var i = c.querySelector("input, select, textarea");',
+'        if (!i) { return; }',
+'        var v = (i.value || "").toString().trim();',
+'        if (v !== "") { c.classList.add("js-show-label"); }',
+'        else { c.classList.remove("js-show-label"); }',
+'    });',
+'}',
 'apex.jQuery(function ($) {',
 '    $(document).on("change", "#P25_ID_FORMA_PAGO", spxReferencia);',
 '    spxReferencia();',
+'    $(document).on("apexafterrefresh", spxFlotaEtiquetas);',
+'    spxFlotaEtiquetas();',
 '});')),p_page_component_map=>'16'
 ,p_last_updated_by=>'ADMIN'
 ,p_last_upd_yyyymmddhh24miss=>'20261117120000'
 );
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001510)
+,p_plug_name=>'Cabecera del recibo'
+,p_static_id=>'recibo-cabecera'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>5
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2('declare',
+'    v_fac   number := nullif(fn_clean_num(:P25_ID_FACTURA), 0);',
+'    v_rec   number := nullif(fn_clean_num(:P25_ID_RECIBO), 0);',
+'    v_folio varchar2(60);',
+'    v_cli   varchar2(300);',
+'    v_mon   varchar2(5);',
+'    v_fecha date;',
+'    v_est   varchar2(20) := ''NUEVO'';',
+'begin',
+'    -- La fecha del cobro llega como texto: si no se puede leer, la cabecera',
+'    -- se pinta sin fecha en vez de tumbar el dialogo.',
+'    begin',
+'        v_fecha := to_date(trim(:P25_FECHA_COBRO), ''DD/MM/YYYY'');',
+'    exception',
+'        when others then v_fecha := null;',
+'    end;',
+'',
+'    if v_fac is not null then',
+'        begin',
+'            select f.folio_factura, f.cod_moneda, c.razon_social',
+'              into v_folio, v_mon, v_cli',
+'              from facturas f',
+'              left join clientes c on c.id_cliente = f.id_cliente',
+'             where f.id_factura = v_fac;',
+'        exception',
+'            when others then null;',
+'        end;',
+'    end if;',
+'',
+'    if v_rec is not null then',
+'        begin',
+'            select case when r.estado = ''ANULADO'' then ''ANULADO'' else ''EMITIDO'' end',
+'              into v_est',
+'              from recibos r',
+'             where r.id_recibo = v_rec;',
+'        exception',
+'            when others then null;',
+'        end;',
+'    end if;',
+'',
+'    return ''<div class="spx-cab">''',
+'        || ''<div class="spx-cab-linea">''',
+'        || ''<span class="spx-cab-tit">Recibo''',
+'        || case when v_folio is not null then '' de <b>'' || sys.htf.escape_sc(v_folio) || ''</b>'' end',
+'        || ''</span>''',
+'        || ''<span class="status-badge status-'' || v_est || ''">''',
+'        || ''<span class="status-dot"></span>'' || v_est || ''</span>''',
+'        || ''</div>''',
+'        || ''<div class="spx-cab-meta">''',
+'        || ''<span class="spx-cab-sub"><span class="fa fa-user-o" aria-hidden="true"></span>''',
+'        || nvl(sys.htf.escape_sc(v_cli), ''Elige la factura a cobrar'') || ''</span>''',
+'        || case when v_mon is not null',
+'                then ''<span class="spx-cab-sub"><span class="fa fa-money" aria-hidden="true"></span>''',
+'                     || sys.htf.escape_sc(v_mon) || ''</span>''',
+'                else '''' end',
+'        || case when v_fecha is not null',
+'                then ''<span class="spx-cab-fecha"><span class="fa fa-calendar-o" aria-hidden="true"></span>''',
+'                     || to_char(v_fecha, ''DD/MM/YYYY'') || ''</span>''',
+'                else '''' end',
+'        || ''</div></div>'';',
+'end;')),p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_ajax_items_to_submit=>'P25_ID_FACTURA,P25_ID_RECIBO,P25_FECHA_COBRO,P25_COD_MONEDA'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001520)
+,p_plug_name=>'Resumen del recibo'
+,p_static_id=>'recibo-resumen'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2('declare',
+'    v_mon varchar2(5) := :P25_COD_MONEDA;',
+'    v_nls varchar2(40) := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'',
+'    -- Un importe vacio se pinta con un guion, no con 0: en un recibo nuevo',
+'    -- todavia no hay nada que cobrar.',
+'    function f_num(p_val varchar2) return varchar2 is',
+'        v number;',
+'    begin',
+'        if p_val is null or trim(p_val) is null then',
+'            return ''&#8212;'';',
+'        end if;',
+'        v := fn_clean_num(p_val);',
+'        if v is null then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(v, ''FM999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    -- Las cuatro cifras del recibo, con el neto destacado: es lo que entra al',
+'    -- banco. El IGTF se suma al neto (se cobra al cliente), la retencion resta.',
+'    return ''<div class="spx-resumen">''',
+'        || ''<div class="spx-card spx-card--sub">''',
+'        || ''<div class="spx-card-lbl">Monto abonado</div>''',
+'        || ''<div class="spx-card-val">'' || f_num(:P25_MONTO)',
+'        || ''<span class="spx-rec-mon">'' || sys.htf.escape_sc(v_mon) || ''</span></div>''',
+'        || ''<div class="spx-card-sub">lo que se aplica a la factura</div></div>''',
+'        || ''<div class="spx-card spx-card--iva">''',
+'        || ''<div class="spx-card-lbl">IGTF</div>''',
+'        || ''<div class="spx-card-val">'' || f_num(:P25_IGTF)',
+'        || ''<span class="spx-rec-mon">'' || sys.htf.escape_sc(v_mon) || ''</span></div>''',
+'        || ''<div class="spx-card-sub">lo cobras t&uacute;: no es ingreso</div></div>''',
+'        || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Retenci&oacute;n IVA</div>''',
+'        || ''<div class="spx-card-val">'' || f_num(:P25_RETENCION)',
+'        || ''<span class="spx-rec-mon">Bs</span></div>''',
+'        || ''<div class="spx-card-sub">seg&uacute;n el comprobante del cliente</div></div>''',
+'        || ''<div class="spx-card spx-card--total">''',
+'        || ''<div class="spx-card-lbl">Neto que entra al banco</div>''',
+'        || ''<div class="spx-card-val">'' || f_num(:P25_NETO)',
+'        || ''<span class="spx-rec-mon">'' || sys.htf.escape_sc(v_mon) || ''</span></div>''',
+'        || ''<div class="spx-card-sub">Bs. '' || f_num(:P25_NETO_BS) || ''</div></div>''',
+'        || ''</div>'';',
+'end;')),p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_ajax_items_to_submit=>'P25_MONTO,P25_IGTF,P25_RETENCION,P25_NETO,P25_NETO_BS,P25_COD_MONEDA'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001530)
+,p_plug_name=>'Acciones'
+,p_static_id=>'acciones-recibo'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>40
+,p_plug_item_display_point=>'ABOVE'
+);
+
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(43000000000000802)
 ,p_plug_name=>'Cobro'
@@ -28319,6 +29250,15 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>6
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000802)
 ,p_display_as=>'NATIVE_HIDDEN'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001546)
+,p_name=>'P25_URL_IMPRESO'
+,p_item_sequence=>7
+,p_item_plug_id=>wwv_flow_imp.id(43000000000000802)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000000821)
@@ -28547,11 +29487,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 
-);
+);
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000841)
 ,p_button_sequence=>200
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000802)
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001530)
 ,p_button_name=>'BTN_GUARDAR_COBRO'
 ,p_static_id=>'btn-guardar-cobro'
 ,p_button_action=>'SUBMIT'
@@ -28567,7 +29507,7 @@ wwv_flow_imp_page.create_page_button(
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000842)
 ,p_button_sequence=>210
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000802)
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001530)
 ,p_button_name=>'BTN_ANULAR_COBRO'
 ,p_static_id=>'btn-anular-cobro'
 ,p_button_action=>'SUBMIT'
@@ -28582,7 +29522,7 @@ wwv_flow_imp_page.create_page_button(
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000843)
 ,p_button_sequence=>220
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000802)
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001530)
 ,p_button_name=>'BTN_CONCILIAR'
 ,p_static_id=>'btn-conciliar'
 ,p_button_action=>'SUBMIT'
@@ -28595,9 +29535,28 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-check-square-o'
 );
 wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001547)
+,p_button_sequence=>225
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001530)
+,p_button_name=>'BTN_IMPRIMIR_RECIBO'
+,p_static_id=>'btn-imprimir-recibo-cobro'
+,p_show_as_disabled=>false
+,p_button_action=>'REDIRECT_URL'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'N'
+,p_button_image_alt=>'Imprimir recibo'
+,p_button_redirect_url=>'&P25_URL_IMPRESO.'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') and nvl(:P25_ID_RECIBO, ''#'') <> ''#'''
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-print'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000000844)
 ,p_button_sequence=>230
-,p_button_plug_id=>wwv_flow_imp.id(43000000000000802)
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001530)
 ,p_button_name=>'BTN_SALIR_COBRO'
 ,p_static_id=>'btn-salir-cobro'
 ,p_button_action=>'SUBMIT'
@@ -28666,6 +29625,16 @@ unistr('    apex_util.set_session_state(''P25_FECHA_COBRO'', to_char(r.fecha_cob
 '    apex_util.set_session_state(''P25_NETO_BS'',',
 '        to_char(round(r.monto_neto * nvl(r.tipo_cambio, 1), 2)));',
 '    apex_util.set_session_state(''P25_REFERENCIA'', r.referencia);',
+'',
+'    -- URL de la pagina 35 (recibo en papel) con su checksum: la arma APEX. Una',
+'    -- f?p= armada a mano da violacion de la proteccion del estado de la sesion.',
+'    begin',
+'        apex_util.set_session_state(''P25_URL_IMPRESO'',',
+'            apex_page.get_url(p_page => 35, p_items => ''P35_ID_RECIBO'',',
+'                              p_values => v_id));',
+'    exception',
+'        when others then null;',
+'    end;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>43000000000000852
@@ -28853,6 +29822,35 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
 );
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001511)
+,p_event_id=>wwv_flow_imp.id(43000000000000860)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'REFRESCA'
+,p_static_id=>'refresca-recibo-cabecera'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000001510)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001512)
+,p_event_id=>wwv_flow_imp.id(43000000000000860)
+,p_event_result=>'TRUE'
+,p_action_sequence=>30
+,p_execute_on_page_init=>'N'
+,p_name=>'REFRESCA'
+,p_static_id=>'refresca-recibo-resumen'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000001520)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(43000000000000862)
 ,p_name=>'CALCULA_COBRO_MONTO'
@@ -28930,6 +29928,21 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
 );
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001513)
+,p_event_id=>wwv_flow_imp.id(43000000000000862)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'REFRESCA'
+,p_static_id=>'refresca-recibo-monto'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000001520)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(43000000000001140)
 ,p_name=>'CALCULA_NETO_RETENCION'
@@ -28975,6 +29988,21 @@ wwv_flow_imp_page.create_page_da_action(
   'suppress_change_event', 'Y')).to_clob
 ,p_wait_for_result=>'Y'
 );
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001514)
+,p_event_id=>wwv_flow_imp.id(43000000000001140)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'REFRESCA'
+,p_static_id=>'refresca-recibo-retencion'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000001520)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(43000000000000864)
 ,p_name=>'CALCULA_COBRO_MONEDA'
@@ -29055,6 +30083,21 @@ wwv_flow_imp_page.create_page_da_action(
 end;
 /
 begin
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001515)
+,p_event_id=>wwv_flow_imp.id(43000000000000864)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'REFRESCA'
+,p_static_id=>'refresca-recibo-moneda'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000001520)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(43000000000000866)
 ,p_name=>'CALCULA_COBRO_FECHA'
@@ -29197,6 +30240,21 @@ unistr('    -- Sin esto, abrir un cobro en USD mostraba «Tasa 1,00» y el neto 
 'end;'))
 ,p_process_clob_language=>'PLSQL'
 );
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001516)
+,p_event_id=>wwv_flow_imp.id(43000000000000866)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_name=>'REFRESCA'
+,p_static_id=>'refresca-recibo-fecha'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(43000000000001520)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+);
+
 end;
 /
 prompt --application/pages/page_00026
@@ -29941,6 +30999,1167 @@ wwv_flow_imp_page.create_page_process(
 end;
 /
 
+prompt --application/pages/page_00033
+begin
+-- ==================== Pagina 33 - Ficha del proveedor (2026-11-20) ====================
+wwv_flow_imp_page.create_page(
+ p_id=>33
+,p_name=>'Ficha del proveedor'
+,p_alias=>'PROVEEDOR-FICHA'
+,p_step_title=>'Ficha del proveedor'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Ficha del proveedor: la tarjeta de cabecera, la fila de indicadores y sus',
+'   compras. Las clases son las mismas de las paginas 8, 20, 22 y 32; el CSS va',
+'   aqui porque el de la pagina global no se emite en ninguna pagina. */',
+'/* Cabecera azul de la tarjeta, el mismo de las paginas 3, 5, 8 y 20. */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }',
+'.spx-ficha { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 16px; padding: 18px 20px; border: 1px solid #e0e9f0; border-radius: 12px; background: #f7fafc; box-shadow: 0 1px 3px rgba(0, 0, 0, .06); }',
+'.spx-ficha-icono { font-size: 1.9rem; line-height: 1.1; }',
+'.spx-ficha-txt { min-width: 0; flex: 1 1 260px; }',
+'.spx-ficha-nombre { font-size: 1.35rem; font-weight: 700; color: #17364a; line-height: 1.2; overflow-wrap: anywhere; }',
+'.spx-ficha-meta { font-size: 0.85rem; color: #6b7280; margin-top: 4px; overflow-wrap: anywhere; }',
+'.spx-ficha-meta strong { color: #17364a; font-weight: 600; }',
+'.spx-ficha-estado { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }',
+'.spx-ficha-contacto { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.85rem; flex: 1 1 100%; border-top: 1px solid #e5e7eb; padding-top: 10px; }',
+'.spx-dato { display: inline-flex; gap: 6px; align-items: center; color: #4b5563; overflow-wrap: anywhere; }',
+'a.spx-mail { color: #1a73e8; text-decoration: none; }',
+'a.spx-mail:hover { text-decoration: underline; }',
+'a.spx-tel { color: #0f766e; text-decoration: none; }',
+'a.spx-tel:hover { text-decoration: underline; }',
+'/* Insignias: el estado del proveedor y el de sus compras. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'.status-ACTIVO { color: #16a34a; background-color: #dcfce7; } .status-ACTIVO .status-dot { background-color: #16a34a; }',
+'.status-INACTIVO { color: #b91c1c; background-color: #fee2e2; } .status-INACTIVO .status-dot { background-color: #dc2626; }',
+'.status-BORRADOR { color: #b45309; background-color: #fffbeb; } .status-BORRADOR .status-dot { background-color: #f59e0b; }',
+'.status-REGISTRADA { color: #15803d; background-color: #f0fdf4; } .status-REGISTRADA .status-dot { background-color: #22c55e; }',
+'.status-ANULADA { color: #5f6368; background-color: #f1f3f4; } .status-ANULADA .status-dot { background-color: #9aa0a6; }',
+'/* Fila de indicadores: las mismas tarjetas de la 8, la 20 y la 22. */',
+'.spx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }',
+'.spx-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); min-width: 0; }',
+'.spx-card-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }',
+'.spx-card-val { font-size: 1.5rem; font-weight: 700; color: #17364a; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }',
+'.spx-card-sub { font-size: 0.76rem; color: #6b7280; margin-top: 2px; overflow-wrap: anywhere; }',
+'.spx-card--ok { background: #f0fdf4; border-color: #bbf7d0; } .spx-card--ok .spx-card-lbl { color: #15803d; } .spx-card--ok .spx-card-val { color: #166534; }',
+'.spx-card--total { background: #f0fffa; border: 2px solid #16a085; padding: 16px 18px; } .spx-card--total .spx-card-lbl { color: #0f766e; } .spx-card--total .spx-card-val { color: #0f766e; font-size: 1.35rem; }',
+'.spx-card--ret { background: #fffbeb; border-color: #fde68a; } .spx-card--ret .spx-card-lbl { color: #b45309; } .spx-card--ret .spx-card-val { color: #92400e; }',
+'/* En pantalla estrecha el informe se desplaza en horizontal en vez de aplastar',
+'   las columnas; el folio no se parte en dos lineas. */',
+'#R43000000000001382 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
+'#R43000000000001382 .a-IRR-table td:nth-child(1),',
+'#R43000000000001382 .a-IRR-table td:nth-child(2),',
+'#R43000000000001382 .a-IRR-table td:nth-child(4) { white-space: nowrap; }',
+'@media (max-width: 1023px) {',
+'  .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }',
+'}',
+'@media (max-width: 520px) {',
+'  .spx-ficha { padding: 12px 14px; }',
+'  .spx-ficha-nombre { font-size: 1.1rem; }',
+'  .spx-card { padding: 10px 12px; }',
+'  .spx-card-val { font-size: 1.15rem; }',
+'  .spx-card--total .spx-card-val { font-size: 1.15rem; }',
+'}',
+'@media (max-width: 420px) {',
+'  .spx-kpis { grid-template-columns: 1fr; }',
+'}'
+))
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001380)
+,p_plug_name=>'Proveedor'
+,p_static_id=>'ficha-proveedor'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id     number        := nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0);',
+'    v_nombre varchar2(400);',
+'    v_rif    varchar2(80);',
+'    v_tipo   varchar2(1);',
+'    v_estado varchar2(20);',
+'    v_email  varchar2(300);',
+'    v_tel    varchar2(150);',
+'    v_dir    varchar2(900);',
+'    v_emp    number;',
+'    v_empnom varchar2(300);',
+'    v_html   clob;',
+'begin',
+'    if v_id is null then',
+'        return ''<div class="spx-ficha"><div class="spx-ficha-txt">''',
+'            || ''<div class="spx-ficha-nombre">Ficha del proveedor</div>''',
+'            || ''<div class="spx-ficha-meta">Abre la ficha desde la lista de Proveedores.</div>''',
+'            || ''</div></div>'';',
+'    end if;',
+'',
+'    begin',
+'        select p.razon_social, p.rif, p.tipo_persona, p.estado,',
+'               p.email, p.telefono, p.direccion, p.id_empresa, e.nombre_empresa',
+'          into v_nombre, v_rif, v_tipo, v_estado,',
+'               v_email, v_tel, v_dir, v_emp, v_empnom',
+'          from proveedores p',
+'          join empresas e on e.id_empresa = p.id_empresa',
+'         where p.id_proveedor = v_id;',
+'    exception',
+'        when no_data_found then',
+'            return null;',
+'    end;',
+'',
+'    -- La fila se pinta solo si el proveedor es de una empresa del usuario: con un',
+'    -- id ajeno en la URL esta region no devuelve nada (el proceso de arriba ya',
+'    -- corta con -20003; esto es la segunda capa).',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        return null;',
+'    end if;',
+'',
+'    v_estado := case when upper(nvl(v_estado, ''ACTIVO'')) = ''INACTIVO''',
+'                     then ''INACTIVO'' else ''ACTIVO'' end;',
+'',
+'    -- El icono va como entidad HTML: la base no es AL32UTF8 y un emoji literal no',
+'    -- sobrevive al viaje (&#127970; = edificio, &#128100; = persona).',
+'    v_html := ''<div class="spx-ficha">''',
+'        || ''<div class="spx-ficha-icono" aria-hidden="true">''',
+'        || case when v_tipo = ''J'' then ''&#127970;'' else ''&#128100;'' end',
+'        || ''</div>''',
+'        || ''<div class="spx-ficha-txt">''',
+'        || ''<div class="spx-ficha-nombre">'' || sys.htf.escape_sc(v_nombre) || ''</div>''',
+'        || ''<div class="spx-ficha-meta">''',
+'        || case when v_rif is not null',
+'                then ''RIF / RFC <strong>'' || sys.htf.escape_sc(v_rif) || ''</strong> &middot; ''',
+'           end',
+'        || case when v_tipo = ''J'' then ''Jur&iacute;dica'' else ''Natural'' end',
+'        || '' &middot; '' || sys.htf.escape_sc(nvl(v_empnom, ''sin empresa''))',
+'        || ''</div></div>''',
+'        || ''<div class="spx-ficha-estado">''',
+'        || ''<span class="status-badge status-'' || v_estado || ''">''',
+'        || ''<span class="status-dot"></span>'' || v_estado || ''</span>''',
+'        || ''</div>''',
+'        || ''<div class="spx-ficha-contacto">'';',
+'',
+'    if v_tel is not null then',
+'        v_html := v_html || ''<span class="spx-dato"><span class="fa fa-phone" aria-hidden="true"></span>''',
+'            || ''<a class="spx-tel" href="tel:'' || sys.htf.escape_sc(v_tel) || ''">''',
+'            || sys.htf.escape_sc(v_tel) || ''</a></span>'';',
+'    end if;',
+'',
+'    if v_email is not null then',
+'        v_html := v_html || ''<span class="spx-dato"><span class="fa fa-envelope-o" aria-hidden="true"></span>''',
+'            || ''<a class="spx-mail" href="mailto:'' || sys.htf.escape_sc(v_email) || ''">''',
+'            || sys.htf.escape_sc(v_email) || ''</a></span>'';',
+'    end if;',
+'',
+'    if v_dir is not null then',
+'        v_html := v_html || ''<span class="spx-dato"><span class="fa fa-map-marker" aria-hidden="true"></span>''',
+'            || sys.htf.escape_sc(v_dir) || ''</span>'';',
+'    end if;',
+'',
+'    if v_tel is null and v_email is null and v_dir is null then',
+'        v_html := v_html || ''<span class="spx-dato">Sin datos de contacto.</span>'';',
+'    end if;',
+'',
+'    v_html := v_html || ''</div></div>'';',
+'    return v_html;',
+'end;'
+))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001381)
+,p_plug_name=>'Indicadores del proveedor'
+,p_static_id=>'kpi-proveedor'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>15
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id    number        := nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0);',
+'    v_emp   number;',
+'    v_com   number        := 0;',
+'    v_tot   number        := 0;',
+'    v_ret   number        := 0;',
+'    v_comp  number        := 0;',
+'    v_nls   varchar2(40)  := ''NLS_NUMERIC_CHARACTERS=''''.,'''''';',
+'    v_html  clob;',
+'',
+'    function f_n(p_val number) return varchar2 is',
+'    begin',
+'        if nvl(p_val, 0) = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(p_val);',
+'    end;',
+'',
+'    function f_bs(p_val number, p_hay number) return varchar2 is',
+'    begin',
+'        if nvl(p_hay, 0) = 0 then',
+'            return ''&#8212;'';',
+'        end if;',
+'        return to_char(nvl(p_val, 0), ''FM999G999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    if v_id is null then',
+'        return null;',
+'    end if;',
+'',
+'    begin',
+'        select id_empresa into v_emp',
+'          from proveedores',
+'         where id_proveedor = v_id;',
+'    exception',
+'        when no_data_found then',
+'            return null;',
+'    end;',
+'',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        return null;',
+'    end if;',
+'',
+'    -- Compras: solo FAC (una nota no es una compra) y sin las anuladas. El total y',
+'    -- la retencion son de ese mismo conjunto: la retencion va en bolivares porque',
+'    -- es la foto del comprobante, y el total se lleva a bolivares con la tasa del',
+'    -- documento (misma cuenta que el libro).',
+'    select count(case when co.tipo_documento = ''FAC'' and nvl(co.estado, ''#'') <> ''ANULADA''',
+'                      then 1 end),',
+'           nvl(sum(case when co.tipo_documento = ''FAC'' and nvl(co.estado, ''#'') <> ''ANULADA''',
+'                        then co.monto_total * nvl(co.tipo_cambio, 1) end), 0),',
+'           nvl(sum(case when co.tipo_documento = ''FAC'' and nvl(co.estado, ''#'') <> ''ANULADA''',
+'                        then co.retencion_iva_bs end), 0)',
+'      into v_com, v_tot, v_ret',
+'      from compras co',
+'     where co.id_proveedor = v_id',
+'       and co.id_empresa = v_emp;',
+'',
+'    -- Comprobantes de retencion vigentes: los de IVA y los de ISLR.',
+'    select count(*)',
+'      into v_comp',
+'      from retenciones r',
+'     where r.id_proveedor = v_id',
+'       and r.id_empresa = v_emp',
+'       and r.estado = ''EMITIDO'';',
+'',
+'    v_html := ''<div class="spx-kpis">''',
+'        || ''<div class="spx-card">''',
+'        || ''<div class="spx-card-lbl">Compras</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_com) || ''</div>''',
+'        || ''<div class="spx-card-sub">sin contar las anuladas</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--total">''',
+'        || ''<div class="spx-card-lbl">Total compras (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_tot, v_com) || ''</div>''',
+'        || ''<div class="spx-card-sub">al cambio de cada documento</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ret">''',
+'        || ''<div class="spx-card-lbl">Retenci&oacute;n IVA (Bs)</div>''',
+'        || ''<div class="spx-card-val">'' || f_bs(v_ret, v_com) || ''</div>''',
+'        || ''<div class="spx-card-sub">lo retenido en esas compras</div></div>'';',
+'',
+'    v_html := v_html || ''<div class="spx-card spx-card--ok">''',
+'        || ''<div class="spx-card-lbl">Comprobantes</div>''',
+'        || ''<div class="spx-card-val">'' || f_n(v_comp) || ''</div>''',
+'        || ''<div class="spx-card-sub">de retenci&oacute;n IVA e ISLR</div></div>'';',
+'',
+'    v_html := v_html || ''</div>'';',
+'    return v_html;',
+'end;'
+))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001382)
+,p_plug_name=>'Compras del proveedor'
+,p_static_id=>'ficha-compras'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select co.id_compra as ver_compra,',
+'       co.folio_factura as folio,',
+'       co.tipo_documento as tipo,',
+'       co.nro_control,',
+'       co.fecha_emision as fecha,',
+'       co.cod_moneda as moneda,',
+'       co.monto_total as total,',
+'       co.retencion_iva_bs as retencion,',
+'       -- La etiqueta que se lee (Procesada en una compra registrada) y el codigo',
+'       -- que pinta la clase de la insignia: son dos columnas y no una.',
+'       fn_estado_compra(co.estado) as estado,',
+'       co.estado as estado_cod',
+'  from compras co',
+' where co.id_proveedor = nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0)',
+'   and co.id_empresa = (select p.id_empresa',
+'                          from proveedores p',
+'                         where p.id_proveedor = nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0))',
+'   and co.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
+' order by co.fecha_emision desc, co.id_compra desc'
+))
+,p_plug_source_type=>'NATIVE_IR'
+,p_ajax_items_to_submit=>'P33_ID_PROVEEDOR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000001384)
+,p_max_row_count_message=>'El proveedor tiene demasiadas compras (#MAX_ROW_COUNT#). Filtra.'
+,p_no_data_found_message=>'Este proveedor no tiene compras en la empresa activa.'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(43000000000001385)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'VER_COMPRA:FOLIO:TIPO:NRO_CONTROL:FECHA:MONEDA:TOTAL:RETENCION:ESTADO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001386)
+,p_db_column_name=>'VER_COMPRA'
+,p_display_order=>10
+,p_is_primary_key=>'Y'
+,p_column_identifier=>'A'
+,p_column_label=>'Ver'
+,p_column_link=>'f?p=&APP_ID.:28:&APP_SESSION.::&DEBUG.::P28_ID_COMPRA:#VER_COMPRA#'
+,p_column_linktext=>'<span aria-hidden="true" class="fa fa-folder-open-o"></span> Ver compra'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001387)
+,p_db_column_name=>'FOLIO'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Folio'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001388)
+,p_db_column_name=>'TIPO'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Tipo'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001389)
+,p_db_column_name=>'NRO_CONTROL'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>unistr('N\00B0 de Control')
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001390)
+,p_db_column_name=>'FECHA'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Fecha'
+,p_column_type=>'DATE'
+,p_format_mask=>'DD/MM/YYYY'
+,p_tz_dependent=>'N'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001391)
+,p_db_column_name=>'MONEDA'
+,p_display_order=>60
+,p_column_identifier=>'F'
+,p_column_label=>'Moneda'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001392)
+,p_db_column_name=>'TOTAL'
+,p_display_order=>70
+,p_column_identifier=>'G'
+,p_column_label=>'Total'
+,p_column_type=>'NUMBER'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001393)
+,p_db_column_name=>'RETENCION'
+,p_display_order=>80
+,p_column_identifier=>'H'
+,p_column_label=>unistr('Retenci\00F3n (Bs)')
+,p_column_type=>'NUMBER'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001394)
+,p_db_column_name=>'ESTADO'
+,p_display_order=>90
+,p_column_identifier=>'I'
+,p_column_label=>'Estado'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="status-badge status-#ESTADO_COD#">',
+'    <span class="status-dot"></span>',
+'    #ESTADO#',
+'</span>'))
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001395)
+,p_db_column_name=>'ESTADO_COD'
+,p_display_order=>100
+,p_column_identifier=>'J'
+,p_column_label=>'Estado (codigo)'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001383)
+,p_plug_name=>'Acciones'
+,p_static_id=>'acciones-proveedor'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001396)
+,p_name=>'P33_ID_PROVEEDOR'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001380)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001397)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001383)
+,p_button_name=>'BTN_EDITAR_PROVEEDOR'
+,p_static_id=>'btn-editar-proveedor'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Editar proveedor'
+,p_button_redirect_url=>'f?p=&APP_ID.:23:&APP_SESSION.::&DEBUG.:23:P23_ID_PROVEEDOR:&P33_ID_PROVEEDOR.'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,ALMACEN,PRUEBA'') and :P33_ID_PROVEEDOR is not null'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_icon_css_classes=>'fa-pencil'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001398)
+,p_button_sequence=>210
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001383)
+,p_button_name=>'BTN_VOLVER'
+,p_static_id=>'btn-volver-proveedores'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver'
+,p_button_redirect_url=>'f?p=&APP_ID.:22:&APP_SESSION.::&DEBUG.:22::'
+,p_warn_on_unsaved_changes=>null
+,p_button_css_classes=>'u-pullRight'
+,p_icon_css_classes=>'fa-arrow-left'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001399)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol proveedor ficha'
+,p_static_id=>'valida-rol-proveedores'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'
+))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001399
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001400)
+,p_process_sequence=>2
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida proveedor de la empresa'
+,p_static_id=>'valida-proveedor-propio'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id  number := nullif(fn_clean_num(:P33_ID_PROVEEDOR), 0);',
+'    v_emp number;',
+'begin',
+'    if v_id is null then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select id_empresa into v_emp',
+'          from proveedores',
+'         where id_proveedor = v_id;',
+'    exception',
+'        when no_data_found then',
+'            raise_application_error(-20003, ''No tiene permisos sobre este proveedor.'');',
+'    end;',
+'',
+'    -- La ficha es de la empresa del proveedor: sin esta guarda, un id ajeno en',
+'    -- la URL pintaria la cabecera, los totales y las compras de otro proveedor.',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        raise_application_error(-20003, ''No tiene permisos sobre este proveedor.'');',
+'    end if;',
+'end;'
+))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001400
+);
+end;
+/
+prompt --application/pages/page_00034
+begin
+-- ==================== Pagina 34 - Conceptos de ISLR (2026-11-20) ====================
+wwv_flow_imp_page.create_page(
+ p_id=>34
+,p_name=>'Conceptos de ISLR'
+,p_alias=>'ISLR-CONCEPTOS'
+,p_step_title=>'Conceptos de ISLR'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* Insignias: copia local, porque el CSS de la pagina global no se emite. */',
+'.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
+'.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
+'.status-ACTIVO { color: #16a34a; background-color: #dcfce7; } .status-ACTIVO .status-dot { background-color: #16a34a; }',
+'.status-INACTIVO { color: #5f6368; background-color: #f1f3f4; } .status-INACTIVO .status-dot { background-color: #9aa0a6; }',
+'/* Cabecera azul de la tarjeta, el mismo de las paginas 3, 5, 8 y 22. */',
+'.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }',
+'/* La nota del catalogo: una franja, no una tarjeta con cabecera. */',
+'.spx-nota-islr { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border: 1px solid #dbe7ef; border-left: 4px solid #0076ce; border-radius: 8px; background: #f4f8fb; color: #17364a; font-size: 0.88rem; line-height: 1.45; }',
+'.spx-nota-islr .fa { color: #0076ce; margin-top: 2px; }',
+'/* En pantalla estrecha el informe se desplaza en horizontal en vez de aplastar',
+'   las columnas, y el codigo y las cifras no se parten. */',
+'#R43000000000001471 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
+'#R43000000000001471 .a-IRR-table td:nth-child(1),',
+'#R43000000000001471 .a-IRR-table td:nth-child(2) { white-space: nowrap; }',
+'@media (max-width: 640px) {',
+'  .spx-nota-islr { font-size: 0.82rem; }',
+'}'))
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001471)
+,p_plug_name=>'Conceptos de ISLR'
+,p_static_id=>'islr-lista'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select c.id_concepto,',
+'       c.codigo,',
+'       c.descripcion,',
+'       c.actividad,',
+'       c.base_pct,',
+'       c.tarifa,',
+'       c.sustraendo_ut,',
+'       case when c.activo = ''S'' then ''ACTIVO'' else ''INACTIVO'' end as activo',
+'  from islr_conceptos c',
+' order by c.codigo'))
+,p_plug_source_type=>'NATIVE_IR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000001472)
+,p_max_row_count_message=>'El catalogo tiene demasiados conceptos (#MAX_ROW_COUNT#). Filtra.'
+,p_no_data_found_message=>'No hay conceptos de ISLR en el catalogo.'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(43000000000001473)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'ID_CONCEPTO:CODIGO:DESCRIPCION:ACTIVIDAD:BASE_PCT:TARIFA:SUSTRAENDO_UT:ACTIVO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001474)
+,p_db_column_name=>'ID_CONCEPTO'
+,p_display_order=>0
+,p_is_primary_key=>'Y'
+,p_column_identifier=>'A'
+,p_column_label=>'Editar'
+,p_column_link=>'f?p=&APP_ID.:34:&APP_SESSION.::&DEBUG.::P34_ID_CONCEPTO:#ID_CONCEPTO#'
+,p_column_linktext=>'<span class="fa fa-pencil" aria-hidden="true"></span> Editar'
+,p_column_type=>'NUMBER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001475)
+,p_db_column_name=>'CODIGO'
+,p_display_order=>10
+,p_column_identifier=>'B'
+,p_column_label=>unistr('C\00F3digo')
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001476)
+,p_db_column_name=>'DESCRIPCION'
+,p_display_order=>20
+,p_column_identifier=>'C'
+,p_column_label=>unistr('Descripci\00F3n')
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001477)
+,p_db_column_name=>'ACTIVIDAD'
+,p_display_order=>30
+,p_column_identifier=>'D'
+,p_column_label=>'Actividad'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001478)
+,p_db_column_name=>'BASE_PCT'
+,p_display_order=>40
+,p_column_identifier=>'E'
+,p_column_label=>'Base %'
+,p_column_type=>'NUMBER'
+,p_format_mask=>'FM990D00'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001479)
+,p_db_column_name=>'TARIFA'
+,p_display_order=>50
+,p_column_identifier=>'F'
+,p_column_label=>'Tarifa %'
+,p_column_type=>'NUMBER'
+,p_format_mask=>'FM990D00'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001480)
+,p_db_column_name=>'SUSTRAENDO_UT'
+,p_display_order=>60
+,p_column_identifier=>'G'
+,p_column_label=>'Sustraendo (UT)'
+,p_column_type=>'NUMBER'
+,p_format_mask=>'FM9990D0000'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001481)
+,p_db_column_name=>'ACTIVO'
+,p_display_order=>70
+,p_column_identifier=>'H'
+,p_column_label=>'Activo'
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="status-badge status-#ACTIVO#">',
+'    <span class="status-dot"></span>',
+'    #ACTIVO#',
+'</span>'))
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001483)
+,p_plug_name=>'Concepto'
+,p_static_id=>'islr-form'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001486)
+,p_name=>'P34_ID_CONCEPTO'
+,p_item_sequence=>1
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001487)
+,p_name=>'P34_CODIGO'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_prompt=>unistr('C\00F3digo')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>10
+,p_cMaxlength=>5
+,p_colspan=>3
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_is_required=>true
+,p_help_text=>'Codigo del concepto en la tabla del SENIAT (002, 053, 057...).'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001488)
+,p_name=>'P34_DESCRIPCION'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_prompt=>unistr('Descripci\00F3n')
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>60
+,p_cMaxlength=>200
+,p_colspan=>9
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_is_required=>true
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001489)
+,p_name=>'P34_ACTIVIDAD'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_prompt=>'Actividad'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>60
+,p_cMaxlength=>200
+,p_colspan=>12
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_is_required=>true
+,p_help_text=>'Es la actividad que imprime el comprobante de retencion.'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001490)
+,p_name=>'P34_BASE_PCT'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_prompt=>'Base %'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>10
+,p_format_mask=>'FM990D00'
+,p_colspan=>3
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_is_required=>true
+,p_help_text=>'Porcentaje del monto que queda sujeto a retencion: 100 casi siempre, 90 en honorarios de personas naturales, 30 en primas de seguro.'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001491)
+,p_name=>'P34_TARIFA'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_prompt=>'Tarifa %'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>10
+,p_format_mask=>'FM990D00'
+,p_colspan=>3
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_is_required=>true
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001492)
+,p_name=>'P34_SUSTRAENDO_UT'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_prompt=>'Sustraendo (UT)'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>10
+,p_format_mask=>'FM9990D0000'
+,p_colspan=>3
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_is_required=>true
+,p_help_text=>'Sustraendo en unidades tributarias, con 4 decimales (2,5 para el 3 %; 0,8333 para el 1 %). Se lleva a bolivares con la UT de Administracion.'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001493)
+,p_name=>'P34_ACTIVO'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001483)
+,p_item_default=>'S'
+,p_prompt=>'Activo'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:Activo;S,Inactivo;N'
+,p_lov_display_null=>'NO'
+,p_cSize=>15
+,p_colspan=>3
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Solo los activos se pueden elegir en una compra. Los inactivos quedan como informativos (tarifa progresiva o formula especial).'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001484)
+,p_plug_name=>'Nota'
+,p_static_id=>'islr-nota'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>25
+,p_plug_item_display_point=>'ABOVE'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="spx-nota-islr">',
+'  <span class="fa fa-info-circle" aria-hidden="true"></span>',
+unistr('  <span>Los conceptos de tarifa plana de la tabla del SENIAT se agregan aqu\00ED; los de Tarifa N\00B0 2 no se calculan.</span>'),
+'</div>'))
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001485)
+,p_plug_name=>'Acciones'
+,p_static_id=>'islr-acciones'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001494)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001485)
+,p_button_name=>'BTN_GUARDAR_CONCEPTO'
+,p_static_id=>'btn-guardar-concepto'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar'
+,p_icon_css_classes=>'fa-floppy-o'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001495)
+,p_button_sequence=>210
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001485)
+,p_button_name=>'BTN_NUEVO_CONCEPTO'
+,p_static_id=>'btn-nuevo-concepto'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Nuevo concepto'
+,p_button_redirect_url=>'f?p=&APP_ID.:34:&APP_SESSION.::&DEBUG.:34::'
+,p_icon_css_classes=>'fa-plus'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001496)
+,p_button_sequence=>220
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001485)
+,p_button_name=>'BTN_VOLVER'
+,p_static_id=>'btn-volver-administracion'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver a Administracion'
+,p_button_redirect_url=>'f?p=&APP_ID.:19:&APP_SESSION.::&DEBUG.:19::'
+,p_button_css_classes=>'u-pullRight'
+,p_icon_css_classes=>'fa-arrow-left'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001497)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol conceptos ISLR'
+,p_static_id=>'valida-rol-islr-conceptos'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001498)
+,p_process_sequence=>2
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Carga el concepto'
+,p_static_id=>'carga-concepto-islr'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id number := nullif(fn_clean_num(:P34_ID_CONCEPTO), 0);',
+'begin',
+'    -- En el submit de guardado no se recarga: el estado de sesion ya tiene lo',
+'    -- que se tecleo y recargarlo desde la tabla lo pisaria.',
+'    if v_id is null or nvl(:REQUEST, ''#'') = ''BTN_GUARDAR_CONCEPTO'' then',
+'        return;',
+'    end if;',
+'',
+'    for r in (select codigo, descripcion, actividad, base_pct, tarifa,',
+'                     sustraendo_ut, activo',
+'                from islr_conceptos',
+'               where id_concepto = v_id) loop',
+'        apex_util.set_session_state(''P34_CODIGO'', r.codigo);',
+'        apex_util.set_session_state(''P34_DESCRIPCION'', r.descripcion);',
+'        apex_util.set_session_state(''P34_ACTIVIDAD'', r.actividad);',
+'        apex_util.set_session_state(''P34_BASE_PCT'', r.base_pct);',
+'        apex_util.set_session_state(''P34_TARIFA'', r.tarifa);',
+'        apex_util.set_session_state(''P34_SUSTRAENDO_UT'', r.sustraendo_ut);',
+'        apex_util.set_session_state(''P34_ACTIVO'', r.activo);',
+'    end loop;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001499)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar concepto'
+,p_static_id=>'guardar-concepto-islr'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id    number := nullif(fn_clean_num(:P34_ID_CONCEPTO), 0);',
+'    v_cod   varchar2(5) := upper(trim(:P34_CODIGO));',
+'    v_base  number := fn_clean_num(:P34_BASE_PCT);',
+'    v_tar   number := fn_clean_num(:P34_TARIFA);',
+'    v_sus   number := fn_clean_num(:P34_SUSTRAENDO_UT);',
+'    v_n     number := 0;',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'    if v_cod is null then',
+'        raise_application_error(-20023, ''El codigo del concepto es obligatorio.'');',
+'    end if;',
+'    if v_tar is null or v_tar < 0 or v_tar > 100 then',
+'        raise_application_error(-20023, ''La tarifa debe estar entre 0 y 100.'');',
+'    end if;',
+'    if v_base is null or v_base < 0 or v_base > 100 then',
+'        raise_application_error(-20023, ''La base debe estar entre 0 y 100.'');',
+'    end if;',
+'    if v_sus is null or v_sus < 0 then',
+'        raise_application_error(-20023, ''El sustraendo en UT no puede ser negativo.'');',
+'    end if;',
+'',
+'    -- El codigo es la llave del catalogo: se comprueba antes de tocar la tabla',
+'    -- para dar un mensaje util en vez de un ORA-00001.',
+'    select count(*)',
+'      into v_n',
+'      from islr_conceptos',
+'     where upper(codigo) = v_cod',
+'       and id_concepto <> nvl(v_id, -1);',
+'    if v_n > 0 then',
+'        raise_application_error(-20047, ''Ya existe un concepto con el codigo '' || v_cod || ''.'');',
+'    end if;',
+'',
+'    if v_id is null then',
+'        insert into islr_conceptos (codigo, descripcion, actividad, base_pct,',
+'                                    tarifa, sustraendo_ut, activo)',
+'        values (v_cod, :P34_DESCRIPCION, :P34_ACTIVIDAD, v_base,',
+'                v_tar, v_sus, nvl(:P34_ACTIVO, ''S''))',
+'        returning id_concepto into :P34_ID_CONCEPTO;',
+'    else',
+'        update islr_conceptos',
+'           set codigo = v_cod,',
+'               descripcion = :P34_DESCRIPCION,',
+'               actividad = :P34_ACTIVIDAD,',
+'               base_pct = v_base,',
+'               tarifa = v_tar,',
+'               sustraendo_ut = v_sus,',
+'               activo = nvl(:P34_ACTIVO, ''S'')',
+'         where id_concepto = v_id;',
+'        if sql%rowcount = 0 then',
+'            raise_application_error(-20023, ''El concepto no existe.'');',
+'        end if;',
+'    end if;',
+'',
+'    apex_application.g_print_success_message := ''Concepto guardado.'';',
+'exception',
+'    when dup_val_on_index then',
+'        raise_application_error(-20047, ''Ya existe un concepto con el codigo '' || v_cod || ''.'');',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000001494)
+,p_process_success_message=>'Concepto guardado.'
+);
+end;
+/
+
+prompt --application/pages/page_00035
+
+begin
+-- ==================== Pagina 35 - Recibo impreso (2026-11-21) ====================
+wwv_flow_imp_page.create_page(
+ p_id=>35
+,p_name=>'Recibo impreso'
+,p_alias=>'RECIBO-IMPRESO'
+,p_step_title=>'Recibo de cobro'
+,p_autocomplete_on_off=>'OFF'
+,p_inline_css=>'/* Las reglas @media print las emite fn_imprimir_recibo, que arma el documento completo. No duplicarlas aqui. */'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001540)
+,p_plug_name=>'Recibo de cobro'
+,p_static_id=>'recibo-print'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>1557215235004102827
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>'RETURN fn_imprimir_recibo(:P35_ID_RECIBO);'
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_ajax_items_to_submit=>'P35_ID_RECIBO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001541)
+,p_name=>'P35_ID_RECIBO'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001540)
+,p_display_as=>'NATIVE_HIDDEN'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001542)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001540)
+,p_button_name=>'BTN_IMPRIMIR'
+,p_static_id=>'btn-imprimir-recibo'
+,p_button_action=>'DEFINED_BY_DA_ACTION'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Imprimir'
+,p_button_css_classes=>'u-no-print'
+,p_icon_css_classes=>'fa-print'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_component_da_action(
+ p_id=>wwv_flow_imp.id(43000000000001543)
+,p_button_id=>wwv_flow_imp.id(43000000000001542)
+,p_action_sequence=>10
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_static_id=>'native-javascript-code'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'window.print();')).to_clob
+,p_stop_execution_on_error=>true
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001544)
+,p_process_sequence=>5
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida empresa del recibo'
+,p_static_id=>'valida-empresa-recibo-print'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_id  number := nullif(fn_clean_num(:P35_ID_RECIBO), 0);',
+'    v_emp number;',
+'begin',
+'    if v_id is null then',
+'        return;',
+'    end if;',
+'',
+'    begin',
+'        select id_empresa into v_emp',
+'          from recibos',
+'         where id_recibo = v_id;',
+'    exception',
+'        when no_data_found then',
+'            raise_application_error(-20003, ''No tiene permisos sobre este recibo.'');',
+'    end;',
+'',
+'    -- fn_imprimir_recibo solo recibe el id: sin esta guarda, un id ajeno en la',
+'    -- URL imprimiria el recibo de otra empresa.',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        raise_application_error(-20003, ''No tiene permisos sobre este recibo.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001545)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol: recibo impreso'
+,p_static_id=>'valida-rol-recibo-print'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'') then',
+unistr('        raise_application_error(-20003, ''No tiene permisos para esta p\00E1gina.'');'),
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>43000000000001545
+);
+end;
+/
 prompt --application/pages/page_00030
 begin
 wwv_flow_imp_page.create_page(

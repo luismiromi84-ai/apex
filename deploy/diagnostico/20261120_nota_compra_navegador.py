@@ -154,14 +154,15 @@ prov = int(valor(cur.bindvars["i"]))
 con.commit()
 
 
-def crea_compra(folio, tipo, origen, lineas):
+def crea_compra(folio, tipo, origen, lineas, moneda="VES", tasa=1):
     cur.execute("begin pkg_compras.prc_guardar_compra("
                 "p_id_compra => :i, p_id_empresa => 1, p_id_proveedor => :p, "
                 "p_tipo_documento => :t, p_folio_factura => :f, p_nro_control => '00-000995', "
-                "p_fecha_emision => trunc(sysdate), p_cod_moneda => 'VES', p_tipo_cambio => 1, "
+                "p_fecha_emision => trunc(sysdate), p_cod_moneda => :m, p_tipo_cambio => :tc, "
                 "p_porcentaje_retencion => 0, p_id_compra_origen => :o, "
                 "p_usuario => 'diag.nota'); end;",
-                i=cur.var(oracledb.NUMBER), p=prov, t=tipo, f=folio, o=origen)
+                i=cur.var(oracledb.NUMBER), p=prov, t=tipo, f=folio, o=origen,
+                m=moneda, tc=tasa)
     cid = int(valor(cur.bindvars["i"]))
     con.commit()
     for k, (desc, cant, prec) in enumerate(lineas, start=1):
@@ -172,11 +173,16 @@ def crea_compra(folio, tipo, origen, lineas):
     return cid
 
 
+# La factura va en USD a una tasa conocida (900) y la nota se crea con la tasa
+# del DIA: el package tiene que imponerle la de la factura (2026-11-20).
+cur.execute("select fn_tasa_ves(trunc(sysdate), 'USD') from dual")
+tasa_dia = cur.fetchone()[0]
 fac = crea_compra("NCAP-FAC-1", "FAC", None,
-                  [("Servicio de la factura", 2, 150.00), ("Repuesto de la factura", 1, 80.00)])
-nc = crea_compra("NCAP-NC-1", "NC", fac, [])
+                  [("Servicio de la factura", 2, 150.00), ("Repuesto de la factura", 1, 80.00)],
+                  moneda="USD", tasa=900)
+nc = crea_compra("NCAP-NC-1", "NC", fac, [], moneda="USD", tasa=tasa_dia)
 con.close()
-print("  factura=%s nota=%s" % (fac, nc))
+print("  factura=%s nota=%s tasa_dia=%s" % (fac, nc, tasa_dia))
 
 nav = Nav()
 try:
@@ -214,6 +220,19 @@ try:
 
     # ---- N1/N2/N3/N4: la nota trae las lineas de la factura
     print("  abrir la nota:", abrir_compra("NCAP-NC-1"))
+
+    # N7 (2026-11-20): la nota lleva la TASA de la factura que acredita, no la
+    # del dia con que se creo (el package la impone y la pagina la muestra).
+    tasa_pag = nav.js('(function(){try{return apex.item("P28_TIPO_CAMBIO").getValue();}catch(e){return "EXC";}})()')
+    mon_pag = nav.js('(function(){try{return apex.item("P28_COD_MONEDA").getValue();}catch(e){return "EXC";}})()')
+    try:
+        tasa_num = float(str(tasa_pag).replace(",", "."))
+    except Exception:
+        tasa_num = None
+    comprobar("N7 la nota abre con la tasa de la factura que acredita (900 USD)",
+              tasa_num is not None and abs(tasa_num - 900) < 0.01 and str(mon_pag).upper() == "USD",
+              "tasa=%s moneda=%s (dia=%s)" % (tasa_pag, mon_pag, tasa_dia))
+
     bot = nav.js(BOTONES)
     comprobar("N1 en la nota se pinta el boton Traer lineas", "BTN_TRAER_COMPRA" in str(bot), bot)
 

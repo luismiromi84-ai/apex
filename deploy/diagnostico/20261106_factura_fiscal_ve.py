@@ -31,12 +31,24 @@ for l in open(os.path.join(REPO, ".env"), encoding="utf-8"):
         d[k.strip()] = v.strip()
 
 fallas = []
+omitidos = []
 
 
 def comprobar(nombre, condicion, detalle=""):
     print(f"  [{'OK   ' if condicion else 'FALLA'}] {nombre} {detalle}".rstrip())
     if not condicion:
         fallas.append(nombre)
+
+
+def omitir(nombre, motivo):
+    """Caso que no se puede juzgar porque depende de un dato que pone el cliente.
+
+    No cuenta como falla (la app no tiene la culpa de una configuracion
+    opcional sin rellenar) pero tampoco pasa en silencio: se imprime y se
+    resume al final.
+    """
+    print(f"  [OMITIDO] {nombre} -- {motivo}")
+    omitidos.append((nombre, motivo))
 
 
 def numero(texto):
@@ -62,16 +74,42 @@ def imprimir(fid):
 
 print("== datos fiscales cargados ==")
 
+# La providencia SENIAT, el rango de control y los datos de la imprenta son
+# configuracion OPCIONAL que teclea el cliente en la pagina 19. Cuando no estan,
+# el documento NO los imprime (es correcto) y la verificacion no puede darlo por
+# fallo: se omite el caso, se dice por que y se siguen midiendo las invariantes
+# que si dependen del sistema (los campos obligatorios, los controles unicos...).
+prov, prov_fecha, desde, hasta, imp_nom, imp_rif = (None,) * 6
+
 fila = cur.execute("select direccion_fiscal, telefono, email, nro_providencia, prov_fecha, "
                    "       control_desde, control_hasta, imprenta_nombre, imprenta_rif "
                    "  from empresa_fiscal where id_empresa = 1").fetchone()
 comprobar("empresa 1 tiene fila en empresa_fiscal", fila is not None)
 if fila:
+    prov, prov_fecha, desde, hasta, imp_nom, imp_rif = fila[3:9]
     comprobar("direccion, telefono y email del emisor",
               all(x is not None for x in fila[0:3]))
-    comprobar("providencia y rango de control",
-              all(x is not None for x in fila[3:7]), f"({fila[3]} / {fila[5]}..{fila[6]})")
-    comprobar("datos de la imprenta", all(x is not None for x in fila[7:9]))
+
+    if prov is None or desde is None:
+        omitir("providencia y rango de control",
+               f"la empresa 1 no los tiene configurados (dato del cliente): "
+               f"providencia={prov!r} control={desde!r}..{hasta!r}")
+        # Lo que si se puede exigir sin el dato: que no haya mitades huerfanas.
+        comprobar("sin providencia no queda fecha de providencia suelta",
+                  prov is not None or prov_fecha is None)
+        comprobar("sin control desde no queda control hasta suelto",
+                  desde is not None or hasta is None)
+    else:
+        comprobar("providencia y rango de control",
+                  all(x is not None for x in (prov, prov_fecha, desde, hasta)),
+                  f"({prov} / {desde}..{hasta})")
+
+    if imp_nom is None or imp_rif is None:
+        omitir("datos de la imprenta",
+               f"la empresa 1 no la tiene completa (dato del cliente): "
+               f"nombre={imp_nom!r} rif={imp_rif!r}")
+    else:
+        comprobar("datos de la imprenta", True)
 
 sin_control = uno("select count(*) from facturas f join empresas e on e.id_empresa = f.id_empresa "
                   " where e.cod_pais = 'VE' and f.tipo_documento = 'FAC' "
@@ -94,9 +132,24 @@ html_ve = imprimir(ve)
 
 for marca in ("fe-emisor", "fe-cliente", "fe-lineas", "fe-totales", "fe-leyenda", "fe-imprenta"):
     comprobar(f"el documento trae «{marca}»", marca in html_ve)
-for texto in ("N&ordm; CONTROL", "R.I.F.", "Base imponible", "Providencia SENIAT", "Imprenta",
-              "SIN TACHADURA"):
+for texto in ("N&ordm; CONTROL", "R.I.F.", "Base imponible", "SIN TACHADURA"):
     comprobar(f"el documento trae «{texto}»", texto in html_ve)
+
+# «Providencia SENIAT» e «Imprenta» solo se imprimen si el cliente los cargo.
+if prov is not None:
+    comprobar("el documento trae «Providencia SENIAT»", "Providencia SENIAT" in html_ve)
+else:
+    omitir("el documento trae «Providencia SENIAT»",
+           "la empresa 1 no tiene providencia configurada (dato del cliente)")
+    comprobar("sin providencia el documento no imprime el bloque vacio",
+              "Providencia SENIAT" not in html_ve)
+
+if imp_nom is not None:
+    comprobar("el documento trae «Imprenta»", "Imprenta" in html_ve)
+else:
+    omitir("el documento trae «Imprenta»",
+           "la empresa 1 no tiene nombre de imprenta (dato del cliente)")
+
 comprobar("el numero de control de la factura sale impreso",
           uno("select nro_control from facturas where id_factura = :f", {"f": ve}) in html_ve)
 
@@ -142,12 +195,15 @@ invalidos = uno("select count(*) from all_objects where owner = 'WKSP_SYPEXWS' "
                 "('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')")
 comprobar("0 objetos invalidos", invalidos == 0, f"({invalidos})")
 paginas = uno("select count(*) from apex_application_pages where application_id = 100")
-comprobar("siguen las 34 paginas", paginas == 34, f"({paginas})")
+comprobar("siguen las 37 paginas", paginas == 37, f"({paginas})")
 
 conn.close()
 print()
-print("RESULTADO: FALLAS=" + str(len(fallas)))
-if fallas:
-    for f in fallas:
-        print("  - " + f)
+print("RESULTADO: FALLAS=" + str(len(fallas)) + " OMITIDOS=" + str(len(omitidos)))
+for f in fallas:
+    print("  - " + f)
+if omitidos:
+    print("  Casos omitidos (no son fallas: dependen de datos del cliente):")
+    for nombre, motivo in omitidos:
+        print("   * " + nombre + ": " + motivo)
 sys.exit(1 if fallas else 0)

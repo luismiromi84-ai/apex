@@ -27,6 +27,11 @@
 -- decimales con coma) por el NLS explicito de f_num, sin depender del NLS de la
 -- sesion. El RIF y el N. de control son texto y no se tocan.
 --
+-- LLEVA EL LOGO DE LA EMPRESA QUE EMITE (2026-11-21), en los DOS tipos, arriba a
+-- la izquierda y con el mismo trato que la factura: pkg_empresa_logo.fn_logo_img
+-- lo devuelve como data URI. Si la empresa no tiene logo cargado devuelve NULL y
+-- el documento conserva su maqueta tal cual: no queda caja vacia ni imagen rota.
+--
 -- La pagina 31 lo llama con UN solo argumento (IVA), de ahi el default.
 -- =============================================================================
 
@@ -43,6 +48,7 @@ create or replace function fn_imprimir_retencion (
     v_rif_pro varchar2(30);
     v_dir_pro varchar2(300);
     v_html    clob;
+    v_logo    clob;
     v_oper    number := 0;
     v_lineas  number;
     v_tot_tot number := 0;
@@ -136,6 +142,7 @@ begin
         || '.spx-ret{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:11px;'
         || 'line-height:1.25;background:#fff;max-width:1120px;margin:0 auto}'
         || '.spx-ret .rt-tit{font-size:16px;font-weight:bold;text-align:center;margin-top:4px}'
+        || '.spx-ret .rt-logo{margin:0 0 6px 0}'
         || '.spx-ret .rt-sub{font-size:12px;font-weight:bold;text-align:center;margin-bottom:3px}'
         || '.spx-ret .rt-leg{font-size:9px;text-align:center;margin:0 auto 10px;max-width:900px}'
         || '.spx-ret table{width:100%;border-collapse:collapse;margin-bottom:8px}'
@@ -159,6 +166,17 @@ begin
         || '.spx-ret{position:absolute;left:0;top:0;width:100%;max-width:none}}'
         || '</style>'
         || '<div class="spx-ret">';
+
+    -- El logo del agente de retencion (la empresa emisora), arriba a la izquierda.
+    -- Mismo estilo que el de la factura. Si la empresa no tiene logo, fn_logo_img
+    -- devuelve NULL: se omite el bloque entero para no dejar una caja vacia ni un
+    -- <img> sin origen (que el navegador pinta como imagen rota).
+    v_logo := pkg_empresa_logo.fn_logo_img(
+        v_ret.id_empresa,
+        'max-height:64px;max-width:220px;display:block;margin:0 0 8px 0;');
+    if v_logo is not null then
+        v_html := v_html || '<div class="rt-logo">' || v_logo || '</div>';
+    end if;
 
     if v_tipo = 'IVA' then
         -- ---------------------------------------------------------------------
