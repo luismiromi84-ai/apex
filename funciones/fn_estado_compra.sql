@@ -7,6 +7,8 @@
 --
 --   select fn_estado_compra('BORRADOR')  from dual;  -> Borrador
 --   select fn_estado_compra('REGISTRADA') from dual;  -> Procesada
+--   select fn_estado_compra('PARCIAL')    from dual;  -> Abonada
+--   select fn_estado_compra('PAGADA')     from dual;  -> Pagada
 --   select fn_estado_compra('ANULADA')   from dual;  -> Anulada
 --
 -- Cualquier otro valor se devuelve TAL CUAL (no se inventa una etiqueta para un
@@ -24,6 +26,8 @@ begin
     return case upper(nvl(p_estado, '#'))
                when 'BORRADOR'   then 'Borrador'
                when 'REGISTRADA' then 'Procesada'
+               when 'PARCIAL'    then 'Abonada'
+               when 'PAGADA'     then 'Pagada'
                when 'ANULADA'    then 'Anulada'
                else p_estado
            end;

@@ -54,6 +54,8 @@ prompt ============================================================
 @@../tabla/retencion_contador.sql
 -- Cobros (2026-11-17): recibos por factura; despues de FACTURAS y FORMA_PAGO por las FK.
 @@../tabla/recibos.sql
+@@../tabla/pagos.sql
+@@../tabla/pagos_detalle.sql
 @@../tabla/gasto_real.sql
 @@../tabla/folio_contador.sql
 @@../tabla/syn_parametros.sql
@@ -99,6 +101,10 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_iva_retenido_bs.sql
 -- Cobros e IGTF (2026-11-17): saldo de la factura y alicuota configurada.
 @@../funciones/fn_saldo_factura.sql
+@@../funciones/fn_importe_compra.sql
+@@../funciones/fn_saldo_compra.sql
+@@../funciones/fn_compra_pagable.sql
+@@../funciones/fn_compra_anulable.sql
 @@../funciones/fn_alicuota_igtf.sql
 @@../funciones/fn_transicion_estado_valida.sql
 -- Folio atomico por empresa (lo llaman pkg_presupuestos y pkg_facturacion).
@@ -138,6 +144,7 @@ prompt ============================================================
 @@../package/pkg_compra_detalle.sql
 -- Cobros (2026-11-17)
 @@../package/pkg_cobros.sql
+@@../package/pkg_pagos.sql
 
 prompt ============================================================
 prompt 5/8 Triggers de estado

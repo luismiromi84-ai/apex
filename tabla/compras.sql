@@ -30,6 +30,7 @@ create table compras (
     nro_control          varchar2(30),
     fecha_emision        date          default sysdate not null enable,
     fecha_recepcion      date          default sysdate,
+    fecha_vencimiento    date,
     cod_moneda           varchar2(5)   default 'VES' not null enable,
     tipo_cambio          number(14,6)  default 1 not null enable,
     subtotal             number(14,2)  default 0 not null enable,
@@ -38,6 +39,8 @@ create table compras (
     porcentaje_retencion number(5,2)   default 0 not null enable,
     id_forma_pago        number,
     retencion_iva_bs     number(14,2)  default 0 not null enable,
+    retencion_islr_bs    number(14,2)  default 0 not null enable,
+    igtf_bs              number(14,2)  default 0 not null enable,
     id_concepto_islr     number,
     estado               varchar2(20)  default 'BORRADOR' not null enable,
     observaciones        varchar2(4000),
@@ -59,7 +62,8 @@ create table compras (
     constraint fk_compras_islr foreign key (id_concepto_islr)
         references islr_conceptos (id_concepto) enable,
     constraint chk_compras_tipo check (tipo_documento in ('FAC','NC','ND')) enable,
-    constraint chk_compras_estado check (estado in ('BORRADOR','REGISTRADA','ANULADA')) enable,
+    constraint chk_compras_estado check
+        (estado in ('BORRADOR','REGISTRADA','PARCIAL','PAGADA','ANULADA')) enable,
     constraint chk_compras_pct check (porcentaje_retencion between 0 and 100) enable
 );
 
@@ -67,10 +71,14 @@ create index ix_compras_empresa on compras (id_empresa);
 create index ix_compras_proveedor on compras (id_proveedor);
 create index ix_compras_fecha on compras (fecha_emision);
 create index ix_compras_origen on compras (id_compra_origen);
+create index ix_compras_vencimiento on compras (id_empresa, fecha_vencimiento);
 
 comment on column compras.folio_factura is 'Numero de factura del proveedor (no lo genera la app)';
 comment on column compras.nro_control is 'Numero de control impreso por el proveedor';
 comment on column compras.tipo_cambio is 'Bolivares por unidad de la moneda del documento (misma convencion que facturas)';
 comment on column compras.retencion_iva_bs is 'IVA retenido en bolivares, fijado al registrar; debe coincidir con el comprobante';
 comment on column compras.id_concepto_islr is 'Concepto de ISLR con el que se retiene esta compra; heredado del proveedor y editable en BORRADOR; nulo = no se retiene ISLR';
-comment on column compras.estado is 'BORRADOR = editable; REGISTRADA = cerrada y con comprobante; ANULADA = no cuenta';
+comment on column compras.estado is 'BORRADOR = editable; REGISTRADA = cerrada y sin pagos; PARCIAL = con abonos; PAGADA = saldo cero; ANULADA = no cuenta';
+comment on column compras.retencion_islr_bs is 'ISLR retenido en bolivares, fotografia al emitir el comprobante; no se recalcula';
+comment on column compras.igtf_bs is 'IGTF del documento en bolivares, congelado al registrar la compra; no se recalcula';
+comment on column compras.fecha_vencimiento is 'Fecha de vencimiento = emision + dias de credito del proveedor; editable en BORRADOR';
