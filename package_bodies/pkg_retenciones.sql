@@ -266,9 +266,12 @@ create or replace package body pkg_retenciones as
           from compras
          where id_compra = p_id_compra;
 
-        if v_estado <> 'REGISTRADA' then
+        -- Una compra abonada o pagada SIGUE pudiendo emitir su comprobante (2026-11-21):
+        -- cobrarla no puede impedir el papel. Lo unico que la frena es que ya lo tenga.
+        if v_estado not in ('REGISTRADA', 'PARCIAL', 'PAGADA') then
             raise_application_error(-20083,
-                'Solo se emite comprobante de una compra REGISTRADA; esta esta ' || v_estado || '.');
+                'Solo se emite comprobante de una compra procesada, abonada o pagada; esta esta '
+                || v_estado || '.');
         end if;
 
         select count(*) into v_ya_tiene
@@ -399,9 +402,12 @@ create or replace package body pkg_retenciones as
           from compras
          where id_compra = p_id_compra;
 
-        if v_estado <> 'REGISTRADA' then
+        -- Una compra abonada o pagada SIGUE pudiendo emitir su comprobante (2026-11-21):
+        -- cobrarla no puede impedir el papel. Lo unico que la frena es que ya lo tenga.
+        if v_estado not in ('REGISTRADA', 'PARCIAL', 'PAGADA') then
             raise_application_error(-20083,
-                'Solo se emite comprobante de una compra REGISTRADA; esta esta ' || v_estado || '.');
+                'Solo se emite comprobante de una compra procesada, abonada o pagada; esta esta '
+                || v_estado || '.');
         end if;
 
         -- Sin concepto no hay retencion de ISLR: es el caso del proveedor que no la
@@ -460,6 +466,12 @@ create or replace package body pkg_retenciones as
         values (p_id_retencion, p_id_compra, v_fecha, v_folio, v_control, v_tipo_doc,
                 round(v_monto_total * v_tasa, 2), 0, v_base, v_tarifa,
                 0, v_ret, v_base_pct, v_tarifa, v_sus_ut, v_ut, v_sus_bs);
+
+        -- La foto del ISLR retenido se guarda en la COMPRA (2026-11-21): el saldo
+        -- por pagar la resta y no se vuelve a calcular nunca con otra tasa.
+        -- El "update ... set" va en una sola linea porque el runner de las
+        -- migraciones descarta las lineas que empiezan por "set ".
+        update compras set retencion_islr_bs = v_ret where id_compra = p_id_compra;
 
     exception
         when no_data_found then

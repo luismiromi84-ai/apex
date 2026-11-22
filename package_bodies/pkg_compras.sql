@@ -236,6 +236,13 @@ create or replace package body pkg_compras as
         v_empresa number;
         v_lineas  number;
         v_idret   number;
+        v_es_spe  varchar2(1);
+        v_genera  varchar2(1);
+        v_moneda  varchar2(3);
+        v_tc      number;
+        v_total   number;
+        v_dias    number;
+        v_igtf    number;
     begin
         select estado, nvl(tipo_documento, 'FAC'), id_empresa
           into v_estado, v_tipo, v_empresa
@@ -260,9 +267,26 @@ create or replace package body pkg_compras as
                 'La compra no tiene lineas: agrega al menos una antes de registrarla.');
         end if;
 
-        update compras set estado = 'REGISTRADA', modificado_por = p_usuario,
-               fecha_modificacion = systimestamp
-         where id_compra = p_id_compra;
+        -- Fotos historicas (2026-11-21): el IGTF del documento y el vencimiento se
+        -- congelan AHORA. Cambiar despues la marca SPE, la forma de pago o la tasa
+        -- del dia no puede mover la deuda de un documento ya cerrado.
+        select nvl(e.es_spe, 'N'), nvl(c.cod_moneda, 'VES'),
+               nvl(nullif(c.tipo_cambio, 0), 1), nvl(c.monto_total, 0),
+               nvl(fp.genera_igtf, 'N'), nvl(p.dias_credito, 0)
+          into v_es_spe, v_moneda, v_tc, v_total, v_genera, v_dias
+          from compras c
+          join empresas e on e.id_empresa = c.id_empresa
+          left join forma_pago fp on fp.id_forma_pago = c.id_forma_pago
+          left join proveedores p on p.id_proveedor = c.id_proveedor
+         where c.id_compra = p_id_compra;
+
+        v_igtf := 0;
+        if v_es_spe = 'S' and v_genera = 'S'
+           and upper(v_moneda) not in ('VES', 'BS') then
+            v_igtf := round(round(v_total * nvl(fn_alicuota_igtf(v_empresa), 0) / 100, 2) * v_tc, 2);
+        end if;
+
+        update compras set estado = 'REGISTRADA', igtf_bs = v_igtf, fecha_vencimiento = nvl(fecha_vencimiento, nvl(fecha_emision, trunc(sysdate)) + v_dias), modificado_por = p_usuario, fecha_modificacion = systimestamp where id_compra = p_id_compra;
 
         -- SOLO LAS FACTURAS EMITEN COMPROBANTE (decision del dueno, 2026-11-19): una
         -- nota de credito o de debito no emite, no consume numeracion y no toca el
@@ -271,6 +295,19 @@ create or replace package body pkg_compras as
         if v_tipo = 'FAC' then
             pkg_retenciones.prc_emitir(p_id_compra, v_idret, p_usuario);
             pkg_retenciones.prc_emitir_islr(p_id_compra, v_idret, p_usuario);
+        else
+            -- Una nota cambia la deuda de la factura que acredita (2026-11-22):
+            -- su estado se recalcula aqui o quedaria PAGADA con saldo pendiente.
+            declare
+                v_origen number;
+            begin
+                select c.id_compra_origen into v_origen
+                  from compras c where c.id_compra = p_id_compra;
+                pkg_pagos.prc_recalcular_compra(v_origen);
+            exception
+                when no_data_found then
+                    null;
+            end;
         end if;
     exception
         when no_data_found then
@@ -280,6 +317,7 @@ create or replace package body pkg_compras as
     procedure prc_anular_compra(p_id_compra in number, p_usuario in varchar2) is
         v_estado  varchar2(20);
         v_empresa number;
+        v_pagos   number;
     begin
         select estado, id_empresa into v_estado, v_empresa
           from compras where id_compra = p_id_compra for update;
@@ -294,11 +332,37 @@ create or replace package body pkg_compras as
             return;
         end if;
 
+        -- Con dinero de por medio no se anula a ciegas (2026-11-21): si hay pagos
+        -- vivos, primero se anulan ellos (que liberan las compras).
+        select count(*) into v_pagos
+          from pagos_detalle d
+          join pagos pg on pg.id_pago = d.id_pago
+         where d.id_compra = p_id_compra
+           and pg.estado = 'ACTIVO';
+
+        if v_pagos > 0 then
+            raise_application_error(-20118,
+                'La compra ' || p_id_compra || ' tiene ' || v_pagos
+                || ' pagos activos. Anulalos primero para poder anular la compra.');
+        end if;
+
         update compras set estado = 'ANULADA', modificado_por = p_usuario,
                fecha_modificacion = systimestamp
          where id_compra = p_id_compra;
 
         pkg_retenciones.prc_anular(p_id_compra, p_usuario);
+
+        -- si era una nota, la factura que acreditaba vuelve a estar pendiente
+        declare
+            v_origen number;
+        begin
+            select c.id_compra_origen into v_origen
+              from compras c where c.id_compra = p_id_compra;
+            pkg_pagos.prc_recalcular_compra(v_origen);
+        exception
+            when no_data_found then
+                null;
+        end;
     exception
         when no_data_found then
             raise_application_error(-20085, 'La compra ' || p_id_compra || ' no existe.');

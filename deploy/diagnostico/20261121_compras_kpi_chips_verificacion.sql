@@ -20,7 +20,8 @@
 --       sin compras pinta guiones, no ceros
 --   K7  el CSS de la propia pagina tiene las tres insignias y las clases spx-
 --   K8  las columnas, sus enlaces, el boton "Nueva compra" y la guarda de rol
---       siguen exactamente como estaban
+--       siguen como estaban (desde el 2026-11-21 el informe trae ademas
+--       Vencimiento y Saldo: cuentas por pagar)
 --
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261121_compras_kpi_chips_verificacion.sql
 -- FALLAS=0 = EXITO.
@@ -315,7 +316,7 @@ begin
           from apex_application_page_ir_rpt
          where application_id = 100 and page_id = 27
            and report_columns = 'ID_COMPRA:PROVEEDOR:RIF:TIPO_DOCUMENTO:FOLIO_FACTURA:NRO_CONTROL:'
-              || 'FECHA_EMISION:COD_MONEDA:MONTO_TOTAL:RETENCION_IVA_BS:ESTADO';
+              || 'FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:MONTO_TOTAL:RETENCION_IVA_BS:SALDO:ESTADO';
         if v_n <> 1 then
             falla('K8', 'cambiaron las columnas del informe por defecto');
         end if;
