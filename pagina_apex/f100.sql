@@ -8558,7 +8558,15 @@ unistr('/* Colores seg\00FAn el estado */'),
 '}',
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -9013,7 +9021,15 @@ unistr('/* Estilo del t\00EDtulo blanco */'),
 '    font-size: 1.25rem !important;',
 '    letter-spacing: 0.5px !important;',
 '}',
-''))
+'',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_step_template=>2101883943284197310
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_chained=>'N'
@@ -9793,7 +9809,15 @@ unistr('  /* Sombra 3D aumentada y m\00E1s marcada */'),
 '/* como en Facturacion (8), en vez de empujar la pagina entera a lo ancho. */',
 '#R11950647600514906 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
 '',
-''))
+'',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -10944,7 +10968,15 @@ unistr('#P6_MONTO_TOTAL_LINEA { /* Reemplaza con el ID real de tu \00EDtem */'),
 '    font-size: 1.25rem;',
 '    font-weight: bold;',
 '    color: #0d6efd;',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_step_template=>2101883943284197310
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_height=>'500'
@@ -11714,7 +11746,15 @@ unistr('/* Estilo del t\00EDtulo blanco */'),
 '    font-size: 1.25rem !important;',
 '    letter-spacing: 0.5px !important;',
 '}',
-''))
+'',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Las acciones que llenan un campo (tasa, folio, cliente) devuelven el valor sin',
 '   pasar por el "change" del navegador y APEX no marca el campo como "con valor":',
@@ -12716,7 +12756,15 @@ unistr('  /* Sombra 3D aumentada y m\00E1s marcada */'),
 '}',
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -14010,7 +14058,15 @@ unistr('/* Estilo del t\00EDtulo blanco */'),
 '    .spx-det thead th, .spx-det td { padding: 6px 6px; }',
 '    .spx-det { font-size: 0.82rem; }',
 '    .spx-det .spx-col-num, .spx-det .spx-col-cod, .spx-det .spx-col-desc, .spx-det .spx-col-sub, .spx-det .spx-col-iva { display: none; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_step_template=>2101883943284197310
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_resizable=>'Y'
@@ -16619,7 +16675,15 @@ unistr('#P10_TOTAL_BS { /* Reemplaza con el ID real de tu \00EDtem */'),
 '    font-size: 1.25rem;',
 '    font-weight: bold;',
 '    color: #0d6efd;',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_step_template=>2101883943284197310
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_height=>'560'
@@ -17811,7 +17875,15 @@ wwv_flow_imp_page.create_page(
 '}',
 '@media (max-width: 420px) {',
 '  #R23600000000000010 .a-CardView-items { grid-template-columns: 1fr; }',
-'}'
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'
 ))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
@@ -19193,7 +19265,15 @@ wwv_flow_imp_page.create_page(
 '.t-Region {',
 '    border-radius: 12px !important;',
 '    box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.25) !important;',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -19828,7 +19908,15 @@ wwv_flow_imp_page.create_page(
 '.status-Venta { color: #15803d; background-color: #f0fdf4; }',
 '.status-Venta .status-dot { background-color: #22c55e; }',
 '.status-Compra { color: #6d28d9; background-color: #f5f3ff; }',
-'.status-Compra .status-dot { background-color: #8b5cf6; }'))
+'.status-Compra .status-dot { background-color: #8b5cf6; }',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -20637,7 +20725,15 @@ wwv_flow_imp_page.create_page(
 '        position: absolute; right: 4px; top: 50%; transform: translateY(-50%);',
 '        margin: 0; padding: 0; min-height: 0; height: auto; z-index: 2;',
 '    }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -21858,18 +21954,30 @@ wwv_flow_imp_page.create_page(
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'/* Mismo estandar de cabecera que la 3, 5 y 8 */',
+'/* Mismo estandar de cabecera que la 3, 5 y 8, pero mas compacto: esta pagina',
+'   apila tres tarjetas y con 16/20 px y 1.25rem la banda pesaba mas que el',
+'   resto de la app. Es CSS de la pagina, asi que no toca a las otras.',
+'   Ajustes del 2026-11-21: el dueno la queria mas pequena. OJO con el alto: el',
+'   tema le pone 12 px arriba y abajo a .t-Region-headerItems--title',
+'   (--ut-region-header-padding-y), asi que bajar el padding de la cabecera o el',
+'   tamano del titulo no cambia el alto: hay que mover la variable. */',
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar {',
 '    background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important;',
 '    border: none !important;',
 '    box-shadow: none !important;',
-'    padding: 16px 20px !important;',
+'    padding: 0 14px !important;',
 '}',
 '.t-Region-title, .t-DialogRegion-title, .ui-dialog-title {',
 '    color: #ffffff !important;',
 '    font-weight: 600 !important;',
-'    font-size: 1.25rem !important;',
+'    font-size: 0.95rem !important;',
 '}',
+'/* Y un poco menos ancha: las tarjetas de esta pagina se quedan en 1000 px',
+'   centradas, con la banda y el cuerpo del mismo ancho (estrechar solo la banda',
+'   dejaba el azul flotando sobre un cuerpo mas ancho). Por debajo de 1000 px el',
+'   ancho manda y no cambia nada. El aire vertical de la cabecera va por la',
+'   variable del tema: 10 px = banda de 44 px. */',
+'#wwvFlowForm .t-Region, .t-Body-content .t-Region { max-width: 1000px !important; margin-inline: auto !important; --ut-region-header-padding-y: 0.625rem; }',
 '/* Insignias de estado: copia local, porque el CSS de la pagina global no se emite. */',
 '.status-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; }',
 '.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }',
@@ -22656,6 +22764,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000410)
 ,p_prompt=>'Providencia SENIAT'
+,p_help_text=>'Opcional. El Nro. de control de las facturas se asigna con el rango de abajo; este dato solo se imprime en la factura si lo cargas.'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_tag_attributes=>'autocomplete="off"'
@@ -22671,6 +22780,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>70
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000410)
 ,p_prompt=>'Control desde'
+,p_help_text=>'Primer Nro. de control del rango, con su prefijo tal como va en la factura. Ejemplo: 00-000001.'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_tag_attributes=>'autocomplete="off"'
@@ -22686,6 +22796,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>80
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000000410)
 ,p_prompt=>'Control hasta'
+,p_help_text=>'Fin del rango de control, con el mismo formato. Ejemplo: 00-010000.'
 ,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_tag_attributes=>'autocomplete="off"'
@@ -23486,7 +23597,15 @@ wwv_flow_imp_page.create_page(
 '}',
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'apex.jQuery(function($) {',
 '    // Chip activo al cargar: el que diga el item que filtra la consulta.',
@@ -24531,7 +24650,15 @@ wwv_flow_imp_page.create_page(
 '}',
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'apex.jQuery(function($) {',
 '    // Chip activo al cargar: el que diga el item que filtra la consulta.',
@@ -24999,7 +25126,15 @@ wwv_flow_imp_page.create_page(
 '@media (max-width: 520px) {',
 '  .spx-ficha { padding: 10px 12px; }',
 '  .spx-ficha-nombre { font-size: 0.98rem; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_protection_level=>'C'
 ,p_page_component_map=>'16'
 );
@@ -25617,7 +25752,15 @@ wwv_flow_imp_page.create_page(
 '#R43000000000001000 .a-IRR-tableContainer { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }',
 '#R43000000000001000 .a-IRR-table td:nth-child(n+6) { white-space: nowrap; }',
 '@media (max-width: 1023px) { .spx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }',
-'@media (max-width: 600px) { .spx-card { padding: 10px 12px; } .spx-card-val { font-size: 1.15rem; } }'))
+'@media (max-width: 600px) { .spx-card { padding: 10px 12px; } .spx-card-val { font-size: 1.15rem; } }',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'apex.jQuery(function($) {',
 '    // Chip activo al cargar: el que diga el item que filtra la consulta.',
@@ -27767,7 +27910,15 @@ wwv_flow_imp_page.create_page(
 ' }'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.t-Region-header, .t-DialogRegion-header, .ui-dialog-titlebar { background: linear-gradient(135deg, #0076ce 0%, #005291 100%) !important; border: none !important; box-shadow: none !important; padding: 16px 20px !important; }',
-'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }'))
+'.t-Region-title, .t-DialogRegion-title, .ui-dialog-title { color: #ffffff !important; font-weight: 600 !important; font-size: 1.25rem !important; }',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -28347,7 +28498,15 @@ wwv_flow_imp_page.create_page(
 '}',
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_page_component_map=>'25'
 ,p_last_updated_by=>'ADMIN'
 ,p_last_upd_yyyymmddhh24miss=>'20261117120000'
@@ -29051,7 +29210,15 @@ wwv_flow_imp_page.create_page(
 '.spx-card--total .spx-card-sub { color: #0f766e; opacity: .85; }',
 '/* El dialogo se pinta en un iframe de 720 px: el corte va en 640, no en 768. */',
 '@media (min-width: 640px) { .spx-resumen { grid-template-columns: repeat(3, minmax(0, 1fr)) 1.3fr; } }',
-'@media (max-width: 639px) { .spx-card--total { grid-column: span 2; } }'))
+'@media (max-width: 639px) { .spx-card--total { grid-column: span 2; } }',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'function spxReferencia() {',
 '    var s = document.getElementById("P25_ID_FORMA_PAGO");',
@@ -30534,7 +30701,15 @@ wwv_flow_imp_page.create_page(
 '   en una alargan la pagina sin necesidad. */',
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
-'}'
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'
 ))
 ,p_page_component_map=>'25'
 );
@@ -31067,7 +31242,15 @@ wwv_flow_imp_page.create_page(
 '}',
 '@media (max-width: 420px) {',
 '  .spx-kpis { grid-template-columns: 1fr; }',
-'}'
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'
 ))
 ,p_page_component_map=>'25'
 );
@@ -31587,7 +31770,15 @@ wwv_flow_imp_page.create_page(
 '#R43000000000001471 .a-IRR-table td:nth-child(2) { white-space: nowrap; }',
 '@media (max-width: 640px) {',
 '  .spx-nota-islr { font-size: 0.82rem; }',
-'}'))
+'}',
+'/* Cabecera compacta e igual en toda la app (2026-11-21): banda de 44 px, como la 19.',
+'   El tema pone 12 px arriba y abajo a .t-Region-headerItems--title con la variable',
+'   --ut-region-header-padding-y; sin moverla el alto no baja, aunque se achique el titulo.',
+'   Se repite .t-Region.card-3d porque las paginas 5 y 8 usan ese selector, mas especifico. */',
+'.t-Region-header, .t-DialogRegion-header, .t-Region.card-3d .t-Region-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
+'.t-Region-title, .t-DialogRegion-title, .t-Region.card-3d .t-Region-title { font-size: 0.95rem !important; }',
+'@media screen { .ui-dialog-titlebar { padding: 8px 14px !important; } }',
+'.ui-dialog-title { font-size: 1.05rem !important; }'))
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(

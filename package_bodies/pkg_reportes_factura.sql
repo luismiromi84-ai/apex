@@ -721,10 +721,20 @@ create or replace PACKAGE BODY pkg_reportes_factura AS
                      || ' e-mail: ' || sys.htf.escape_sc(v_imp_mail) || '.';
         END IF;
 
+        -- Providencia y rango de control van por separado (2026-11-21): el rango
+        -- es lo que exige la forma libre y hay empresas que lo tienen sin el
+        -- numero de providencia. Antes el rango iba dentro del bloque de la
+        -- providencia y sin ella no se imprimia.
         IF v_prov IS NOT NULL THEN
             v_html := v_html || ' No. Providencia SENIAT ' || sys.htf.escape_sc(v_prov)
-                     || ' de fecha ' || sys.htf.escape_sc(v_prov_fec)
-                     || ' - Control desde No. ' || sys.htf.escape_sc(v_desde)
+                     || CASE WHEN v_prov_fec IS NOT NULL
+                             THEN ' de fecha ' || sys.htf.escape_sc(v_prov_fec)
+                        END
+                     || '.';
+        END IF;
+
+        IF v_desde IS NOT NULL OR v_hasta IS NOT NULL THEN
+            v_html := v_html || ' Control desde No. ' || sys.htf.escape_sc(v_desde)
                      || ' hasta No. ' || sys.htf.escape_sc(v_hasta) || '.';
         END IF;
 

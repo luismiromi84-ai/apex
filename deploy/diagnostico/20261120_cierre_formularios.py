@@ -297,7 +297,9 @@ try:
               "P1 Dias de credito y Estado en la misma fila (seccion fusionada)", filas)
 
     cab = mm.get("cabecera") or 0
-    comprueba(50 <= cab <= 62, "P2 la cabecera de seccion baja a ~56 px (de 80)", cab)
+    # Desde el 2026-11-21 la cabecera es la misma en toda la app (44 px) y la barra del modal
+    # queda en 40: se acepta cualquier valor compacto, no un numero exacto.
+    comprueba(30 <= cab <= 62, "P2 la cabecera de seccion queda compacta (30-62 px)", cab)
     comprueba(mm.get("relleno") == "9px", "P2 el relleno de la tarjeta baja a 9 px (de 16)",
               mm.get("relleno"))
     comprueba(mm.get("margen") == "9px", "P2 hay 9 px entre secciones (de 16)",
