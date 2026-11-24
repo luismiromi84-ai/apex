@@ -36562,6 +36562,357 @@ wwv_flow_imp_shared.create_list_item(
 end;
 /
 
+
+begin
+-- ==================== Inventario: costos (pagina 45, 2026-11-24) ====================
+wwv_flow_imp_page.create_page(
+ p_id=>45
+,p_name=>'Costos de inventario'
+,p_alias=>'COSTOS-INVENTARIO'
+,p_step_title=>'Costos de inventario'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000002000)
+,p_plug_name=>'Filtros'
+,p_static_id=>'cos-filtros'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>1557215235004102827
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000002001)
+,p_name=>'P45_DESDE'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000002000)
+,p_item_default=>'select trunc(sysdate, ''MM'') from dual'
+,p_item_default_type=>'SQL_QUERY'
+,p_prompt=>'Desde'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>20
+,p_colspan=>4
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000002002)
+,p_name=>'P45_HASTA'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000002000)
+,p_item_default=>'select trunc(sysdate) from dual'
+,p_item_default_type=>'SQL_QUERY'
+,p_prompt=>'Hasta'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>20
+,p_colspan=>4
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000002003)
+,p_name=>'P45_ID_ARTICULO'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000002000)
+,p_prompt=>unistr('Art\00EDculo')
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select a.nombre || '' ['' || a.codigo || '']'' as display_value,',
+'       a.id_producto_servicio as return_value',
+'  from producto_servicio a',
+' where a.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
+' order by a.nombre'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Todos --'
+,p_cSize=>40
+,p_colspan=>4
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'case_sensitive', 'N',
+  'display_as', 'DIALOG',
+  'fetch_on_search', 'N',
+  'height', '250',
+  'initial_fetch', 'FIRST_ROWSET',
+  'manual_entry', 'N',
+  'match_type', 'CONTAINS',
+  'min_chars', '0',
+  'title', 'Articulos',
+  'width', '500')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000002004)
+,p_button_sequence=>40
+,p_button_plug_id=>wwv_flow_imp.id(43000000000002000)
+,p_button_name=>'BTN_FILTRAR_COSTOS'
+,p_static_id=>'btn-filtrar-costos'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Filtrar'
+,p_icon_css_classes=>'fa-filter'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000002005)
+,p_button_sequence=>50
+,p_button_plug_id=>wwv_flow_imp.id(43000000000002000)
+,p_button_name=>'BTN_VOLVER_COSTOS'
+,p_static_id=>'btn-volver-costos'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver a Inventario'
+,p_button_redirect_url=>'f?p=&APP_ID.:42:&APP_SESSION.::&DEBUG.:::'
+,p_button_css_classes=>'u-pullRight'
+,p_icon_css_classes=>'fa-arrow-left'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000002010)
+,p_plug_name=>'Costo de ventas del periodo'
+,p_static_id=>'cos-ventas'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select a.codigo,',
+'       a.nombre,',
+'       sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad) as unidades,',
+'       sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs) as costo_bs,',
+'       sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_ref) as costo_ref',
+'  from kardex_mov m',
+'  join producto_servicio a on a.id_producto_servicio = m.id_producto_servicio',
+' where m.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
+'   and m.tipo_movimiento in (''SALIDA_FACTURA'', ''SALIDA_ND_CLIENTE'', ''ENTRADA_NC_CLIENTE'')',
+'   and m.fecha_movimiento >= nvl(to_date(:P45_DESDE, ''DD/MM/YYYY''), date ''1900-01-01'')',
+'   and m.fecha_movimiento < nvl(to_date(:P45_HASTA, ''DD/MM/YYYY''), date ''2999-12-31'') + 1',
+'   and (:P45_ID_ARTICULO is null or m.id_producto_servicio = :P45_ID_ARTICULO)',
+' group by a.codigo, a.nombre',
+' order by a.nombre'))
+,p_plug_source_type=>'NATIVE_IR'
+,p_ajax_items_to_submit=>'P45_DESDE,P45_HASTA,P45_ID_ARTICULO'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000002011)
+,p_no_data_found_message=>'No hay ventas de articulos en el periodo.'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(43000000000002012)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'CODIGO:NOMBRE:UNIDADES:COSTO_BS:COSTO_REF'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002013)
+,p_db_column_name=>'CODIGO'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>'Codigo'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002014)
+,p_db_column_name=>'NOMBRE'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Articulo'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002015)
+,p_db_column_name=>'UNIDADES'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Unidades vendidas'
+,p_format_mask=>'999G999G999G990D0000'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002016)
+,p_db_column_name=>'COSTO_BS'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'Costo (Bs)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002017)
+,p_db_column_name=>'COSTO_REF'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Costo (divisa)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000002020)
+,p_plug_name=>'Inventario valorado al corte'
+,p_static_id=>'cos-valorado'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>30
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select a.codigo,',
+'       a.nombre,',
+'       sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad) as cantidad,',
+'       sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs) as valor_bs,',
+'       sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_ref) as valor_ref,',
+'       case when abs(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad)) > 0.00005',
+'            then round(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs)',
+'                       / sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad), 6)',
+'            else 0 end as costo_promedio',
+'  from kardex_mov m',
+'  join producto_servicio a on a.id_producto_servicio = m.id_producto_servicio',
+' where m.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
+'   and m.fecha_movimiento < nvl(to_date(:P45_HASTA, ''DD/MM/YYYY''), date ''2999-12-31'') + 1',
+'   and (:P45_ID_ARTICULO is null or m.id_producto_servicio = :P45_ID_ARTICULO)',
+' group by a.codigo, a.nombre',
+' order by a.nombre'))
+,p_plug_source_type=>'NATIVE_IR'
+,p_ajax_items_to_submit=>'P45_HASTA,P45_ID_ARTICULO'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000002021)
+,p_no_data_found_message=>'No hay movimientos de inventario hasta esa fecha.'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(43000000000002022)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'CODIGO:NOMBRE:CANTIDAD:COSTO_PROMEDIO:VALOR_BS:VALOR_REF'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002023)
+,p_db_column_name=>'CODIGO'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>'Codigo'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002024)
+,p_db_column_name=>'NOMBRE'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Articulo'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002025)
+,p_db_column_name=>'CANTIDAD'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Existencia'
+,p_format_mask=>'999G999G999G990D0000'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002026)
+,p_db_column_name=>'COSTO_PROMEDIO'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'Costo prom. (Bs)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002027)
+,p_db_column_name=>'VALOR_BS'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Valor (Bs)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000002028)
+,p_db_column_name=>'VALOR_REF'
+,p_display_order=>60
+,p_column_identifier=>'F'
+,p_column_label=>'Valor (divisa)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000002030)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol costos inventario'
+,p_static_id=>'valida-rol-costos-inventario'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONTABILIDAD,CONSULTA,ALMACEN,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(43000000000002031)
+,p_list_item_display_sequence=>4
+,p_list_item_link_text=>'Costos de inventario'
+,p_static_id=>'costos-inventario'
+,p_parent_list_item_id=>wwv_flow_imp.id(43000000000001092)
+,p_list_item_link_target=>'f?p=&APP_ID.:45:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-calculator'
+,p_security_scheme=>wwv_flow_imp.id(43000000000001990)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'45'
+);
+end;
+/
+
 prompt --application/end_environment
 begin
 wwv_flow_imp.import_end(p_auto_install_sup_obj => nvl(wwv_flow_application_install.get_auto_install_sup_obj, false)

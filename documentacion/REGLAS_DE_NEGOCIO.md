@@ -105,6 +105,41 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
 7. Un cobro o un pago en moneda distinta a la del documento se convierte con **la tasa del día del
    cobro/pago**, no con la de emisión.
 
+## 6. Inventario (kardex valorado)
+
+1. **Kardex por empresa y artículo.** Cada entrada o salida es un **movimiento inmutable** con número
+   propio (`K-000001`), cantidad, costo unitario y total, tasa del documento y documento de origen.
+   **No se edita ni se borra**: se revierte con otro movimiento.
+2. **Costo promedio ponderado (CPP).** Se recalcula con cada entrada y **se congela** en cada salida (el
+   movimiento guarda el costo que se aplicó). Una salida que **agota** el saldo lo deja en cantidad 0 y
+   valor **0,00 exactos**.
+3. **Al cruzar desde existencia negativa a cero**, el CPP toma el costo unitario de la entrada que
+   cruza: nunca queda en 0 con valor en el saldo (la próxima venta saldría a costo cero).
+4. **Doble valoración congelada:** valor oficial en **bolívares** a la tasa del documento, y valor en la
+   **divisa del documento** a esa misma tasa. Cambiar después la tabla de tasas **no mueve** el kardex.
+5. **Entradas:** compra **registrada** (el importe de la línea se convierte a Bs con la tasa del
+   documento), devolución de cliente (nota de crédito, **al costo con que salió** esa línea), nota de
+   débito de proveedor, ajuste de entrada y **carga inicial**.
+6. **Salidas:** factura **emitida** y nota de débito de cliente **al CPP vigente**; devolución a
+   proveedor (nota de crédito de compra) **al costo de la línea de la compra original**; ajuste de salida.
+7. **Los servicios no llevan inventario.** Una línea de servicio no crea saldo ni movimiento.
+8. **El inventario se mueve al procesar/registrar, nunca al guardar un borrador.** Un borrador no
+   compromete existencia.
+9. **Anulaciones:** se **reversa** con un movimiento contrario al mismo costo. Si la factura ya tiene su
+   **nota de crédito**, la devolución del stock la hace la nota y la anulación **no** lo devuelve otra
+   vez. Una **compra con notas registradas no se puede anular** hasta anular las notas (`-20156`).
+10. **Existencia negativa: se permite** (parámetro `INVENTARIO_PERMITE_NEGATIVO`, 1 = sí). En la
+    operación real se despacha antes de que llegue la compra o la factura del proveedor; la lista marca
+    el artículo como **Negativo** y el CPP no se inventa.
+11. **Carga inicial:** una sola vez por artículo (mientras no tenga movimientos) y con **motivo
+    obligatorio**. Es la forma de arrancar con el stock real contado.
+12. **Todo ajuste exige motivo** y queda en el kardex como cualquier movimiento.
+13. **Costo de ventas del período** = movimientos de venta (factura y nota de débito de cliente) menos
+    las devoluciones de clientes. El **inventario valorado a una fecha** se recalcula **desde el kardex
+    hasta esa fecha**, no desde el saldo de hoy.
+14. **Fuera de alcance hoy:** multi-almacén, transferencias entre depósitos, lotes, vencimientos,
+    números de serie y existencias comprometidas (reservas de pedidos).
+
 ## 7. Presupuestos
 
 1. **Numeración por empresa**, correlativa y sin huecos: `1055`, `1056`… La asigna el sistema al
@@ -274,7 +309,7 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
 
 | Tema | Estado |
 |---|---|
-| **Inventario** (existencias, kardex, entradas/salidas) | Sin implementar. Decisión: módulo propio, posterior. |
+| **Inventario** | **Implementado** el 2026-11-24: kardex con CPP, doble valoración, ajustes, carga inicial, costo de ventas e inventario valorado. Queda la **toma física**. |
 | **Listas de precios** por empresa / precios por proveedor | Sin implementar. |
 | **Conciliación bancaria automática** con extractos | Solo marca manual. |
 | **CFDI de México** (timbrado SAT: PAC, CSD, XML 4.0, acuse) | Sin implementar; **última prioridad**. En Venezuela no se timbra. |

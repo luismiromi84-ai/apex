@@ -51,7 +51,8 @@ try:
     for pagina, marcas in [(42, ["ARTICULOS", "VALOR (BS)", "R43000000000001933",
                                  "R43000000000001932"]),
                            (43, ["Filtrar", "R43000000000001950", "R43000000000001957"]),
-                           (44, ["P44_MOTIVO", "Guardar ajuste", "R43000000000001971"])]:
+                           (44, ["P44_MOTIVO", "Guardar ajuste", "R43000000000001971"]),
+                           (45, ["Filtrar", "R43000000000002010", "R43000000000002020"])]:
         salida = os.path.join(os.environ.get("TEMP", "."), "inv_p%d.html" % pagina)
         r = subprocess.run([sys.executable, "deploy/conexion/abrir_pagina.py",
                             USUARIO, CLAVE, str(pagina), salida],
