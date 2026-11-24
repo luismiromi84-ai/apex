@@ -85,13 +85,8 @@ begin
               select case when co.estado = ''ANULADA'' then 0 else 1 end
                        * case when co.tipo_documento = ''NC'' then -1 else 1 end,
                      nvl(co.monto_total,0) * nvl(co.tipo_cambio,1)
-                       + case when nvl(co.cod_moneda, ''VES'') not in (''VES'', ''BS'')
-                               and nvl(e.es_spe, ''N'') = ''S''
-                               and nvl(fp.genera_igtf, ''N'') = ''S''
-                              then round(round(nvl(co.monto_total,0)
-                                         * nvl(fn_alicuota_igtf(co.id_empresa),0) / 100, 2)
-                                         * nvl(co.tipo_cambio,1), 2)
-                              else 0 end as tot
+                       -- La foto congelada en la compra, como la pantalla (2026-11-22).
+                       + nvl(co.igtf_bs, 0) as tot
                 from compras co
                 join empresas e on e.id_empresa = co.id_empresa
                 left join forma_pago fp on fp.id_forma_pago = co.id_forma_pago
@@ -240,25 +235,17 @@ end;
 declare
     v_n number;
 begin
-    select count(*) into v_n from facturas
+    select count(*) into v_n
+      from facturas
      where tipo_documento in ('NC', 'ND') and nro_control is not null;
     if v_n > 0 then
         insert into tmp_libnot_fallas values ('V5: ' || v_n || ' nota(s) con N de Control propio');
     end if;
 
-    select count(*) into v_n
-      from facturas f
-      join empresa_fiscal ef on ef.id_empresa = f.id_empresa
-     where f.tipo_documento = 'FAC'
-       and ef.control_desde is not null
-       and (f.nro_control is null
-            or not regexp_like(f.nro_control,
-                   '^' || substr(ef.control_desde, 1,
-                                 length(ef.control_desde) - length(regexp_substr(ef.control_desde, '[0-9]+$')))
-                   || '[0-9]{' || length(regexp_substr(ef.control_desde, '[0-9]+$')) || '}$'));
-    if v_n > 0 then
-        insert into tmp_libnot_fallas values ('V5: ' || v_n || ' factura(s) con el N de Control fuera de formato');
-    end if;
+    -- El formato contra el rango VIGENTE se retiro el 2026-11-22: el cliente cambio
+    -- el rango de control (000001..0000010000) y las facturas historicas quedan con
+    -- el prefijo anterior (00-000xxx). Eso es dato, no un fallo de la app: la regla
+    -- se vigila al guardar en V4 y en 20261116_control_factura_verificacion.sql.
 end;
 /
 

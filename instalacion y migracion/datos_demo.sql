@@ -132,26 +132,26 @@ values (1012, 1, 'IVM020404GH4', 'Inversiones Puebla SA de CV',   'contacto@pueb
 -- -----------------------------------------------------------------------------
 -- 5. Productos y servicios
 -- -----------------------------------------------------------------------------
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1001, 'SRV-CON', 'Consultoría',      'Hora de consultoría funcional',        'SERVICIO',  80.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1002, 'SRV-SOP', 'Soporte',          'Hora de soporte técnico',              'SERVICIO',  60.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1003, 'SRV-CAP', 'Capacitación',     'Hora de capacitación',                 'SERVICIO',  50.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1004, 'SRV-IMP', 'Implementación',   'Jornada de implementación',            'SERVICIO', 120.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1005, 'SRV-AUD', 'Auditoría',        'Revisión de procesos',                 'SERVICIO',  90.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1006, 'PRD-LIC', 'Licencia anual',   'Licencia de uso por usuario',          'PRODUCTO', 450.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1007, 'PRD-MOD', 'Módulo contable',  'Módulo adicional de contabilidad',     'PRODUCTO', 900.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1008, 'PRD-HW1', 'Lector de código','Lector USB de códigos de barra',       'PRODUCTO', 150.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1009, 'PRD-CON', 'Consumible',       'Rollo térmico para impresora',        'PRODUCTO',  20.00, 16.00, 'ACTIVO', sysdate);
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
-values (1010, 'PRD-REP', 'Repuesto',         'Kit de repuestos de impresora',       'PRODUCTO', 250.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1001, 1, 'SRV-CON', 'Consultoría',      'Hora de consultoría funcional',        'SERVICIO',  80.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1002, 1, 'SRV-SOP', 'Soporte',          'Hora de soporte técnico',              'SERVICIO',  60.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1003, 1, 'SRV-CAP', 'Capacitación',     'Hora de capacitación',                 'SERVICIO',  50.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1004, 1, 'SRV-IMP', 'Implementación',   'Jornada de implementación',            'SERVICIO', 120.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1005, 1, 'SRV-AUD', 'Auditoría',        'Revisión de procesos',                 'SERVICIO',  90.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1006, 1, 'PRD-LIC', 'Licencia anual',   'Licencia de uso por usuario',          'PRODUCTO', 450.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1007, 1, 'PRD-MOD', 'Módulo contable',  'Módulo adicional de contabilidad',     'PRODUCTO', 900.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1008, 1, 'PRD-HW1', 'Lector de código','Lector USB de códigos de barra',       'PRODUCTO', 150.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1009, 1, 'PRD-CON', 'Consumible',       'Rollo térmico para impresora',        'PRODUCTO',  20.00, 16.00, 'ACTIVO', sysdate);
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, impuesto_aplicable, estado, fecha_creacion)
+values (1010, 1, 'PRD-REP', 'Repuesto',         'Kit de repuestos de impresora',       'PRODUCTO', 250.00, 16.00, 'ACTIVO', sysdate);
 
 -- -----------------------------------------------------------------------------
 -- 6. Tipos de cambio: 12 fechas (cada 15 días hacia atrás) × 2 combinaciones.

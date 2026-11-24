@@ -253,6 +253,33 @@ try:
               "C1 estan Guardar, Nuevo concepto y Volver", d.get("botones"))
     captura("20261120_catalogo_islr.png")
 
+    # ---------------------------------------------------------------- C1b
+    # Chips de filtro rapido (2026-11-22): Todos / Activos / Inactivos.
+    chips = js("(function(){return JSON.stringify([...document.querySelectorAll('.spx-filtro')]"
+               ".map(function(a){return a.getAttribute('data-filtro');}));})()")
+    print("  chips:", chips)
+    try:
+        cch = json.loads(chips)
+    except Exception:
+        cch = []
+    comprueba(cch == ["TODOS", "ACTIVOS", "INACTIVOS"], "C1b estan los tres chips", chips)
+
+    js("(function(){var a=[...document.querySelectorAll('.spx-filtro')]"
+       ".find(function(x){return x.getAttribute('data-filtro')==='INACTIVOS';});a.click();})()")
+    ok = esperar("""(function(){var b=[...document.querySelectorAll('#R43000000000001471 .status-badge')]
+        .map(function(x){return x.innerText.trim();});
+        return b.length > 0 && b.every(function(x){return x === 'INACTIVO';});})()""", 60)
+    comprueba(ok, "C1b el chip Inactivos deja solo los inactivos",
+              js('apex.item("P34_FILTRO").getValue()'))
+
+    js("(function(){var a=[...document.querySelectorAll('.spx-filtro')]"
+       ".find(function(x){return x.getAttribute('data-filtro')==='TODOS';});a.click();})()")
+    ok = esperar("""(function(){var b=[...document.querySelectorAll('#R43000000000001471 .status-badge')]
+        .map(function(x){return x.innerText.trim();});
+        return b.length >= 10 && b.indexOf('ACTIVO') >= 0;})()""", 60)
+    comprueba(ok, "C1b y el chip Todos repone la lista",
+              js('apex.item("P34_FILTRO").getValue()'))
+
     # ---------------------------------------------------------------- C2
     pon("P34_CODIGO", CODIGO)
     pon("P34_DESCRIPCION", "CONCEPTO DE PRUEBA")
@@ -263,10 +290,13 @@ try:
     pon("P34_ACTIVO", "S")
     time.sleep(0.6)
     print("  C2 pulsa Guardar:", guarda())
-    time.sleep(7)
+    # El aviso tiene que salir UNA sola vez (el proceso lo publicaba a mano y ademas
+    # por atributo) y cerrarse solo a los 5 s (2026-11-22).
+    ok = esperar('document.body.innerText.indexOf("Concepto guardado") >= 0', 45)
     cuerpo = js("document.body.innerText") or ""
-    comprueba(u"Concepto guardado" in cuerpo, "C2 sale «Concepto guardado»",
-              [x for x in cuerpo.splitlines() if "Concepto guardado" in x][:2])
+    comprueba(ok and cuerpo.count(u"Concepto guardado") == 1,
+              "C2 sale «Concepto guardado» una sola vez",
+              [x for x in cuerpo.splitlines() if "Concepto guardado" in x][:3])
     f = fila()
     print("  fila creada: %s" % (f,))
     comprueba(f is not None and f[6] == "S" and float(f[4]) == 5.0,
@@ -275,6 +305,11 @@ try:
     comprueba(str(js('apex.item("P34_ID_CONCEPTO").getValue()') or "") == str(idn),
               "C2 el formulario se queda en la fila creada",
               js('apex.item("P34_ID_CONCEPTO").getValue()'))
+
+    # C2b: el aviso se cierra solo a los 5 s (antes habia que recargar para quitarlo).
+    time.sleep(8)
+    comprueba(u"Concepto guardado" not in (js("document.body.innerText") or ""),
+              "C2b el aviso se cierra solo, sin recargar")
 
     # ---------------------------------------------------------------- C3
     pon("P34_TARIFA", 7)

@@ -32,7 +32,7 @@ Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, esquema WKSP_SYPEXWS
    instalacion y migracion/datos_empresa_mx.sql (idempotente):
      empresa 2 'Empresa Mexico' (MX)
      clientes 201-203 (3)
-     usuario mx.demo (9010, empresa 2, rol ADMIN, Demo#2026)
+     usuario mx.demo (9010, empresa 2, rol ADMIN, ********)
    Medido: empresa 1 -> 15 clientes; empresa 2 -> 3 clientes.
    La LOV CLIENTE ya filtraba por :P7_ID_EMPRESA; con una sola empresa y todos los
    clientes de ella parecia que "traia todos". Con mx.demo la diferencia es visible.
@@ -44,6 +44,6 @@ Instancia: Sypex_SQL (GFD7E2575D251AE_SYPEXSQL), app 100, esquema WKSP_SYPEXWS
      e.cod_pais ....................... 3
 
 PENDIENTE DE PRUEBA VISUAL (navegador)
-   - Login con mx.demo / Demo#2026: empresa 2 y solo sus 3 clientes; moneda MXN o USD.
+   - Login con mx.demo / ********: empresa 2 y solo sus 3 clientes; moneda MXN o USD.
    - Login con luis: empresa 1, monedas VES o USD, 15 clientes.
    - Lista de presupuestos: insignia de color en Estado.

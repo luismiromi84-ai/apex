@@ -93,5 +93,13 @@ create or replace package pkg_pagos as
         p_moneda       in varchar2
     ) return number;
 
+    -- Credito que se puede aplicar YA: pagos ACTIVOS y NO conciliados, que es
+    -- exactamente el conjunto que consume prc_usar_favor (2026-11-22). La pantalla
+    -- ofrece este numero; fn_saldo_favor_proveedor cuenta tambien los conciliados.
+    function fn_favor_disponible (
+        p_id_proveedor in number,
+        p_moneda       in varchar2
+    ) return number;
+
 end pkg_pagos;
 /

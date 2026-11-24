@@ -238,6 +238,17 @@ try:
     cur.execute("select telefono from empresa_fiscal where id_empresa = 1")
     comprueba(cur.fetchone()[0] == TEL_PRUEBA,
               "guardar la imprenta no pisa el telefono fiscal", repr(TEL_PRUEBA))
+
+    # 6) El RIF de la imprenta se guarda en MAYUSCULAS (2026-11-22): se teclea en
+    #    minusculas y la base tiene que quedar en mayusculas.
+    time.sleep(2)
+    js('apex.item("P19F_IMPRENTA_RIF").setValue("j-12345678-9")')
+    js("document.getElementById('B43000000000000428').click()")
+    ok = esperar_bd("select imprenta_rif from empresa_fiscal where id_empresa = 1",
+                    "J-12345678-9")
+    cur.execute("select imprenta_rif from empresa_fiscal where id_empresa = 1")
+    queda = cur.fetchone()[0]
+    comprueba(ok, "el RIF de la imprenta se guarda en mayusculas", repr(queda))
 finally:
     proc.terminate()
     cur.execute("""update empresa_fiscal set direccion_fiscal=:0, telefono=:1, email=:2,

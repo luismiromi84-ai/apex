@@ -173,7 +173,27 @@ KPI = cur.fetchone()
 cur.execute("""select count(*) from retenciones r
                 where r.id_proveedor = :p and r.id_empresa = 1 and r.estado = 'EMITIDO'""", p=ID_PROV)
 KPI = tuple(KPI) + (cur.fetchone()[0],)
-print("  indicadores esperados (compras/total bs/retencion bs/comprobantes):", KPI)
+# Quinta tarjeta: lo que se le debe hoy (en bolivares, con la tasa de cada documento).
+cur.execute("""select nvl(sum(fn_saldo_compra(co.id_compra) * nvl(co.tipo_cambio, 1)), 0),
+                      count(case when fn_saldo_compra(co.id_compra) > 0.01 then 1 end)
+                 from compras co
+                where co.id_proveedor = :p and co.id_empresa = 1
+                  and co.tipo_documento = 'FAC'
+                  and co.estado in ('REGISTRADA', 'PARCIAL')""", p=ID_PROV)
+KPI = tuple(KPI) + cur.fetchone()
+print("  indicadores esperados (compras/total bs/retencion bs/comprobantes/por pagar/n):", KPI)
+
+# Sus pagos (la region nueva de la ficha).
+cur.execute("""select count(*), nvl(max(nvl(referencia, '-')), '-')
+                 from pagos where id_proveedor = :p and id_empresa = 1""", p=ID_PROV)
+PAGOS = cur.fetchone()
+cur.execute("""select to_char(monto, 'FM999G999G999G990D00') from (
+                 select monto, fecha_pago, id_pago from pagos
+                  where id_proveedor = :p and id_empresa = 1
+                  order by fecha_pago desc, id_pago desc) where rownum = 1""", p=ID_PROV)
+fila_pago = cur.fetchone()
+PAGOS = PAGOS + (fila_pago[0] if fila_pago else None,)
+print("  pagos del proveedor:", PAGOS)
 
 # Sus compras: todas (la nota de credito tambien sale en la lista).
 cur.execute("""select co.folio_factura, co.tipo_documento, co.nro_control, co.cod_moneda,
@@ -205,7 +225,9 @@ print("  proveedor ajeno:", AJENO)
 
 
 def miles(v):
-    return "{:,.2f}".format(float(v))
+    # 2026-11-23: formato venezolano, ver la nota de 20261120_cliente_ficha.py.
+    t = "{:,.2f}".format(float(v))
+    return t.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 limpia()
@@ -287,11 +309,11 @@ try:
                   't.push(c.querySelector(".spx-card-lbl").innerText.trim()+"="+'
                   'c.querySelector(".spx-card-val").innerText.trim());});return t.join(" | ");})()')
     print("  tarjetas:", kpis)
-    comprobar("P5 salen las cuatro tarjetas", (kpis or "").count("=") == 4, kpis)
+    comprobar("P5 salen las cinco tarjetas", (kpis or "").count("=") == 5, kpis)
     k = (kpis or "").upper()
     comprobar("P5 los rotulos son los pedidos",
               "COMPRAS=" in k and "TOTAL COMPRAS (BS)=" in k and "RETENCI" in k and "(BS)=" in k
-              and "COMPROBANTES=" in k, kpis)
+              and "COMPROBANTES=" in k and "POR PAGAR (BS)=" in k, kpis)
 
     # ---------------------------------------------------------------- P6
     # «—» cuando no hay nada; con compras, el numero.
@@ -307,6 +329,24 @@ try:
               valor("RETENCI\u00d3N IVA (BS)") == (miles(KPI[2]) if KPI[0] else "\u2014"), kpis)
     comprobar("P6 «Comprobantes» es el de la base",
               valor("COMPROBANTES") == (str(KPI[3]) if KPI[3] else "\u2014"), kpis)
+    comprobar("P6 «Por pagar (Bs)» es el de la base",
+              valor("POR PAGAR (BS)") == (miles(KPI[4]) if KPI[5] else "\u2014"),
+              (valor("POR PAGAR (BS)"), KPI[4], KPI[5]))
+
+    # ---------------------------------------------------------------- P8
+    # La region nueva con sus pagos (si no tiene, lo dice).
+    pagos_txt = nav.js('(function(){var r=document.getElementById("R43000000000001690");'
+                       'return r?(r.innerText||"").replace(/\\s+/g," "):"SIN REGION";})()') or ""
+    pagos_fil = nav.js('document.querySelectorAll("#R43000000000001690 tr").length')
+    print("  pagos en pantalla: %s filas | %s" % (pagos_fil, pagos_txt[:120]))
+    if PAGOS[0] > 0:
+        comprobar("P8 la ficha lista los pagos del proveedor",
+                  "no tiene pagos" not in pagos_txt.lower()
+                  and PAGOS[2] is not None and PAGOS[2] in pagos_txt,
+                  (PAGOS[2], pagos_txt[:120]))
+    else:
+        comprobar("P8 sin pagos la region lo dice",
+                  "no tiene pagos" in pagos_txt.lower(), pagos_txt[:120])
 
     # ---------------------------------------------------------------- P7
     filas = nav.js('document.querySelectorAll("#R43000000000001382 a[href*=p28_id_compra]").length')

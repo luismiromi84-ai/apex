@@ -397,6 +397,24 @@ try:
         comprobar("C7 el resumen de la compra sale con sus cuatro tarjetas y el neto",
                   not faltan, faltan)
 
+        # C7b (2026-11-22): el IGTF del resumen es la FOTO congelada en la compra,
+        # no un calculo en vivo. Para probarlo la compra se pasa a divisa (el IGTF
+        # solo existe en divisas) con su tasa y un igtf_bs conocido; la pantalla
+        # tiene que mostrar 123.45 (con el calculo en vivo saldria 0: la empresa no
+        # es SPE y la forma de pago no lo genera).
+        cur.execute("update compras set cod_moneda = 'USD', tipo_cambio = 900, "
+                    "igtf_bs = 123.45 where id_compra = :i", i=id_compra)
+        cur.execute("update compras_det set tasa_cambio_aplicada = 900 where id_compra = :i",
+                    i=id_compra)
+        con.commit()
+        js("location.reload()")
+        esperar('document.readyState === "complete" && !!window.apex')
+        time.sleep(6)
+        ok_igtf = esperar('document.body.innerText.indexOf("123,45") >= 0', 45)
+        texto_igtf = js("document.body.innerText") or ""
+        comprobar("C7b el resumen muestra el IGTF guardado en la compra", ok_igtf,
+                  [l for l in texto_igtf.splitlines() if "IGTF" in l.upper()][:2])
+
         # C8 (2026-11-19): el boton «Imprimir comprobante» lleva al comprobante
         clic_imp = js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'
                       'return (x.getAttribute("data-otel-label")||"")==="BTN_IMPRIMIR_RETENCION";});'
@@ -407,6 +425,39 @@ try:
                   clic_imp == "CLIC" and "COMPROBANTE DE RETENCI" in cuerpo_ret.upper()
                   and "I.V.A." in cuerpo_ret,
                   (clic_imp, cuerpo_ret[:120]))
+
+        # C9 (2026-11-23): el boton «Imprimir compra» abre la factura de compra (39)
+        # con los datos del proveedor, el IGTF congelado del C7b y la nota de que el
+        # documento es del proveedor.
+        js('window.location.href="' + BASE + '/f?p=100:27:' + ses + '"')
+        esperar('document.readyState === "complete" && !!window.apex')
+        time.sleep(5)
+        js('(function(){var a=[...document.querySelectorAll("a")].find(function(x){'
+           'return (x.getAttribute("href")||"").indexOf("p28_id_compra")>=0;});'
+           'if(a){a.click();}})()')
+        esperar('document.readyState === "complete" && !!window.apex')
+        time.sleep(8)
+        clic_cmp = boton("BTN_IMPRIMIR_COMPRA")
+        time.sleep(10)
+        cuerpo_cmp = js("document.body.innerText") or ""
+        comprobar("C9 la compra ofrece «Imprimir compra»", clic_cmp == "CLIC", clic_cmp)
+        comprobar("C9 abre la factura de compra", "FACTURA DE COMPRA" in cuerpo_cmp.upper(),
+                  cuerpo_cmp[:120])
+        comprobar("C9 con el folio del proveedor", FOLIO in cuerpo_cmp,
+                  [l for l in cuerpo_cmp.splitlines() if "FOLIO" in l.upper()][:2])
+        comprobar("C9 con el IGTF congelado de la compra", "123,45" in cuerpo_cmp,
+                  [l for l in cuerpo_cmp.splitlines() if "IGTF" in l.upper()][:2])
+        comprobar("C9 y avisa de que el documento es del proveedor",
+                  "no sustituye al original" in cuerpo_cmp.lower(), cuerpo_cmp[-200:])
+        try:
+            import base64 as b64
+            png = cmd("Page.captureScreenshot", format="png", captureBeyondViewport=True)["data"]
+            ruta = os.path.join(REPO, "deploy", "resultados", "20261123_factura_compra.png")
+            with open(ruta, "wb") as f:
+                f.write(b64.b64decode(png))
+            print("  captura:", ruta)
+        except Exception as e:
+            print("  (sin captura:", e, ")")
     con.close()
 finally:
     proc.terminate()

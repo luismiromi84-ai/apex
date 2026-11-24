@@ -192,8 +192,25 @@ cur.execute("""select f.folio_factura, f.tipo_documento,
 DOCS = cur.fetchall()
 print("  documentos del cliente:", len(DOCS))
 
+# Los cobros del cliente (2026-11-22): la region nueva muestra sus recibos.
+cur.execute("""select count(*), nvl(max(to_char(r.monto_cobrado, 'FM999G999G990D00')), '-')
+                 from recibos r join facturas f on f.id_factura = r.id_factura
+                where f.id_cliente = :c and f.id_empresa = 1""", c=ID_CLI)
+COBROS = cur.fetchone()
+print("  cobros del cliente:", COBROS)
+
 
 def miles(v):
+    # 2026-11-23: las TARJETAS de la ficha pintan el formato venezolano (miles con
+    # punto, decimales con coma); el par NLS de la region estaba al reves y el test
+    # se escribio contra "1,008.31". Las columnas del Interactive Report NO: usan
+    # p_format_mask y el NLS de la sesion (formato US), asi que van con ir().
+    t = "{:,.2f}".format(float(v))
+    return t.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def ir(v):
+    """El formato de una columna de Interactive Report con p_format_mask."""
     return "{:,.2f}".format(float(v))
 
 
@@ -302,7 +319,7 @@ try:
     if con_saldo:
         folio, tipo, saldo, estado, _ = con_saldo[0]
         comprobar("F8 la fila %s muestra su saldo (%s)" % (folio, miles(saldo)),
-                  miles(saldo) in texto, texto[:120])
+                  ir(saldo) in texto, texto[:120])
         comprobar("F8 la fila %s muestra el estado %s" % (folio, estado),
                   estado in texto, estado)
     comprobar("F8 el estado se pinta como insignia",
@@ -324,6 +341,21 @@ try:
     print("  botones:", botones[:120])
     comprobar("F10 esta «Editar cliente»", "BTN_EDITAR_CLIENTE" in botones or "Editar cliente" in botones, botones[:80])
     comprobar("F10 esta «Volver»", "BTN_VOLVER" in botones or "Volver" in botones, botones[:80])
+
+    # ---------------------------------------------------------------- F13
+    # La region nueva con sus cobros (si no tiene, lo dice). 2026-11-22.
+    cobros_txt = nav.js('(function(){var r=document.getElementById("R43000000000001698");'
+                        'return r?(r.innerText||"").replace(/\\s+/g," "):"SIN REGION";})()') or ""
+    print("  cobros en pantalla:", cobros_txt[:120])
+    comprobar("F13 la ficha tiene la region de cobros del cliente",
+              cobros_txt != "SIN REGION", cobros_txt[:80])
+    if COBROS[0] > 0:
+        comprobar("F13 y lista sus cobros",
+                  "no tiene cobros" not in cobros_txt.lower() and COBROS[1] in cobros_txt,
+                  (COBROS, cobros_txt[:120]))
+    else:
+        comprobar("F13 sin cobros la region lo dice",
+                  "no tiene cobros" in cobros_txt.lower(), cobros_txt[:120])
 
     # ---------------------------------------------------------------- F12
     nav.js('window.scrollTo(0,0)')

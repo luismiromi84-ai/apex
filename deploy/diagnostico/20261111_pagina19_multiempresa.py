@@ -152,41 +152,44 @@ try:
 
     comprueba(str(js('apex.item("P19_NOMBRE_EMPRESA").getValue()') or "") == "",
               "con dos empresas el formulario de Empresa abre en blanco (no se elige por la cuenta)")
-    # Los dos selectores nacen con el defecto fn_clean_num(:F_EMPRESA_ACTIVA): con
-    # varias empresas y ninguna elegida eso da 0, no NULL (fn_clean_num devuelve 0).
-    # Lo que se mide es que NO se preseleccione una empresa, no la representacion.
-    comprueba(not num(js('apex.item("P19F_ID_EMPRESA").getValue()')),
-              "el selector de la pestana fiscal no preselecciona empresa")
-    comprueba(not num(js('apex.item("P19L_ID_EMPRESA").getValue()')),
-              "el selector de la pestana del logo no preselecciona empresa")
+
+    # Las pestanas fiscal y del logo ya no tienen su propio combo (2026-11-22):
+    # trabajan sobre la empresa que se edita o la activa de la barra, y con varias
+    # empresas y ninguna elegida resuelven la menor del usuario. Antes, con el
+    # `having count(*) = 1`, se quedaban vacias y parecia que no habia datos.
+    comprueba(num(js('apex.item("P19F_ID_EMPRESA").getValue()')) > 0,
+              "la pestana fiscal resuelve una empresa (no queda vacia)",
+              js('apex.item("P19F_ID_EMPRESA").getValue()'))
+    comprueba(js('document.getElementById("P19F_ID_EMPRESA").type === "hidden"'),
+              "y ya no hay un combo de empresa dentro de la pestana")
+    nombre_f = str(js("""(function(){var e=document.getElementById('P19F_EMPRESA_NOMBRE');
+                          return e ? String(e.innerText || e.value || '').trim() : 'SIN ITEM';})()""") or "")
+    comprueba(nombre_f not in ("", "- sin empresa -", "SIN ITEM"),
+              "la pestana fiscal dice de que empresa es", nombre_f)
+    comprueba(str(js('apex.item("P19L_ID_EMPRESA").getValue()')) ==
+              str(js('apex.item("P19F_ID_EMPRESA").getValue()')),
+              "las dos pestanas trabajan sobre la misma empresa")
+
     comprueba(js("document.querySelector('[data-otel-label=\"BTN_GUARDAR_FISCAL\"]') !== null"),
               "los botones fiscales estan siempre (sin empresa avisan al guardar)")
 
     js('[...document.querySelectorAll("button")].find(function(b){'
        'return b.getAttribute("data-otel-label") === "BTN_GUARDAR_EMPRESA"; }).click()')
     ok = esperar('document.body.innerText.indexOf("nombre de la empresa es obligatorio") >= 0', 45)
-    comprueba(ok, "«Guardar empresa» llega al proceso aunque los selectores esten vacios",
+    comprueba(ok, "«Guardar empresa» llega al proceso aunque la pestana fiscal tenga empresa",
               (js("document.body.innerText") or "")[:200].replace("\n", " / "))
 
-    # Con varias empresas, la pestana del logo no tiene empresa: sus botones no
-    # salen hasta elegir una. Al elegirla en el selector, la pagina tiene que
-    # reenviar y pintarlos (la condicion del boton es de servidor).
+    # La pestana del logo: misma empresa y sus botones a la vista.
     js("""(function(){var a=document.querySelector('.a-RDS-link[href="#R43000000000000434"]');
              if(a){a.click();}})()""")
     time.sleep(2)
     comprueba(js("document.querySelector('[data-otel-label=\"BTN_SUBIR_LOGO\"]') !== null"),
-              "los botones del logo estan siempre (sin empresa avisan al pulsar)")
+              "los botones del logo estan siempre")
     comprueba(js("document.querySelector('[data-otel-label=\"BTN_QUITAR_LOGO\"]') !== null"),
               "tambien esta «Quitar logo»")
-    js("""(function(){
-             var i=document.getElementById('P19L_ID_EMPRESA');
-             i.value='1';
-             i.dispatchEvent(new Event('change', {bubbles:true}));
-           })()""")
-    time.sleep(6)
-    comprueba(js("document.querySelector('[data-otel-label=\"BTN_SUBIR_LOGO\"]') !== null"),
-              "al elegir empresa los botones del logo siguen ahi",
-              (js("document.body.innerText") or "")[:120].replace("\n", " / "))
+    nombre_l = str(js("""(function(){var e=document.getElementById('P19L_EMPRESA_NOMBRE');
+                          return e ? String(e.innerText || e.value || '').trim() : 'SIN ITEM';})()""") or "")
+    comprueba(nombre_l == nombre_f, "la pestana del logo dice la misma empresa", nombre_l)
 finally:
     proc.terminate()
     cur.execute("begin delete from usuario_empresa where usuario_id in "

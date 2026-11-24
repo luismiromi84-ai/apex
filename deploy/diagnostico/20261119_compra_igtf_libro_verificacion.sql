@@ -38,6 +38,7 @@ declare
     v_forma_sin number;
     v_id     number;
     v_igtf   number;
+    v_igtf_esp number;
     v_tot    number;
     v_cuadre number;
     v_val    number;
@@ -90,15 +91,17 @@ declare
         when others then return -999;
     end;
 begin
-    -- L1: la region calcula el IGTF de cabecera
+    -- L1: la region usa el IGTF de cabecera CONGELADO en la compra (2026-11-22):
+    -- ya no lo calcula con ES_SPE/genera_igtf/alicuota de hoy.
     select region_source into v_src
       from apex_260100.apex_application_page_regions
      where application_id = 100 and page_id = 18 and region_static_id = 'libro-ve';
     if instr(upper(v_src), 'IGTF_COMPRA') = 0
-       or instr(upper(v_src), 'ES_SPE') = 0
-       or instr(upper(v_src), 'GENERA_IGTF') = 0
-       or instr(upper(v_src), 'ALICUOTA_IGTF') = 0 then
-        falla('L1', 'libro-ve no calcula el IGTF de cabecera de las compras');
+       or instr(v_src, 'co.igtf_bs') = 0 then
+        falla('L1', 'libro-ve no usa COMPRAS.IGTF_BS para el IGTF de cabecera');
+    end if;
+    if instr(upper(v_src), 'GENERA_IGTF') > 0 or instr(upper(v_src), 'ALICUOTA_IGTF') > 0 then
+        falla('L1', 'libro-ve sigue calculando el IGTF en vivo');
     end if;
 
     -- L2: la columna del informe
@@ -136,22 +139,31 @@ begin
                              tasa_cambio_aplicada, subtotal_bs, total_bs)
     values (v_id, 1, 'Linea gravada', 1, 100, 100, 16, 16, 116, 900, 90000, 104400);
 
-    -- L4: en bolivares no hay IGTF
-    update compras set cod_moneda = 'VES', tipo_cambio = 1 where id_compra = v_id;
-    if igtf_del_libro('LIBROIGTF-1') <> 0 then
-        falla('L4', 'el libro calcula IGTF en una compra en bolivares: ' || igtf_del_libro('LIBROIGTF-1'));
-    end if;
-
-    -- L3: en divisas, empresa SPE y forma de pago que lo genera
-    update compras set cod_moneda = 'USD', tipo_cambio = 900 where id_compra = v_id;
+    -- La foto del IGTF se congela al registrar la compra (COMPRAS.IGTF_BS). Aqui se
+    -- escribe el valor que habria congelado el paquete: registrar exigiria proveedor
+    -- con retencion y comprobante, y lo que se mide es que el libro LEA la columna y
+    -- no recalcule con la configuracion de hoy (2026-11-22).
+    update compras set estado = 'REGISTRADA' where id_compra = v_id;
     select nvl(fn_alicuota_igtf(1), 0) into v_alic from dual;
-    v_igtf := igtf_del_libro('LIBROIGTF-1');
-    v_tot  := total_del_libro('LIBROIGTF-1');
     if v_alic <= 0 then
         falla('L3', 'la empresa 1 no tiene alicuota de IGTF configurada');
-    elsif abs(v_igtf - round(round(116 * v_alic / 100, 2) * 900, 2)) > 0.01 then
-        falla('L3', 'IGTF de la compra en el libro = ' || v_igtf || ' en vez de '
-            || round(round(116 * v_alic / 100, 2) * 900, 2));
+        v_alic := 3;
+    end if;
+    v_igtf_esp := round(round(116 * v_alic / 100, 2) * 900, 2);
+
+    -- L4: en bolivares no hay IGTF (la compra se emitio sin IGTF)
+    update compras set cod_moneda = 'VES', tipo_cambio = 1, igtf_bs = 0 where id_compra = v_id;
+    if igtf_del_libro('LIBROIGTF-1') <> 0 then
+        falla('L4', 'el libro muestra IGTF en una compra en bolivares: ' || igtf_del_libro('LIBROIGTF-1'));
+    end if;
+
+    -- L3: en divisas, con la foto congelada, el libro la muestra y el Total Bs cuadra
+    update compras set cod_moneda = 'USD', tipo_cambio = 900, igtf_bs = v_igtf_esp
+     where id_compra = v_id;
+    v_igtf := igtf_del_libro('LIBROIGTF-1');
+    v_tot  := total_del_libro('LIBROIGTF-1');
+    if abs(v_igtf - v_igtf_esp) > 0.01 then
+        falla('L3', 'el libro muestra ' || v_igtf || ' en vez de la foto ' || v_igtf_esp);
     end if;
     -- y el Total Bs del documento lo incluye
     begin
@@ -166,21 +178,29 @@ begin
         when others then
             falla('L3', 'no se pudo comprobar el cuadre del Total Bs: ' || substrb(sqlerrm, 1, 100));
     end;
-    if abs(v_tot - (104400 + round(round(116 * v_alic / 100, 2) * 900, 2))) > 0.01 then
+    if abs(v_tot - (104400 + v_igtf_esp)) > 0.01 then
         falla('L3', 'Total Bs del documento = ' || v_tot || ' sin el IGTF');
     end if;
 
-    -- L5: la empresa no es SPE
+    -- L5: la foto NO depende de la configuracion de hoy: al apagar ES_SPE sigue
     update empresas set es_spe = 'N' where id_empresa = 1;
-    if igtf_del_libro('LIBROIGTF-1') <> 0 then
-        falla('L5', 'el libro calcula IGTF con una empresa que no es SPE');
+    if abs(igtf_del_libro('LIBROIGTF-1') - v_igtf_esp) > 0.01 then
+        falla('L5', 'el libro dejo de mostrar el IGTF congelado al apagar ES_SPE');
     end if;
     update empresas set es_spe = 'S' where id_empresa = 1;
 
-    -- L6: la forma de pago no lo genera
-    update compras set id_forma_pago = v_forma_sin where id_compra = v_id;
+    -- L5b: sin foto no se inventa el IGTF, aunque hoy la empresa sea SPE y la forma
+    -- de pago lo genere.
+    update compras set igtf_bs = 0 where id_compra = v_id;
     if igtf_del_libro('LIBROIGTF-1') <> 0 then
-        falla('L6', 'el libro calcula IGTF con una forma de pago que no lo genera');
+        falla('L5b', 'el libro se inventa el IGTF cuando la compra no lo tiene congelado');
+    end if;
+    update compras set igtf_bs = v_igtf_esp where id_compra = v_id;
+
+    -- L6: y tampoco depende de la forma de pago actual
+    update compras set id_forma_pago = v_forma_sin where id_compra = v_id;
+    if abs(igtf_del_libro('LIBROIGTF-1') - v_igtf_esp) > 0.01 then
+        falla('L6', 'el libro dejo de mostrar el IGTF congelado al cambiar la forma de pago');
     end if;
     update compras set id_forma_pago = v_forma where id_compra = v_id;
 
@@ -228,7 +248,7 @@ begin
         if instr(upper(v_html), 'IGTF COMPRA') = 0 then
             falla('L8', 'el Excel fiscal no rotula la columna del IGTF de compras');
         end if;
-        if instr(v_html, to_char(round(round(116 * v_alic / 100, 2) * 900, 2),
+        if instr(v_html, to_char(v_igtf_esp,
                                  'FM999999999999999990.00',
                                  'NLS_NUMERIC_CHARACTERS=''.,''')) = 0 then
             falla('L8', 'el Excel fiscal no suma el IGTF de compras');
@@ -238,7 +258,9 @@ begin
             falla('L8', 'no se pudo generar el Excel: ' || substrb(sqlerrm, 1, 120));
     end;
 
-    -- L9: el resumen de la compra (pagina 28) y el libro dicen lo mismo
+    -- L9: el resumen de la compra (pagina 28) y el libro dicen lo mismo. Se apaga
+    -- ES_SPE: con el calculo en vivo el resumen daria 0 y con la foto tiene que seguir.
+    update empresas set es_spe = 'N' where id_empresa = 1;
     begin
         select region_source into v_sql
           from apex_260100.apex_application_page_regions
@@ -263,7 +285,7 @@ begin
                                  'NLS_NUMERIC_CHARACTERS='',.''')) = 0 then
             falla('L9', 'el resumen de la compra no muestra el IGTF en Bs');
         end if;
-        v_sum := 104400 + round(round(116 * v_alic / 100, 2) * 900, 2) - v_islr;
+        v_sum := 104400 + v_igtf_esp - v_islr;
         if instr(v_html, to_char(v_sum, 'FM999G999G999G990D00',
                                  'NLS_NUMERIC_CHARACTERS='',.''')) = 0 then
             falla('L9', 'el neto del resumen no cuadra con el libro (' || to_char(v_sum,

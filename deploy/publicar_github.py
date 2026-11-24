@@ -2,13 +2,22 @@
 # =============================================================================
 # publicar_github.py
 #
-# Publica el CODIGO de este repositorio en GitHub **sin subir los .md**.
+# Publica este repositorio en GitHub: **el codigo y SOLO dos documentos**.
 #
-# Por que existe: la documentacion (AGENTS.md, CRONOGRAMA.md, manual, planes y
-# specs) se queda en el equipo local; el repositorio remoto es solo codigo. El
-# historial local no se toca: en cada publicacion se crea UN commit sobre la
-# rama remota (main) cuyo arbol es el del HEAD local con los .md fuera. Asi el
-# PR de cada entrega muestra exactamente lo que cambio en el codigo.
+# Historia: hasta el 2026-11-22 el remoto era solo codigo y los .md se quedaban en
+# el equipo local. El 2026-11-23 el dueno decidio que la documentacion viaje, pero
+# **no toda**: al PR solo entran
+#   * `documentacion/REGLAS_DE_NEGOCIO.md`  (las reglas del negocio)
+#   * `docs/Manual_Usuario.docx`            (el manual de usuario, en Word)
+# El resto de los `.md` vive en `documentacion/` y se queda en el equipo local.
+#
+# Lo que sigue SIN publicarse, porque el repositorio es PUBLICO: los valores
+# sensibles se sustituyen al vuelo en los .md y .txt (nunca en el codigo, que
+# los usa de verdad). Se redactan:
+#   * claves de prueba tipo Sypex#2026 / Prueba#2026 / Mexico#2026 / Diag#2026
+#   * correos personales (@hotmail, @gmail, @outlook, @yahoo)
+# El equipo local conserva el texto original; el remoto recibe la version
+# redactada. El resumen de la publicacion dice cuantos valores se taparon.
 #
 # Uso (desde la raiz del repo):
 #   python deploy/publicar_github.py --dry-run          # ver que haria
@@ -20,12 +29,13 @@
 # Manager) y la libreria estandar. No imprime el token.
 #
 # Que NO hace: no empuja main, no toca el historial local, no borra nada del
-# repositorio remoto. Los .md jamas se copian al area de trabajo temporal.
+# repositorio remoto.
 # =============================================================================
 
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -36,7 +46,21 @@ import urllib.request
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 URL = "https://github.com/luismiromi84-ai/apex.git"
 REPO_API = "luismiromi84-ai/apex"
-TITULO_POR_DEFECTO = "Publicar codigo (sin documentacion)"
+TITULO_POR_DEFECTO = "Publicar codigo, reglas de negocio y manual de usuario"
+
+# Los UNICOS documentos que viajan. El resto de los .md se queda local.
+DOCS_PUBLICOS = {
+    "documentacion/REGLAS_DE_NEGOCIO.md",
+    "docs/Manual_Usuario.docx",
+}
+
+# El repositorio es publico: esto se tapa en la documentacion que viaja.
+REDACTAR = [
+    (re.compile(r"\b(Sypex|Prueba|Demo|Mexico|Diag)#\d{4}\b"), "********"),
+    (re.compile(r"[\w.+-]+@(?:hotmail|gmail|outlook|yahoo)\.[\w.]+", re.I),
+     "********@********"),
+]
+EXT_REDACTABLES = (".md", ".txt")
 
 
 def git(*args, cwd=None, check=True):
@@ -48,9 +72,41 @@ def git(*args, cwd=None, check=True):
 
 
 def archivos_del_head():
-    """Rutas del HEAD local, sin los .md."""
+    """El codigo del HEAD, mas los dos documentos que si viajan.
+
+    Fuera: todos los `.md` (menos el de reglas) y **todo lo que hay dentro de
+    `documentacion/`** (menos ese mismo archivo): esa carpeta es el archivo
+    documental del equipo, no lo que se publica.
+    """
     salida = git("ls-tree", "-r", "-z", "--name-only", "HEAD").stdout
-    return [a for a in salida.split("\0") if a and not a.lower().endswith(".md")]
+    rutas = [a for a in salida.split("\0") if a]
+    publicos = []
+    for a in rutas:
+        r = a.replace("\\", "/")
+        if r in DOCS_PUBLICOS:
+            publicos.append(a)
+        elif r.lower().endswith(".md"):
+            continue
+        elif r.startswith("documentacion/"):
+            continue
+        else:
+            publicos.append(a)
+    return publicos
+
+
+def redactar(rel, datos):
+    """Tapa claves y correos personales en la documentacion que viaja."""
+    if not rel.lower().endswith(EXT_REDACTABLES):
+        return datos, 0
+    try:
+        texto = datos.decode("utf-8")
+    except UnicodeDecodeError:
+        return datos, 0
+    tapados = 0
+    for patron, reemplazo in REDACTAR:
+        texto, n = patron.subn(reemplazo, texto)
+        tapados += n
+    return texto.encode("utf-8"), tapados
 
 
 def token_github():
@@ -86,10 +142,10 @@ def pr_abierto(rama, token):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Publica el codigo en GitHub sin los .md.")
+    ap = argparse.ArgumentParser(description="Publica el codigo, las reglas de negocio y el manual.")
     ap.add_argument("--rama", default="entrega", help="rama remota a la que empujar (por defecto entrega)")
     ap.add_argument("--base", default="main", help="rama base del PR (por defecto main)")
-    ap.add_argument("--mensaje", default="Publicar codigo desde el equipo local (sin .md)")
+    ap.add_argument("--mensaje", default="Publicar codigo, reglas de negocio y manual desde el equipo local")
     ap.add_argument("--titulo", default=TITULO_POR_DEFECTO)
     ap.add_argument("--cuerpo", default=None, help="archivo con el cuerpo del PR (opcional)")
     ap.add_argument("--sin-pr", action="store_true", help="empujar la rama y no abrir PR")
@@ -102,7 +158,7 @@ def main():
     rutas = archivos_del_head()
     if not rutas:
         raise SystemExit("no hay archivos en HEAD: nada que publicar")
-    print("archivos a publicar: %d (sin .md)" % len(rutas))
+    print("archivos a publicar: %d (codigo + reglas de negocio + manual)" % len(rutas))
 
     tmp = os.path.join(tempfile.gettempdir(), "opencode", "publicar-github")
     if os.path.isdir(tmp):
@@ -122,6 +178,7 @@ def main():
         for f in ficheros:
             os.remove(os.path.join(raiz, f))
     copiados = 0
+    tapados = 0
     for rel in rutas:
         ruta_git = rel.replace("\\", "/")
         # Se escribe el contenido del HEAD (el blob), no el byte del arbol de
@@ -130,12 +187,14 @@ def main():
                               capture_output=True)
         if blob.returncode != 0:
             raise SystemExit("no pude leer HEAD:%s" % ruta_git)
+        datos, n = redactar(ruta_git, blob.stdout)
+        tapados += n
         destino = os.path.join(tmp, rel.replace("/", os.sep))
         os.makedirs(os.path.dirname(destino) or tmp, exist_ok=True)
         with open(destino, "wb") as f:
-            f.write(blob.stdout)
+            f.write(datos)
         copiados += 1
-    print("copiados: %d" % copiados)
+    print("copiados: %d (valores sensibles tapados en la documentacion: %d)" % (copiados, tapados))
 
     git("add", "-A", cwd=tmp)
     if git("diff", "--cached", "--quiet", cwd=tmp, check=False).returncode == 0:
@@ -166,7 +225,9 @@ def main():
         print("https://github.com/%s/compare/%s...%s?expand=1" % (REPO_API, args.base, args.rama))
         return 1
 
-    cuerpo = "Publicacion del codigo del equipo local. Los `.md` no se suben."
+    cuerpo = ("Publicacion del equipo local: codigo, las reglas de negocio y el manual de usuario. "
+              "El resto de la documentacion se queda en el equipo. "
+              "Las claves de prueba y los correos personales de los `.md`/`.txt` van tapados.")
     if args.cuerpo and os.path.exists(args.cuerpo):
         with open(args.cuerpo, encoding="utf-8") as f:
             cuerpo = f.read()

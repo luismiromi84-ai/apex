@@ -1,0 +1,78 @@
+La lista de Pagos (36) al estandar y el par NLS al reves - 2026-11-23
+=====================================================================
+
+LA 36 AL ESTANDAR
+-----------------
+- Region Filtros (10): P36_DESDE, P36_HASTA, P36_ESTADO, P36_CONCILIADO,
+  P36_BUSCAR. Los cinco con maintain_session_state = Per Session (si no,
+  APEX descarta el valor al enviar y el combo vuelve a Todos: el fallo de la 24).
+  Su companero de fila lleva p_begin_on_new_line = N (6+6 y Buscar 12).
+- Region Indicadores de pagos (15, kpi-pagos, contenido dinamico PLSQL):
+  Pagos del mes / Pagado (Bs) / IGTF (Bs) / Sin conciliar. Con la empresa sin
+  pagos pinta guiones, no ceros.
+- La lista paso a secuencia 20 (debajo de los indicadores).
+- Estado: insignia EMITIDO (el valor guardado sigue siendo ACTIVO) y CSS
+  .status-EMITIDO. Conciliado: chip Si/No con la clase en la columna oculta
+  CONCILIADO_CLASE (fuera del informe por defecto).
+- La 36 tampoco tenia cabecera azul: se le puso la del estandar.
+- Cinco acciones de cambio (una por filtro) con apex.submit APLICAR.
+
+EL BUG DE FORMATO (nueve regiones)
+----------------------------------
+TO_CHAR(..., 'NLS_NUMERIC_CHARACTERS=''.,''') es decimal punto y miles coma (US).
+Nueve regiones lo usaban y pintaban 3,682,305.83 donde el resto de la app pinta
+3.682.305,83: paginas 5, 8, 9, 24, 25, 27, 32, 33 y 36. Corregido a ',.'.
+La unica que estaba bien era el resumen de la compra (28).
+REGLA: el par es "decimal, miles"; para Venezuela ',.'.
+
+VERIFICACION
+------------
+  20261123_pagos_kpi_chips_verificacion.sql   K1-K7   RED FALLAS=23 -> GREEN 0
+  20261123_pagos_kpi_navegador.py             K0-K7   FALLAS=0
+  Captura: deploy/resultados/20261123_pagos_kpi.png
+
+  La de SQL ejecuta la FUENTE GUARDADA de los indicadores (no una copia) y la
+  consulta guardada del informe en cuatro combinaciones contra el SQL directo.
+  La de navegador comprueba que los filtros aplican de verdad.
+
+TESTS QUE MEDIAN EL FORMATO AL REVES (el test, no la app)
+---------------------------------------------------------
+  20261120_kpi_recibos_usuarios.py     numero() -> formato venezolano
+  20261121_compras_kpi_chips.py        num()    -> formato venezolano
+  20261120_facturacion_kpi_menu.py     num()    -> formato venezolano
+  20261120_proveedor_ficha.py          miles()  -> formato venezolano
+  20261121_libro_recibo_capturas.py    R5: "1.000,00"
+  20261120_cliente_ficha.py            OJO: las tarjetas son to_char (miles()) y
+                                       el IR es p_format_mask (ir()); dos formatos.
+
+TRAMPAS NUEVAS
+--------------
+- El titulo de una region colapsable va en un enlace dentro del h2: color blanco
+  en .t-Region-title no basta; hay que añadir .t-Region-header .t-Region-title *.
+- El login por CDP tenia carrera: esperaba readyState+apex, escribia credenciales
+  y clickeaba en el mismo paso. Ahora espera el CAMPO P9999_USERNAME y sondea el
+  session= de la URL.
+- El id del DOM de un IR (...._ig_report) no es estable; para contar filas se
+  busca el enlace de la columna (a[href*="p37_id_pago"]).
+
+REGRESION EN VERDE
+------------------
+  20261123_pagos_kpi_chips_verificacion.sql   FALLAS=0
+  20261123_pagos_kpi_navegador.py             FALLAS=0
+  20261120_kpi_recibos_usuarios.py            FALLAS=0 (1.008,31)
+  20261121_compras_kpi_chips.py               FALLAS=0 (2.409.316,81)
+  20261120_facturacion_kpi_menu.py            FALLAS=0 (3.682.305,83)
+  20261120_cliente_ficha.py                   FALLAS=0
+  20261120_proveedor_ficha.py                 FALLAS=0
+  20261121_libro_recibo_capturas.py           FALLAS=0
+  20261121_pagos_paginas.py                   FALLAS=0
+  20261117_grid_dialogos_navegador.py         FALLAS=0
+  20261118_pagina9_rejilla.py                 FALLAS=0
+  20261117_empresa_activa_filtros_navegador   FALLAS=0
+  20261117_grid_paginas_verificacion.py       FALLAS=0
+  20261109_compilar_procesos_pagina.py        121 procesos
+  20261105_portada_verificacion.py            FALLAS=0 (41 paginas, 33 guardas)
+
+CONTADORES
+----------
+41 paginas, 33 guardas, 106 sentencias, 121 procesos, 0 invalidos.

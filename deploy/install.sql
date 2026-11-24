@@ -78,7 +78,6 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_clean_num.sql
 @@../funciones/fn_tasa_ves.sql
 @@../funciones/fn_validar_tasa_documento.sql
-@@../funciones/fn_tasa_cambio.sql
 @@../funciones/fn_tiene_rol.sql
 @@../funciones/fn_usuario_empresa_valida.sql
 @@../funciones/fn_usuario_administrable.sql
@@ -112,12 +111,20 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_siguiente_folio.sql
 @@../funciones/fn_control_en_rango.sql
 @@../funciones/fn_asignar_control.sql
+-- Tope de las secuencias y fijado desde Administracion (2026-11-23).
+@@../funciones/fn_maximo_real.sql
 -- Excel fiscal del libro de compras y ventas (lo usa el proceso de la pagina 26).
 @@../funciones/fn_periodo_desde.sql
 @@../funciones/fn_periodo_hasta.sql
 @@../funciones/fn_libro_excel.sql  
 -- Recibo de cobro en papel (lo usa la region de la pagina 35).
 @@../funciones/fn_imprimir_recibo.sql
+-- Comprobante de pago a proveedor (pagina 38, 2026-11-22).
+@@../funciones/fn_imprimir_pago.sql
+-- Factura de compra (pagina 39, 2026-11-23).
+@@../funciones/fn_imprimir_compra.sql
+-- Etiqueta Code 128 del articulo (pagina 41, 2026-11-23).
+@@../funciones/fn_etiqueta_articulo.sql
 
 -- Monitoreo de errores: el procedimiento va antes porque fn_error_handler lo llama.
 @@../procedimientos/prc_log_error.sql
@@ -156,6 +163,10 @@ prompt    Van despues de fn_transicion_estado_valida (bloque 3).
 @@../trigger/trg_actualiza_totales_compra.sql
 -- Multiempresa: la empresa "principal" del usuario queda siempre asociada.
 @@../trigger/trg_usuario_empresa_principal.sql
+-- Catalogo: el codigo de barras se asigna solo y es permanente.
+@@../trigger/trg_producto_servicio_barras.sql
+-- Catalogo: el codigo interno tambien (series PROD y SERV) y es permanente.
+@@../trigger/trg_producto_servicio_codigo.sql
 
 prompt ============================================================
 prompt 6/8 Procedimientos
@@ -167,6 +178,9 @@ prompt ============================================================
 @@../procedimientos/prc_log_reset_password.sql
 @@../procedimientos/prc_purgar_logs.sql
 @@../procedimientos/prc_anular_factura_nc.sql
+-- Secuencias desde Administracion (2026-11-23).
+@@../procedimientos/prc_fijar_secuencia.sql
+@@../procedimientos/prc_resincronizar_secuencia.sql
 
 prompt ============================================================
 prompt 7/8 Jobs y datos mínimos

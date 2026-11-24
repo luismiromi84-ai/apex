@@ -191,16 +191,8 @@ cur.execute("""select round(nvl(sum(sg * tot), 0), 2)
                        select case when co.estado = 'ANULADA' then 0 else 1 end
                               * case when co.tipo_documento = 'NC' then -1 else 1 end,
                               nvl(co.monto_total, 0) * nvl(co.tipo_cambio, 1)
-                                + case when nvl(co.cod_moneda, 'VES') not in ('VES', 'BS')
-                                        and nvl(e.es_spe, 'N') = 'S'
-                                        and nvl(fp.genera_igtf, 'N') = 'S'
-                                       then round(round(nvl(co.monto_total, 0)
-                                                  * nvl(fn_alicuota_igtf(co.id_empresa), 0) / 100, 2)
-                                                  * nvl(co.tipo_cambio, 1), 2)
-                                       else 0 end
+                                + nvl(co.igtf_bs, 0)
                          from compras co
-                         join empresas e on e.id_empresa = co.id_empresa
-                         left join forma_pago fp on fp.id_forma_pago = co.id_forma_pago
                         where co.id_empresa = 1
                           and co.fecha_emision >= trunc(sysdate, 'MM')
                           and co.fecha_emision < add_months(trunc(sysdate, 'MM'), 1))""")
@@ -363,7 +355,7 @@ try:
                                ".forEach(function(c){o.push(c.innerText.replace(/\\n/g,' '));});return o;") or []
     plano2 = " | ".join(suma) if isinstance(suma, list) else ""
     comprobar("R5 al teclear el monto se refresca el resumen",
-              "1,000.00" in plano2 or "1000.00" in plano2, plano2)
+              "1.000,00" in plano2 or "1000,00" in plano2, plano2)
     comprobar("R5 el neto del recibo ya no esta vacio", "—" not in plano2.split("NETO")[-1], plano2)
     flotadas = nav.js(EN_DIALOGO % "var o=[];d.querySelectorAll('.t-Form-fieldContainer').forEach(function(c){"
                                    "var i=c.querySelector('input,select,textarea');if(!i)return;"

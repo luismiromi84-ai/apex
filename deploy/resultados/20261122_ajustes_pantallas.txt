@@ -1,0 +1,201 @@
+Evidencia â€” ajustes de pantalla del 2026-11-22 (tercera parte)
+=============================================================
+
+1) Auditoria: el saldo 1.420 sobre un total 1.480 no es diferencial cambiario
+----------------------------------------------------------------------------
+Datos de la compra del dueno (folio 2, empresa 1, USD):
+
+  monto_total          1.480,00 USD
+  retencion_iva_bs    54.998,86 Bs
+  retencion_islr_bs        0,00 Bs
+  igtf_bs                  0,00 Bs
+  pagos aplicados          0,00 USD
+
+  fn_importe_compra = 1.480 + 0 - 54.998,86/916,6477 - 0 = 1.420,00 USD
+  saldo             = 1.420,00 - 0 = 1.420,00 USD
+
+Los 60,00 USD son la RETENCION DE IVA (75 % del IVA), no un diferencial cambiario:
+el comprador retiene y entera ese IVA al SENIAT, no se lo paga al proveedor.
+
+Antes la pantalla mezclaba unidades: Total/Pagado/Saldo en USD y Ret. IVA/Ret. ISLR
+en Bs (108.897,75 o 54.998,86 al lado de 1.480,00). Ahora:
+
+  - todas las columnas van en la moneda de la factura,
+  - se agrego la columna IGTF,
+  - y la formula escrita debajo:
+    "Saldo = Total + IGTF - Ret. IVA - Ret. ISLR - Pagado. La retencion de IVA se
+     entera al SENIAT: no se le paga al proveedor."
+
+Medido en navegador (deploy/resultados/20261122_saldo_1420.png):
+  DIAG-1480  USD  1.480,00 | IGTF 0,00 | Ret. IVA 60,00 | Ret. ISLR 0,00 |
+                   Pagado 0,00 | Saldo 1.420,00
+
+Si el proveedor reclama una diferencia por tipo de cambio, el camino es una NOTA DE
+DEBITO de compra por el importe; la factura no se toca.
+
+2) Pagina 19: fiscal y logo en blanco / otro listado de empresa
+---------------------------------------------------------------
+- Los items P19F_ID_EMPRESA y P19L_ID_EMPRESA eran un Popup LOV con defecto
+  `having count(*) = 1`: con varias empresas quedaban vacios y el proceso
+  "Carga datos fiscales" salia sin cargar nada (todo en blanco).
+- Ahora son items OCULTOS y un proceso BEFORE_HEADER ("Fija la empresa de
+  administracion", seq 4) resuelve una sola empresa:
+     1) la que se esta editando (Editar en "Mis empresas"),
+     2) la empresa activa de la barra,
+     3) la menor de sus empresas (solo administracion),
+  valida que sea del usuario y publica el nombre en P19F_EMPRESA_NOMBRE y
+  P19L_EMPRESA_NOMBRE (display only). Ya no hay un segundo combo de empresa.
+
+Medido con un usuario de DOS empresas (20261111_pagina19_multiempresa.py):
+  [OK] la pestana fiscal resuelve una empresa (1)
+  [OK] y ya no hay un combo de empresa dentro de la pestana
+  [OK] la pestana fiscal dice de que empresa es (Empresa Principal)
+  [OK] las dos pestanas trabajan sobre la misma empresa
+  [OK] la pestana del logo dice la misma empresa (Empresa Principal)
+
+3) Pagina 34: "Concepto guardado.Concepto guardado." y el aviso no se iba
+-------------------------------------------------------------------------
+- El proceso escribia el mensaje a mano (apex_application.g_print_success_message)
+  Y ademas tenia el atributo del proceso: APEX pintaba los dos. Se quito el manual.
+- Un JS de pagina cierra el aviso a los 5 s (antes habia que recargar).
+- El catalogo de conceptos de ISLR es NACIONAL: no depende de la empresa activa; la
+  nota de la pagina lo dice.
+
+Verificacion nueva: deploy/diagnostico/20261122_pantallas_ajustes_verificacion.sql
+  RED:   FALLAS=13 (A1, A2, B1 x2, B2, B3 x2, C1 x2, C2, C3 ...)
+  GREEN: FALLAS=0
+
+Regresion (todas FALLAS=0):
+  20261122_pantallas_ajustes_verificacion.sql
+  20261121_pagos_paginas.py (N1-N8, incluida la fila 1.480/60/1.420)
+  20261111_pagina19_multiempresa.py
+  20261111_pagina19_datos_fiscales.py (OMITIDOS=1: dato del cliente)
+  20261111_pagina19_logo.py
+  20261111_pagina19_editar_empresa.py
+  20261120_catalogo_islr.py (C2 sale una vez, C2b se cierra solo)
+  20261120_cierre_formularios.py
+  20261122_estado_pendiente_verificacion.sql
+  20261122_favor_pantalla_verificacion.sql
+  20261122_saldo_lista_verificacion.sql
+  20261121_compras_kpi_chips_verificacion.sql
+  20261110_multiempresa_verificacion.sql (M17/M43/M45 al dia con la 19 nueva)
+  20261117_grid_paginas_verificacion.py
+  20261109_compilar_procesos_pagina.py (117 procesos)
+  20261105_portada_verificacion.py (39 paginas, 31 guardas, 0 invalidos)
+
+Import: 103 sentencias, 0 objetos invalidos. Base sin datos de prueba.
+
+4) Cuarta parte: atajo «Pagar», ficha del proveedor y separadores
+-----------------------------------------------------------------
+- Pagina 27: columna «Pagar» por fila (abre la 37 con P37_ID_PROVEEDOR). Solo en
+  Procesada/Abonada/Pagada; el JS spxMarcaPagar vacia la celda en borradores y
+  notas (una columna de IR no se condiciona por fila). #PAGAR# = id_proveedor.
+  TRAMPA: la 27 ya tenia p_javascript_code_onload (chip activo); un segundo da
+  PLS-00703 y tumba el import. Se fusiono en el existente.
+- Pagina 33: quinta tarjeta «Por pagar (Bs)» con fn_saldo_compra * tipo_cambio y
+  el numero de facturas con saldo; region «Pagos al proveedor» (fecha, monto,
+  moneda, forma de pago, referencia, facturas aplicadas con listagg, conciliado,
+  Emitido/Anulado); boton «Pagar». Rejilla de tarjetas auto-fit.
+- Pagina 37: spxNum acepta 1420, 1.420, 1.420,00 y 1,420.00 (antes «1.420,00»
+  se leia 1,42).
+
+Verificacion:
+  20261122_pagar_proveedor_verificacion.sql   RED 7 -> GREEN 0
+  20261121_pagos_paginas.py N9                FALLAS=0 (enlace, 37 con el
+                                              proveedor y 2 facturas, solo en
+                                              procesadas, parser en 3 formas)
+  20261120_proveedor_ficha.py P5/P6/P8        FALLAS=0 (5 tarjetas, Por pagar
+                                              contra la base, region de pagos)
+  20261121_compras_kpi_chips.py               FALLAS=0
+  20261117_grid_paginas_verificacion.py       FALLAS=0
+  20261109_compilar_procesos_pagina.py        117 procesos, FALLAS=0
+  20261105_portada_verificacion.py            FALLAS=0 (39 paginas, 31 guardas)
+
+Capturas: 20261120_proveedor_ficha_1440.png y 20261121_compras_1440.png.
+Import: 103 sentencias, 0 invalidos, sin datos de prueba.
+
+5) Quinta parte: RIF en mayusculas y chips en Conceptos de ISLR
+---------------------------------------------------------------
+- El RIF en minusculas era el de la IMPRENTA en datos fiscales
+  (empresa_fiscal.imprenta_rif = 'j-85462139-7'), no el de clientes ni proveedores.
+  Ahora 19 (empresa) y 19F (imprenta) normalizan con una VARIABLE LOCAL
+  (v_rfc / v_rif_imp = upper(trim(:item))), no con ":item := ..." (las pruebas
+  que ejecutan el proceso con binds literales dan PLS-00363).
+  Migracion 20261122_rif_mayusculas.sql con commit ANTES de validar: la
+  validacion lanza al final y el runner revierte la transaccion.
+- Pagina 34: chips Todos / Activos / Inactivos (region chips-conceptos, item
+  oculto P34_FILTRO persistente, DA sobre .spx-filtro que refresca la lista y
+  marca del chip activo en el onload que ya existia).
+  TRAMPA: el bloque de la 34 tiene lineas en blanco entre sentencias (\r\r\n);
+  los anadidos van en un begin...end;/ aparte (104 sentencias).
+
+Verificacion:
+  20261122_rif_mayus_chips_islr_verificacion.sql  RED 10 -> GREEN 0
+  20261120_catalogo_islr.py C1b                   FALLAS=0
+  20261111_pagina19_datos_fiscales.py caso 6      FALLAS=0 OMITIDOS=1
+  20261110_multiempresa_verificacion.sql          FALLAS=0 (M24/M25)
+  20261109_compilar_procesos_pagina.py            117 procesos, FALLAS=0
+  20261105_portada_verificacion.py                FALLAS=0
+
+Datos: 0 RIF en minusculas en clientes, proveedores, empresas y empresa_fiscal.
+Import: 104 sentencias, 0 invalidos.
+
+6) Sexta parte: IGTF congelado y cobros en la ficha del cliente
+----------------------------------------------------------------
+- El IGTF de la compra se lee de COMPRAS.IGTF_BS en la pagina 28 (resumen) y en el
+  libro 18 (tabla de Venezuela y totales). En BORRADOR el resumen estima; ya
+  procesada manda la foto. El rotulo de la emitida dice la alicuota (IGTF 3 %).
+- TRAMPA: el bloque libro-ve tiene un ESPACIO delante de la comilla en muchas
+  lineas; al reemplazar hay que conservar la coma DENTRO del literal
+  ('... as igtf_cab,'), o el SQL queda sin separador (ORA-00923).
+- Ficha del cliente (32): region «Cobros del cliente» (RECIBOS x FACTURAS) con
+  IGTF, retencion en Bs, conciliado y Emitido/Anulado.
+- Tests que median la formula vieja y se actualizaron (el test, no la app):
+  20261119_compra_igtf_libro (L1/L3/L5/L6 + L5b), 20261116_libro_ventas_pagina,
+  20261121_libro_recibo_capturas y 20261118_libro_notas (V1 lee igtf_bs; V5 ya no
+  exige el formato del rango de control vigente: el cliente cambio el rango).
+
+Verificacion:
+  20261122_igtf_congelado_verificacion.sql          RED 6 -> GREEN 0
+  20261122_igtf_resumen_p28.py                      FALLAS=0 (cuerpo real)
+  20261119_compras_navegador.py C7b                 FALLAS=0
+  20261122_cobros_ficha_cliente_verificacion.sql    RED 2 -> GREEN 0
+  20261120_cliente_ficha.py F13                     FALLAS=0
+  20261119_compra_igtf_libro_verificacion.sql       FALLAS=0
+  20261118_libro_notas_verificacion.sql             FALLAS=0
+  20261116_libro_ventas_pagina.py                   FALLAS=0
+  20261121_libro_recibo_capturas.py                 FALLAS=0
+  20261118_libro_excel_navegador.py                 FALLAS=0
+  20261109_compilar_procesos_pagina.py              117 procesos
+  20261105_portada_verificacion.py                  FALLAS=0
+  20261117_grid_paginas_verificacion.py             FALLAS=0
+
+Import: 104 sentencias, 0 invalidos. Captura: 20261120_cliente_ficha_1440.png
+
+
+7) Septima parte: el comprobante de pago en papel (pagina 38)
+--------------------------------------------------------------
+- fn_imprimir_pago(p_id_pago): COMPROBANTE DE PAGO, espejo de fn_imprimir_recibo.
+  Logo y datos del emisor, numero = ID_PAGO, fecha, estado (EMITIDO/ANULADO),
+  proveedor con RIF, forma de pago y referencia, tasa, facturas de compra
+  aplicadas (folio, fecha, moneda, total, aplicado), montos en la moneda del
+  pago y en Bs, Total desembolsado = monto + IGTF, observaciones, firmas y pie.
+  NO CALCULA NADA: lee PAGOS y PAGOS_DETALLE. NULL si el pago no existe.
+- Pagina 38 PAGO-IMPRESO: region de contenido dinamico con la funcion, item
+  oculto P38_ID_PAGO, boton Imprimir (u-no-print + window.print) y dos guardas:
+  valida-rol-pago-print (ADMIN,GERENCIA,CONTABILIDAD,PRUEBA) y
+  valida-empresa-pago-print (fn_usuario_empresa_valida, -20003). Sin menu.
+- Pagina 37: boton "Imprimir comprobante" (solo con pago abierto) -> REDIRECT_PAGE
+  a la 38 con P38_ID_PAGO.
+- TRAMPA: APEX_APPLICATION_PAGE_BUTTONS no tiene ACTION_CODE, es
+  BUTTON_ACTION_CODE. Y este archivo de resultados esta en cp1252, no UTF-8.
+
+Verificacion:
+  20261122_imprimir_pago_verificacion.sql           RED 6 -> GREEN 0 (E1-E5)
+  20261121_pagos_paginas.py N10 (clic real)         FALLAS=0
+  20261105_portada_verificacion.py                  40 paginas, 32 guardas
+  20261109_compilar_procesos_pagina.py              119 procesos
+  20261117_grid_paginas_verificacion.py             FALLAS=0
+  20261107_install_limpio_inventario.py              FALLAS=0 (catalogo sembrado)
+
+Import: 105 sentencias, 0 invalidos. Captura: 20261122_comprobante_pago.png
