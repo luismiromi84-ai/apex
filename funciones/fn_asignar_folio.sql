@@ -19,7 +19,8 @@
 -- ARTICULO -> '10000001' (codigo de barras del catalogo, 8 digitos; la base
 -- 10000000 vive aqui para que una empresa nueva tambien empiece en 10000001),
 -- PROD -> 'PROD-00001' y SERV -> 'SERV-00001' (codigo interno del catalogo,
--- 2026-11-23: lo asigna la base y no se teclea).
+-- 2026-11-23: lo asigna la base y no se teclea) y KARDEX -> 'K-000001' (movimiento
+-- de inventario, 2026-11-24).
 --
 -- Ojo al editar: el SET del UPDATE va en la misma linea que el UPDATE. El
 -- runner de despliegue descarta toda linea que empiece por "set " y partiria
@@ -72,6 +73,7 @@ begin
              when 'ARTICULO'     then lpad(to_char(10000000 + v_num), 8, '0')
              when 'PROD'         then 'PROD-' || lpad(to_char(v_num), 5, '0')
              when 'SERV'         then 'SERV-' || lpad(to_char(v_num), 5, '0')
+             when 'KARDEX'       then 'K-' || lpad(to_char(v_num), 6, '0')
              else to_char(v_num)
            end;
 end fn_asignar_folio;

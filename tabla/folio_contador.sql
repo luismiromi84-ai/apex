@@ -9,7 +9,7 @@
 -- misma transaccion del guardado, asi que la fila queda bloqueada hasta el
 -- COMMIT y el segundo usuario espera y recibe el numero siguiente.
 --
--- Tipos: PRESUPUESTO | FAC | NC | ND | CONTROL | FAC_PROV | CONTROL_PROV | ARTICULO | PROD | SERV
+-- Tipos: PRESUPUESTO | FAC | NC | ND | CONTROL | FAC_PROV | CONTROL_PROV | ARTICULO | PROD | SERV | KARDEX
 --   PRESUPUESTO  -> 1047        (numero pelado)
 --   FAC          -> F-1041
 --   NC           -> NC-1
@@ -20,6 +20,7 @@
 --   ARTICULO     -> 10000001    (codigo de barras del catalogo, por empresa)
 --   PROD         -> PROD-00001  (codigo interno de un articulo, por empresa)
 --   SERV         -> SERV-00001  (codigo interno de un servicio, por empresa)
+--   KARDEX       -> K-000001    (movimiento de inventario, por empresa)
 -- =============================================================================
 
 CREATE TABLE "FOLIO_CONTADOR"
@@ -30,7 +31,7 @@ CREATE TABLE "FOLIO_CONTADOR"
   USING INDEX  ENABLE,
 	 CONSTRAINT "CK_FOLIO_CONTADOR_TIPO" CHECK (tipo IN ('PRESUPUESTO', 'FAC', 'NC', 'ND', 'CONTROL',
 	                                                    'FAC_PROV', 'CONTROL_PROV', 'ARTICULO',
-	                                                    'PROD', 'SERV')) ENABLE,
+	                                                    'PROD', 'SERV', 'KARDEX')) ENABLE,
 	 CONSTRAINT "FK_FOLIO_CONTADOR_EMPRESA" FOREIGN KEY ("ID_EMPRESA")
 	  REFERENCES "EMPRESAS" ("ID_EMPRESA") ENABLE
   ) ;

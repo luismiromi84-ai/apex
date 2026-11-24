@@ -1,6 +1,13 @@
 -- =============================================================================
 -- 20261105_gasto_real.sql
 --
+-- **OJO (2026-11-23): este archivo es HISTORICO y ya NO se puede ejecutar tal
+-- cual.** Usa `fn_tasa_cambio`, que se elimino ese dia; la version vigente del
+-- paquete, que convierte con `fn_tasa_ves` (bolivares por unidad), esta en
+-- `deploy/migrations/20261106_gasto_real_factor_usd.sql` y en
+-- `package_bodies/pkg_gasto_real.sql`. Se conserva como evidencia del 2026-11-05.
+-- Para crear el paquete hoy: `deploy/install_bodies.sql`.
+--
 -- Objetivo: poner en marcha la tabla GASTO_REAL, que estaba declarada y muerta
 --           (0 filas, 0 referencias en todo el codigo).
 --

@@ -3751,7 +3751,7 @@ wwv_flow_imp_shared.create_theme_style(
 ||unistr('exLoginFloat {\005Cn  0%, 100% { transform: translateY(0px) rotate(0deg); }\005Cn  50% { transform: translateY(-6px) rotate(2deg); }\005Cn}\005Cn\005Cn/* Animaci\00F3n de la llama */\005Cn@keyframes synpexLoginFire {\005Cn  0% { transform: scaleY(1) scaleX(1); opacity: 1; }\005Cn  50% ')
 ||'{ transform: scaleY(1.35) scaleX(0.85); opacity: 0.85; }\n  100% { transform: scaleY(0.9) scaleX(1.1); opacity: 1; }\n}\n\n.synpex-rocket-box {\n  display: inline-block;\n  animation: synpexLoginFloat 2.2s ease-in-out infinite;\n  margin-bottom: 8px;'
 ||unistr('\005Cn}\005Cn\005Cn.synpex-flame-1, .synpex-flame-2 {\005Cn  transform-origin: 50px 85px;\005Cn  animation: synpexLoginFire 0.2s ease-in-out infinite alternate;\005Cn}\005Cn\005Cn/* Formato del t\00EDtulo de la marca */\005Cn.synpex-brand-title {\005Cn  display: flex;\005Cn  flex-direction: column')
-||';\n  align-items: center;\n}\n\n.synpex-brand-title .main-name {\n  font-family: ''Segoe UI'', Roboto, sans-serif;\n  font-size: 28px;\n  font-weight: 800;\n  color: #0f172a;\n  line-height: 1;\n}\n\n.synpex-brand-title .sub-name {\n  font-family: ''Seg'
+||';\n  align-items: center;\n}\n\n.synpex-brand-title .main-name {\n  font-family: ''Segoe UI'', Roboto, sans-serif;\n  font-size: 28px;\n  font-weight: 800;\n  color: rgb(15,23,42);\n  line-height: 1;\n}\n\n.synpex-brand-title .sub-name {\n  font-family: ''Seg'
 ||'oe UI'', Roboto, sans-serif;\n  font-size: 11px;\n  font-weight: 700;\n  color: #0284c7;\n  letter-spacing: 3px;\n  text-transform: uppercase;\n  margin-top: 4px;\n}\n","useCustomLess":"N"}'
 ,p_theme_roller_output_file_url=>'#THEME_DB_FILES#10761675651869162.css'
 ,p_theme_roller_read_only=>false
@@ -3783,7 +3783,7 @@ wwv_flow_imp_shared.create_theme_style(
 ||'go-container {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  margin-bottom: 15px;\n}\n\n.cohete-animado {\n  animation: despegar 2.5s ease-in-out infinite;\n  display: inline-block;\n}\n\n.fuego-f'
 ||'uego, .fuego-centro {\n  transform-origin: top center;\n  animation: fuegoFlama 0.3s ease-in-out infinite alternate;\n}\n\n.humo {\n  transform-origin: center;\n  animation: humoFlotante 1.2s infinite ease-out;\n}\n\n.humo-2 { animation-delay: 0.3s; '
 ||'}\n.humo-3 { animation-delay: 0.6s; }\n\n.synpex-texto {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  margin-top: 5px;\n}\n\n.synpex-titulo {\n  font-family: ''Segoe UI'', Tahoma, Geneva, Verdana, sans-serif;\n  font-size: 26'
-||'px;\n  font-weight: 800;\n  color: #1e293b;\n  letter-spacing: 0.5px;\n}\n\n.synpex-subtitulo {\n  font-family: ''Segoe UI'', Tahoma, Geneva, Verdana, sans-serif;\n  font-size: 10px;\n  font-weight: 700;\n  color: #64748b;\n  letter-spacing: 4px;\n  ma'
+||'px;\n  font-weight: 800;\n  color: #1e293b;\n  letter-spacing: 0.5px;\n}\n\n.synpex-subtitulo {\n  font-family: ''Segoe UI'', Tahoma, Geneva, Verdana, sans-serif;\n  font-size: 10px;\n  font-weight: 700;\n  color: rgb(100,116,139);\n  letter-spacing: 4px;\n  ma'
 ||'rgin-top: -3px;\n}","useCustomLess":"N"}'
 ,p_theme_roller_output_file_url=>'#THEME_DB_FILES#10760464494865235.css'
 ,p_theme_roller_read_only=>false
@@ -7429,7 +7429,7 @@ unistr('    <span class="synpex-login-tag">SISTEMA DE GESTI\00D3N</span>'),
 '  .synpex-brand svg path:last-child, .synpex-login-brand svg path:last-child { animation: spxTrace 2.4s ease-in-out infinite; }',
 '  .synpex-login-brand { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 10px 0; }',
 '  .synpex-login-text { display: flex; flex-direction: column; text-align: left; }',
-'  .synpex-login-name { font-family: Inter, system-ui, sans-serif; font-size: 34px; font-weight: 800; letter-spacing: -0.8px; line-height: 1; color: #0f172a; }',
+'  .synpex-login-name { font-family: Inter, system-ui, sans-serif; font-size: 34px; font-weight: 800; letter-spacing: -0.8px; line-height: 1; color: rgb(15,23,42); }',
 '  .synpex-login-tag { font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 3.4px; text-transform: uppercase; color: #0284c7; margin-top: 5px; }',
 '</style>'))
 ,p_page_plug_template_name=>'Login - Synpex'
@@ -8266,7 +8266,7 @@ unistr('<p class="synpex-nota">La contrase\00F1a debe tener al menos 8 caractere
 '  .synpex-volver a { color: #0284c7; text-decoration: none; }',
 '  .synpex-volver a:hover { text-decoration: underline; }',
 '  .synpex-login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 0 10px 0; }',
-'  .synpex-nota { text-align: center; margin: 0 0 10px 0; font-family: Inter, system-ui, sans-serif; font-size: 12px; color: #64748b; }',
+'  .synpex-nota { text-align: center; margin: 0 0 10px 0; font-family: Inter, system-ui, sans-serif; font-size: 12px; color: rgb(100,116,139); }',
 '</style>'))
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -12604,8 +12604,8 @@ unistr('    // 2. Escuchar cuando APEX notifica un mensaje de \00E9xito din\00E1
 '        var t = f.indexOf("NC-") === 0 ? "NC" : (f.indexOf("ND-") === 0 ? "ND" : "FAC");',
 '        var ok = (estado || "").toUpperCase() === "PENDIENTE";',
 '        var etiqueta = "Procesar factura";',
-'        if (t === "NC") { etiqueta = "Procesar nota de cr\u00E9dito"; }',
-'        if (t === "ND") { etiqueta = "Procesar nota de d\u00E9bito"; }',
+'        if (t === "NC") { etiqueta = "Procesar nota de cr\00E9dito"; }',
+'        if (t === "ND") { etiqueta = "Procesar nota de d\00E9bito"; }',
 '        $b.prop("disabled", !ok);',
 '        $b.attr("title", ok ? "" : "Selecciona un documento PENDIENTE de la lista");',
 '        $b.find(".t-Button-label").text(etiqueta);',
@@ -14047,7 +14047,7 @@ unistr('/* Estilo del t\00EDtulo blanco */'),
 '.spx-det tbody tr:nth-child(even) { background: #fafafa; }',
 '.spx-det tbody tr:hover { background: #eef6ff; }',
 '.spx-det tbody tr:last-child td { border-bottom: none; }',
-'.spx-det tfoot td { font-weight: 700; border-top: 1px solid #e5e7eb; color: #0f172a; background: #f8fafc; }',
+'.spx-det tfoot td { font-weight: 700; border-top: 1px solid #e5e7eb; color: rgb(15,23,42); background: #f8fafc; }',
 '/* Las columnas de importe se encogen a su contenido y la descripcion se queda',
 '   con el resto: sin esto N y Codigo se repartian el ancho y la descripcion',
 '   salia en tres renglones. */',
@@ -17857,8 +17857,8 @@ wwv_flow_imp_page.create_page(
 '#R23600000000000070 .a-CardView-items { display: block; }',
 '#R23600000000000070 .a-CardView { display: block; border: none; background: transparent; box-shadow: none; padding: 0; margin: 0; }',
 '#R23600000000000070 .a-CardView-header, #R23600000000000070 .a-CardView-body { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding: 0; border: none; vertical-align: baseline; }',
-'#R23600000000000070 .a-CardView-title { font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #64748b; }',
-'#R23600000000000070 .spx-val { display: inline; font-size: .95rem; font-weight: 700; color: #0f172a; margin: 0; }',
+'#R23600000000000070 .a-CardView-title { font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: rgb(100,116,139); }',
+'#R23600000000000070 .spx-val { display: inline; font-size: .95rem; font-weight: 700; color: rgb(15,23,42); margin: 0; }',
 '#R23600000000000070 .spx-sub { display: inline; font-size: .78rem; color: #94a3b8; margin: 0 0 0 6px; }',
 '',
 '/* Ultimos documentos: lista compacta en dos columnas dentro de su tarjeta. */',
@@ -17867,7 +17867,7 @@ wwv_flow_imp_page.create_page(
 '#R23600000000000060 .a-CardView-header { padding: 0; border-bottom: none; }',
 '#R23600000000000060 .a-CardView-body { padding: 0; }',
 '#R23600000000000060 .a-CardView-title { font-size: .82rem; font-weight: 600; color: #17364a; }',
-'#R23600000000000060 .a-CardView-mainContent div { margin-top: 4px !important; font-size: .78rem !important; color: #64748b !important; }',
+'#R23600000000000060 .a-CardView-mainContent div { margin-top: 4px !important; font-size: .78rem !important; color: rgb(100,116,139) !important; }',
 '',
 '/* Filtros: una barra blanca, como el resto de la app. */',
 '#R23600000000000001 { border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }',
@@ -18178,7 +18178,7 @@ wwv_flow_imp_page.create_card(
 ,p_sub_title_adv_formatting=>false
 ,p_body_adv_formatting=>true
 ,p_body_html_expr=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-top: 6px;">',
+'<div style="font-size: 1.05rem; font-weight: 800; color: rgb(15,23,42); margin-top: 6px;">',
 '    &VALOR.',
 '</div>'))
 ,p_second_body_adv_formatting=>false
@@ -18321,7 +18321,7 @@ wwv_flow_imp_page.create_card(
 ,p_sub_title_adv_formatting=>false
 ,p_body_adv_formatting=>true
 ,p_body_html_expr=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-top: 4px;">',
+'<div style="font-size: 1rem; font-weight: 700; color: rgb(15,23,42); margin-top: 4px;">',
 '    &VALOR.',
 '</div>'))
 ,p_second_body_adv_formatting=>false
@@ -18641,7 +18641,7 @@ unistr('<p class="synpex-nota">La contrase\00F1a debe tener al menos 8 caractere
 '  .synpex-volver { text-align: center; margin: -4px 0 12px 0; font-family: Inter, system-ui, sans-serif; font-size: 13px; }',
 '  .synpex-volver a { color: #0284c7; text-decoration: none; }',
 '  .synpex-login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 0 10px 0; }',
-'  .synpex-nota { text-align: center; margin: 0 0 10px 0; font-family: Inter, system-ui, sans-serif; font-size: 12px; color: #64748b; }',
+'  .synpex-nota { text-align: center; margin: 0 0 10px 0; font-family: Inter, system-ui, sans-serif; font-size: 12px; color: rgb(100,116,139); }',
 '</style>',
 '<script>',
 'document.addEventListener("DOMContentLoaded", function(){',
@@ -18925,7 +18925,7 @@ wwv_flow_imp_page.create_page_plug(
 '<div class="spx-portada">',
 '  <style>',
 '    .spx-portada { --azul-oscuro:#0b2a5b; --azul:#0b72c4; --azul-claro:#e8f2fb; --naranja:#f7941d; --verde:#25d366; --gris:#5b6b80; --borde:#e6ebf3;',
-'      font-family:Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color:#1f2a3a; background:#fff;',
+'      font-family:Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color:#1f2a3a; background:white;',
 '      margin:-16px -16px 0 -16px; padding:0; overflow-x:hidden; }',
 '    .spx-portada *, .spx-portada *::before, .spx-portada *::after { box-sizing:border-box; }',
 '    .spx-portada h1, .spx-portada h2, .spx-portada h3, .spx-portada p, .spx-portada ul { margin:0; }',
@@ -18936,7 +18936,7 @@ wwv_flow_imp_page.create_page_plug(
 '    .spx-centrado { text-align:center; }',
 '    .spx-centrado .spx-seccion-bajada { margin-inline:auto; }',
 '',
-'    .spx-cabecera { display:flex; flex-wrap:wrap; align-items:center; gap:22px; row-gap:10px; padding:16px 6%; border-bottom:1px solid var(--borde); background:#fff; position:relative; z-index:20; }',
+'    .spx-cabecera { display:flex; flex-wrap:wrap; align-items:center; gap:22px; row-gap:10px; padding:16px 6%; border-bottom:1px solid var(--borde); background:white; position:relative; z-index:20; }',
 '    .spx-marca img { display:block; height:76px; width:auto; filter:drop-shadow(0 8px 16px rgba(11,42,91,.16)); }',
 '@keyframes spxFlota {',
 '  0%, 100% { transform: translateY(0) scale(1); }',
@@ -18948,9 +18948,9 @@ wwv_flow_imp_page.create_page_plug(
 '    .spx-menu a:hover, .spx-menu a:focus-visible { color:var(--azul); border-bottom-color:var(--azul); }',
 '',
 '    .spx-menu-movil { display:none; margin-left:auto; position:relative; }',
-'    .spx-menu-movil summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:10px; border:1px solid var(--borde); color:var(--azul-oscuro); background:#fff; }',
+'    .spx-menu-movil summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:10px; border:1px solid var(--borde); color:var(--azul-oscuro); background:white; }',
 '    .spx-menu-movil summary::-webkit-details-marker { display:none; }',
-'    .spx-menu-movil-lista { position:absolute; right:0; top:50px; z-index:30; display:flex; flex-direction:column; min-width:190px; background:#fff;',
+'    .spx-menu-movil-lista { position:absolute; right:0; top:50px; z-index:30; display:flex; flex-direction:column; min-width:190px; background:white;',
 '      border:1px solid var(--borde); border-radius:12px; box-shadow:0 18px 40px -18px rgba(11,42,91,.45); padding:8px; }',
 '    .spx-menu-movil-lista a { color:#1f2a3a; font-size:15px; font-weight:500; padding:10px 12px; border-radius:8px; }',
 '    .spx-menu-movil-lista a:hover { background:var(--azul-claro); color:var(--azul); }',
@@ -18977,7 +18977,7 @@ wwv_flow_imp_page.create_page_plug(
 '',
 '    .spx-mock { position:relative; min-width:0; transform:perspective(1800px) rotateY(-6deg) rotateX(1.5deg); transform-origin:center right; }',
 '    .spx-mock-marco { background:#dfe6ef; border-radius:16px; padding:12px 12px 0; box-shadow:0 30px 60px -25px rgba(11,42,91,.45); }',
-'    .spx-pantalla { background:#fff; border-radius:8px; overflow:hidden; border:1px solid #cdd7e3; display:grid; grid-template-columns:130px minmax(0,1fr); min-height:230px; }',
+'    .spx-pantalla { background:white; border-radius:8px; overflow:hidden; border:1px solid #cdd7e3; display:grid; grid-template-columns:130px minmax(0,1fr); min-height:230px; }',
 '    .spx-pantalla-menu { background:var(--azul-oscuro); color:#cddff2; padding:14px 10px; font-size:10.5px; display:flex; flex-direction:column; gap:11px; }',
 '    .spx-pantalla-menu .item { display:flex; align-items:center; gap:7px; opacity:.78; }',
 '    .spx-pantalla-menu .item.activo { background:var(--azul); color:#fff; border-radius:5px; padding:6px 7px; opacity:1; }',
@@ -18992,11 +18992,11 @@ wwv_flow_imp_page.create_page_plug(
 '    .spx-estado { font-size:7.5px; font-weight:700; text-align:center; padding:3px 0; border-radius:20px; }',
 '    .spx-estado.aprobado { background:#e3f5ea; color:#1a7f4b; }',
 '    .spx-estado.pagada { background:#e8f2fb; color:#0b5fa5; }',
-'    .spx-estado.pendiente { background:#fff2e2; color:#a4620d; }',
+'    .spx-estado.pendiente { background:white2e2; color:#a4620d; }',
 '    .spx-mock-pie { height:16px; background:#cfd8e4; border-radius:0 0 14px 14px; margin:0 34px; }',
 '',
 '    .spx-servicios { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:22px; }',
-'    .spx-servicio { border:1px solid var(--borde); border-radius:14px; padding:26px 22px; background:#fff; display:flex; flex-direction:column; gap:12px; text-align:left; }',
+'    .spx-servicio { border:1px solid var(--borde); border-radius:14px; padding:26px 22px; background:white; display:flex; flex-direction:column; gap:12px; text-align:left; }',
 '    .spx-servicio-icono { width:46px; height:46px; border-radius:12px; flex:none; background:var(--azul-claro); color:var(--azul); display:flex; align-items:center; justify-content:center; }',
 '    .spx-servicio-icono svg { width:24px; height:24px; }',
 '    .spx-servicio h3 { font-size:18px; font-weight:700; color:var(--azul-oscuro); }',
@@ -20712,8 +20712,8 @@ wwv_flow_imp_page.create_page(
 '    border-radius: 6px; padding: 12px 16px; font-size: 0.9rem; color: #475569; }',
 '.spx-banda-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }',
 '.spx-banda-lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: .05em;',
-'    text-transform: uppercase; color: #64748b; }',
-'.spx-banda b { color: #0f172a; font-weight: 700; font-variant-numeric: tabular-nums; }',
+'    text-transform: uppercase; color: rgb(100,116,139); }',
+'.spx-banda b { color: rgb(15,23,42); font-weight: 700; font-variant-numeric: tabular-nums; }',
 '.spx-banda .spx-banda-neto b { color: #0f766e; font-size: 1.05rem; }',
 '/* El informe clasico del IGTF se pinta como una tabla de verdad: ocupa el',
 '   ancho de la tarjeta, el encabezado a la izquierda y las cifras a la derecha. */',
@@ -22074,14 +22074,14 @@ wwv_flow_imp_page.create_page(
 '  var pais = apex.item("P19_COD_PAIS").getValue() || "";',
 '  var rif  = apex.item("P19_RFC").getValue() || "";',
 '  var est  = (apex.item("P19_ESTADO").getValue() || "").toUpperCase();',
-'  var paises = { VE: "Venezuela", MX: "M\u00e9xico" };',
+'  var paises = { VE: "Venezuela", MX: "M\00e9xico" };',
 '  var cab = document.createElement("div");',
 '  cab.className = "spx-emp-cab";',
 '  var titulo = document.createElement("span");',
 '  titulo.className = "spx-emp-nombre";',
 '  titulo.textContent = nom || "Nueva empresa";',
 '  cab.appendChild(titulo);',
-'  var meta = [paises[pais] || pais, rif].filter(function (x) { return x; }).join(" \u00b7 ");',
+'  var meta = [paises[pais] || pais, rif].filter(function (x) { return x; }).join(" \00b7 ");',
 '  if (meta) {',
 '    var m = document.createElement("span");',
 '    m.className = "spx-emp-meta";',
@@ -22119,10 +22119,10 @@ wwv_flow_imp_page.create_page(
 '    d.textContent = texto;',
 '    fila.parentElement.insertBefore(d, fila);',
 '  }',
-'  sub("R43000000000000410", "Informaci\u00f3n fiscal", "P19F_ID_EMPRESA");',
+'  sub("R43000000000000410", "Informaci\00f3n fiscal", "P19F_ID_EMPRESA");',
 '  sub("R43000000000000410", "Contacto", "P19F_DIRECCION_FISCAL");',
 '  sub("R43000000000000410", "Autorizaciones SENIAT", "P19F_NRO_PROVIDENCIA");',
-'  sub("R43000000000000411", "Identificaci\u00f3n", "P19F_IMPRENTA_NOMBRE");',
+'  sub("R43000000000000411", "Identificaci\00f3n", "P19F_IMPRENTA_NOMBRE");',
 '  sub("R43000000000000411", "Contacto", "P19F_IMPRENTA_DIRECCION");',
 '})();',
 '',
@@ -22166,7 +22166,7 @@ wwv_flow_imp_page.create_page(
 '      partes.forEach(function (p) {',
 '        var s = document.createElement("span");',
 '        s.className = "spx-preview-sep";',
-'        s.textContent = "\u00b7";',
+'        s.textContent = "\00b7";',
 '        d.appendChild(s);',
 '        var x = document.createElement("span");',
 '        x.textContent = p.join("");',
@@ -26541,7 +26541,7 @@ wwv_flow_imp_page.create_page(
 '/* Chips ejecutivos bajo el formulario. */',
 '.spx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }',
 '.spx-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #334155; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 999px; padding: 4px 12px; white-space: nowrap; }',
-'.spx-chip b { color: #0f172a; font-weight: 600; }',
+'.spx-chip b { color: rgb(15,23,42); font-weight: 600; }',
 '.spx-chip--doc { background: #eef6ff; border-color: #dbeafe; color: #1d4ed8; }',
 '.spx-chip--mon { background: #f0fdfa; border-color: #ccfbf1; color: #0f766e; }',
 '.spx-chip--ret { background: #fffbeb; border-color: #fde68a; color: #b45309; }',
@@ -26562,8 +26562,8 @@ wwv_flow_imp_page.create_page(
 '/* Banda de pago: tasa BCV, IGTF y neto a pagar en una sola linea. */',
 '.spx-banda { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0ea5e9; border-radius: 6px; padding: 10px 15px; font-size: 0.86rem; color: #475569; }',
 '.spx-banda-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }',
-'.spx-banda-lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #64748b; }',
-'.spx-banda b { color: #0f172a; font-weight: 700; font-variant-numeric: tabular-nums; }',
+'.spx-banda-lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: rgb(100,116,139); }',
+'.spx-banda b { color: rgb(15,23,42); font-weight: 700; font-variant-numeric: tabular-nums; }',
 '.spx-banda .spx-banda-nota { font-size: 0.76rem; color: #94a3b8; }',
 '/* Fila de ISLR debajo de la banda. */',
 '.spx-lineas { width: 100%; margin-top: 10px; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }',
@@ -26579,7 +26579,7 @@ wwv_flow_imp_page.create_page(
 '.spx-det tbody tr:nth-child(even) { background: #fafafa; }',
 '.spx-det tbody tr:hover { background: #eef6ff; }',
 '.spx-det tbody tr:last-child td { border-bottom: none; }',
-'.spx-det tfoot td { font-weight: 700; border-top: 1px solid #e5e7eb; color: #0f172a; background: #f8fafc; }',
+'.spx-det tfoot td { font-weight: 700; border-top: 1px solid #e5e7eb; color: rgb(15,23,42); background: #f8fafc; }',
 '/* Acciones: boton circular de 36 px. */',
 '.spx-acc { white-space: nowrap; }',
 '.spx-acc a { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin: 0 3px; border: 1px solid #e5e7eb; border-radius: 50%; background: #fff; color: #0b807c; text-decoration: none; }',
@@ -26592,7 +26592,7 @@ wwv_flow_imp_page.create_page(
 'textarea#P28_OBSERVACIONES { background: #f8fafc; border: 1px solid #e5e7eb; border-left: 4px solid #94a3b8; border-radius: 6px; padding: 10px 12px; }',
 '.spx-obs-count { font-size: 0.72rem; color: #94a3b8; text-align: right; margin-top: 4px; }',
 '/* Auditoria compacta, al pie. */',
-'.spx-aud { display: flex; flex-direction: column; gap: 2px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; color: #64748b; }',
+'.spx-aud { display: flex; flex-direction: column; gap: 2px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; color: rgb(100,116,139); }',
 '.spx-aud b { color: #334155; font-weight: 600; }',
 '.spx-aud .spx-aud-quien { color: #94a3b8; }',
 '@media (max-width: 767px) {',
@@ -34556,7 +34556,7 @@ wwv_flow_imp_page.create_page_plug(
 '  .synpex-brand svg path:last-child, .synpex-login-brand svg path:last-child { animation: spxTrace 2.4s ease-in-out infinite; }',
 '  .synpex-login-brand { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 0 10px 0; }',
 '  .synpex-login-text { display: flex; flex-direction: column; text-align: left; }',
-'  .synpex-login-name { font-family: Inter, system-ui, sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; color: #0f172a; }',
+'  .synpex-login-name { font-family: Inter, system-ui, sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; color: rgb(15,23,42); }',
 '  .synpex-login-tag { font-family: Inter, system-ui, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #0284c7; margin-top: 4px; }',
 '  @keyframes spxFlota {',
 '    0%, 100% { transform: translateY(0) scale(1); }',
@@ -34900,7 +34900,10 @@ wwv_flow_imp_page.create_page_plug(
 '       a.tipo,',
 '       a.precio_sugerido,',
 '       a.impuesto_aplicable,',
-'       case when nvl(a.estado, ''ACTIVO'') = ''ACTIVO'' then ''ACTIVO'' else ''INACTIVO'' end as estado',
+'       case when nvl(a.estado, ''ACTIVO'') = ''ACTIVO'' then ''ACTIVO'' else ''INACTIVO'' end as estado,',
+'       nvl((select s.cantidad from kardex_saldo s',
+'             where s.id_empresa = a.id_empresa',
+'               and s.id_producto_servicio = a.id_producto_servicio), 0) as existencia',
 '  from producto_servicio a',
 ' where a.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
 '   and (:P40_F_TIPO is null or a.tipo = :P40_F_TIPO)',
@@ -34929,7 +34932,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'primary'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'ID_PRODUCTO_SERVICIO:CODIGO:CODIGO_BARRAS:NOMBRE:TIPO:PRECIO_SUGERIDO:IMPUESTO_APLICABLE:ESTADO:ID_ETIQUETA'
+,p_report_columns=>'ID_PRODUCTO_SERVICIO:CODIGO:CODIGO_BARRAS:NOMBRE:TIPO:EXISTENCIA:PRECIO_SUGERIDO:IMPUESTO_APLICABLE:ESTADO:KARDEX_LINK:ID_ETIQUETA'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000001810)
@@ -35023,6 +35026,29 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
 ,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001992)
+,p_db_column_name=>'EXISTENCIA'
+,p_display_order=>45
+,p_column_identifier=>'J'
+,p_column_label=>'Existencia'
+,p_format_mask=>'999G999G999G990D0000'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001993)
+,p_db_column_name=>'KARDEX_LINK'
+,p_display_order=>85
+,p_column_identifier=>'K'
+,p_column_label=>'Kardex'
+,p_column_link=>'f?p=&APP_ID.:43:&APP_SESSION.::&DEBUG.::P43_ID_ARTICULO:#ID_PRODUCTO_SERVICIO#'
+,p_column_linktext=>'<span class="fa fa-list-ol" aria-hidden="true"></span> Kardex'
+,p_column_type=>'NUMBER'
+,p_use_as_row_header=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(43000000000001818)
@@ -35217,6 +35243,21 @@ wwv_flow_imp_page.create_page_item(
 ,p_help_text=>'Con este porcentaje se propone el impuesto de la empresa al elegir el articulo en una linea.'
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001994)
+,p_name=>'P40_STOCK_MINIMO'
+,p_item_sequence=>65
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001830)
+,p_item_default=>'0'
+,p_prompt=>unistr('Stock m\00EDnimo')
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>10
+,p_format_mask=>'FM999G999G990D0000'
+,p_colspan=>3
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Avisa en Inventario cuando la existencia baja de este numero. 0 = sin aviso.'
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001838)
 ,p_name=>'P40_ESTADO'
 ,p_item_sequence=>70
@@ -35388,7 +35429,7 @@ wwv_flow_imp_page.create_page_process(
 '    apex_util.set_session_state(''P40_TAB'', ''43000000000001830'');',
 '',
 '    for r in (select codigo, codigo_barras, nombre, tipo, precio_sugerido,',
-'                     impuesto_aplicable, estado, descripcion',
+'                     impuesto_aplicable, estado, descripcion, nvl(stock_minimo, 0) stock_minimo',
 '                from producto_servicio',
 '               where id_producto_servicio = v_id',
 '                 and id_empresa = v_emp) loop',
@@ -35399,6 +35440,7 @@ wwv_flow_imp_page.create_page_process(
 '        apex_util.set_session_state(''P40_PRECIO_SUGERIDO'', r.precio_sugerido);',
 '        apex_util.set_session_state(''P40_IMPUESTO_APLICABLE'', r.impuesto_aplicable);',
 '        apex_util.set_session_state(''P40_ESTADO'', r.estado);',
+'        apex_util.set_session_state(''P40_STOCK_MINIMO'', r.stock_minimo);',
 '        apex_util.set_session_state(''P40_DESCRIPCION'', r.descripcion);',
 '    end loop;',
 '    apex_util.set_session_state(''P40_ID_CARGADO'', v_id);',
@@ -35452,9 +35494,9 @@ wwv_flow_imp_page.create_page_process(
 '        -- catalogo, 2026-11-23): aqui solo se muestran como propuesta.',
 '        insert into producto_servicio',
 '               (id_empresa, nombre, descripcion, tipo,',
-'                precio_sugerido, impuesto_aplicable, estado)',
+'                precio_sugerido, impuesto_aplicable, estado, stock_minimo)',
 '        values (v_emp, v_nom, :P40_DESCRIPCION, v_tipo,',
-'                v_precio, v_imp, v_est)',
+'                v_precio, v_imp, v_est, fn_clean_num(:P40_STOCK_MINIMO))',
 '        returning id_producto_servicio, codigo, codigo_barras',
 '             into :P40_ID_ARTICULO, :P40_CODIGO, :P40_CODIGO_BARRAS;',
 '    else',
@@ -35464,6 +35506,7 @@ wwv_flow_imp_page.create_page_process(
 '               tipo = v_tipo,',
 '               precio_sugerido = v_precio,',
 '               impuesto_aplicable = v_imp,',
+'               stock_minimo = fn_clean_num(:P40_STOCK_MINIMO),',
 '               estado = v_est',
 '         where id_producto_servicio = v_id',
 '           and id_empresa = v_emp;',
@@ -35709,6 +35752,815 @@ wwv_flow_imp_shared.create_list_item(
 end;
 /
 
+
+
+begin
+-- ==================== Inventario: paginas 42, 43 y 44 (2026-11-24) ====================
+wwv_flow_imp_page.create_page(
+ p_id=>42
+,p_name=>'Inventario'
+,p_alias=>'INVENTARIO'
+,p_step_title=>'Inventario'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001932)
+,p_plug_name=>'Indicadores'
+,p_static_id=>'inv-kpi'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>1557215235004102827
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_art number; v_uni number; v_bs number; v_ref number;',
+'    v_caja constant varchar2(200) := ''flex:1;min-width:150px;border:1px solid rgb(227,232,239);border-radius:10px;padding:9px 12px;background:white'';',
+'    v_lbl  constant varchar2(200) := ''font-size:.6rem;letter-spacing:.05em;color:rgb(100,116,139)'';',
+'    v_num  constant varchar2(200) := ''font-size:1.25rem;font-weight:700;color:rgb(15,23,42)'';',
+'    v_nls constant varchar2(40) := ''NLS_NUMERIC_CHARACTERS='' || chr(39) || '',.'' || chr(39);',
+'    function f(p_n number) return varchar2 is',
+'    begin',
+'        return to_char(nvl(p_n, 0), ''FM999G999G999G990D00'', v_nls);',
+'    end;',
+'begin',
+'    select count(*), nvl(sum(s.cantidad), 0), nvl(sum(s.valor_bs), 0), nvl(sum(s.valor_ref), 0)',
+'      into v_art, v_uni, v_bs, v_ref',
+'      from kardex_saldo s',
+'     where s.id_empresa = v_emp;',
+'    return ''<div style="display:flex;gap:10px;flex-wrap:wrap">''',
+'        || ''<div style="'' || v_caja || ''"><div style="'' || v_lbl || ''">ARTICULOS</div>''',
+'        || ''<div style="'' || v_num || ''">'' || v_art || ''</div></div>''',
+'        || ''<div style="'' || v_caja || ''"><div style="'' || v_lbl || ''">UNIDADES</div>''',
+'        || ''<div style="'' || v_num || ''">'' || f(v_uni) || ''</div></div>''',
+'        || ''<div style="'' || v_caja || ''"><div style="'' || v_lbl || ''">VALOR (BS)</div>''',
+'        || ''<div style="'' || v_num || ''">'' || f(v_bs) || ''</div></div>''',
+'        || ''<div style="'' || v_caja || ''"><div style="'' || v_lbl || ''">VALOR (DIVISA)</div>''',
+'        || ''<div style="'' || v_num || ''">'' || f(v_ref) || ''</div></div>''',
+'        || ''</div>'';',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_ajax_items_to_submit=>'F_EMPRESA_ACTIVA'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001933)
+,p_plug_name=>'Saldos'
+,p_static_id=>'inv-saldos'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select s.id_producto_servicio,',
+'       a.codigo,',
+'       a.nombre,',
+'       a.tipo,',
+'       s.cantidad,',
+'       s.costo_promedio_bs,',
+'       s.valor_bs,',
+'       s.valor_ref,',
+'       a.stock_minimo,',
+'       case when s.cantidad < 0 then ''NEGATIVO''',
+'            when nvl(a.stock_minimo, 0) > 0 and s.cantidad < a.stock_minimo then ''BAJO''',
+'            else ''OK'' end as situacion,',
+'       s.id_producto_servicio as kardex_link',
+'  from kardex_saldo s',
+'  join producto_servicio a on a.id_producto_servicio = s.id_producto_servicio',
+' where s.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
+' order by a.nombre'))
+,p_plug_source_type=>'NATIVE_IR'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000001934)
+,p_no_data_found_message=>'Esta empresa no tiene existencias todavia: registra una compra o carga el saldo inicial en "Ajuste de inventario".'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(43000000000001935)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'CODIGO:NOMBRE:TIPO:CANTIDAD:COSTO_PROMEDIO_BS:VALOR_BS:VALOR_REF:STOCK_MINIMO:SITUACION:KARDEX_LINK'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001936)
+,p_db_column_name=>'ID_PRODUCTO_SERVICIO'
+,p_display_order=>0
+,p_column_identifier=>'A'
+,p_column_label=>'Id'
+,p_column_type=>'NUMBER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001937)
+,p_db_column_name=>'CODIGO'
+,p_display_order=>10
+,p_column_identifier=>'B'
+,p_column_label=>unistr('C\00F3digo')
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001938)
+,p_db_column_name=>'NOMBRE'
+,p_display_order=>20
+,p_column_identifier=>'C'
+,p_column_label=>unistr('Art\00EDculo')
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001939)
+,p_db_column_name=>'TIPO'
+,p_display_order=>30
+,p_column_identifier=>'D'
+,p_column_label=>'Tipo'
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001940)
+,p_db_column_name=>'CANTIDAD'
+,p_display_order=>40
+,p_column_identifier=>'E'
+,p_column_label=>'Existencia'
+,p_format_mask=>'999G999G999G990D0000'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001941)
+,p_db_column_name=>'COSTO_PROMEDIO_BS'
+,p_display_order=>50
+,p_column_identifier=>'F'
+,p_column_label=>'Costo prom. (Bs)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001942)
+,p_db_column_name=>'VALOR_BS'
+,p_display_order=>60
+,p_column_identifier=>'G'
+,p_column_label=>'Valor (Bs)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001943)
+,p_db_column_name=>'VALOR_REF'
+,p_display_order=>70
+,p_column_identifier=>'H'
+,p_column_label=>'Valor (divisa)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001944)
+,p_db_column_name=>'STOCK_MINIMO'
+,p_display_order=>80
+,p_column_identifier=>'I'
+,p_column_label=>unistr('M\00EDnimo')
+,p_format_mask=>'999G999G999G990D0000'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001945)
+,p_db_column_name=>'SITUACION'
+,p_display_order=>90
+,p_column_identifier=>'J'
+,p_column_label=>unistr('Situaci\00F3n')
+,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<span class="spx-inv-badge spx-inv-#SITUACION#">#SITUACION#</span>'))
+,p_column_type=>'STRING'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001946)
+,p_db_column_name=>'KARDEX_LINK'
+,p_display_order=>100
+,p_column_identifier=>'K'
+,p_column_label=>'Kardex'
+,p_column_link=>'f?p=&APP_ID.:43:&APP_SESSION.::&DEBUG.::P43_ID_ARTICULO:#KARDEX_LINK#'
+,p_column_linktext=>'<span class="fa fa-list-ol" aria-hidden="true"></span> Kardex'
+,p_column_type=>'NUMBER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001947)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol inventario'
+,p_static_id=>'valida-rol-inventario'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page(
+ p_id=>43
+,p_name=>'Kardex'
+,p_alias=>'KARDEX'
+,p_step_title=>'Kardex'
+,p_warn_on_unsaved_changes=>'N'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001950)
+,p_plug_name=>'Filtros'
+,p_static_id=>'kdx-filtros'
+,p_region_template_options=>'#DEFAULT#:t-Region--hideHeader'
+,p_plug_template=>1557215235004102827
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001951)
+,p_name=>'P43_ID_ARTICULO'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001950)
+,p_prompt=>unistr('Art\00EDculo')
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select a.nombre || '' ['' || a.codigo || '']'' as display_value,',
+'       a.id_producto_servicio as return_value',
+'  from producto_servicio a',
+' where a.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
+' order by a.nombre'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Todos --'
+,p_cSize=>40
+,p_colspan=>6
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'case_sensitive', 'N',
+  'display_as', 'DIALOG',
+  'fetch_on_search', 'N',
+  'height', '250',
+  'initial_fetch', 'FIRST_ROWSET',
+  'manual_entry', 'N',
+  'match_type', 'CONTAINS',
+  'min_chars', '0',
+  'title', unistr('Art\00EDculos'),
+  'width', '500')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001952)
+,p_name=>'P43_DESDE'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001950)
+,p_item_default=>'select trunc(sysdate) - 30 from dual'
+,p_item_default_type=>'SQL_QUERY'
+,p_prompt=>'Desde'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>20
+,p_colspan=>3
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_begin_on_new_line=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001953)
+,p_name=>'P43_HASTA'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001950)
+,p_item_default=>'select trunc(sysdate) from dual'
+,p_item_default_type=>'SQL_QUERY'
+,p_prompt=>'Hasta'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>20
+,p_colspan=>3
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001954)
+,p_name=>'P43_TIPO'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001950)
+,p_prompt=>'Tipo'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:Todos;,Compra;ENTRADA_COMPRA,Venta;SALIDA_FACTURA,Devolucion de cliente;ENTRADA_NC_CLIENTE,Nota de debito cliente;SALIDA_ND_CLIENTE,Devolucion a proveedor;SALIDA_NC_PROVEEDOR,Nota de debito proveedor;ENTRADA_ND_PROVEEDOR,Ajuste de entrada;AJUSTE_ENTRADA,Ajuste de salida;AJUSTE_SALIDA,Saldo inicial;SALDO_INICIAL,Reversa de entrada;REVERSA_ENTRADA,Reversa de salida;REVERSA_SALIDA'
+,p_lov_display_null=>'NO'
+,p_cSize=>30
+,p_colspan=>3
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001955)
+,p_button_sequence=>50
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001950)
+,p_button_name=>'BTN_FILTRAR_KARDEX'
+,p_static_id=>'btn-filtrar-kardex'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Filtrar'
+,p_icon_css_classes=>'fa-filter'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001956)
+,p_button_sequence=>60
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001950)
+,p_button_name=>'BTN_VOLVER_INVENTARIO'
+,p_static_id=>'btn-volver-inventario'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver a Inventario'
+,p_button_redirect_url=>'f?p=&APP_ID.:42:&APP_SESSION.::&DEBUG.:::'
+,p_button_css_classes=>'u-pullRight'
+,p_icon_css_classes=>'fa-arrow-left'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001957)
+,p_plug_name=>'Movimientos'
+,p_static_id=>'kdx-mov'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>20
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select m.id_movimiento,',
+'       m.num_movimiento,',
+'       m.fecha_movimiento,',
+'       m.tipo_movimiento,',
+'       m.cantidad * pkg_inventario.fn_signo(m.tipo_movimiento) as cantidad,',
+'       m.costo_unit_bs,',
+'       m.costo_total_bs * pkg_inventario.fn_signo(m.tipo_movimiento) as costo_total_bs,',
+'       m.tasa_cambio,',
+'       sum(m.cantidad * pkg_inventario.fn_signo(m.tipo_movimiento))',
+'           over (partition by m.id_producto_servicio',
+'                 order by m.fecha_movimiento, m.id_movimiento) as saldo_cantidad,',
+'       m.doc_tipo,',
+'       m.motivo',
+'  from kardex_mov m',
+' where m.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
+'   and (:P43_ID_ARTICULO is null or m.id_producto_servicio = :P43_ID_ARTICULO)',
+'   and m.fecha_movimiento >= nvl(to_date(:P43_DESDE, ''DD/MM/YYYY''), date ''1900-01-01'')',
+'   and m.fecha_movimiento < nvl(to_date(:P43_HASTA, ''DD/MM/YYYY''), date ''2999-12-31'') + 1',
+'   and (:P43_TIPO is null or m.tipo_movimiento = :P43_TIPO)',
+' order by m.fecha_movimiento desc, m.id_movimiento desc'))
+,p_plug_source_type=>'NATIVE_IR'
+,p_ajax_items_to_submit=>'P43_ID_ARTICULO,P43_DESDE,P43_HASTA,P43_TIPO'
+);
+wwv_flow_imp_page.create_worksheet(
+ p_id=>wwv_flow_imp.id(43000000000001958)
+,p_no_data_found_message=>'No hay movimientos de inventario en el periodo.'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_lazy_loading=>false
+,p_show_detail_link=>'N'
+,p_owner=>'ADMIN'
+);
+wwv_flow_imp_page.create_worksheet_rpt(
+ p_id=>wwv_flow_imp.id(43000000000001959)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'primary'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_report_columns=>'NUM_MOVIMIENTO:FECHA_MOVIMIENTO:TIPO_MOVIMIENTO:CANTIDAD:COSTO_UNIT_BS:COSTO_TOTAL_BS:TASA_CAMBIO:SALDO_CANTIDAD:DOC_TIPO:MOTIVO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001960)
+,p_db_column_name=>'NUM_MOVIMIENTO'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>unistr('N\00BA')
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001961)
+,p_db_column_name=>'FECHA_MOVIMIENTO'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Fecha'
+,p_column_type=>'DATE'
+,p_column_alignment=>'CENTER'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001962)
+,p_db_column_name=>'TIPO_MOVIMIENTO'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Tipo'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001963)
+,p_db_column_name=>'CANTIDAD'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'Cantidad'
+,p_format_mask=>'999G999G999G990D0000'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001964)
+,p_db_column_name=>'COSTO_UNIT_BS'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Costo unit. (Bs)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001965)
+,p_db_column_name=>'COSTO_TOTAL_BS'
+,p_display_order=>60
+,p_column_identifier=>'F'
+,p_column_label=>'Costo total (Bs)'
+,p_format_mask=>'999G999G999G999G990D00'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001966)
+,p_db_column_name=>'TASA_CAMBIO'
+,p_display_order=>70
+,p_column_identifier=>'G'
+,p_column_label=>'Tasa'
+,p_format_mask=>'FM999G999G999G990D999999'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001967)
+,p_db_column_name=>'SALDO_CANTIDAD'
+,p_display_order=>80
+,p_column_identifier=>'H'
+,p_column_label=>'Saldo'
+,p_format_mask=>'999G999G999G990D0000'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001968)
+,p_db_column_name=>'DOC_TIPO'
+,p_display_order=>90
+,p_column_identifier=>'I'
+,p_column_label=>'Documento'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(43000000000001969)
+,p_db_column_name=>'MOTIVO'
+,p_display_order=>100
+,p_column_identifier=>'J'
+,p_column_label=>'Motivo'
+,p_column_type=>'STRING'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001970)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol kardex'
+,p_static_id=>'valida-rol-kardex'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page(
+ p_id=>44
+,p_name=>'Ajuste de inventario'
+,p_alias=>'AJUSTE-INVENTARIO'
+,p_step_title=>'Ajuste de inventario'
+,p_warn_on_unsaved_changes=>'Y'
+,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4073832297226169690
+,p_page_template_options=>'#DEFAULT#'
+,p_protection_level=>'C'
+,p_page_component_map=>'25'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(43000000000001971)
+,p_plug_name=>'Ajuste'
+,p_static_id=>'ajuste-inv'
+,p_region_css_classes=>'card-3d'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4073835273271169698
+,p_plug_display_sequence=>10
+,p_plug_item_display_point=>'ABOVE'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001972)
+,p_name=>'P44_ID_ARTICULO'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_prompt=>unistr('Art\00EDculo')
+,p_display_as=>'NATIVE_POPUP_LOV'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select a.nombre || '' ['' || a.codigo || '']'' as display_value,',
+'       a.id_producto_servicio as return_value',
+'  from producto_servicio a',
+' where a.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
+'   and a.tipo = ''PRODUCTO''',
+'   and nvl(a.estado, ''ACTIVO'') = ''ACTIVO''',
+' order by a.nombre'))
+,p_lov_display_null=>'NO'
+,p_cSize=>50
+,p_colspan=>12
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Solo articulos (los servicios no llevan inventario).'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'case_sensitive', 'N',
+  'display_as', 'DIALOG',
+  'fetch_on_search', 'N',
+  'height', '250',
+  'initial_fetch', 'FIRST_ROWSET',
+  'manual_entry', 'N',
+  'match_type', 'CONTAINS',
+  'min_chars', '0',
+  'title', unistr('Art\00EDculos'),
+  'width', '500')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001973)
+,p_name=>'P44_TIPO'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_item_default=>'AJUSTE_ENTRADA'
+,p_prompt=>'Tipo de ajuste'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:Entrada;AJUSTE_ENTRADA,Salida;AJUSTE_SALIDA,Carga inicial;SALDO_INICIAL'
+,p_lov_display_null=>'NO'
+,p_cSize=>30
+,p_colspan=>4
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'La carga inicial solo se admite si el articulo no tiene movimientos.'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001974)
+,p_name=>'P44_FECHA'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_item_default=>'select trunc(sysdate) from dual'
+,p_item_default_type=>'SQL_QUERY'
+,p_prompt=>'Fecha'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>20
+,p_colspan=>4
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001975)
+,p_name=>'P44_CANTIDAD'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_prompt=>'Cantidad'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>20
+,p_format_mask=>'FM999G999G999G990D0000'
+,p_colspan=>4
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001976)
+,p_name=>'P44_COSTO_BS'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_prompt=>'Costo unitario (Bs)'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>20
+,p_format_mask=>'FM999G999G999G999G990D00'
+,p_colspan=>4
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Solo para entradas. Si se deja vacio se usa el costo promedio actual.'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001977)
+,p_name=>'P44_MONEDA'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_item_default=>'VES'
+,p_prompt=>'Moneda'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC2:Bolivares;VES,USD;USD'
+,p_lov_display_null=>'NO'
+,p_cSize=>20
+,p_colspan=>4
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001978)
+,p_name=>'P44_TASA'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_item_default=>'1'
+,p_prompt=>'Tasa (Bs por unidad)'
+,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_cSize=>20
+,p_colspan=>4
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Bolivares por unidad de la moneda. En bolivares es 1.'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000001979)
+,p_name=>'P44_MOTIVO'
+,p_item_sequence=>80
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_prompt=>'Motivo'
+,p_display_as=>'NATIVE_TEXTAREA'
+,p_cSize=>60
+,p_cMaxlength=>300
+,p_colspan=>12
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Obligatorio: queda en el kardex (conteo fisico, merma, carga inicial...).'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001980)
+,p_button_sequence=>200
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_button_name=>'BTN_GUARDAR_AJUSTE'
+,p_static_id=>'btn-guardar-ajuste'
+,p_button_action=>'SUBMIT'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Guardar ajuste'
+,p_icon_css_classes=>'fa-floppy-o'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,ALMACEN,PRUEBA'')'
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(43000000000001981)
+,p_button_sequence=>210
+,p_button_plug_id=>wwv_flow_imp.id(43000000000001971)
+,p_button_name=>'BTN_VOLVER_AJUSTE'
+,p_static_id=>'btn-volver-ajuste'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2084305881903810008
+,p_button_image_alt=>'Volver a Inventario'
+,p_button_redirect_url=>'f?p=&APP_ID.:42:&APP_SESSION.::&DEBUG.:::'
+,p_button_css_classes=>'u-pullRight'
+,p_icon_css_classes=>'fa-arrow-left'
+,p_grid_new_row=>'N'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001982)
+,p_process_sequence=>1
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Valida rol ajuste'
+,p_static_id=>'valida-rol-ajuste'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,ALMACEN,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta pagina.'');',
+'    end if;',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000001983)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Guardar ajuste de inventario'
+,p_static_id=>'guardar-ajuste-inventario'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp   number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_art   number := nullif(fn_clean_num(:P44_ID_ARTICULO), 0);',
+'    v_costo number;',
+'    v_tasa  number;',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,ALMACEN,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'    if not fn_usuario_empresa_valida(:APP_USER, v_emp) then',
+'        raise_application_error(-20003, ''No tiene permisos sobre esta empresa.'');',
+'    end if;',
+'    if v_art is null then',
+'        raise_application_error(-20023, ''Elige el articulo.'');',
+'    end if;',
+'',
+'    if trim(nvl(:P44_COSTO_BS, ''#'')) = ''#'' then',
+'        v_costo := null;',
+'    else',
+'        v_costo := fn_clean_num(:P44_COSTO_BS);',
+'    end if;',
+'    if trim(nvl(:P44_TASA, '''')) = '''' then',
+'        v_tasa := 1;',
+'    else',
+'        v_tasa := fn_clean_num(:P44_TASA);',
+'    end if;',
+'',
+'    pkg_inventario.prc_ajuste(',
+'        p_id_empresa    => v_emp,',
+'        p_id_producto   => v_art,',
+'        p_fecha         => nvl(to_date(:P44_FECHA, ''DD/MM/YYYY''), trunc(sysdate)),',
+'        p_tipo          => :P44_TIPO,',
+'        p_cantidad      => fn_clean_num(:P44_CANTIDAD),',
+'        p_costo_unit_bs => v_costo,',
+'        p_moneda        => nvl(:P44_MONEDA, ''VES''),',
+'        p_tasa          => v_tasa,',
+'        p_motivo        => :P44_MOTIVO,',
+'        p_usuario       => :APP_USER);',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(43000000000001980)
+,p_process_success_message=>'Ajuste de inventario guardado.'
+);
+wwv_flow_imp_shared.create_security_scheme(
+ p_id=>wwv_flow_imp.id(43000000000001990)
+,p_name=>'Ver Inventario'
+,p_static_id=>'ver-inventario'
+,p_scheme_type=>'NATIVE_FUNCTION_BODY'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'plsql_function_body', 'return case when fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'') then 1 else 0 end = 1;')).to_clob
+,p_error_message=>'No tiene permisos para ver el inventario.'
+,p_caching=>'BY_USER_BY_PAGE_VIEW'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(43000000000001991)
+,p_list_item_display_sequence=>3
+,p_list_item_link_text=>'Inventario'
+,p_static_id=>'inventario'
+,p_parent_list_item_id=>wwv_flow_imp.id(43000000000001092)
+,p_list_item_link_target=>'f?p=&APP_ID.:42:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-cubes'
+,p_security_scheme=>wwv_flow_imp.id(43000000000001990)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'42,43,44'
+);
+end;
+/
 
 prompt --application/end_environment
 begin

@@ -33,6 +33,8 @@ prompt ============================================================
 @@../tabla/FORMA_PAGO.sql
 @@../tabla/condicion_pago.sql
 @@../tabla/producto_servicio.sql
+@@../tabla/kardex_mov.sql
+@@../tabla/kardex_saldo.sql
 @@../tabla/presupuestos.sql
 @@../tabla/presupuestos_det.sql
 @@../tabla/FACTURAS.sql
@@ -149,6 +151,7 @@ prompt ============================================================
 @@../package/pkg_retenciones.sql
 @@../package/pkg_compras.sql
 @@../package/pkg_compra_detalle.sql
+@@../package/pkg_inventario.sql
 -- Cobros (2026-11-17)
 @@../package/pkg_cobros.sql
 @@../package/pkg_pagos.sql
