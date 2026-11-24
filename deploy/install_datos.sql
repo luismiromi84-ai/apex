@@ -266,3 +266,11 @@ select id_empresa, nombre_empresa, cod_pais, tipo_ident_fiscal from empresas ord
 
 select username, id_empresa, estado, debe_cambiar_clave from usuario order by usuario_id;
 /
+
+-- Inventario (2026-11-24): 1 permite dejar existencias en negativo (decision del
+-- dueno: en Venezuela se despacha antes de que llegue la compra), 0 lo prohibe.
+insert into syn_parametros (clave, valor, descripcion)
+select 'INVENTARIO_PERMITE_NEGATIVO', 1,
+       'Inventario: 1 permite dejar existencias en negativo, 0 lo prohibe' from dual
+ where not exists (select 1 from syn_parametros where clave = 'INVENTARIO_PERMITE_NEGATIVO');
+commit;

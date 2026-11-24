@@ -288,6 +288,11 @@ create or replace package body pkg_compras as
 
         update compras set estado = 'REGISTRADA', igtf_bs = v_igtf, fecha_vencimiento = nvl(fecha_vencimiento, nvl(fecha_emision, trunc(sysdate)) + v_dias), modificado_por = p_usuario, fecha_modificacion = systimestamp where id_compra = p_id_compra;
 
+        -- El inventario se mueve con la compra REGISTRADA (2026-11-24), nunca en
+        -- borrador. Va antes de los comprobantes y en la misma transaccion: si el
+        -- kardex falla, la compra no queda registrada sin existencias.
+        pkg_inventario.prc_desde_compra(p_id_compra, p_usuario);
+
         -- SOLO LAS FACTURAS EMITEN COMPROBANTE (decision del dueno, 2026-11-19): una
         -- nota de credito o de debito no emite, no consume numeracion y no toca el
         -- comprobante de la factura original. Antes la nota emitia un comprobante de
@@ -318,6 +323,7 @@ create or replace package body pkg_compras as
         v_estado  varchar2(20);
         v_empresa number;
         v_pagos   number;
+        v_notas   number;
     begin
         select estado, id_empresa into v_estado, v_empresa
           from compras where id_compra = p_id_compra for update;
@@ -345,6 +351,39 @@ create or replace package body pkg_compras as
                 'La compra ' || p_id_compra || ' tiene ' || v_pagos
                 || ' pagos activos. Anulalos primero para poder anular la compra.');
         end if;
+
+        -- Una nota registrada ya movio inventario (devolvio o sumo mercancia):
+        -- anular la compra primero dejaria el saldo corto.
+        select count(*) into v_notas
+          from compras
+         where id_compra_origen = p_id_compra
+           and estado = 'REGISTRADA'
+           and tipo_documento in ('NC', 'ND');
+        if v_notas > 0 then
+            raise_application_error(-20156,
+                'La compra ' || p_id_compra || ' tiene ' || v_notas
+                || ' nota(s) registrada(s): anulalas primero.');
+        end if;
+
+        -- El inventario se devuelve al anular (2026-11-24). Antes del cambio de
+        -- estado: si el kardex falla, la compra no queda anulada a medias.
+        begin
+            pkg_inventario.prc_reversar('COMPRA', p_id_compra,
+                'Anulacion de la compra ' || p_id_compra, p_usuario);
+        exception
+            when others then
+                if sqlcode between -20999 and -20000 then
+                    raise;
+                end if;
+                prc_log_error(
+                    p_usuario   => nvl(p_usuario, v('APP_USER')),
+                    p_codigo    => 'ORA-' || lpad(to_char(abs(sqlcode)), 5, '0'),
+                    p_mensaje   => 'No se pudo reversar el inventario de la compra',
+                    p_detalle   => sqlerrm,
+                    p_sentencia => dbms_utility.format_error_backtrace);
+                raise_application_error(-20001,
+                    'No se pudo anular la compra. Avisa al administrador.');
+        end;
 
         update compras set estado = 'ANULADA', modificado_por = p_usuario,
                fecha_modificacion = systimestamp

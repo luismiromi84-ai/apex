@@ -632,7 +632,18 @@ create or replace PACKAGE BODY pkg_facturacion AS
         v_id_presupuesto NUMBER := fn_clean_num(TO_CHAR(p_id_presupuesto));
         v_folio          VARCHAR2(30);
         v_cobros         NUMBER;
+        v_estado         VARCHAR2(20);
     BEGIN
+        -- Se bloquea la cabecera: dos anulaciones simultaneas no pueden reversar
+        -- el inventario dos veces.
+        SELECT estado INTO v_estado
+          FROM facturas
+         WHERE id_factura = v_id_factura
+           FOR UPDATE;
+        IF v_estado = 'ANULADA' THEN
+            RETURN;
+        END IF;
+
         -- Con dinero cobrado no se anula el documento: el cobro queda colgando de
         -- una factura muerta y el arqueo no cuadra. Primero se anulan los cobros
         -- (misma regla que «anula la factura antes de cancelar el presupuesto»).
@@ -649,6 +660,25 @@ create or replace PACKAGE BODY pkg_facturacion AS
                 || CASE WHEN v_cobros = 1 THEN ' cobro registrado' ELSE ' cobros registrados' END
                 || ': anula primero los cobros y despues la factura.');
         END IF;
+
+        -- Inventario (2026-11-24): si la factura ya tiene su nota de credito
+        -- timbrada, la devolucion del stock la hizo la NC; revertir aqui la salida
+        -- la devolveria dos veces. Sin NC, se revierte la salida.
+        DECLARE
+            v_nc NUMBER;
+        BEGIN
+            -- Cualquier nota viva (aunque este pendiente) va a devolver el stock:
+            -- si se revierte aqui tambien, el articulo entra dos veces.
+            SELECT COUNT(*) INTO v_nc
+              FROM facturas
+             WHERE NVL(id_factura_origen, 0) = v_id_factura
+               AND tipo_documento = 'NC'
+               AND estado <> 'ANULADA';
+            IF v_nc = 0 THEN
+                pkg_inventario.prc_reversar('FACTURA', v_id_factura,
+                    'Anulacion de la factura ' || v_folio, p_usuario);
+            END IF;
+        END;
 
         UPDATE facturas SET
                estado             = 'ANULADA',
@@ -713,6 +743,10 @@ create or replace PACKAGE BODY pkg_facturacion AS
         IF SQL%ROWCOUNT = 0 THEN
             raise_application_error(-20003, 'No se encontró la factura con ID: ' || v_id_factura);
         END IF;
+
+        -- El inventario se mueve con la factura EMITIDA (2026-11-24) y entra con la
+        -- nota de credito. Antes de remata_origen y en la misma transaccion.
+        pkg_inventario.prc_desde_factura(v_id_factura, p_usuario);
 
         BEGIN
             SELECT id_presupuesto
