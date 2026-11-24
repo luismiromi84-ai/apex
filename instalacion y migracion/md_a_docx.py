@@ -15,11 +15,13 @@ negrita; la fila separadora `|---|` se descarta).
 Desde el 2026-11-08 las tablas son tablas de verdad: la matriz de roles se lee como matriz y no como
 parrafos monoespaciados.
 """
+import os
 import re
 import sys
 
 from docx import Document
-from docx.shared import Pt, RGBColor
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
 def trozos(parrafo, texto):
@@ -110,6 +112,27 @@ def main():
         numerada = re.match(r"^(\d+)\.\s+(.*)$", limpia)
         if numerada:
             trozos(doc.add_paragraph(style="List Number"), numerada.group(2))
+            continue
+        imagen = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)$", limpia)
+        if imagen:
+            alt, rel = imagen.group(1).strip(), imagen.group(2).strip()
+            ruta_img = rel if os.path.isabs(rel) else os.path.join(
+                os.path.dirname(os.path.abspath(origen)), rel.replace("/", os.sep))
+            if os.path.exists(ruta_img):
+                try:
+                    doc.add_picture(ruta_img, width=Inches(6.0))
+                    doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                except Exception as e:
+                    doc.add_paragraph("[imagen no legible: %s (%s)]" % (rel, e))
+            else:
+                doc.add_paragraph("[imagen no encontrada: %s]" % rel)
+            if alt:
+                pie = doc.add_paragraph()
+                pie.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = pie.add_run(alt)
+                run.italic = True
+                run.font.size = Pt(8)
+                run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
             continue
         if limpia.startswith("|"):
             filas = [limpia]
