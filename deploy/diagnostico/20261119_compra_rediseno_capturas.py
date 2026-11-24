@@ -354,7 +354,7 @@ try:
                  'if(!c) return "SIN CABECERA";'
                  'return c.innerText.replace(/\\s+/g," ");})()')
     comprobar("V2 la cabecera trae folio, proveedor, insignia y fecha",
-              isinstance(cab, str) and "CAP-ZZ-2" in cab and "Borrador" in cab
+              isinstance(cab, str) and "CAP-ZZ-2" in cab and "Pendiente" in cab
               and "Proveedor con concepto ISLR" in cab and "/" in cab, cab)
 
     tarjetas = nav.js('(function(){var t=document.querySelectorAll(".spx-resumen .spx-card");'

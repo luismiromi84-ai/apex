@@ -52,7 +52,7 @@ declare
 
 begin
     -- E1: las cinco etiquetas --------------------------------------------------
-    espera_txt('E1', fn_estado_compra('BORRADOR'), 'Borrador', 'etiqueta de BORRADOR');
+    espera_txt('E1', fn_estado_compra('BORRADOR'), 'Pendiente', 'etiqueta de BORRADOR');
     espera_txt('E1', fn_estado_compra('REGISTRADA'), 'Procesada', 'etiqueta de REGISTRADA');
     espera_txt('E1', fn_estado_compra('PARCIAL'), 'Abonada', 'etiqueta de PARCIAL');
     espera_txt('E1', fn_estado_compra('PAGADA'), 'Pagada', 'etiqueta de PAGADA');

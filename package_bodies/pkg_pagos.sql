@@ -304,8 +304,8 @@ create or replace package body pkg_pagos as
                 'El pago esta conciliado: desmarca la conciliacion antes de anularlo.');
         end if;
 
-        update pagos
-           set estado = 'ANULADO', modificado_por = p_usuario, fecha_modificacion = systimestamp
+        update pagos set estado = 'ANULADO', modificado_por = p_usuario,
+               fecha_modificacion = systimestamp
          where id_pago = p_id_pago;
 
         for r in (select d.id_compra
@@ -342,8 +342,7 @@ create or replace package body pkg_pagos as
             raise_application_error(-20113, 'El pago esta anulado: no se concilia.');
         end if;
 
-        update pagos
-           set conciliado = case when upper(nvl(p_conciliado, 'N')) = 'S' then 'S' else 'N' end,
+        update pagos set conciliado = case when upper(nvl(p_conciliado, 'N')) = 'S' then 'S' else 'N' end,
                fecha_conciliacion = case when upper(nvl(p_conciliado, 'N')) = 'S'
                                          then trunc(sysdate) end,
                modificado_por = p_usuario,
@@ -568,6 +567,28 @@ create or replace package body pkg_pagos as
 
         return round(v_total, 2);
     end fn_saldo_favor_proveedor;
+
+    function fn_favor_disponible (
+        p_id_proveedor in number,
+        p_moneda       in varchar2
+    ) return number is
+        v_tasa  number := fn_tasa_moneda(p_moneda);
+        v_total number := 0;
+        v_favor number;
+    begin
+        for r in (select p.id_pago, nvl(nullif(p.tipo_cambio, 0), 1) tc
+                    from pagos p
+                   where p.id_proveedor = p_id_proveedor
+                     and p.estado = 'ACTIVO'
+                     and nvl(p.conciliado, 'N') = 'N') loop
+            v_favor := fn_favor_pago(r.id_pago);
+            if v_favor > 0.01 then
+                v_total := v_total + round(v_favor * r.tc / v_tasa, 2);
+            end if;
+        end loop;
+
+        return round(v_total, 2);
+    end fn_favor_disponible;
 
 end pkg_pagos;
 /

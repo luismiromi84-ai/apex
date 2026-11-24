@@ -2186,8 +2186,7 @@ begin
     for r in (select item_name, item_default
                 from apex_application_page_items
                where application_id = 100
-                 and item_name in ('P13_ID_EMPRESA', 'P7_ID_EMPRESA',
-                                   'P19L_ID_EMPRESA', 'P19F_ID_EMPRESA')) loop
+                 and item_name in ('P13_ID_EMPRESA', 'P7_ID_EMPRESA')) loop
         v_txt := lower(nvl(r.item_default, ' '));
         if instr(v_txt, 'f_empresa_activa') = 0 or instr(v_txt, 'v_empresas_usuario') > 0 then
             insert into tmp_multi_fallas
@@ -2211,9 +2210,35 @@ begin
         end;
         v_n := v_n + 1;
     end loop;
-    if v_n <> 4 then
+    if v_n <> 2 then
         insert into tmp_multi_fallas
-        values ('M17: se midieron ' || v_n || ' defectos de empresa (se esperaban 4)');
+        values ('M17: se midieron ' || v_n || ' defectos de empresa (se esperaban 2)');
+    end if;
+
+    -- La 19 (fiscal y logo) cambio el 2026-11-22: los dos items de empresa son
+    -- OCULTOS y sin defecto propio, y la empresa la resuelve un proceso antes de
+    -- pintar (la que se edita o la activa de la barra). Antes cada pestana tenia su
+    -- combo con 'having count(*) = 1' y, con varias empresas, salia todo en blanco.
+    select count(*) into v_n
+      from apex_application_page_proc
+     where application_id = 100 and page_id = 19
+       and static_id = 'fija-empresa-admin'
+       and instr(process_source, 'F_EMPRESA_ACTIVA') > 0
+       and instr(process_source, 'v_empresas_usuario') > 0;
+    if v_n <> 1 then
+        insert into tmp_multi_fallas
+        values ('M17: no hay proceso que resuelva la empresa de las pestanas de la 19');
+    end if;
+
+    select count(*) into v_n
+      from apex_application_page_items
+     where application_id = 100 and page_id = 19
+       and item_name in ('P19F_ID_EMPRESA', 'P19L_ID_EMPRESA')
+       and item_default is null
+       and display_as_code = 'NATIVE_HIDDEN';
+    if v_n <> 2 then
+        insert into tmp_multi_fallas
+        values ('M17: los items de empresa de la 19 tienen que ser ocultos y sin defecto propio');
     end if;
 end;
 /
@@ -3135,11 +3160,11 @@ select substrb('M43: la 19 tiene '
                || to_char((select count(*) from apex_application_page_items
                             where application_id = 100 and page_id = 19
                               and item_name like 'P19F\_%' escape '\'))
-               || ' items P19F_ (se esperan 15)', 1, 300)
+               || ' items P19F_ (se esperan 16: los 15 de la 18 y el nombre de la empresa)', 1, 300)
   from dual
  where (select count(*) from apex_application_page_items
          where application_id = 100 and page_id = 19
-           and item_name like 'P19F\_%' escape '\') <> 15;
+           and item_name like 'P19F\_%' escape '\') <> 16;
 /
 
 -- M43c: la carga de la pestana lee EMPRESA_FISCAL con el item nuevo.
@@ -3176,14 +3201,15 @@ select substrb('M43: el guardado fiscal no esta condicionado a sus dos botones',
                       and instr(p.condition_expression1, 'BTN_GUARDAR_IMPRENTA') > 0);
 /
 
--- M43f: con varias empresas la carga no elige por su cuenta (having count(*) = 1).
+-- M43f: la carga fiscal ya NO decide con 'having count(*) = 1' (2026-11-22): la
+-- empresa la resuelve el proceso fija-empresa-admin (la que se edita o la activa).
 insert into tmp_multi_fallas
-select substrb('M43: la carga fiscal no usa having count(*) = 1', 1, 300)
+select substrb('M43: la carga fiscal todavia usa having count(*) = 1', 1, 300)
   from dual
- where not exists (select 1 from apex_application_page_proc p
-                    where p.application_id = 100 and p.page_id = 19
-                      and p.process_name = 'Carga datos fiscales'
-                      and instr(lower(p.process_source), 'having count(*) = 1') > 0);
+ where exists (select 1 from apex_application_page_proc p
+                where p.application_id = 100 and p.page_id = 19
+                  and p.process_name = 'Carga datos fiscales'
+                  and instr(lower(p.process_source), 'having count(*) = 1') > 0);
 /
 
 -- M44: el numero 18 se reutilizo para el libro de compras y ventas (la antigua
@@ -3212,11 +3238,11 @@ select substrb('M45: la 19 tiene '
                || to_char((select count(*) from apex_application_page_items
                             where application_id = 100 and page_id = 19
                               and item_name like 'P19L\_%' escape '\'))
-               || ' items P19L_ (se esperan 4)', 1, 300)
+               || ' items P19L_ (se esperan 5: los 4 del logo y el nombre de la empresa)', 1, 300)
   from dual
  where (select count(*) from apex_application_page_items
          where application_id = 100 and page_id = 19
-           and item_name like 'P19L\_%' escape '\') <> 4;
+           and item_name like 'P19L\_%' escape '\') <> 5;
 /
 
 insert into tmp_multi_fallas

@@ -8,7 +8,7 @@
 #   K0  la pagina abre y el login funciona con un usuario temporal de la empresa 1
 #   K1  la fila de indicadores va ENCIMA del informe y tiene sus cuatro tarjetas
 #   K2  los cuatro numeros que se ven son los de la base
-#   K3  los cuatro chips estan y el activo es Todos
+#   K3  los seis chips estan y el activo es Todos
 #   K4  el chip Procesada filtra: quedan las compras registradas y el chip queda activo
 #   K5  el chip Borrador filtra: quedan los borradores y la insignia sale ambar
 #   K6  el chip Anulada deja el informe vacio, y volver a Todos lo repone
@@ -151,12 +151,17 @@ print("base: mes=%s total=%s retencion=%s borradores=%s estados=%s"
 
 
 def num(txt):
-    """'2,409,316.81' -> 2409316.81 ; '&#8212;' -> None"""
+    """'2.409.316,81' -> 2409316.81 ; '&#8212;' -> None.
+
+    2026-11-23: la app pinta el formato venezolano (miles con punto, decimales
+    con coma). El test se habia escrito contra '2,409,316.81', que era el par
+    NLS al reves: se corrigio en la app y aqui.
+    """
     t = (txt or "").strip()
     if t in ("", "—", "&#8212;"):
         return None
     try:
-        return float(t.replace(",", ""))
+        return float(t.replace(".", "").replace(",", "."))
     except ValueError:
         return None
 
@@ -195,7 +200,11 @@ try:
     comprobar("K1 la fila de indicadores va encima del informe",
               bool(g) and g["k"] < g["l"], geo)
     comprobar("K1 son cuatro tarjetas", bool(g) and g["cards"] == 4, g and g["cards"])
-    comprobar("K3 estan los cuatro chips", bool(g) and g["chips"] == 4, g and g["chips"])
+    comprobar("K3 estan los seis chips", bool(g) and g["chips"] == 6, g and g["chips"])
+    etiquetas = nav.js('JSON.stringify([...document.querySelectorAll(".spx-filtro")]'
+                       '.map(function(x){return x.innerText.trim();}))')
+    comprobar("K3 el chip del pendiente se lee Pendiente",
+              "Pendiente" in str(etiquetas) and "Borrador" not in str(etiquetas), etiquetas)
 
     # --- K2: los cuatro numeros -------------------------------------------
     tarjetas = nav.js('(function(){return JSON.stringify([...document.querySelectorAll(".spx-kpis .spx-card")]'
@@ -217,8 +226,10 @@ try:
         comprobar("K2 «Retencion IVA (Bs)» es la suma de la base",
                   num(t[2]["v"]) is not None and abs(num(t[2]["v"]) - float(ret_bs)) < 0.01,
                   (t[2]["v"], round(float(ret_bs), 2)))
-        comprobar("K2 «En borrador» es el conteo de borradores", num(t[3]["v"]) == float(n_bor),
+        comprobar("K2 «En borrador» es el conteo de pendientes", num(t[3]["v"]) == float(n_bor),
                   (t[3]["v"], n_bor))
+        comprobar("K2 la tarjeta se lee Pendientes",
+                  str(t[3]["l"]).strip().lower() == "pendientes", t[3]["l"])
 
     # --- K7: las insignias -------------------------------------------------
     insig = nav.js('(function(){var b=document.querySelectorAll("#%s .status-badge");'
@@ -254,6 +265,23 @@ try:
     comprobar("K3 todos los documentos: una fila por compra",
               f0["n"] == f0["n"] and f0["n"] >= n_mes, (f0["n"], n_mes))
 
+    # --- K9: el saldo solo en una factura procesada -----------------------
+    saldos = nav.js('(function(){var f=[...document.querySelectorAll("#%s .a-IRR-table tbody tr")]'
+                    '.filter(function(tr){return tr.querySelectorAll("td").length > 6;});'
+                    'var mal=[],con=0;f.forEach(function(tr){var c=tr.querySelectorAll("td");'
+                    'var tipo=(c[3].innerText||"").trim();var saldo=(c[11].innerText||"").trim();'
+                    'var est=(c[12].innerText||"").trim();'
+                    'var debe=(tipo==="FAC" && ["Procesada","Abonada","Pagada"].indexOf(est)>=0);'
+                    'if(saldo!==""){con=con+1;}'
+                    'if(debe===(saldo==="")){mal.push(tipo+"/"+est+"="+saldo);}});'
+                    'return JSON.stringify({n:f.length,con:con,mal:mal});})()' % LISTA)
+    try:
+        s = json.loads(saldos)
+    except Exception:
+        s = None
+    comprobar("K9 un borrador o una nota no muestran saldo", bool(s) and not s["mal"], saldos)
+    comprobar("K9 y las facturas procesadas si lo muestran", bool(s) and s["con"] > 0, saldos)
+
     # --- K4: chip Procesada ------------------------------------------------
     nav.js('(function(){var a=[...document.querySelectorAll(".spx-filtro")]'
            '.find(function(x){return x.getAttribute("data-filtro")==="PROCESADA";});a.click();})()')
@@ -265,27 +293,27 @@ try:
     activo1 = nav.js('(function(){var a=document.querySelector(".spx-filtro.is-active");'
                      'return a ? a.getAttribute("data-filtro") : "NINGUNO";})()')
     comprobar("K4 el chip activo se pinta como tal", activo1 == "PROCESADA", activo1)
-    comprobar("K4 no queda ningun documento en borrador en la lista",
-              all("Borrador" not in b for b in f1["badges"]), f1["badges"])
+    comprobar("K4 no queda ningun documento pendiente en la lista",
+              all("Pendiente" not in b for b in f1["badges"]), f1["badges"])
 
-    # --- K5: chip Borrador -------------------------------------------------
+    # --- K5: chip Pendiente -------------------------------------------------
     nav.js('(function(){var a=[...document.querySelectorAll(".spx-filtro")]'
            '.find(function(x){return x.getAttribute("data-filtro")==="BORRADOR";});a.click();})()')
     ok = nav.esperar('apex.item("P27_FILTRO").getValue() === "BORRADOR"', 45)
     time.sleep(2)
     f2 = filas()
-    comprobar("K5 el chip Borrador filtra",
+    comprobar("K5 el chip Pendiente filtra",
               ok and f2["n"] == por_estado.get("BORRADOR", 0), (ok, f2["n"], por_estado))
     if f2["n"] > 0:
         color = nav.js('(function(){var b=[...document.querySelectorAll("#%s .status-badge")]'
-                       '.find(function(x){return /Borrador/.test(x.innerText);});'
-                       'if(!b) return "SIN BORRADOR";'
+                       '.find(function(x){return /Pendiente/.test(x.innerText);});'
+                       'if(!b) return "SIN PENDIENTE";'
                        'return window.getComputedStyle(b).color + "|" + b.className;})()' % LISTA)
-        print("  insignia Borrador:", color)
-        comprobar("K5 la insignia del borrador es ambar",
+        print("  insignia Pendiente:", color)
+        comprobar("K5 la insignia del pendiente es ambar",
                   "rgb(180, 83, 9)" in str(color), color)
     else:
-        comprobar("K5 la empresa 1 no tiene compras en borrador (dato, no fallo)", True)
+        comprobar("K5 la empresa 1 no tiene compras pendientes (dato, no fallo)", True)
 
     # --- K6: chip Anulada y vuelta a Todos ---------------------------------
     nav.js('(function(){var a=[...document.querySelectorAll(".spx-filtro")]'

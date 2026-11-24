@@ -252,16 +252,16 @@ begin
         if dbms_lob.instr(v_html, '<div class="spx-card-val">' || v_n || '</div>') = 0 then
             falla('K6', 'Compras del mes no es ' || v_n);
         end if;
-        v_esp := to_char(v_tot, 'FM999G999G999G999G990D00', 'NLS_NUMERIC_CHARACTERS=''.,''');
+        v_esp := to_char(v_tot, 'FM999G999G999G999G990D00', 'NLS_NUMERIC_CHARACTERS='',.''');
         if dbms_lob.instr(v_html, v_esp) = 0 then
             falla('K6', 'Total compras (Bs) no es ' || v_esp);
         end if;
-        v_esp := to_char(v_ret, 'FM999G999G999G999G990D00', 'NLS_NUMERIC_CHARACTERS=''.,''');
+        v_esp := to_char(v_ret, 'FM999G999G999G999G990D00', 'NLS_NUMERIC_CHARACTERS='',.''');
         if dbms_lob.instr(v_html, v_esp) = 0 then
             falla('K6', 'Retencion IVA (Bs) no es ' || v_esp);
         end if;
         if dbms_lob.instr(v_html, '<div class="spx-card-val">' || v_bor || '</div>') = 0 then
-            falla('K6', 'En borrador no es ' || v_bor);
+            falla('K6', 'Pendientes no es ' || v_bor);
         end if;
 
         -- Y la empresa sin compras pinta guiones, no ceros.
@@ -288,7 +288,7 @@ begin
           from apex_application_pages
          where application_id = 100 and page_id = 27;
         for c in (select column_value as cls from table(sys.odcivarchar2list(
-                      '.status-BORRADOR', '.status-REGISTRADA', '.status-ANULADA',
+                      '.status-BORRADOR', '.status-Pendiente', '.status-REGISTRADA', '.status-ANULADA',
                       '.status-badge', '.status-dot', '.spx-kpis', '.spx-card',
                       '.spx-filtros', '.spx-filtro', '.spx-card-val'))) loop
             if instr(v_txt, c.cls) = 0 then
@@ -311,12 +311,15 @@ begin
 
     ------------------------------------------------------------------ K8
     begin
-        -- Las columnas del informe por defecto, tal como estaban.
+        -- Las columnas del informe por defecto, tal como estaban. Se mira el
+        -- informe PUBLICO: APEX guarda una vista privada por usuario en cuanto
+        -- alguien toca el informe, y esa no es la definicion de la app.
         select count(*) into v_n
           from apex_application_page_ir_rpt
          where application_id = 100 and page_id = 27
+           and status = 'PUBLIC'
            and report_columns = 'ID_COMPRA:PROVEEDOR:RIF:TIPO_DOCUMENTO:FOLIO_FACTURA:NRO_CONTROL:'
-              || 'FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:MONTO_TOTAL:RETENCION_IVA_BS:SALDO:ESTADO';
+              || 'FECHA_EMISION:FECHA_VENCIMIENTO:COD_MONEDA:MONTO_TOTAL:RETENCION_IVA_BS:SALDO:ESTADO:PAGAR';
         if v_n <> 1 then
             falla('K8', 'cambiaron las columnas del informe por defecto');
         end if;

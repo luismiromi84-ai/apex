@@ -170,11 +170,13 @@ select object_type, count(*) as cantidad
 
 -- ============================================================
 -- 7. Funciones y procedimientos sueltos
---    Esperado (2026-11-08): 18 funciones y 7 procedimientos.
+--    Esperado (2026-11-23): 17 funciones y 7 procedimientos.
+--    (fn_tasa_cambio se elimino ese dia: no la usaba nadie y devolvia un
+--     factor a USD, lo contrario de la regla del sistema.)
 --    Funciones: FN_ASIGNAR_FOLIO, FN_AUTENTICAR_USUARIO, FN_CLEAN_NUM,
 --              FN_ERROR_HANDLER, FN_FACTURA_EDITABLE, FN_FACTURA_PROPIO,
 --              FN_PASSWORD_ES_LEGADO, FN_PRESUPUESTO_EDITABLE,
---              FN_PRESUPUESTO_PROPIO, FN_SIGUIENTE_FOLIO, FN_TASA_CAMBIO,
+--              FN_PRESUPUESTO_PROPIO, FN_SIGUIENTE_FOLIO,
 --              FN_TASA_VES, FN_TIENE_ROL, FN_TRANSICION_ESTADO_VALIDA,
 --              FN_USUARIO_EMPRESA_VALIDA, FN_VALIDAR_TASA_DOCUMENTO,
 --              FN_VERIFICAR_PASSWORD, SYPEX_HASH_PASSWORD

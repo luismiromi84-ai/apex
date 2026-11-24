@@ -1,0 +1,76 @@
+SESION 2026-11-23 (decima): pagina 40, fn_tasa_cambio, reglas de negocio y manual
+=================================================================================
+
+1) PAGINA 40 - rejilla
+---------------------
+Antes:  Codigo(3) Barras(3) Nombre(6) / Tipo(3) Precio(3) / IVA(3) Estado(3) / Desc(12)
+Ahora:  Codigo(3) Barras(3) Nombre(6) / Tipo(3) Precio(3) IVA(3) Estado(3) / Desc(12)
+
+Medido en navegador (Edge headless, 1440x1000, cajas en px):
+  nombre  left=701  top=1062  width=668
+  tipo    left=33   top=1126  width=334
+  precio  left=367  top=1126  width=334
+  iva     left=701  top=1126  width=334   <- debajo del Nombre
+  estado  left=1034 top=1126  width=334
+  fila 12 columnas: borde derecho 1368 vs 1369 del Nombre (1 px de redondeo)
+
+2) PAGINA 40 - el codigo interno no seguia al tipo
+-------------------------------------------------
+Medido: la accion dinamica art-codigo-tipo SI se disparaba (1 peticion wwv_flow.ajax)
+pero P40_CODIGO es de solo lectura (aria-readonly=true) y APEX IGNORA el valor que
+una accion dinamica devuelve a un item read-only. Sintoma: Tipo=Producto con SERV-00003.
+
+Arreglo: P40_TIPO lleva page_action_on_selection=SUBMIT (atributo del plugin, no existe
+p_page_action_on_selection en create_page_item); el codigo se repropone en el servidor
+(carga-articulo) y la accion dinamica se elimino.
+
+Verificado en navegador:
+  A) al abrir              SERV-00003 / Servicio
+  B) Editar un Producto    PRODUCTO / PROD-00001
+  C) Nuevo articulo        SERVICIO / SERV-00003 / nombre vacio / ACTIVO
+  D) tipo = Producto       PRODUCTO / PROD-00002
+  E) tipo = Servicio       SERVICIO / SERV-00003
+  F) editar + cambiar tipo: se conserva lo tecleado y el codigo no cambia
+
+Trampa nueva: con el submit del tipo, carga-articulo recargaba la fila y borraba lo
+tecleado. Se agrego el item oculto P40_ID_CARGADO y la fila se carga una sola vez.
+
+Prueba reutilizable: deploy/diagnostico/20261123_pagina40_rejilla_tipo.py  -> FALLAS=0
+
+3) FN_TASA_CAMBIO eliminada
+--------------------------
+Medido antes de borrarla (WKSP_SYPEXWS):
+  dependencias en ALL_DEPENDENCIES ...... 0
+  grants ................................ 0
+  sinonimos ............................. 0
+  menciones en regiones/procesos/DA/LOV . 0
+  en el export .......................... 0
+
+Migracion: deploy/migrations/20261123_quitar_fn_tasa_cambio.sql (idempotente)
+Fuera de: deploy/install.sql, deploy/verify_plain.sql, funciones/
+Despues: 0 invalidos; el inventario de instalacion limpia en FALLAS=0.
+
+4) TASA DEL VIERNES = SABADO Y DOMINGO
+-------------------------------------
+Regla del negocio, confirmada por el dueno: el BCV no publica en fin de semana, el job
+repite el effective_date del viernes y fn_tasa_ves devuelve esa ultima. NO es una falla.
+Documentado en REGLAS_DE_NEGOCIO.md (seccion 6) y en AGENTS.md.
+
+5) PUBLICACION EN GITHUB CON LOS .MD
+------------------------------------
+El repositorio es PUBLICO (medido con la API: "visibility":"public").
+deploy/publicar_github.py ahora publica el arbol completo del HEAD y REDACTAN al vuelo
+en .md/.txt las claves de prueba (********...) y los correos personales.
+Primer --dry-run: 851 archivos, 62 valores tapados, 215 archivos cambiados.
+
+6) VERIFICACIONES DE LA SESION
+-----------------------------
+  import del export ................ 109 sentencias OK
+  rejilla de 12 columnas ........... FALLAS=0
+  procesos de pagina ................ 128, FALLAS=0
+  pagina 40 (navegador, 16 casos) ... FALLAS=0
+  articulos (SQL, A1-A10) ........... FALLAS=0
+  chips y catalogo (navegador) ...... FALLAS=0
+  portada (paginas y guardas) ....... FALLAS=0
+  instalacion limpia (inventario) ... FALLAS=0
+  objetos invalidos ................. 0

@@ -1524,7 +1524,7 @@ begin
         if fn_estado_compra('REGISTRADA') <> 'Procesada' then
             falla('R12', 'la etiqueta de REGISTRADA no es Procesada');
         end if;
-        if fn_estado_compra('BORRADOR') <> 'Borrador' or fn_estado_compra('ANULADA') <> 'Anulada' then
+        if fn_estado_compra('BORRADOR') <> 'Pendiente' or fn_estado_compra('ANULADA') <> 'Anulada' then
             falla('R12', 'las otras etiquetas de estado no cuadran');
         end if;
         -- Un valor que no es un estado conocido se devuelve tal cual: la funcion es
@@ -1538,7 +1538,7 @@ begin
         -- se procese la ultima), se comprueba el invariante de verdad: que ninguna
         -- compra tenga guardada una ETIQUETA en ESTADO.
         select count(*) into v_n from compras
-         where estado in ('Borrador', 'Procesada', 'Anulada');
+         where estado in ('Pendiente', 'Procesada', 'Abonada', 'Pagada', 'Anulada');
         if v_n > 0 then
             falla('R12', 'hay ' || v_n || ' compras con la etiqueta guardada en ESTADO');
         end if;

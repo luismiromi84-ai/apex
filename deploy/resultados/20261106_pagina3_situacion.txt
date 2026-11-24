@@ -4,7 +4,7 @@ Aplicado con: python deploy/conexion/importar_export.py pagina_apex/f100.sql
                (72 sentencias ejecutadas OK en 4.2 s)
 Verificacion: python deploy/diagnostico/20261106_pagina3_situacion.py
                (escrita antes del cambio; fallaba con 6 comprobaciones)
-HTTP:         python deploy/conexion/abrir_pagina.py admin.demo 'Prueba#2026' 3 ...
+HTTP:         python deploy/conexion/abrir_pagina.py admin.demo '********' 3 ...
 Regresion:    python deploy/diagnostico/20261105_portada_verificacion.py
 == estructura de la region ┬½Gestion de Usuarios┬╗ ==
   [OK   ] la region sigue siendo Interactive Report (NATIVE_IR)

@@ -9,20 +9,46 @@
 -- Tambien sirve para las series del PROVEEDOR en las compras (2026-11-18):
 -- FAC_PROV -> '45' y CONTROL_PROV -> '00-000045'. Esas series son internas del
 -- sistema para no teclearlas a mano; el papel del proveedor sigue mandando.
+--
+-- Y para las series del catalogo (2026-11-23): ARTICULO -> '10000009' (codigo
+-- de barras) y PROD / SERV -> 'PROD-00001' / 'SERV-00001' (codigo interno).
 -- =============================================================================
 
 create or replace function fn_siguiente_folio (
     p_id_empresa in number,
     p_tipo       in varchar2
 ) return varchar2 is
-    v_tipo varchar2(20) := upper(trim(p_tipo));
-    v_num  number;
+    v_tipo  varchar2(20) := upper(trim(p_tipo));
+    v_num   number;
+    v_desde empresa_fiscal.control_desde%type;
+    v_ancho pls_integer;
+    v_pref  varchar2(30);
 begin
     select nvl(max(ultimo), 0) + 1
       into v_num
       from folio_contador
      where id_empresa = p_id_empresa
        and tipo       = v_tipo;
+
+    -- CONTROL (2026-11-23): la vista previa del numero de control sale del rango
+    -- de la providencia, igual que fn_asignar_control, pero SIN consumirlo.
+    if v_tipo = 'CONTROL' then
+        begin
+            select control_desde
+              into v_desde
+              from empresa_fiscal
+             where id_empresa = p_id_empresa;
+        exception
+            when no_data_found then
+                return null;
+        end;
+        if v_desde is null then
+            return null;
+        end if;
+        v_ancho := length(regexp_substr(v_desde, '[0-9]+$'));
+        v_pref  := substr(v_desde, 1, length(v_desde) - v_ancho);
+        return v_pref || lpad(to_char(v_num), v_ancho, '0');
+    end if;
 
     return case v_tipo
              when 'PRESUPUESTO'  then to_char(v_num)
@@ -31,6 +57,9 @@ begin
              when 'ND'           then 'ND-' || v_num
              when 'FAC_PROV'     then to_char(v_num)
              when 'CONTROL_PROV' then '00-' || lpad(to_char(v_num), 6, '0')
+             when 'ARTICULO'     then lpad(to_char(10000000 + v_num), 8, '0')
+             when 'PROD'         then 'PROD-' || lpad(to_char(v_num), 5, '0')
+             when 'SERV'         then 'SERV-' || lpad(to_char(v_num), 5, '0')
              else to_char(v_num)
            end;
 end fn_siguiente_folio;

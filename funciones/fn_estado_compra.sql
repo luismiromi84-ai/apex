@@ -5,7 +5,7 @@
 -- El valor guardado en COMPRAS.ESTADO no cambia: de el dependen las condiciones
 -- de servidor de la pagina 28, la emision de los comprobantes y el libro.
 --
---   select fn_estado_compra('BORRADOR')  from dual;  -> Borrador
+--   select fn_estado_compra('BORRADOR')  from dual;  -> Pendiente
 --   select fn_estado_compra('REGISTRADA') from dual;  -> Procesada
 --   select fn_estado_compra('PARCIAL')    from dual;  -> Abonada
 --   select fn_estado_compra('PAGADA')     from dual;  -> Pagada
@@ -17,6 +17,10 @@
 -- "Procesada" es la palabra que usa el cliente para la compra ya registrada y
 -- emitidos sus comprobantes de retencion: en Venezuela la factura de compra no se
 -- "timbra", la procesa el receptor.
+--
+-- "Pendiente" (2026-11-22, pedido del dueno): el documento capturado que todavia
+-- no se ha procesado. El valor guardado SIGUE SIENDO BORRADOR; solo cambia lo que
+-- se lee, igual que "Procesada".
 -- =============================================================================
 
 create or replace function fn_estado_compra (
@@ -24,7 +28,7 @@ create or replace function fn_estado_compra (
 ) return varchar2 is
 begin
     return case upper(nvl(p_estado, '#'))
-               when 'BORRADOR'   then 'Borrador'
+               when 'BORRADOR'   then 'Pendiente'
                when 'REGISTRADA' then 'Procesada'
                when 'PARCIAL'    then 'Abonada'
                when 'PAGADA'     then 'Pagada'

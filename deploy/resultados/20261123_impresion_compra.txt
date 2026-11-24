@@ -1,0 +1,65 @@
+La factura de compra en papel (pagina 39) - 2026-11-23
+======================================================
+
+Era el ultimo documento del modulo de compras sin impresion: la 31 imprime el
+comprobante de retencion, no la factura del proveedor.
+
+QUE SE HIZO
+-----------
+- funciones/fn_imprimir_compra.sql: FACTURA DE COMPRA (logo, receptor, proveedor
+  emisor con RIF/direccion/contacto, N del proveedor, N de control, fecha,
+  recepcion, vencimiento, forma de pago, moneda y tasa; lineas; totales en la
+  moneda del documento y en Bs; retenciones IVA e ISLR; IGTF; neto a pagar;
+  chips de comprobantes emitidos; nota de que el documento es del proveedor).
+  NO calcula IGTF ni retenciones: lee la foto de la compra. NULL si no existe.
+- Pagina 39 COMPRA-IMPRESA: region dinamica con la funcion, item oculto
+  P39_ID_COMPRA, boton Imprimir (u-no-print + window.print) y dos guardas:
+  valida-rol-compra-print (ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA)
+  y valida-empresa-compra-print (fn_usuario_empresa_valida, -20003). Sin menu.
+- Pagina 28: boton "Imprimir compra" (secuencia 235) -> REDIRECT_PAGE a la 39
+  con P39_ID_COMPRA. Sirve tambien para revisar un documento Pendiente.
+- deploy/install.sql carga la funcion; migracion 20261123_imprimir_compra.sql
+  (funcion + validacion) para bases existentes.
+
+VERIFICACION (test primero: se le vio fallar)
+----------------------------------------------
+  20261123_imprimir_compra_verificacion.sql   C1-C8   RED FALLAS=11 -> GREEN 0
+  20261119_compras_navegador.py C9 (CDP)               FALLAS=0
+  Capturas: deploy/resultados/20261123_factura_compra.png (clic real en la app)
+            y 20261123_factura_compra_papel.png (el documento solo, desde la
+            funcion a un HTML y capturado con Edge headless)
+
+  C5 mide el IGTF CONGELADO con una compra temporal (igtf_bs=123,45) y la
+  empresa en NO SPE dentro de un savepoint: con el calculo en vivo daria 0.
+  C4 exige que un BORRADOR no invente numero de comprobante.
+
+DOS DETALLES QUE CAZO LA CAPTURA (no el test)
+---------------------------------------------
+- El "-" de un campo vacio salia como texto literal "&mdash;" porque f_txt
+  escapaba la entidad. Se corrige con case when ... is null then '&mdash;';
+  NO con nvl(...,'&mdash;').
+- "Recepcion" iba sin tilde: Recepci&oacute;n.
+
+REGRESION EN VERDE
+------------------
+  20261119_compras_navegador.py C1-C9        FALLAS=0
+  20261119_compras_estetica.py E1-E11        FALLAS=0
+  20261122_imprimir_pago_verificacion.sql    FALLAS=0
+  20261122_igtf_congelado_verificacion.sql   FALLAS=0
+  20261119_compra_igtf_verificacion.sql      FALLAS=0
+  20261119_compra_nota_afectada_verificacion FALLAS=0
+  20261117_grid_paginas_verificacion.py      FALLAS=0
+  20261109_compilar_procesos_pagina.py       121 procesos
+  20261105_portada_verificacion.py           FALLAS=0 (41 paginas, 33 guardas)
+
+CONTADORES
+----------
+41 paginas (0 global, 1-39 y 9999), 33 guardas de rol, 106 sentencias,
+121 procesos, 0 objetos invalidos. Import: 106 sentencias en 15.5 s
+(primera vez; el de la verificacion, 8-9 s).
+
+PENDIENTE QUE SIGUE
+-------------------
+Formato real del comprobante de retencion (si el contador usa uno propio), el
+resto de conceptos de tarifa plana del ISLR, contabilidad, conciliacion
+bancaria automatica y CFDI de Mexico.

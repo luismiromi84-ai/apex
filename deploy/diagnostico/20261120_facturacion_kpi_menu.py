@@ -182,9 +182,12 @@ try:
                             "Por cobrar (Bs)", "Saldo vencido (Bs)"], etiquetas)
 
     def num(txt):
-        # el formato de la tarjeta es FM999G999G999G999G990D00 con NLS '.,':
-        # la coma son los miles y el punto el decimal
-        return txt.replace(",", "") if txt != "—" else None
+        # 2026-11-23: el formato de la tarjeta es el venezolano (miles con punto,
+        # decimales con coma) con el NLS '.,'. Antes el par estaba al reves y el
+        # test se escribio contra '3,682,305.83', que era el fallo.
+        if txt in ("", "—", "&#8212;"):
+            return None
+        return txt.replace(".", "").replace(",", ".")
 
     valores = [num(t["val"]) for t in leidas]
     comprobar("K7 los numeros coinciden con la base",

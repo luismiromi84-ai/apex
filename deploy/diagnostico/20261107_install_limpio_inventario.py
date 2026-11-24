@@ -293,7 +293,9 @@ def main():
     else:
         total, activos = islr_base
         activos = activos or 0
-        if total < len(ISLR_CODIGOS) or activos != ISLR_ACTIVOS:
+        # Se exige el catalogo SEMBRADO, no que sea exactamente ese: el cliente puede
+        # agregar conceptos desde la pagina 34 (paso con el 071, 2026-11-22).
+        if total < len(ISLR_CODIGOS) or activos < ISLR_ACTIVOS:
             fallas += 1
             print("\n[FALLA] catalogo de ISLR en la base: %s conceptos, %s activos (esperado %s y %s)"
                   % (total, activos, len(ISLR_CODIGOS), ISLR_ACTIVOS))

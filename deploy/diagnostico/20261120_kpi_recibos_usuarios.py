@@ -111,9 +111,16 @@ n, bs, igtf, sinc = cur.fetchone()
 
 
 def numero(valor):
-    """'1,008.31' (NLS '.,') -> 1008.31"""
-    limpio = (valor or "0").replace("&#8212;", "0").replace(",", "")
-    return float(limpio)
+    """'1.008,31' -> 1008.31.
+
+    2026-11-23: la app pinta el formato venezolano (miles con punto, decimales
+    con coma). Antes el par NLS de los indicadores estaba al reves y salia
+    '1,008.31'; el test se habia escrito contra ese formato, que era el fallo.
+    """
+    limpio = (valor or "0").replace("&#8212;", "0").replace("—", "0").strip()
+    if not limpio:
+        return 0.0
+    return float(limpio.replace(".", "").replace(",", "."))
 comprobar("K2 «Recibos del mes» es el conteo del mes", vals[0] == str(n), (vals[0], n))
 comprobar("K2 «Cobrado (Bs)» es la suma de MONTO_BS",
           abs(numero(vals[1]) - float(bs)) < 0.005, (vals[1], bs))
@@ -251,8 +258,8 @@ comprobar("K6 cero objetos invalidos",
           uno("""select count(*) from all_objects where owner = 'WKSP_SYPEXWS'
                   and status <> 'VALID' and object_type in
                   ('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY','TRIGGER','VIEW')""") == 0)
-comprobar("K6 siguen las 37 paginas",
-          uno("select count(*) from apex_application_pages where application_id = 100") == 37)
+comprobar("K6 siguen las 43 paginas",
+          uno("select count(*) from apex_application_pages where application_id = 100") == 43)
 
 conn.close()
 print()
