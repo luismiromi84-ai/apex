@@ -1,0 +1,1 @@
+2026-11-26 Linea de compra (29), descuento automatico: f100 122 sentencias OK; procesos/rejilla/portada FALLAS=0; 20261126_linea_compra_descuento_navegador.py D1-D6 FALLAS=0; regresion 20261119_compras_estetica (E1-E11) y 20261119_compras_navegador FALLAS=0
