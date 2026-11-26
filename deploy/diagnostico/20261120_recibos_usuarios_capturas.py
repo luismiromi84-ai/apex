@@ -193,7 +193,7 @@ try:
     print("      KPI 3:", kpis(nav, REGION_USUARIOS))
     cuerpo3 = nav.js("document.body.innerText") or ""
     comprobar("la lista pinta las insignias", "ACTIVO" in cuerpo3, cuerpo3[:120])
-    comprobar("las tres pestanas siguen", "Ultimos errores" in cuerpo3 and "ltimos intentos" in cuerpo3)
+    comprobar("las tres pestanas siguen", "ltimos errores" in cuerpo3 and "ltimos intentos" in cuerpo3)
 
     nav.tamano(500, 900)
     time.sleep(3)

@@ -1,0 +1,79 @@
+EVIDENCIA — 2026-11-24 — Tres arreglos (volver · gasto real en Bs · presupuestos en el reporte)
+===============================================================================================
+
+1) BOTON «VOLVER AL INICIO» EN LAS IMPRESIONES (11 y 12)
+   La pagina 12 solo tenia el boton «Imprimir»; no habia forma de salir del documento.
+   Se agrego un boton real de APEX en la region del documento:
+     BTN_VOLVER · «Volver al inicio» · icono fa-arrow-left · u-no-print
+     destino: f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:1::   (Home, limpiando su cache)
+   Igual en la 11 (impresion de factura), que es gemela.
+   Comprobado en navegador: el boton se pinta, se pulsa y aterriza en /synpex/home.
+
+2) GASTO REAL EN LA TARJETA «RESUMEN FINANCIERO» (pagina 5)
+   Antes:
+     v_gasto_real := pkg_gasto_real.fn_total_gasto_usd(id);   -- 30 USD
+     v_desviacion := v_total - v_gasto_real;                  -- 1.004 Bs - 30 USD
+     y la tarjeta pintaba «Gasto real: 30,00» dentro de un recuadro en BOLIVARES.
+   Ahora:
+     pkg_gasto_real.fn_total_gasto_bs(id) = sum(monto_origen * tasa_real)  -- el dinero en Bs
+     v_gasto_real := round(v_gasto_bs / nvl(v_tasa,1), 2);   -- a la moneda del documento
+     v_desviacion := v_total - v_gasto_real;                 -- misma moneda
+     y debajo del importe va «USD 30.00» (fn_total_gasto_usd), para el detalle.
+   Medido con el presupuesto 198 (dotech, VES) y su gasto de 30 USD a 919,8227:
+     Gasto real (VES):   27,594.68     (antes 30,00)
+     USD 30.00
+     Desviacion (VES):  -26,590.68     (antes 974,00)
+   Captura: deploy/resultados/20261124_gasto_real_bs.png
+   Se conserva fn_total_gasto_usd (la usa el detalle y no cambia de valor).
+
+3) «PRESUPUESTOS» EN EL REPORTE DE DOCUMENTOS (pagina 17)
+   El combo Modulo solo ofrecia Todos / Ventas / Compras: no habia forma de ver un
+   presupuesto en el reporte.
+   - P17_MODULO: nueva opcion «Presupuestos;PRESUPUESTOS».
+   - El union del informe gana la rama de presupuestos (modulo «Presupuesto», tipo
+     «Presupuesto», sin N° de control, sin notas de credito ni saldo, estado crudo).
+     Solo aparece con Tipo = Todas y con Modulo = Todos o Presupuestos.
+   - Las ramas de ventas y compras pasan de «<> COMPRAS / <> VENTAS» a
+     «in (TODOS, VENTAS) / in (TODOS, COMPRAS)»: antes, con Modulo=Presupuestos
+     seguian saliendo ventas (lo destapo la captura de la primera corrida).
+   - Columna nueva VER_PRESUPUESTO («Ver presup.») que abre la pagina 7; el JS de la
+     pagina vacia la celda cuando el enlace llega sin id y oculta las columnas que no
+     aplican al modulo elegido.
+   - «Totales del periodo»: fila por moneda con el total de presupuestos en
+     «Saldo / Total».
+   Medido en navegador (empresa 6): con Modulo=Presupuestos salen 2 presupuestos, el
+   total del periodo cuadra (5.336,00 USD y 1.004,00 VES) y el «Ver presup.» abre la 7
+   con P7_ID_PRESUPUESTO=198.
+   Captura: deploy/resultados/20261124_reporte_presupuestos.png
+
+VERIFICACIONES (nuevas, las dos FALLAS=0)
+  deploy/diagnostico/20261124_tres_arreglos_verificacion.sql  (A1-A3, B1, C1-C5)
+    A1 la funcion nueva cuadra con la suma (y con gastos en divisa los Bs son mayores)
+    A2/A3 la tarjeta usa fn_total_gasto_bs, divide por la tasa del documento y muestra USD
+    B1  las dos impresiones tienen BTN_VOLVER a la pagina 1 con u-no-print
+    C1-C5 el combo, la rama, la columna a la 7, y la consulta GUARDADA ejecutada:
+          Presupuestos -> solo presupuestos; Ventas/Compras -> ninguno; Todos -> si
+  deploy/diagnostico/20261124_tres_arreglos_navegador.py      (T1-T3)
+    T1 27,594.68 + «USD 30.00» + desviacion -26,590.68 (leidos del DOM)
+    T2 el boton de la 12 lleva a la Home
+    T3 Modulo=Presupuestos lista los presupuestos y el «Ver presup.» apunta a la 7
+
+REGRESION (todo FALLAS=0)
+  20261116_reporte_documentos_verificacion.sql  (23 sentencias, R1-R20)
+  20261116_reporte_documentos_pagina.py         (13 casos, incluido CONSULTA/VENTAS)
+  20261120_centro_documentos_navegador.py       (12 casos, los tres modulos)
+  20261106_resumen_p5.py                        (la tarjeta, ejecutando el cuerpo real)
+  20261105_gasto_real_verificacion.sql          (12 casos del package)
+  20261124_p6_ora01722_verificacion.sql         (el arreglo anterior sigue verde)
+  20261117_grid_paginas_verificacion.py · 20261109_compilar_procesos_pagina.py (134)
+  20261105_portada_verificacion.py              (47 paginas, 0 invalidos)
+
+DOS PRUEBAS ESTABAN DESFASADAS (se corrigio la prueba, no la app)
+  20261106_resumen_p5.py y 20261106_editar_linea_presupuesto.py esperaban 37 paginas;
+  la app tiene 47 desde el inventario (páginas 42-45).
+
+NOTA PARA EL DUENO
+  La tarjeta usa el formato numerico de la sesion (1,004.00), igual que antes; las
+  tarjetas de indicadores usan el venezolano (1.004,00). No se cambio el formato de la
+  tarjeta porque nadie lo pidio; si se quiere unificar, es una linea de TO_CHAR.
+  Recordar Ctrl+F5 despues de cada import.

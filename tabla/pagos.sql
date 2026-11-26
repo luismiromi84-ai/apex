@@ -39,6 +39,8 @@ create table pagos (
     estado               varchar2(10)  default 'ACTIVO' not null enable,
     observaciones        varchar2(4000),
     creado_por           varchar2(100) default user,
+    id_cuenta            number,
+    id_conciliacion      number,
     fecha_creacion       timestamp(6)  default systimestamp not null enable,
     modificado_por       varchar2(100),
     fecha_modificacion   timestamp(6),
@@ -50,6 +52,8 @@ create table pagos (
         references proveedores (id_proveedor) enable,
     constraint fk_pagos_forma_pago foreign key (id_forma_pago)
         references forma_pago (id_forma_pago) enable,
+    constraint fk_pago_cuenta foreign key (id_cuenta) references cuentas_fondos (id_cuenta) enable,
+    constraint fk_pago_concil foreign key (id_conciliacion) references conciliaciones (id_conciliacion) enable,
     constraint chk_pagos_estado check (estado in ('ACTIVO','ANULADO')) enable,
     constraint chk_pagos_igtf check (aplica_igtf in ('S','N')) enable,
     constraint chk_pagos_conciliado check (conciliado in ('S','N')) enable,

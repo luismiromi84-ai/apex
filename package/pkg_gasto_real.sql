@@ -18,5 +18,8 @@ create or replace PACKAGE pkg_gasto_real AS
         p_usuario  IN VARCHAR2 DEFAULT NULL);
 
     FUNCTION fn_total_gasto_usd (p_id_presupuesto IN NUMBER) RETURN NUMBER;
+
+    -- Total gastado de un presupuesto, en bolivares (monto_origen * tasa_real).
+    FUNCTION fn_total_gasto_bs (p_id_presupuesto IN NUMBER) RETURN NUMBER;
 END pkg_gasto_real;
 /

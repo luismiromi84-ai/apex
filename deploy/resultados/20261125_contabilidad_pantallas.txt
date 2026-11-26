@@ -1,0 +1,1 @@
+2026-11-25 Contabilidad fase 3: migracion 20261125_contabilidad_pantallas.sql FALLAS=0; f100.sql 122 sentencias OK; compilar procesos FALLAS=0; rejilla FALLAS=0; portada FALLAS=0 (56 paginas, 48 guardas, 0 invalidos); install limpio FALLAS=0; verificacion SQL K1-K14 FALLAS=0; navegador 20261125_contabilidad_navegador.py C1-C7 FALLAS=0

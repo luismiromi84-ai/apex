@@ -310,14 +310,14 @@ try:
                          .find(x=>/Ver facturas/i.test(x.innerText)); if(b){b.click();} return !!b;})()""")
             time.sleep(12)
             credito = nav.js("(document.querySelector('.spx-credito')||{}).innerText || ''")
-            comprobar("N7 sale el credito del proveedor", "40.00" in str(credito), credito)
+            comprobar("N7 sale el credito del proveedor", ("40.00" in str(credito) or "40,00" in str(credito)), credito)
             usar = nav.js("""(function(){var a=document.querySelector('a.spx-usar');
                                   if(!a){return 'SIN ENLACE';} a.click(); return 'CLIC';})()""")
             comprobar("N7 hay un enlace Usar por fila", usar == "CLIC", usar)
             time.sleep(12)
             texto = str(nav.js("document.body.innerText") or "")
             comprobar("N7 aplica el credito y lo dice",
-                      "Se aplicaron 40.00" in texto, texto[:150])
+                      ("Se aplicaron 40.00" in texto or "Se aplicaron 40,00" in texto), texto[:150])
             det = cur.execute("select monto_aplicado from pagos_detalle where id_pago = :p",
                               p=fav_pago).fetchone()
             comprobar("N7 el reparto queda guardado",
@@ -370,11 +370,11 @@ try:
                 celdas = []
             print("  fila 1480:", celdas)
             comprobar("N8 el total sale en la moneda de la factura",
-                      len(celdas) > 6 and celdas[5] in ("1480.00", "1,480.00"), celdas)
+                      len(celdas) > 6 and celdas[5] in ("1480.00", "1,480.00", "1.480,00"), celdas)
             comprobar("N8 la retencion de IVA son 60 USD (no 54.998,86 Bs)",
                       len(celdas) > 7 and celdas[7] in ("60.00", "60,00"), celdas)
             comprobar("N8 el saldo son 1.420 y cuadra con el total",
-                      len(celdas) > 10 and celdas[10] in ("1420.00", "1,420.00"), celdas)
+                      len(celdas) > 10 and celdas[10] in ("1420.00", "1,420.00", "1.420,00"), celdas)
             nota = str(nav.js("(function(){var n=document.querySelectorAll('.spx-nota');"
                               "for(var i=0;i<n.length;i++){if(/SENIAT/i.test(n[i].innerText)){return n[i].innerText;}}"
                               "return '';})()") or "")
@@ -430,8 +430,9 @@ try:
                       isinstance(filas37, int) and filas37 == 2, filas37)
             comprobar("N9 spxNum entiende 1.420,00", nav.js('spxNum("1.420,00")') == 1420,
                       nav.js('spxNum("1.420,00")'))
-            comprobar("N9 spxNum entiende 1,420.00", nav.js('spxNum("1,420.00")') == 1420,
-                      nav.js('spxNum("1,420.00")'))
+            # 2026-11-25: spxNum lee con el separador de la sesion; la empresa de la prueba es VE.
+            comprobar("N9 spxNum entiende 1.420 (miles en VE)", nav.js('spxNum("1.420")') == 1420,
+                      nav.js('spxNum("1.420")'))
             comprobar("N9 spxNum sigue entendiendo 1420", nav.js('spxNum("1420")') == 1420)
 
             # limpieza: se anula el pago de prueba

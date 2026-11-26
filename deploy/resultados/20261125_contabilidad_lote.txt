@@ -1,0 +1,1 @@
+2026-11-25 Contabilidad fase 4: pkg_contabilidad compilado (0 invalidos); 20261125_contabilizar_verificacion.sql L1-L7 FALLAS=0 sobre datos reales (empresa 1: 13 asientos, 6: 19, 7: 0; rollback); f100 122 sentencias; procesos/rejilla/portada FALLAS=0; navegador C1-C8 FALLAS=0

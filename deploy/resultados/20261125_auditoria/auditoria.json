@@ -1,0 +1,128 @@
+{
+ "47": {
+  "1440": {
+   "error": null,
+   "num": {
+    "us": 0,
+    "us_ej": [],
+    "ve": 0,
+    "ve_ej": []
+   },
+   "cabeceras": [
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Tomas físicas"
+    },
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Conteo"
+    }
+   ],
+   "cards": null,
+   "spin": 0,
+   "etiqueta_tapa": [],
+   "tokens": [],
+   "ingles": [],
+   "desborde": 0,
+   "titulo": "Toma física"
+  },
+  "500": {
+   "error": null,
+   "num": {
+    "us": 0,
+    "us_ej": [],
+    "ve": 0,
+    "ve_ej": []
+   },
+   "cabeceras": [
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Tomas físicas"
+    },
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Conteo"
+    }
+   ],
+   "cards": null,
+   "spin": 0,
+   "etiqueta_tapa": [],
+   "tokens": [],
+   "ingles": [],
+   "desborde": 0,
+   "titulo": "Toma física"
+  }
+ },
+ "48": {
+  "1440": {
+   "error": null,
+   "num": {
+    "us": 0,
+    "us_ej": [],
+    "ve": 0,
+    "ve_ej": []
+   },
+   "cabeceras": [
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Conciliaciones"
+    },
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Nueva conciliación"
+    },
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Movimientos"
+    }
+   ],
+   "cards": null,
+   "spin": 0,
+   "etiqueta_tapa": [],
+   "tokens": [],
+   "ingles": [],
+   "desborde": 0,
+   "titulo": "Conciliación bancaria"
+  },
+  "500": {
+   "error": null,
+   "num": {
+    "us": 0,
+    "us_ej": [],
+    "ve": 0,
+    "ve_ej": []
+   },
+   "cabeceras": [
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Conciliaciones"
+    },
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Nueva conciliación"
+    },
+    {
+     "alto": 44,
+     "azul": true,
+     "titulo": "Movimientos"
+    }
+   ],
+   "cards": null,
+   "spin": 0,
+   "etiqueta_tapa": [],
+   "tokens": [],
+   "ingles": [],
+   "desborde": 0,
+   "titulo": "Conciliación bancaria"
+  }
+ }
+}

@@ -43,10 +43,10 @@ def num(valor):
     if valor is None:
         return 0.0
     texto = str(valor).strip().replace(" ", "")
-    if "," in texto and "." in texto:
-        texto = texto.replace(",", "")
-    elif texto.count(",") == 1 and len(texto.split(",")[-1]) == 2:
-        texto = texto.replace(",", ".")
+    # 2026-11-25: la coma es decimal si va la ultima (1.234,56 o 919,8227: formato VE);
+    # si no, es de miles (1,234.56: formato MX).
+    if "," in texto and ("." not in texto or texto.rfind(",") > texto.rfind(".")):
+        texto = texto.replace(".", "").replace(",", ".")
     else:
         texto = texto.replace(",", "")
     try:

@@ -493,11 +493,13 @@ create or replace PACKAGE BODY pkg_facturacion AS
              WHERE id_factura = p_id_factura;
         END IF;  
 
-        -- Numero de control: en las facturas sale del rango de la providencia
-        -- (EMPRESA_FISCAL). Si se teclea, se valida contra el rango; si no, se
-        -- asigna el siguiente y se consume el contador atomico. Las notas llevan
-        -- el que se teclee (cada serie de notas se controla aparte).
-        IF v_tipo_doc = 'FAC' THEN
+        -- Numero de control: sale del rango de la providencia (EMPRESA_FISCAL).
+        -- Si se teclea, se valida contra el rango; si no, se asigna el siguiente
+        -- y se consume el contador atomico. Desde el 2026-11-25 (criterio del
+        -- contador) la serie es COMPARTIDA: facturas, notas de credito y notas
+        -- de debito toman el control de la MISMA secuencia correlativa. Sin rango
+        -- (Mexico) fn_asignar_control devuelve NULL y no se numera.
+        IF v_tipo_doc IN ('FAC', 'NC', 'ND') THEN
             IF p_nro_control IS NOT NULL THEN
                 v_nro_control := fn_control_en_rango(v_id_empresa, p_nro_control);
             ELSIF v_existe > 0 THEN
@@ -508,6 +510,25 @@ create or replace PACKAGE BODY pkg_facturacion AS
             END IF;
         ELSE
             v_nro_control := p_nro_control;
+        END IF;
+
+        -- 2026-11-25: a un cliente INACTIVO no se le factura (un cliente se
+        -- desactiva, por ejemplo, cuando su RIF no es valido). Las notas si se
+        -- permiten: hacen falta para anular sus facturas anteriores.
+        IF v_tipo_doc = 'FAC' THEN
+            DECLARE
+                v_inactivo VARCHAR2(200);
+            BEGIN
+                SELECT MAX(c.razon_social) INTO v_inactivo
+                  FROM clientes c
+                 WHERE c.id_cliente = p_id_cliente
+                   AND NVL(UPPER(c.estado), 'ACTIVO') <> 'ACTIVO';
+                IF v_inactivo IS NOT NULL THEN
+                    raise_application_error(-20068,
+                        'El cliente ' || v_inactivo || ' esta INACTIVO: no se le puede facturar. '
+                        || 'Activalo en Clientes (con su RIF correcto) o elige otro cliente.');
+                END IF;
+            END;
         END IF;
 
 
@@ -733,6 +754,23 @@ create or replace PACKAGE BODY pkg_facturacion AS
         IF v_id_factura IS NULL OR v_id_factura <= 0 THEN
             raise_application_error(-20002, 'Error: El ID de la factura es nulo o inválido.');
         END IF;
+
+        -- 2026-11-25: tampoco se emite una factura de un cliente que paso a INACTIVO.
+        DECLARE
+            v_inactivo VARCHAR2(200);
+        BEGIN
+            SELECT MAX(c.razon_social) INTO v_inactivo
+              FROM facturas f
+              JOIN clientes c ON c.id_cliente = f.id_cliente
+             WHERE f.id_factura = v_id_factura
+               AND NVL(f.tipo_documento, 'FAC') = 'FAC'
+               AND NVL(UPPER(c.estado), 'ACTIVO') <> 'ACTIVO';
+            IF v_inactivo IS NOT NULL THEN
+                raise_application_error(-20068,
+                    'El cliente ' || v_inactivo || ' esta INACTIVO: no se puede emitir la factura. '
+                    || 'Activalo en Clientes (con su RIF correcto) o anula el borrador.');
+            END IF;
+        END;
 
         UPDATE facturas SET
                estado             = 'TIMBRADA',

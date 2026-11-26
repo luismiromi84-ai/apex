@@ -1,0 +1,83 @@
+EVIDENCIA — 2026-11-24 — Linea de presupuesto (pagina 6): ORA-01722 con el texto del LOV
+=========================================================================================
+
+SINTOMA (captura del dueno)
+  Al abrir «Detalle de Presupuesto» salia:
+    «No se ha podido convertir el valor de cadena que contiene '-' en un numero:»
+
+NO ERA JAVASCRIPT: ERA UN ORA-01722 DEL SERVIDOR
+  SYN_ERROR_LOG, id 1795 / 1796 / 1797 (usuario LUISMI, pagina 6, peticion PLUGIN):
+    ORA-01722: No se ha podido convertir el valor de cadena que contiene '-' en un numero:
+    ORA-06512: en "APEX_260100.WWV_FLOW_PLUGIN_UTIL", linea 2104
+    ORA-06512: en "APEX_260100.WWV_FLOW_DYNAMIC_EXEC", linea 1336
+    ORA-03302: (Detalles de ORA-01722) valor de cadena no valido: -- Seleccione Producto/Servicio --
+  La peticion PLUGIN es la accion dinamica CARGAR_DATOS_PRODUCTO (SQL_STATEMENT), que hacia:
+    WHERE p.id_producto_servicio = :P6_ID_PRODUCTO_SERVICIO
+  y recibio el TEXTO del Popup LOV en un bind que se compara con una columna NUMBER.
+
+CAUSA RAIZ (configuracion del item, no el SQL)
+  El texto del LOV estaba guardado en LOV_NULL_VALUE (el VALOR) en vez de LOV_NULL_TEXT:
+    P6_ID_PRODUCTO_SERVICIO  lov_display_null=Yes  lov_null_text=(vacio)  lov_null_value='-- Seleccione Producto/Servicio --'
+  Con eso, al limpiarse el LOV el valor del item pasa a ser «-- Seleccione Producto/Servicio --»,
+  y cualquier uso del item contra una columna NUMBER revienta con ORA-01722.
+  15 items de la app tenian el texto en el sitio equivocado (6, 7, 9, 10 y 29).
+  Los correctos (con LOV_NULL_TEXT y sin LOV_NULL_VALUE) son los de las paginas 0, 4, 6 (impuesto),
+  10 (impuesto), 21, 23, 25, 28, 29 (impuesto), 37, 40, 43 y 45.
+
+SEGUNDO DEFECTO ENCONTRADO (regresion del commit 61acf46, el cambio a Select List)
+  calcularTotalesLinea() de la 6 leia el % del impuesto con $wrapper.text(), que en un Select List
+  devuelve el texto de TODAS las opciones: dejaba 16 % en una linea EN BLANCO y ademas con
+  id_impuesto nulo (una linea sin impuesto habria guardado IVA).
+
+ARREGLO
+  pagina_apex/f100.sql
+    1. ',p_lov_null_value=>' -> ',p_lov_null_text=>'  (15 items)
+    2. pagina 6, accion CARGAR_DATOS_PRODUCTO:
+         WHERE p.id_producto_servicio = nullif(fn_clean_num(:P6_ID_PRODUCTO_SERVICIO), 0)
+    3. pagina 6, JS: el % se lee SOLO de la opcion elegida
+         var textoImpuesto = String($('#P6_ID_IMPUESTO option:selected').text() || '');
+         var match = textoImpuesto.match(/(\d+(?:[.,]\d+)?)\s*%/);
+    4. paginas 43 y 45 (latentes, mismo patron con el filtro del articulo):
+         and (nullif(fn_clean_num(:Pn_ID_ARTICULO), 0) is null
+              or m.id_producto_servicio = nullif(fn_clean_num(:Pn_ID_ARTICULO), 0))
+  Import: 111 sentencias, 0 objetos invalidos.
+
+VERIFICACION QUE FALLA ANTES Y PASA DESPUES
+  deploy/diagnostico/20261124_p6_ora01722_verificacion.sql
+    ANTES : RESULTADO: FALLAS=5
+            L3 x3  el informe del Kardex (43) y los dos de Costos (45) revientan con el texto del LOV
+            L4 x2  el JS de la 6 no lee la opcion elegida / sigue leyendo todas las opciones
+            (L1 pasaba porque leia LOV_NULL_TEXT, que estaba vacio: el texto estaba en LOV_NULL_VALUE)
+    DESPUES: RESULTADO: FALLAS=0   (L0 ningun item con LOV_NULL_VALUE, L1 sin error y 0 filas,
+                                    L2 camino bueno 1 fila, L3 x3 sin error, L4 x2)
+  deploy/diagnostico/20261124_p6_linea_navegador.py (Edge headless, usuario temporal diag.p6v)
+    RESULTADO: FALLAS=0
+      N1  la linea nueva abre sin aviso y el impuesto viene vacio
+      N1  el % de IVA ya NO se queda en 16 en una linea en blanco
+      N1b el LOV sigue mostrando «-- Seleccione Producto/Servicio --»
+      N2  con el TEXTO metido en el item no sale aviso y no se registra error nuevo
+      N3  al elegir el articulo vienen descripcion, precio 45,00, impuesto 1 y % 16,00,
+          y con cantidad 2 calcula 90,00 + 14,40 = 104,40
+      N4  ningun error nuevo en SYN_ERROR_LOG
+    Captura: deploy/resultados/20261124_p6_linea.png
+
+REGRESION (todo FALLAS=0)
+  20261124_inventario_paginas_verificacion.sql   (ejecuta las consultas guardadas de 43 y 45)
+  20261117_grid_paginas_verificacion.py          (rejilla de 12 columnas)
+  20261109_compilar_procesos_pagina.py           (134 procesos de pagina)
+  20261105_portada_verificacion.py               (47 paginas, 39 guardas, 0 invalidos)
+  20261106_editar_linea_presupuesto.py           (pagina 6 y su enlace desde la 5)
+  20261119_compras_navegador.py                  (C1-C9, alta con linea y comprobante)
+  20261109_nota_origen_pagina9.py                (C1-C5, nota de credito desde su factura)
+
+DOS PRUEBAS QUE ESTABAN MAL (se corrigio la prueba, no la app)
+  20261106_editar_linea_presupuesto.py  esperaba 37 paginas; la app tiene 47 desde el inventario.
+  20261119_compras_navegador.py         elegia «el primer articulo» SIN filtrar por empresa y con los
+                                        articulos nuevos de la empresa 6 cogia «cajas de paquetes»
+                                        (el paquete lo rechaza con -20151, que es lo correcto).
+                                        Ahora filtra id_empresa = 1, como la compra de prueba.
+
+NOTA PARA EL DUENO
+  El aviso salia al limpiar/cambiar el LOV del producto. Ya no puede salir: el item entrega vacio
+  (no su texto) y, aunque llegara texto, el SQL lo limpia con fn_clean_num.
+  Recordar Ctrl+F5 despues de cada import.

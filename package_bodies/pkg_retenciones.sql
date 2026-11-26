@@ -26,7 +26,8 @@ create or replace package body pkg_retenciones as
                  when nvl(p.retener_iva, 'S') <> 'S' then 0
                  when p.cod_pais is not null and e.cod_pais is not null
                       and p.cod_pais <> e.cod_pais then 100
-                 else nvl(p.porcentaje_retencion, 75)
+                 -- 2026-11-25 (dueno): persona juridica 75 %, persona natural 100 %.
+                 else nvl(p.porcentaje_retencion, case when p.tipo_persona = 'N' then 100 else 75 end)
                end
           into v_pct
           from proveedores p

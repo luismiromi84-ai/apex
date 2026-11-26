@@ -2,15 +2,15 @@
 -- 20261119_estado_emitida_ve_verificacion.sql
 --
 -- En Venezuela la factura no se timbra: para una empresa venezolana el estado
--- TIMBRADA se MUESTRA como EMITIDA. El codigo interno no cambia (lo comparan el
+-- TIMBRADA se MUESTRA como PROCESADA (antes EMITIDA; el dueno lo cambio el 2026-11-25). El codigo interno no cambia (lo comparan el
 -- saldo, los cobros, el libro y los reportes), solo lo que se lee.
 --
---   V1 fn_estado_factura: TIMBRADA+VE -> EMITIDA
+--   V1 fn_estado_factura: TIMBRADA+VE -> PROCESADA
 --   V2 fn_estado_factura: TIMBRADA+MX -> TIMBRADA (Mexico si timbra)
 --   V3 fn_estado_factura: los demas estados no cambian (ni en VE)
 --   V4 las tres regiones que lo muestran usan la funcion
 --      (lista de Facturacion, reporte de facturas y libro)
---   V5 las paginas 8 y 17 tienen el estilo de la insignia EMITIDA
+--   V5 las paginas 8 y 17 tienen el estilo de la insignia PROCESADA
 --
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261119_estado_emitida_ve_verificacion.sql
 -- FALLAS=0 = EXITO.
@@ -33,8 +33,8 @@ declare
 begin
     -- V1 / V2 / V3
     select fn_estado_factura('TIMBRADA', 'VE') into v_txt from dual;
-    if v_txt <> 'EMITIDA' then
-        falla('V1', 'TIMBRADA en VE se muestra «' || v_txt || '» en vez de EMITIDA');
+    if v_txt <> 'PROCESADA' then
+        falla('V1', 'TIMBRADA en VE se muestra «' || v_txt || '» en vez de PROCESADA');
     end if;
 
     select fn_estado_factura('TIMBRADA', 'MX') into v_txt from dual;
@@ -61,13 +61,13 @@ begin
         falla('V4', 'solo ' || v_n || ' regiones de 3 usan fn_estado_factura');
     end if;
 
-    -- V5: la insignia EMITIDA tiene color en las dos listas
+    -- V5: la insignia PROCESADA tiene color en las dos listas
     select count(*) into v_n
       from apex_260100.apex_application_pages
      where application_id = 100 and page_id in (8, 17)
-       and lower(inline_css) like '%status-emitida%';
+       and lower(inline_css) like '%status-procesada%';
     if v_n <> 2 then
-        falla('V5', 'solo ' || v_n || ' de 2 paginas tienen el estilo .status-EMITIDA');
+        falla('V5', 'solo ' || v_n || ' de 2 paginas tienen el estilo .status-PROCESADA');
     end if;
 
     raise_application_error(-20100,

@@ -1,0 +1,69 @@
+EVIDENCIA — 2026-11-24 — Tres arreglos, segunda tanda
+=====================================================
+
+1) FACTURA (9): la tarjeta «Lineas de la factura que acredita» salia en una factura
+   NUEVA, vacia, y el icono de Guardar se veia «distorsionado».
+
+   1a. La region se renderiza siempre (a proposito, para que la accion dinamica de
+       «factura origen» tenga donde pintar) y un JS la escondia mirando SOLO el texto
+       del cuerpo. En una factura nueva el cuerpo trae nodos vacios y la tarjeta
+       quedaba visible. Ahora el JS decide por los ITEMS: solo se muestra si
+       P9_TIPO_DOCUMENTO es NC/ND, P9_ID_FACTURA_ORIGEN tiene valor y hay lineas.
+       Medido en navegador (factura nueva): display=none, alto=0.
+
+   1b. El «icono distorsionado» era el giro del tema. En Core.min.css:
+         .t-Button--hoverIconSpin .t-Icon { animation: anim-spin 2s linear infinite;
+                                            animation-play-state: paused }
+         .t-Button--hoverIconSpin:hover .t-Icon,
+         .t-Button--hoverIconSpin:focus  .t-Icon { animation-play-state: running }
+       O sea: ademas del hover, con el FOCO el icono gira sin parar (2 s por vuelta),
+       y un boton queda enfocado despues de pulsarlo. Medido con el raton encima:
+       transform = matrix(0.708688, 0.705522, ...) ≈ 45 grados (captura
+       20261124_p9_btn_con_hover.png frente a ..._sin_hover.png).
+       Arreglo: se quito `t-Button--hoverIconSpin` de los 31 botones de la app.
+       Medido despues, con el foco en Guardar: animationName=none.
+
+2) LISTA DE FACTURACION (8): «Editar» salia antes que «Seleccionar».
+   La columna ID_FACTURA (rotulo «Editar») tenia display_order 10 y DETALLE_LINK
+   (el checkbox, «Seleccionar») 15, y la vista por defecto empezaba por ID_FACTURA.
+   Se intercambian (10 = Seleccionar, 15 = Editar) y la vista por defecto pasa a
+   DETALLE_LINK:ID_FACTURA:...  Medido en navegador: cabeceras
+   ["Seleccionar", "Editar", "Razon Social", "Rif"] (antes Editar primero).
+
+3) ADMINISTRACION > SECUENCIAS (19): no dejaba fijar el correlativo con su formato.
+   P19S_ULTIMO era NATIVE_NUMBER_FIELD con mascara: al escribir «PRE-3» APEX cortaba
+   con «Num. ya emitido debe ser un numero valido» antes de llegar al proceso.
+   Ahora es un campo de TEXTO y el proceso «Fijar el correlativo» se queda con los
+   digitos:  F-1051 -> 1051 · 00-000132 -> 132 · PRE-3 -> 3 · PROD-00009 -> 9.
+   Los mensajes dicen el formato que se admite y, si no hay digitos, lo avisan.
+   Medido en navegador: se escribio «PRE-1056» (el maximo real era 1055) y respondio
+   «Serie PRESUPUESTO fijada en 1056. El siguiente numero es 1057»; el contador quedo
+   en 1056 y despues se devolvio a 1055 con «Poner en el maximo real».
+
+VERIFICACIONES nuevas (las dos FALLAS=0)
+  deploy/diagnostico/20261124_tres_arreglos2_verificacion.sql  (E1-E6)
+    E1 el JS de la 9 decide por los items · E2 cero botones con hoverIconSpin ·
+    E3 el orden de columnas de la 8 · E4 el item es de texto · E5 el proceso parsea ·
+    E6 los cuatro formatos dan el numero correcto
+  deploy/diagnostico/20261124_tres_arreglos2_navegador.py      (N1-N3)
+    N1 cabeceras Seleccionar/Editar · N2 tarjeta oculta y icono sin giro ·
+    N3 el correlativo escrito con formato se acepta y se restaura
+    Capturas: deploy/resultados/20261124_p9_factura_nueva.png (factura nueva sin la
+    tarjeta, con la lista de atras ya en el orden nuevo).
+
+REGRESION (todo FALLAS=0)
+  deploy/diagnostico/20261109_nota_origen_pagina9.py      (la region y la nota siguen bien)
+  deploy/diagnostico/20261123_secuencias_verificacion.sql (S1-S11)
+  deploy/diagnostico/20261123_secuencias_navegador.py     (N1-N5)
+  deploy/diagnostico/20261117_grid_dialogos_navegador.py  (G1-G3; ver nota)
+  deploy/diagnostico/20261117_grid_paginas_verificacion.py
+  deploy/diagnostico/20261109_compilar_procesos_pagina.py (134 procesos)
+  deploy/diagnostico/20261105_portada_verificacion.py     (47 paginas, 0 invalidos)
+
+NOTA: 20261117_grid_dialogos_navegador.py dio dos rojos distintos seguidos y verde al
+tercer intento, con la MISMA pagina y los mismos datos (una vez G3, otra G1). Es
+inestable por tiempos, no por la app: no hay errores de la pagina 4 ni de la 9 en
+SYN_ERROR_LOG y las otras dos verificaciones de la pagina 9 dan FALLAS=0.
+
+CONTADORES al cierre: PRESUPUESTO 1055 · FAC 1050 · CONTROL 131 · NC 2 · ND 1, iguales
+a su maximo real; 0 objetos invalidos; 47 paginas; 0 datos de prueba.

@@ -207,7 +207,9 @@ try:
         esperado_tot = float(cur.fetchone()[0])
         cuerpo_tot = js("document.getElementById('R43000000000000547').innerText") or ""
         comprueba(("%.2f" % esperado_tot).replace(".", ".") in cuerpo_tot
-                  or ("{:,.2f}".format(esperado_tot)) in cuerpo_tot,
+                  or ("{:,.2f}".format(esperado_tot)) in cuerpo_tot
+                  # 2026-11-25: formato por pais (VE 1.234,56)
+                  or "{:,.2f}".format(esperado_tot).replace(",", "#").replace(".", ",").replace("#", ".") in cuerpo_tot,
                   "el saldo del período en USD cuadra con la base",
                   "esperado %.2f" % esperado_tot)
 

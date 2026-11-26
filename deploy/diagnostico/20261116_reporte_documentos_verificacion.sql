@@ -370,13 +370,18 @@ select substrb('R17: el filtro de empresa no valida la empresa del usuario', 1, 
                       and instr(upper(p.process_source), 'P17_ID_EMPRESA') > 0);
 /
 
--- R18: entrada de menu «Reportes Factura y Notas C/D».
+-- R18: el menu tiene el grupo «Reportes» y su hija «Reportes de Facturación» (17).
 insert into tmp_rep_fallas
 select substrb('R18: falta la entrada de menu del reporte', 1, 300)
   from dual
- where not exists (select 1 from apex_application_list_entries
-                    where application_id = 100 and entry_target like '%:17:%'
-                      and upper(entry_text) like '%REPORTES FACTURA Y NOTAS C/D%');
+ where not exists (select 1
+                     from apex_application_list_entries h
+                     join apex_application_list_entries p
+                       on p.list_entry_id = h.list_entry_parent_id
+                      and p.application_id = h.application_id
+                    where h.application_id = 100 and h.entry_target like '%:17:%'
+                      and upper(h.entry_text) like 'REPORTES DE FACTURACI%'
+                      and upper(p.entry_text) = 'REPORTES');
 /
 
 -- R19: «Ver» abre la factura en modo consulta y la pagina 9 lo respeta.

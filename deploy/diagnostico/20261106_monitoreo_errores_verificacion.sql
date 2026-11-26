@@ -103,7 +103,7 @@ begin
     select count(*) into v_cnt
       from apex_260100.apex_application_page_regions
      where application_id = 100 and page_id = 3
-       and region_name = 'Ultimos errores'
+       and region_name like '%ltimos errores'  -- 2026-11-25: el titulo lleva tilde (Últimos)
        and source_type is not null
        and source_type_plugin_name = 'NATIVE_SQL_REPORT';
     if v_cnt <> 1 then

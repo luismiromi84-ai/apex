@@ -32,7 +32,8 @@ create or replace package pkg_pagos as
         p_observaciones  in  varchar2 default null,
         p_aplicaciones   in  varchar2 default null,
         p_usuario        in  varchar2,
-        p_id_pago        out number
+        p_id_pago        out number,
+        p_id_cuenta      in  number   default null   -- caja/banco de origen (2026-11-25)
     );
 
     -- Anula el pago (no lo borra) y devuelve sus compras a pendientes.

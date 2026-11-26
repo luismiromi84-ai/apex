@@ -161,10 +161,11 @@ try:
        '.find(x=>x.textContent.trim().indexOf("Nuevo art") >= 0);if(b){b.click();}})()')
     esperar('document.readyState === "complete" && apex.item("P40_ID_ARTICULO").getValue() === ""', 60)
     time.sleep(3)
-    comprobar("P2 Nuevo deja el tipo en Servicio (lo limpia)", valor("P40_TIPO") == "SERVICIO", valor("P40_TIPO"))
+    # 2026-11-24 (dueno): el tipo nace vacio y no se propone codigo hasta elegirlo.
+    comprobar("P2 Nuevo deja el tipo vacio (lo limpia)", (valor("P40_TIPO") or "") == "", valor("P40_TIPO"))
     comprobar("P2 Nuevo limpia el nombre", (valor("P40_NOMBRE") or "") == "", valor("P40_NOMBRE"))
     comprobar("P2 Nuevo deja el estado en Activo", valor("P40_ESTADO") == "ACTIVO", valor("P40_ESTADO"))
-    comprobar("P2 el codigo propuesto es de Servicio", str(valor("P40_CODIGO")).startswith("SERV-"), valor("P40_CODIGO"))
+    comprobar("P2 sin tipo no se propone codigo", (valor("P40_CODIGO") or "") == "", valor("P40_CODIGO"))
 
     # ---------------------------------------------------------------- el codigo sigue al tipo
     js('(function(){var el=document.getElementById("P40_TIPO");'
