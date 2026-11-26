@@ -12,6 +12,11 @@
 --
 -- Y para las series del catalogo (2026-11-23): ARTICULO -> '10000009' (codigo
 -- de barras) y PROD / SERV -> 'PROD-00001' / 'SERV-00001' (codigo interno).
+--
+-- 2026-11-24: KARDEX -> 'K-000001' (movimientos de inventario) y RETENCION ->
+-- 'AAAAMM00000001' (comprobante de retencion de IVA e ISLR). La retencion es la
+-- unica serie que NO vive en FOLIO_CONTADOR: su contador es RETENCION_CONTADOR
+-- y se reinicia cada periodo, asi que la vista previa se calcula ahi.
 -- =============================================================================
 
 create or replace function fn_siguiente_folio (
@@ -50,6 +55,18 @@ begin
         return v_pref || lpad(to_char(v_num), v_ancho, '0');
     end if;
 
+    -- RETENCION (2026-11-24): AAAAMM + 8 digitos, con su propio contador por
+    -- periodo. Es solo vista previa; el numero real lo toma pkg_retenciones al
+    -- emitir el comprobante.
+    if v_tipo = 'RETENCION' then
+        select nvl(max(ultimo), 0) + 1
+          into v_num
+          from retencion_contador
+         where id_empresa = p_id_empresa
+           and periodo     = to_char(sysdate, 'YYYYMM');
+        return to_char(sysdate, 'YYYYMM') || lpad(to_char(v_num), 8, '0');
+    end if;
+
     return case v_tipo
              when 'PRESUPUESTO'  then to_char(v_num)
              when 'FAC'          then 'F-'  || v_num
@@ -60,6 +77,7 @@ begin
              when 'ARTICULO'     then lpad(to_char(10000000 + v_num), 8, '0')
              when 'PROD'         then 'PROD-' || lpad(to_char(v_num), 5, '0')
              when 'SERV'         then 'SERV-' || lpad(to_char(v_num), 5, '0')
+             when 'KARDEX'       then 'K-' || lpad(to_char(v_num), 6, '0')
              else to_char(v_num)
            end;
 end fn_siguiente_folio;

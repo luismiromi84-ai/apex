@@ -1,7 +1,7 @@
 -- =============================================================================
 -- 20261116_control_factura_verificacion.sql
 --
--- N° de Control de las facturas: sale del rango de EMPRESA_FISCAL y se consume
+-- N° de Control de facturas Y NOTAS (serie compartida desde 2026-11-25): sale del rango de EMPRESA_FISCAL y se consume
 -- con un contador atomico; una factura no puede pasar del «hasta» ni llevar un
 -- control fuera de rango. Se prueba con una empresa temporal (900250) y se
 -- limpia al final.
@@ -59,7 +59,7 @@ values (900250, 'DIAG CONTROL', 'VE', 'RIF', 'J-90025000-1', 'ACTIVO')
 /
 
 insert into empresa_fiscal (id_empresa, control_desde, control_hasta, tipo_emision)
-values (900250, '900-0001', '900-0004', 'FORMA_LIBRE')
+values (900250, '900-0001', '900-0005', 'FORMA_LIBRE')
 /
 
 insert into clientes (id_empresa, rif, razon_social, tipo_persona, cod_pais, estado)
@@ -165,7 +165,8 @@ begin
 end;
 /
 
--- C7: una nota de credito NO consume el contador de control.
+-- C7: una nota de credito toma el SIGUIENTE control de la MISMA serie que las facturas
+--     (2026-11-25, criterio del contador: la numeracion de control es compartida).
 declare
     v_id     number := null;
     v_cli    number;
@@ -205,13 +206,19 @@ end;
 /
 
 insert into tmp_ctl_fallas
-select substrb('C7: la nota consumio el contador de control (ultimo='
-               || (select ultimo from folio_contador where id_empresa = 900250 and tipo = 'CONTROL') || ')', 1, 300)
+select substrb('C7: la nota no tomo el control compartido 900-0004 (tiene '
+               || nvl((select max(nro_control) from facturas where id_empresa = 900250 and tipo_documento = 'NC'), 'NULL')
+               || ', contador=' || (select ultimo from folio_contador where id_empresa = 900250 and tipo = 'CONTROL') || ')', 1, 300)
   from dual
- where (select ultimo from folio_contador where id_empresa = 900250 and tipo = 'CONTROL') <> 3;
+ where nvl((select max(nro_control) from facturas where id_empresa = 900250 and tipo_documento = 'NC'), '#') <> '900-0004'
+    or (select ultimo from folio_contador where id_empresa = 900250 and tipo = 'CONTROL') <> 4;
 /
 
--- C8: se agota el rango (hasta 0004): la cuarta factura entra, la quinta no.
+-- El rollback de C8 se llevaria la fila anotada por C7: se confirma antes.
+commit
+/
+
+-- C8: se agota el rango (hasta 0005): la siguiente factura entra, la que sigue no.
 declare
     v_cli number;
     v_msg varchar2(300);
@@ -247,7 +254,7 @@ declare
     end;
 begin
     select min(id_cliente) into v_cli from clientes where id_empresa = 900250;
-    nueva;   -- 900-0004
+    nueva;   -- 900-0005
     begin
         nueva;   -- ya no hay
         insert into tmp_ctl_fallas values (substrb('C8: paso del «hasta» sin error', 1, 300));

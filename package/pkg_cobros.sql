@@ -46,7 +46,8 @@ create or replace package pkg_cobros as
         p_referencia     in  varchar2 default null,
         p_aplica_igtf    in  varchar2 default null,
         p_usuario        in  varchar2,
-        p_id_recibo      out number
+        p_id_recibo      out number,
+        p_id_cuenta      in  number   default null   -- caja/banco destino (2026-11-25)
     );
 
     -- Anula un cobro (no se borra: queda el rastro) y devuelve la factura a

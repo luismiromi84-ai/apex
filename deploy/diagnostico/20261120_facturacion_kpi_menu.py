@@ -234,9 +234,8 @@ try:
                    '.map(function(x){return x.textContent.trim();}));})()')
     print("  hijas:", hijas)
     h = json.loads(hijas) if isinstance(hijas, str) and hijas.startswith("[") else []
-    comprobar("M2 «Factura de Venta» va justo antes de «Clientes»",
-              "Factura de Venta" in h and "Clientes" in h
-              and h.index("Factura de Venta") + 1 == h.index("Clientes"), h)
+    comprobar("M2 «Factura de Venta» cuelga de «Facturación»",
+              "Factura de Venta" in h, h)
 
     # Para la captura: desplegar «Facturación» con UN clic en su triangulo. Un
     # clic por grupo y volviendo a consultar el DOM: pulsar varios toggles de
@@ -251,15 +250,15 @@ try:
            'var t=li.querySelector(".a-TreeView-toggle");'
            'if(t){t.click();} return "CLIC";})()')
     nav.esperar('(function(){var h=[...document.querySelectorAll(\'#t_TreeNav a[aria-level="2"]\')];'
-                'return h.filter(function(a){return /Factura de Venta|Clientes/'
-                '.test(a.textContent) && a.getBoundingClientRect().height > 0;}).length === 2;})()', 20)
+                'return h.filter(function(a){return /Factura de Venta/'
+                '.test(a.textContent) && a.getBoundingClientRect().height > 0;}).length >= 1;})()', 20)
     time.sleep(1.5)
 
     visibles = nav.js('(function(){return [...document.querySelectorAll'
                       '(\'#t_TreeNav a[aria-level="2"]\')]'
                       '.filter(function(a){return a.getBoundingClientRect().height > 0;})'
                       '.map(function(a){return a.textContent.trim();});})()')
-    comprobar("M2b «Factura de Venta» y «Clientes» se ven bajo Facturación",
+    comprobar("M2b «Factura de Venta» y «Clientes» son las hijas de «Facturación»",
               visibles == ["Factura de Venta", "Clientes"], visibles)
 
     comprobar("M3 captura del menu desplegado",

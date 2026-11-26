@@ -18,6 +18,7 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
 | Moneda base | **USD**. Todo importe se guarda en la moneda del documento y se convierte a bolívares con la tasa del documento. |
 | Moneda del documento | La local del país de la empresa (`PAISES.MONEDA_LOCAL`) más **USD**. Una empresa venezolana factura en **VES o USD**; una mexicana en **MXN o USD**. |
 | Importes | 2 decimales. La tasa se guarda con 6. |
+| Formato de las cifras | **Según el país de la empresa activa:** Venezuela `1.234,56`, México `1,234.56` (pantallas, tablas, tarjetas y la validación de los campos). Lo fija `prc_nls_sesion` en cada petición; se apaga con `SYN_PARAMETROS.FORMATO_NUMERO_POR_PAIS = 0`. Los papeles impresos fijan su propio formato. |
 
 ## 2. Empresas y aislamiento
 
@@ -81,7 +82,7 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
    etiquetas).
 4. `PRECIO_SUGERIDO` e `IMPUESTO_APLICABLE` son **sugerencias**: la línea del documento guarda su
    propio precio e impuesto.
-5. **No hay control de inventario** en esta fase (sin existencias ni kardex).
+5. Las existencias y su costo viven en el **kardex** (§6 Inventario), no en el catálogo.
 
 ## 6. Tasas de cambio
 
@@ -140,6 +141,12 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
 14. **Fuera de alcance hoy:** multi-almacén, transferencias entre depósitos, lotes, vencimientos,
     números de serie y existencias comprometidas (reservas de pedidos).
 
+**Toma física (2026-11-25).** Una toma guarda la existencia de cada producto activo al crearla y lo
+contado. Al **aplicarla**, la diferencia entre lo contado y la existencia **de ese momento** entra al
+kardex como ajuste de entrada o de salida, al costo promedio, con el motivo «Toma física N. …». Lo que
+no se cuenta no se toca. Una sola toma abierta por empresa (`-20160`); una toma aplicada o anulada ya
+no cambia (`-20161`); anular no mueve el kardex.
+
 ## 7. Presupuestos
 
 1. **Numeración por empresa**, correlativa y sin huecos: `1055`, `1056`… La asigna el sistema al
@@ -165,23 +172,44 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
 3. **N° de control (Venezuela):** se toma del **rango de la providencia** (`EMPRESA_FISCAL`,
    `CONTROL_DESDE`…`CONTROL_HASTA`) con contador atómico por empresa, formato `00-000123`. El rango
    agotado es error `-20062`; un control tecleado fuera de rango o con otro prefijo, `-20063`.
-   **Las notas no consumen control propio.**
+   **La numeración de control es COMPARTIDA** (criterio del contador, 2026-11-25): facturas, notas
+   de crédito y notas de débito toman el N° de control de **una misma secuencia correlativa**, en el
+   orden en que se crean. Ejemplo: F-1 → `00-000001`, F-2 → `00-000002`, NC-1 → `00-000003`,
+   ND-1 → `00-000004`, F-3 → `00-000005`. El folio de cada tipo sigue su propia serie.
+   Las notas emitidas antes de esa fecha quedaron sin control (no se renumeran).
+   **El rango tiene que servir para numerar:** «desde» y «hasta» con el **mismo prefijo** y la **misma
+   cantidad de dígitos**, y desde ≤ hasta (`00-000001` / `00-010000`). Datos fiscales no deja guardar
+   un rango que no cumpla (`-20067`, `fn_rango_control_error`).
 4. **UUID Fiscal (CFDI) es de México**: hoy se teclea a mano; la app **no timbra** ante el SAT.
 5. Cada país muestra su campo: en Venezuela el **N° de Control**; en México el **UUID Fiscal**.
 6. **Estados:** `PENDIENTE` (borrador) → `TIMBRADA` → `PARCIAL` → `PAGADA`; y `ANULADA`.
-   - En **Venezuela** `TIMBRADA` se muestra como **«EMITIDA»** (no se timbra); en México como
-     «TIMBRADA». El dato guardado es el mismo.
+   - En **Venezuela** `TIMBRADA` se muestra **«PROCESADA»**, tanto en la **factura** como en la **nota
+     de crédito o débito** (2026-11-25; en Venezuela no se timbra). En México se muestra **«TIMBRADA»**,
+     que es lo que pasa de verdad. El dato guardado es siempre el mismo; solo cambia lo que se lee
+     (`fn_estado_factura`).
 7. **Un documento emitido es inmutable:** `TIMBRADA`, `PARCIAL`, `PAGADA` y `ANULADA` no se editan
    (ni cabecera ni líneas). Solo se edita un `PENDIENTE`.
 8. **Anular** una factura emite automáticamente una **nota de crédito por el total** (misma empresa,
    cliente, moneda y **tasa de la factura**, con todas sus líneas) y luego marca la factura
-   `ANULADA`. La nota nace **timbrada**. No se puede anular una factura con cobros vivos (`-20091`).
+   `ANULADA`. La nota nace **procesada**. No se puede anular una factura con cobros vivos (`-20091`).
+   **«Anular» es solo para facturas (FAC):** a una nota de crédito o débito no se le ofrece; para
+   revertir una nota se emite el documento contrario (una ND para una NC).
+   **Un borrador (PENDIENTE) se anula sin nota de crédito:** nunca se emitió. Queda `ANULADA` y
+   **conserva su folio y su N° de control** (no se borra: la numeración fiscal no puede tener huecos).
+   **A un cliente INACTIVO no se le factura** (`-20068`): ni se guarda ni se emite una factura suya;
+   las notas sí, para poder anular sus facturas anteriores.
+   **Qué significa `ANULADA` en Venezuela:** la factura queda sin efecto fiscal **por su nota de
+   crédito**, no se borra: conserva folio, N° de control y su rastro, y su saldo pasa a 0 porque la
+   nota lo cancela. Las dos aparecen en el libro y en el reporte (la factura en `ANULADA` y la nota en
+   `PROCESADA`), que es lo que exige el SENIAT: el documento anulado se conserva y se acredita.
 9. **Nota de crédito / débito:**
    - dice **qué factura acredita** (factura origen obligatoria en el módulo de compras; en ventas la
      nota se arma con sus líneas);
    - lleva la **tasa y la alícuota de la factura original**;
    - **no puede superar el total** de la factura que acredita (`-20049`);
-   - una nota de crédito **resta** saldo; una de débito **suma**.
+   - una nota de crédito **resta** saldo; una de débito **suma**;
+   - **una nota no se cobra**: lo que se cobra es la factura (`fn_factura_cobrable` solo devuelve
+     cierto para una `FAC` en `TIMBRADA`/`PARCIAL` con saldo).
 10. **Retención de IVA (cliente agente):** **75 % del IVA de las líneas al 16 %**, sin las exentas y
     **sin el IGTF**. Se calcula en la base (`FN_IVA_RETENIDO_BS`) y el trigger la recalcula con cada
     línea.
@@ -226,7 +254,10 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
    más (`-20089`); el N° de factura no se valida (cada proveedor numera distinto).
 4. **Nota de crédito/débito de compra:** exige la **factura afectada** (`-20097`) y lleva la tasa de
    la factura original.
-5. **Retención de IVA:** 75 % del IVA de las líneas al 16 %, sin exentas y **sin IGTF**.
+5. **Retención de IVA:** sobre el IVA de las líneas al 16 %, sin exentas y **sin IGTF**. El
+   porcentaje depende del **tipo de persona del proveedor** (dueño, 2026-11-25): **persona jurídica
+   (J) 75 %**, **persona natural (V o E) 100 %**. Proveedor lo propone al elegir el tipo de RIF y se
+   puede ajustar si el contador lo indica; un proveedor que no retiene (`Retiene IVA = No`) queda en 0.
 6. **Retención de ISLR:** se calcula con el **concepto** del proveedor o de la compra, según el
    Decreto 1.808: `(base × base% − sustraendo_UT × UT) × tarifa / 100`. La **UT** es un parámetro del
    sistema (hoy 43,00 Bs, editable en Administración). El importe se congela en el comprobante: si la
@@ -254,6 +285,28 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
    conciliado**.
 7. Los importes de la pantalla se muestran **en la moneda de la factura**; la retención de IVA se
    guarda en bolívares y se convierte al mostrarla.
+
+## 11 bis. Cajas y bancos
+
+1. Cada empresa tiene sus **cajas y cuentas bancarias** (`CUENTAS_FONDOS`): nombre, tipo (caja o
+   banco), banco, número de cuenta, moneda y estado. **Una sola es la principal** («Caja principal»,
+   creada con la empresa) y la empresa no puede quedarse sin ella.
+2. **Un cobro dice a qué caja o cuenta entra el dinero** (Destino) y **un pago de cuál sale**
+   (Origen). Si no se elige, va a la **principal** (`fn_cuenta_fondos`). La cuenta tiene que ser de la
+   empresa y estar activa (`-20125`).
+3. La pantalla **Cajas y bancos** muestra por cuenta los cobros (entradas: el neto del cobro), los
+   pagos (salidas: el pago con su IGTF) y el **saldo**, todo en bolívares a la tasa de cada movimiento.
+   Es la base de la conciliación bancaria.
+
+## 11 ter. Conciliación bancaria
+
+1. Por **caja o cuenta y período** se marcan los cobros y pagos que aparecen en el extracto del banco.
+2. **Saldo según el sistema** = saldo inicial (el saldo del banco del último cierre de esa cuenta) +
+   cobros marcados − pagos marcados (con su IGTF), en la **moneda de la cuenta**.
+3. Solo se **cierra** si coincide con el saldo según el banco (diferencia 0, `-20172`). Lo no marcado
+   queda «en tránsito» y aparece en el período siguiente.
+4. Una conciliación abierta por cuenta (`-20170`); el período no puede pisar el último cierre
+   (`-20171`). Anular una abierta desmarca sus movimientos.
 
 ## 12. Impuestos
 
@@ -309,9 +362,9 @@ hoy. Si una regla cambia en el código, se cambia aquí en el mismo commit.
 
 | Tema | Estado |
 |---|---|
-| **Inventario** | **Implementado** el 2026-11-24: kardex con CPP, doble valoración, ajustes, carga inicial, costo de ventas e inventario valorado. Queda la **toma física**. |
+| **Inventario** | **Implementado** el 2026-11-24: kardex con CPP, doble valoración, ajustes, carga inicial, costo de ventas e inventario valorado (con descarga a Excel). Toma física implementada el 2026-11-25. |
 | **Listas de precios** por empresa / precios por proveedor | Sin implementar. |
 | **Conciliación bancaria automática** con extractos | Solo marca manual. |
 | **CFDI de México** (timbrado SAT: PAC, CSD, XML 4.0, acuse) | Sin implementar; **última prioridad**. En Venezuela no se timbra. |
-| **Contabilidad** (plan de cuentas, asientos, estados) | Fases 1–5 del cronograma; requiere contador. |
+| **Contabilidad** (plan de cuentas, asientos, estados) | Hechas el 2026-11-25: alcance respondido por el contador de Venezuela, plan de cuentas del contador (formato Profit), asientos manuales (borrador, confirmación, reverso), cierre mensual y libros (balance de comprobación, diario, mayor analítico, con Excel). Asientos automáticos con «Contabilizar» del cierre mensual (fase 4): ventas, notas, cobros con retención, IGTF y diferencial cambiario, compras, retenciones, pagos e inventario; anulaciones por reverso. Fase 5: estado de resultados y balance general (en pantalla y Excel), cierre anual (un asiento al 31/12 que lleva el resultado al patrimonio; se rehace reversándolo) y pago al SENIAT de retenciones e IGTF (no más de lo pendiente). Faltan la revisión del contador con un mes real, el flujo de efectivo y los cambios en el patrimonio. México espera. |
 | **Multiempresa “ver todas a la vez”** | No: la empresa activa filtra todo. |

@@ -17,6 +17,7 @@
 -- lo rechaza (-20091) y no se crea nada, porque se valida antes.
 --
 -- Errores propios: -20065 factura sin lineas, -20066 documento que no es FAC.
+-- Un borrador (PENDIENTE) se anula sin nota de credito (2026-11-25).
 -- =============================================================================
 
 create or replace procedure prc_anular_factura_nc (
@@ -45,6 +46,18 @@ begin
     IF UPPER(TRIM(NVL(v_fac.estado, '#'))) = 'ANULADA' THEN
         raise_application_error(-20025,
             'La factura ' || v_fac.folio_factura || ' ya esta ANULADA.');
+    END IF;
+
+    -- 2026-11-25: un BORRADOR (PENDIENTE) nunca se emitio: se anula sin nota de
+    -- credito. Conserva folio y N° de control (no se borra: la numeracion fiscal
+    -- no puede tener huecos). p_id_nc queda NULL y la pantalla lo dice.
+    IF UPPER(TRIM(NVL(v_fac.estado, '#'))) = 'PENDIENTE' THEN
+        pkg_facturacion.prc_anular_factura(
+            p_id_factura     => v_id,
+            p_id_presupuesto => v_fac.id_presupuesto,
+            p_usuario        => NVL(p_usuario, v('APP_USER'))
+        );
+        RETURN;
     END IF;
 
     SELECT COUNT(*) INTO v_lineas FROM facturas_det WHERE id_factura = v_id;

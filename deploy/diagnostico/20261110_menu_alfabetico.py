@@ -27,18 +27,26 @@ import oracledb
 from verificar_conexion import CONNECT_STRING, credenciales
 
 USUARIO, CLAVE = "diag.menu3", "Diag#2026"
-ESPERADO = ["Home", "Administración", "Compras", "Facturación", "Recibos",
-            "Reportes Factura y Notas C/D", "Libro de compras y ventas",
-            "Gestión de Usuarios", "Panel general", "Presupuestos"]
-# 2026-11-19: «Clientes» cuelga de Facturación y «Gasto real» de Presupuestos
+ESPERADO = ["Home", "Administración", "Compras", "Facturación", "Gestión de Usuarios",
+            "Impuestos", "Inventario", "Panel general", "Presupuestos",
+            "Recibos", "Reportes"]
+# 2026-11-19: «Clientes» colgaba de Facturación y «Gasto real» de Presupuestos
 # 2026-11-20: «Facturación» es el grupo y «Factura de Venta» (la pagina 8) su primera hija
 # 2026-11-20: «Conceptos de ISLR» (pagina 34) cuelga de Administración. No lo
 #             introdujo el acabado del 2026-11-21: la entrada existe desde el
 #             catalogo de ISLR y esta prueba se quedo con la lista vieja.
-HIJOS = {"Administración": ["Conceptos de ISLR"],
-         "Compras": ["Facturas de compras", "Proveedores"],
+# 2026-11-24: «Inventario» sube a primer nivel (abre la 42) con «Articulos y
+#             Servicios» y «Costo de Inventario»; «Clientes» pasa a Presupuestos
+#             (Presupuesto · Gasto real · Clientes) y «Reportes» es el grupo de
+#             «Reportes de Facturación».
+# 2026-11-24 (tarde): «Impuestos» es un grupo nuevo con «Conceptos de ISLR» y
+#             «Libro de compras y ventas» (que deja el primer nivel).
+HIJOS = {"Compras": ["Facturas de compras", "Proveedores", "Pagos"],
          "Facturación": ["Factura de Venta", "Clientes"],
-         "Presupuestos": ["Gasto real"]}
+         "Impuestos": ["Conceptos de ISLR", "Libro de compras y ventas"],
+         "Inventario": ["Artículos y Servicios", "Costo de Inventario"],
+         "Presupuestos": ["Presupuesto", "Gasto real", "Clientes"],
+         "Reportes": ["Reportes de Facturación"]}
 fallas = 0
 
 c = credenciales()
@@ -165,12 +173,22 @@ try:
     time.sleep(1.5)
     # la plantilla tarda un poco en pintar el arbol: se espera por condicion, no por reloj
     esperar('document.querySelectorAll(\'a[aria-level="1"]\').length > 4', 25)
-    # los grupos salen plegados: se despliegan TODOS para ver a sus hijas
-    js('(function(){var n=document.getElementById("t_TreeNav"); if(!n){return false;}'
-       'var ts=[...n.querySelectorAll(".a-TreeView-toggle")];'
-       'ts.forEach(function(t){t.click();});'
-       'return ts.length;})()')
-    esperar('document.querySelectorAll(\'a[aria-level="2"]\').length >= 5', 25)
+    # los grupos salen plegados. Se despliega UNO por vuelta y se vuelve a
+    # consultar el DOM: pulsar varios toggles de una vez deja nodos sueltos
+    # porque el widget rehace el <li> (medido el 2026-11-20). Se exige que el
+    # <li> tenga triangulo: sin eso se elige «Home», que no lo tiene, y el
+    # bucle termina sin desplegar nada.
+    for _ in range(10):
+        r = js("""(function(){var n=document.getElementById("t_TreeNav"); if(!n){return -1;}
+var li=[...n.querySelectorAll("li")].filter(function(l){
+return l.querySelector('a[aria-level="1"]') && !l.querySelector('a[aria-level="2"]')
+    && l.querySelector(".a-TreeView-toggle");})[0];
+if(!li){return 0;}
+li.querySelector(".a-TreeView-toggle").click(); return 1;})()""")
+        if r != 1:
+            break
+        time.sleep(0.6)
+    esperar('document.querySelectorAll(\'a[aria-level="2"]\').length >= 13', 25)
 
     pintado = js('(function(){var n=document.querySelector("#t_TreeNav, .t-TreeNav");'
                  'if(!n){return "SIN NAV";}'
@@ -195,6 +213,33 @@ try:
     if hijos != planas:
         fallas += 1
         print("  MAL las hijas de los grupos no son", planas)
+
+    # N1-N3: los padres de grupo deben ABRIR su pagina (el triangulo solo
+    # despliega). Sin esto, la 42 solo se alcanzaria escribiendo la URL.
+    # APEX los pinta como URL amigable con el alias: /synpex/inventario,
+    # /synpex/presupuestos y /synpex/documentos (la 17).
+    hrefs = js("""(function(){var n=document.getElementById("t_TreeNav"); if(!n){return "SIN NAV";}
+return JSON.stringify([...n.querySelectorAll('a[aria-level="1"]')]
+.map(function(x){return [x.textContent.trim(), x.getAttribute("href")||""];}));})()""")
+    pares = json.loads(hrefs) if isinstance(hrefs, str) and hrefs.startswith("[") else []
+    mapa = dict(pares)
+    for nombre, alias in (("Inventario", "inventario"), ("Presupuestos", "presupuestos"),
+                          ("Reportes", "documentos")):
+        if alias not in (mapa.get(nombre) or "").lower():
+            fallas += 1
+            print("  MAL «%s» no abre su pagina (href=%s)" % (nombre, mapa.get(nombre)))
+
+    # N4: pulsar «Inventario» abre la 42 y alli esta el boton «Ajuste de inventario»
+    # (hasta el 2026-11-24 la 44 no tenia por donde entrar).
+    js('(function(){var n=document.getElementById("t_TreeNav"); if(!n){return false;}'
+       'var a=[...n.querySelectorAll(\'a[aria-level="1"]\')].find(function(x){'
+       'return x.textContent.trim()==="Inventario";}); if(!a){return false;} a.click(); return true;})()')
+    if not esperar('document.body.innerText.indexOf("Ajuste de inventario") >= 0', 40):
+        fallas += 1
+        print("  MAL «Inventario» no abre la 42 o no trae el boton «Ajuste de inventario»")
+    js('window.location.href="%s/f?p=100:1:%s"' % (BASE, ses.group(1)))
+    esperar('document.readyState === "complete" && !!window.apex')
+    time.sleep(2)
 
     # Captura para el ojo humano: con el menu desplegado, si hace falta.
     import base64

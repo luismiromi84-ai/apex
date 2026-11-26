@@ -276,6 +276,7 @@ try:
         cur.execute("""select id_producto_servicio, nombre, precio_sugerido, impuesto_aplicable
                          from producto_servicio
                         where nvl(estado, 'ACTIVO') = 'ACTIVO'
+                          and id_empresa = 1
                         order by codigo""")
         prod = cur.fetchone()
         cur.execute("""select min(i.id_impuesto)

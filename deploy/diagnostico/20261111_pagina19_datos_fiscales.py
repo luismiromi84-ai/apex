@@ -217,8 +217,22 @@ try:
     esperar('document.readyState === "complete" && !!document.getElementById("P19F_TELEFONO")')
     time.sleep(2)
 
+    # 3b) Rango de control (2026-11-25): uno que no sirve para numerar no se guarda y
+    #     se explica por que (fn_rango_control_error).
+    js('apex.item("P19F_CONTROL_DESDE").setValue("000001");'
+       'apex.item("P19F_CONTROL_HASTA").setValue("0000010000");')
+    js("document.getElementById('B43000000000000427').click()")
+    ok = esperar('document.body.innerText.indexOf("misma cantidad de digitos") >= 0')
+    comprueba(ok, "un rango con distinta cantidad de digitos no se guarda y lo explica")
+    js("location.reload()")
+    esperar('document.readyState === "complete" && !!document.getElementById("P19F_TELEFONO")')
+    time.sleep(2)
+
     # 4) Guardar desde la pestana «Datos fiscales» (boton por id: los dos botones
-    #    comparten texto y solo cambia la region que los pinta).
+    #    comparten texto y solo cambia la region que los pinta). Con un rango valido:
+    #    el del cliente puede estar mal y entonces no dejaria guardar (se restaura al final).
+    js('apex.item("P19F_CONTROL_DESDE").setValue("00-000001");'
+       'apex.item("P19F_CONTROL_HASTA").setValue("00-010000");')
     js('apex.item("P19F_TELEFONO").setValue(%s)' % json.dumps(TEL_PRUEBA))
     js("document.getElementById('B43000000000000427').click()")
     ok = esperar('document.body.innerText.indexOf("Datos fiscales guardados") >= 0')

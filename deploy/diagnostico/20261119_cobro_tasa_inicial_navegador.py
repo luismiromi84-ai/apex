@@ -181,7 +181,7 @@ try:
     t16 = en_if('return apex.item("P25_TIPO_CAMBIO").getValue();')
     print("  tasa al 16/11:", t16, " tabla:", tasa_16)
     try:
-        ok_16 = abs(float(str(t16).replace(",", "")) - float(tasa_16)) < 0.0001
+        ok_16 = abs(float(str(t16).replace(".", "").replace(",", ".") if "," in str(t16) else str(t16)) - float(tasa_16)) < 0.0001
     except Exception:
         ok_16 = False
     comprobar("T5 al cambiar la fecha la tasa es la de esa fecha", ok_16,

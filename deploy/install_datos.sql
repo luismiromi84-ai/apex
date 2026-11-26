@@ -274,3 +274,21 @@ select 'INVENTARIO_PERMITE_NEGATIVO', 1,
        'Inventario: 1 permite dejar existencias en negativo, 0 lo prohibe' from dual
  where not exists (select 1 from syn_parametros where clave = 'INVENTARIO_PERMITE_NEGATIVO');
 commit;
+
+-- Formato de las cifras por pais (2026-11-25): 1 = una empresa venezolana ve 1.234,56;
+-- 0 = toda la app con el formato de es-mx (1,234.56). Lo lee prc_nls_sesion.
+insert into syn_parametros (clave, valor, descripcion)
+select 'FORMATO_NUMERO_POR_PAIS', 1,
+       'Formato de las cifras por pais de la empresa activa: 1 VE con 1.234,56; 0 todo como la app (1,234.56)' from dual
+ where not exists (select 1 from syn_parametros where clave = 'FORMATO_NUMERO_POR_PAIS');
+commit;
+
+-- Cajas y bancos (2026-11-25): cada empresa nace con su «Caja principal» en su moneda local.
+insert into cuentas_fondos (id_empresa, nombre, tipo, cod_moneda, es_principal, estado, creado_por)
+select e.id_empresa, 'Caja principal', 'CAJA', nvl(pa.moneda_local, 'USD'), 'S', 'ACTIVO', 'INSTALACION'
+  from empresas e left join paises pa on pa.cod_pais = e.cod_pais
+ where not exists (select 1 from cuentas_fondos c where c.id_empresa = e.id_empresa and c.es_principal = 'S');
+commit;
+
+-- Contabilidad (2026-11-25): plantilla del plan de cuentas de Venezuela.
+@@datos/ctb_plantilla_ve.sql

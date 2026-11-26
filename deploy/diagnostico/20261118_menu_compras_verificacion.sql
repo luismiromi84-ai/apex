@@ -5,7 +5,7 @@
 -- Solo cambia el menu: las paginas 22/23/27/28/29 no se tocan.
 --
 -- Casos:
---   V1 existe la entrada padre compras-grupo (id 43000000000001092, seq 12)
+--   V1 existe la entrada padre compras-grupo (id 43000000000001092, seq 30)
 --   V2 'compras' y 'proveedores' cuelgan del padre, con secuencia 1 y 2
 --   V3 'compras' conserva destino 27, «Ver Compras», icono de carrito y
 --      resaltado en 27,28,29
@@ -40,7 +40,7 @@ begin
        and static_id = 'compras-grupo'
        and list_entry_id = 43000000000001092
        and entry_text = 'Compras'
-       and display_sequence = 12;
+       and display_sequence = 30;
     if v_n <> 1 then
         falla('V1', 'no existe la entrada padre compras-grupo como se espera');
     end if;
@@ -100,17 +100,18 @@ begin
         falla('V5', 'el padre no apunta a la 27, no usa Ver Compras o lleva resaltado propio');
     end if;
 
-    -- V6: nadie mas cuelga de nadie (2026-11-19: ahora son cuatro: las dos de
-    -- Compras, «Clientes» bajo Facturación y «Gasto real» bajo Presupuestos;
-    -- 2026-11-20: cinco, con «Factura de Venta» bajo Facturación; y seis desde
-    -- el mismo 2026-11-20 por la tarde, con «Conceptos de ISLR» bajo
-    -- Administración (hija legítima: por eso el caso estaba en rojo)
+    -- V6: todas las entradas que cuelgan de un grupo. Desde el 2026-11-24 son
+    -- trece: Facturas de compras, Proveedores y Pagos (Compras); Factura de Venta
+    -- y Clientes (Facturación, que tiene su propia entrada ademas de la de
+    -- Presupuestos); Conceptos de ISLR y Libro de compras y ventas (Impuestos);
+    -- Artículos y Servicios y Costo de Inventario (Inventario); Presupuesto,
+    -- Gasto real y Clientes (Presupuestos); y Reportes de Facturación (Reportes).
     select count(*) into v_n
       from apex_260100.apex_application_list_entries
      where application_id = 100 and list_name = 'Navigation Menu'
        and list_entry_parent_id is not null;
-    if v_n <> 6 then
-        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 6)');
+    if v_n <> 13 then
+        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 13)');
     end if;
 
     -- V7: el padre usa «Ver Compras» y de él cuelga «Proveedores» con «Ver Proveedores».
@@ -139,7 +140,8 @@ begin
         falla('V8', 'la pagina 27 no se titula Facturas de Compras');
     end if;
 
-    -- V9 (2026-11-19): «Clientes» cuelga de «Facturación» y conserva lo suyo
+    -- V9 (2026-11-24): «Clientes» cuelga ahora de «Presupuestos» (lo pidio el
+    -- dueño: Presupuesto - Gasto real - Clientes) y conserva lo suyo
     select count(*) into v_n
       from apex_260100.apex_application_list_entries h
       join apex_260100.apex_application_list_entries p
@@ -150,10 +152,10 @@ begin
        and h.authorization_scheme = 'Ver Clientes'
        and h.current_for_pages_type_code = 'COLON_DELIMITED_PAGE_LIST'
        and h.current_for_pages_expression = '20,21'
-       and p.static_id = 'facturacion'
-       and instr(p.entry_target, ':8:') > 0;
+       and p.static_id = 'presupuestos'
+       and instr(p.entry_target, ':5:') > 0;
     if v_n <> 1 then
-        falla('V9', '«Clientes» no cuelga de «Facturación» o perdio destino/esquema');
+        falla('V9', '«Clientes» no cuelga de «Presupuestos» o perdio destino/esquema');
     end if;
 
     -- V10: «Gasto real» cuelga de «Presupuestos» y lleva su propio esquema
@@ -218,13 +220,14 @@ begin
         falla('V13', '«Factura de Venta» no cuelga de Facturación o perdio destino/esquema/icono');
     end if;
 
+    -- V14 (2026-11-24): «Clientes» es la tercera hija de Presupuestos
     select count(*) into v_n
       from apex_260100.apex_application_list_entries
      where application_id = 100 and list_name = 'Navigation Menu'
        and static_id = 'clientes'
-       and display_sequence = 2;
+       and display_sequence = 3;
     if v_n <> 1 then
-        falla('V14', '«Clientes» no quedo como segunda hija (secuencia 2)');
+        falla('V14', '«Clientes» no quedo como tercera hija (secuencia 3)');
     end if;
 
     raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || v_lista, 1, 3000));

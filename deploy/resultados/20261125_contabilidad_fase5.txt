@@ -1,0 +1,1 @@
+2026-11-25 Contabilidad fase 5: pkg y fn_ctb_libro compilados (0 invalidos); verificacion SQL K1-K18 FALLAS=0; f100 122 sentencias; procesos/rejilla/portada FALLAS=0; navegador C1-C11 FALLAS=0

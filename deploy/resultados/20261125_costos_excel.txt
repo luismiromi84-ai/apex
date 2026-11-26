@@ -1,0 +1,1 @@
+2026-11-25 Excel de costos: import 116 sentencias OK; procesos FALLAS=0; rejilla FALLAS=0; portada FALLAS=0 (51 paginas, 43 guardas, 0 invalidos); install limpio FALLAS=0; navegador 20261125_costos_excel_navegador.py X1-X4 FALLAS=0

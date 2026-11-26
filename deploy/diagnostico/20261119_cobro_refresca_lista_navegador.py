@@ -164,7 +164,7 @@ try:
     print("  despues:", fila(id_fac))
     texto = str(fila(id_fac))
     comprobar("L1 la fila pasa a PAGADA sin recargar", "PAGADA" in texto, texto)
-    comprobar("L2 el saldo queda en 0.00", "0.00" in texto, texto)
+    comprobar("L2 el saldo queda en 0", ("0.00" in texto or "0,00" in texto), texto)
 finally:
     proc.terminate()
     con = oracledb.connect(user=c["DB_USER"], password=c["DB_PASSWORD"], dsn=CONNECT_STRING)

@@ -176,7 +176,8 @@ create or replace package body pkg_cobros as
         p_referencia     in  varchar2 default null,
         p_aplica_igtf    in  varchar2 default null,
         p_usuario        in  varchar2,
-        p_id_recibo      out number
+        p_id_recibo      out number,
+        p_id_cuenta      in  number   default null
     ) is
         v_emp      number;
         v_estado   varchar2(20);
@@ -318,7 +319,8 @@ create or replace package body pkg_cobros as
         if v_retencion > 0 then
             if p_nro_comprobante is null then
                 raise_application_error(-20081,
-                    'Falta el numero del comprobante de retencion del cliente (14 digitos).');
+                    'Falta el numero del comprobante de retencion del cliente (14 digitos, AAAAMM + 8). '
+                    || 'Escribelo en "N comprobante"; si el cliente no retuvo, deja la retencion en 0.');
             end if;
             if not regexp_like(trim(p_nro_comprobante), '^[0-9]{14}$') then
                 raise_application_error(-20081,
@@ -340,14 +342,17 @@ create or replace package body pkg_cobros as
 
         v_neto := round(v_monto - round(v_retencion / v_tasa, 2) + v_igtf, 2);
 
+        -- 2026-11-25: el dinero entra a una caja o cuenta de la empresa (la principal
+        -- si no se elige otra).
         insert into recibos (id_empresa, id_factura, fecha_cobro, id_forma_pago, cod_moneda,
                              tipo_cambio, monto_cobrado, monto_bs, monto_factura, aplica_igtf,
                              igtf_monto, igtf_bs, retencion_iva_bs, nro_comprobante_retencion,
-                             monto_neto, referencia, conciliado, estado, creado_por)
+                             monto_neto, referencia, conciliado, estado, creado_por, id_cuenta)
         values (v_emp, p_id_factura, v_fecha, p_id_forma_pago, v_moneda,
                 v_tasa, v_monto, v_mon_bs, v_mon_fac, v_aplica,
                 v_igtf, v_igtf_bs, v_retencion, v_comprobante,
-                v_neto, p_referencia, 'N', 'ACTIVO', p_usuario)
+                v_neto, p_referencia, 'N', 'ACTIVO', p_usuario,
+                fn_cuenta_fondos(v_emp, p_id_cuenta))
         returning id_recibo into p_id_recibo;
 
         actualiza_factura(p_id_factura);

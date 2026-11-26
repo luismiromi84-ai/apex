@@ -1,0 +1,1 @@
+2026-11-25 Revision de 9 pantallas: f100 122 sentencias; procesos/rejilla/portada FALLAS=0; 20261125_revision_pantallas_navegador.py R1-R9 FALLAS=0; regresion: 20261116_reporte_documentos_pagina, 20261118_libro_excel_navegador, 20261119_libro_mx_verificacion, 20261120_centro_documentos_navegador FALLAS=0

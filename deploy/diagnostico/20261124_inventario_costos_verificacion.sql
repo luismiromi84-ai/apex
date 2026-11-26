@@ -6,7 +6,7 @@
 --   V1  la pagina existe con su alias
 --   V2  tiene los tres filtros y el boton Filtrar
 --   V3  las dos regiones son informes con sus columnas
---   V4  la entrada de menu «Costos de inventario» cuelga de Compras
+--   V4  la entrada de menu «Costo de Inventario» cuelga de Inventario (menu del 2026-11-24)
 --   V5  la consulta del costo de ventas se ejecuta con sus binds
 --   V6  la consulta del inventario valorado se ejecuta con sus binds
 --   V7  el costo de ventas del sistema cuadra con el de los movimientos
@@ -75,7 +75,8 @@ begin
     select count(*) into v_n
       from apex_application_list_entries e
      where e.application_id = 100 and e.list_name = 'Navigation Menu'
-       and upper(e.entry_text) = 'COSTOS DE INVENTARIO'
+       and upper(e.entry_text) = 'COSTO DE INVENTARIO'
+       and upper(e.parent_entry_text) = 'INVENTARIO'
        and e.list_entry_parent_id is not null;
     espera_num('V4 menu Costos de inventario con padre', v_n, 1);
 

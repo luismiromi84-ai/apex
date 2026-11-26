@@ -113,8 +113,9 @@ commit;
 
 -- 3. Producto
 -- -----------------------------------------------------------------------------
-insert into producto_servicio (id_producto_servicio, codigo, nombre, descripcion, tipo, precio_sugerido, estado)
-values (900001, 'PRUEBA-001', 'Producto de prueba', 'Producto de prueba', 'SERVICIO', 100, 'ACTIVO');
+-- El catalogo es por empresa desde el 2026-11-23: el articulo de prueba es de la empresa 1.
+insert into producto_servicio (id_producto_servicio, id_empresa, codigo, nombre, descripcion, tipo, precio_sugerido, estado)
+values (900001, 1, 'PRUEBA-001', 'Producto de prueba', 'Producto de prueba', 'SERVICIO', 100, 'ACTIVO');
 /
 
 -- -----------------------------------------------------------------------------

@@ -209,7 +209,9 @@ try:
 
     fila_v = next((f for f in ventas if FOLIO_VENTA in f["texto"]), None)
     esperado = "%.2f" % float(SALDO_VENTA)
-    comprueba(fila_v is not None and esperado in fila_v["texto"].replace(",", ""),
+    # 2026-11-25: formato por pais; se quitan los miles y se normaliza la coma decimal (VE).
+    comprueba(fila_v is not None and (esperado in fila_v["texto"].replace(",", "")
+                                      or esperado in fila_v["texto"].replace(".", "").replace(",", ".")),
               "la venta %s conserva su saldo" % FOLIO_VENTA,
               (fila_v or {}).get("texto", "")[:150])
 

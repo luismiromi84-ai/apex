@@ -55,9 +55,14 @@ prompt ============================================================
 @@../tabla/retenciones_iva.sql
 @@../tabla/retencion_contador.sql
 -- Cobros (2026-11-17): recibos por factura; despues de FACTURAS y FORMA_PAGO por las FK.
+-- Contabilidad (2026-11-25): antes de CUENTAS_FONDOS por la FK de la subcuenta.
+@@../tabla/ctb_contabilidad.sql
+@@../tabla/cuentas_fondos.sql
+@@../tabla/conciliaciones.sql
 @@../tabla/recibos.sql
 @@../tabla/pagos.sql
 @@../tabla/pagos_detalle.sql
+@@../tabla/tomas_fisicas.sql
 @@../tabla/gasto_real.sql
 @@../tabla/folio_contador.sql
 @@../tabla/syn_parametros.sql
@@ -86,6 +91,11 @@ prompt    prc_auth_registrar va antes porque fn_autenticar_usuario lo llama.
 @@../funciones/fn_presupuesto_propio.sql
 @@../funciones/fn_factura_propio.sql
 @@../funciones/fn_factura_editable.sql
+@@../funciones/fn_factura_anulable.sql
+@@../funciones/fn_rango_control_error.sql
+@@../funciones/fn_cuenta_fondos.sql
+@@../funciones/fn_costos_excel.sql
+@@../funciones/fn_ctb_libro.sql
 @@../funciones/fn_factura_cobrable.sql
 @@../funciones/fn_estado_factura.sql
 @@../funciones/fn_estado_compra.sql
@@ -155,6 +165,9 @@ prompt ============================================================
 -- Cobros (2026-11-17)
 @@../package/pkg_cobros.sql
 @@../package/pkg_pagos.sql
+@@../package/pkg_toma_fisica.sql
+@@../package/pkg_conciliacion.sql
+@@../package/pkg_contabilidad.sql
 
 prompt ============================================================
 prompt 5/8 Triggers de estado
@@ -170,6 +183,7 @@ prompt    Van despues de fn_transicion_estado_valida (bloque 3).
 @@../trigger/trg_producto_servicio_barras.sql
 -- Catalogo: el codigo interno tambien (series PROD y SERV) y es permanente.
 @@../trigger/trg_producto_servicio_codigo.sql
+@@../trigger/trg_ctb_asiento_det.sql
 
 prompt ============================================================
 prompt 6/8 Procedimientos
@@ -181,6 +195,7 @@ prompt ============================================================
 @@../procedimientos/prc_log_reset_password.sql
 @@../procedimientos/prc_purgar_logs.sql
 @@../procedimientos/prc_anular_factura_nc.sql
+@@../procedimientos/prc_nls_sesion.sql
 -- Secuencias desde Administracion (2026-11-23).
 @@../procedimientos/prc_fijar_secuencia.sql
 @@../procedimientos/prc_resincronizar_secuencia.sql

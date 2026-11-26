@@ -153,7 +153,8 @@ create or replace package body pkg_pagos as
         p_observaciones  in  varchar2 default null,
         p_aplicaciones   in  varchar2 default null,
         p_usuario        in  varchar2,
-        p_id_pago        out number
+        p_id_pago        out number,
+        p_id_cuenta      in  number   default null
     ) is
         v_emp        number;
         v_pide_ref   varchar2(1);
@@ -243,12 +244,15 @@ create or replace package body pkg_pagos as
         end if;
 
         -- escritura ----------------------------------------------------------
+        -- 2026-11-25: el dinero sale de una caja o cuenta de la empresa (la principal
+        -- si no se elige otra).
         insert into pagos (id_empresa, id_proveedor, fecha_pago, cod_moneda, tipo_cambio,
                            monto, monto_bs, id_forma_pago, referencia, aplica_igtf,
-                           igtf_monto, igtf_bs, estado, observaciones, creado_por)
+                           igtf_monto, igtf_bs, estado, observaciones, creado_por, id_cuenta)
         values (v_emp, p_id_proveedor, nvl(p_fecha, trunc(sysdate)), upper(p_moneda), v_tasa,
                 p_monto, round(p_monto * v_tasa, 2), p_id_forma_pago, p_referencia, v_aplica_ig,
-                v_igtf, round(v_igtf * v_tasa, 2), 'ACTIVO', p_observaciones, p_usuario)
+                v_igtf, round(v_igtf * v_tasa, 2), 'ACTIVO', p_observaciones, p_usuario,
+                fn_cuenta_fondos(v_emp, p_id_cuenta))
         returning id_pago into p_id_pago;
 
         for r in (select jt.id_compra, jt.monto
@@ -453,7 +457,7 @@ create or replace package body pkg_pagos as
                      and p.estado = 'ACTIVO'
                      and nvl(p.conciliado, 'N') = 'N'
                    order by p.fecha_pago, p.id_pago) loop
-            exit when v_saldo <= 0.01;
+            if v_saldo <= 0.01 then exit; end if;
 
             v_libre := fn_favor_pago(r.id_pago);
             if v_libre > 0.01 then
@@ -507,7 +511,7 @@ create or replace package body pkg_pagos as
                      and nvl(c.tipo_documento, 'FAC') = 'FAC'
                    order by c.fecha_emision, c.id_compra) loop
 
-            exit when v_resta <= 0.01;
+            if v_resta <= 0.01 then exit; end if;
 
             v_tc     := nvl(nullif(r.tipo_cambio, 0), 1);
             v_aplica := least(fn_saldo_compra(r.id_compra), round(v_resta * v_tasa / v_tc, 2));

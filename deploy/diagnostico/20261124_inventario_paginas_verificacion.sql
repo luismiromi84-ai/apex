@@ -5,7 +5,8 @@
 --
 --   V1  las tres paginas existen, con su alias y su titulo
 --   V2  el esquema ver-inventario existe y lleva los roles de la guarda
---   V3  la entrada de menu «Inventario» cuelga de Compras
+--   V3  la entrada de menu «Inventario» es de primer nivel y abre la 42; de ella
+--       cuelgan «Artículos y Servicios» y «Costo de Inventario»
 --   V4  la 42: region de indicadores dinamica + IR de saldos con sus columnas
 --   V5  la 43: los cuatro filtros + IR de movimientos + boton Filtrar
 --   V6  la 44: los ocho campos + dos botones + los dos procesos
@@ -61,13 +62,26 @@ begin
     espera_num('V2 esquema ver-inventario con sus roles', v_n, 1);
 
     ------------------------------------------------------------------ V3
+    -- V3 (2026-11-24, tarde): «Inventario» subio a primer nivel y abre la 42;
+    -- de el cuelgan «Articulos y Servicios» (40) y «Costo de Inventario» (45).
     select count(*) into v_n
       from apex_application_list_entries e
      where e.application_id = 100
        and e.list_name = 'Navigation Menu'
        and upper(e.entry_text) = 'INVENTARIO'
-       and e.list_entry_parent_id is not null;
-    espera_num('V3 entrada de menu Inventario con padre', v_n, 1);
+       and e.list_entry_parent_id is null
+       and instr(e.entry_target, ':42:') > 0;
+    espera_num('V3 entrada de menu Inventario de primer nivel', v_n, 1);
+
+    select count(*) into v_n
+      from apex_application_list_entries h
+      join apex_application_list_entries p
+        on p.list_entry_id = h.list_entry_parent_id
+     where h.application_id = 100 and h.list_name = 'Navigation Menu'
+       and upper(p.entry_text) = 'INVENTARIO'
+       and (   (h.static_id = 'articulos'         and instr(h.entry_target, ':40:') > 0)
+            or (h.static_id = 'costos-inventario' and instr(h.entry_target, ':45:') > 0));
+    espera_num('V3 hijas Articulos y Costo de Inventario', v_n, 2);
 
     ------------------------------------------------------------------ V4
     select count(*) into v_n

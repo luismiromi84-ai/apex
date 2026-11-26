@@ -181,5 +181,22 @@ create or replace PACKAGE BODY pkg_gasto_real AS
         return v_total;
     end fn_total_gasto_usd;
 
+    -- ---------------------------------------------------------------------
+    -- Total gastado de un presupuesto, en BOLIVARES.
+    -- TASA_REAL es "bolivares por unidad de la moneda del gasto", asi que
+    -- monto_origen * tasa_real ya esta en bolivares para USD, MXN y VES.
+    -- (2026-11-24: la tarjeta de la pagina 5 sumaba los USD y los restaba de un
+    --  total en bolivares; con esto las dos cifras quedan en la misma moneda.)
+    -- ---------------------------------------------------------------------
+    FUNCTION fn_total_gasto_bs (p_id_presupuesto IN NUMBER) RETURN NUMBER IS
+        v_total number;
+    begin
+        select nvl(sum(monto_origen * tasa_real), 0) into v_total
+          from gasto_real
+         where id_presupuesto = p_id_presupuesto;
+
+        return v_total;
+    end fn_total_gasto_bs;
+
 END pkg_gasto_real;
 /
