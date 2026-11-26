@@ -318,8 +318,10 @@ begin
 
     -- L9: contadores ---------------------------------------------------------
     select count(*) into v_n from apex_application_pages where application_id = 100;
-    if v_n <> 37 then
-        falla('L9', 'la app tiene ' || v_n || ' paginas, se esperaban 37');
+    -- 2026-11-26: el numero exacto lo vigila 20261105_portada_verificacion.py; aqui basta que no
+    -- se haya perdido ninguna pagina de las 37 de entonces.
+    if v_n < 37 then
+        falla('L9', 'la app tiene ' || v_n || ' paginas, se esperaban al menos 37');
     end if;
 
     select count(*) into v_n from all_objects

@@ -1,0 +1,27 @@
+Suite de verificaciones 20261126: 20 de 25 en verde, 41 s
+
+sql       SIN RESULTADO     1s  20261104_folio_5_8_verificacion.sql  -> 20261104_folio_5_8_verificacion.sql: 1 sentencias | ejecutadas OK: 1 en 1.1s
+sql       OK                1s  20261118_folios_verificacion.sql
+fixture   OK                1s  20261105_gasto_real_verificacion.sql
+fixture   OK                1s  20261105_reportes_verificacion.sql
+fixture   OK                1s  20261111_clientes_verificacion.sql
+fixture   OK                2s  20261116_control_factura_verificacion.sql
+fixture   FALLA             6s  20261116_reporte_documentos_verificacion.sql  -> FALLO en la sentencia 23 (codigo 20100): ORA-20100: RESULTADO: FALLAS=2 | R15: el �Ver compra� no abre la 28 | R15: el �Ver� de la venta no abre la 9 en modo consulta
+fixture   OK                1s  20261117_cobros_estados_verificacion.sql
+fixture   FALLA             1s  20261117_empresa_activa_barra_verificacion.sql  -> FALLO en la sentencia 5 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | B5 el combo no envia la pagina al cambiar (page_action_on_selection) | raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || ' | ' || v_lista, 1, 3000));
+fixture   OK                1s  20261117_rif_empresa_verificacion.sql
+fixture   OK                1s  20261118_documentos_empresa_verificacion.sql
+fixture   FALLA             1s  20261118_menu_compras_verificacion.sql  -> FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | V6: hay 20 entradas con padre (se esperaban 13) | procedure falla(p_caso varchar2, p_detalle varchar2) is
+fixture   OK                3s  20261119_cobros_buscador_verificacion.sql
+fixture   OK                1s  20261119_estado_emitida_ve_verificacion.sql
+fixture   FALLA             2s  20261119_redondeo_retencion_verificacion.sql  -> FALLO en la sentencia 5 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | R4: hay 2 linea(s) de factura que no cuadran con cantidad x precio | raise_application_error(-20100, substrb('RESULTADO: FALLAS=' || v_fallas || ' | ' || v_lista, 1, 3000));
+fixture   OK                1s  20261121_pagos_estados_verificacion.sql
+fixture   OK                1s  20261121_pagos_saldo_verificacion.sql
+fixture   OK                1s  20261122_igtf_congelado_verificacion.sql
+fixture   OK                2s  20261122_rif_mayus_chips_islr_verificacion.sql
+fixture   OK                1s  20261123_imprimir_compra_verificacion.sql
+fixture   OK                1s  20261124_inventario_compra_verificacion.sql
+fixture   OK                1s  20261124_inventario_factura_verificacion.sql
+fixture   OK                1s  20261124_p6_ora01722_verificacion.sql
+fixture   OK                2s  20261125_conciliacion_verificacion.sql
+fixture   OK                2s  20261125_toma_fisica_verificacion.sql

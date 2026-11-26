@@ -7,7 +7,7 @@
 --   B2  vive en una región de la página global puesta en la barra (REGION_POSITION_06)
 --   B3  su LOV es SQL y lee v_empresas_usuario
 --   B4  la LOV se filtra por el usuario de la sesión (:APP_USER)
---   B5  al cambiar la selección se envía la página (page_action_on_selection = SUBMIT)
+--   B5  al cambiar la selección cambia la empresa (submit o la acción dinámica de la página global)
 --   B6  la LOV, ejecutada como la guarda APEX, devuelve las empresas del usuario
 --   B7  el proceso de aplicación de la empresa activa lee ESE ítem (interfaz con la tarea 1)
 --
@@ -34,6 +34,7 @@ declare
     v_region   varchar2(4000);
     v_pos      varchar2(100);
     v_attrs    varchar2(4000);
+    v_n_da   number;
     v_proc     varchar2(32767);
     v_filas    number;
     v_usuario  varchar2(100);
@@ -97,8 +98,14 @@ begin
         when no_data_found then
             v_attrs := null;
     end;
-    if v_attrs is null or instr(v_attrs, '"page_action_on_selection":"submit"') = 0 then
-        insert into tmp_empbar_fallas values ('B5 el combo no envia la pagina al cambiar (page_action_on_selection)');
+    -- 2026-11-26: desde el 2026-11-25 el cambio lo hace la accion dinamica de la pagina global
+    -- «cambia-empresa-activa» (quito el «#LABEL# debe tener algun valor»); vale cualquiera de los dos.
+    select count(*) into v_n_da
+      from apex_application_page_da
+     where application_id = 100 and page_id = 0
+       and upper(when_element) = 'P0_EMPRESA_ACTIVA' and lower(when_event_name) like '%change%';
+    if (v_attrs is null or instr(v_attrs, '"page_action_on_selection":"submit"') = 0) and v_n_da = 0 then
+        insert into tmp_empbar_fallas values ('B5 el combo no cambia la empresa al seleccionar (ni submit ni accion dinamica)');
     end if;
 
     -- B6: comportamiento: la LOV, ejecutada como la ejecuta APEX, trae las empresas

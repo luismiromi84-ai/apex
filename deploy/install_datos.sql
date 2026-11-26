@@ -292,3 +292,5 @@ commit;
 
 -- Contabilidad (2026-11-25): plantilla del plan de cuentas de Venezuela.
 @@datos/ctb_plantilla_ve.sql
+-- Mexico (2026-11-26): borrador con el codigo agrupador del SAT, a validar con el contador.
+@@datos/ctb_plantilla_mx.sql

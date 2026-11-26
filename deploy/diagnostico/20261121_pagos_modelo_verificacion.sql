@@ -151,8 +151,10 @@ begin
 
     -- M8: vencimiento y objetos invalidos -----------------------------------
     begin
+        -- 2026-11-26: el vencimiento se calcula al REGISTRAR la compra (pkg_compras); un borrador
+        -- todavia no lo tiene.
         execute immediate 'select count(*) from compras '
-                       || 'where fecha_emision is not null and fecha_vencimiento is null'
+                       || 'where fecha_emision is not null and fecha_vencimiento is null and estado <> ''BORRADOR'''
           into v_n;
         comprueba('M8', v_n = 0, v_n || ' compras sin fecha de vencimiento');
     exception

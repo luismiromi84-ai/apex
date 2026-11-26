@@ -1,0 +1,6 @@
+Suite de verificaciones 20261126: 3 de 4 en verde, 334 s
+
+navegador OK               58s  20261116_reporte_documentos_pagina.py
+navegador OK               30s  20261120_centro_documentos_navegador.py
+navegador FALLA           218s  20261125_costos_excel_navegador.py  -> FALLA X1 Excel costo de ventas con membrete y TOTALES  -> [] | FALLA X2 el costo en Bs cuadra con la base  -> sin archivo | FALLA X3 Excel inventario valorado con TOTALES  -> [] | RESULTADO: FALLAS=3 | - X1 Excel costo de ventas con membrete y TOTALES | - X2 el costo en Bs cuadra con la base | - X3 Excel inventario valorado con TOTALES
+navegador OK               28s  20261126_pago_aplicar_navegador.py

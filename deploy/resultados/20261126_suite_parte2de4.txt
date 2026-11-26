@@ -1,0 +1,6 @@
+Suite de verificaciones 20261126: 4 de 4 en verde, 212 s
+
+navegador OK               20s  20261118_libro_excel_navegador.py
+navegador OK              143s  20261121_pagos_paginas.py
+navegador OK               29s  20261125_toma_conciliacion_navegador.py
+navegador OK               19s  20261126_linea_compra_descuento_navegador.py

@@ -6,7 +6,7 @@
 --     consumieron la identidad);
 --   * el comprobante de retencion correlativo, sin saltos.
 --
---   P1  los id de proveedores son 1..n, sin huecos
+--   P1  los id de proveedores son unicos y no se muestran como numero (revisada 2026-11-26)
 --   P2  la identidad de PROVEEDORES avanza de uno en uno y no reutiliza un id en
 --       uso (se mide con dos altas y su borrado; no se compara con max(id)+1, que
 --       depende de cuantas pruebas hayan dado de alta y borrado proveedores)
@@ -84,10 +84,19 @@ begin
     values ('test_corr', 'test_corr@synpex.local', sypex_hash_password('x'), 'ACTIVO', 1,
             (select id_rol from syn_roles where codigo_rol = 'ADMIN'), 'N', 0);
 
-    -- P1: proveedores 1..n sin huecos
-    select count(*), max(id_proveedor) into v_cnt, v_max from proveedores;
-    if v_cnt > 0 and v_max <> v_cnt then
-        falla('P1', 'los proveedores van hasta ' || v_max || ' y hay ' || v_cnt || ' (hay huecos)');
+    -- P1 (revisada el 2026-11-26): el id del proveedor es interno. No se le muestra a nadie (en la
+    -- lista de Proveedores es solo el enlace «Editar») y las altas y bajas de las pruebas consumen
+    -- la identidad: hoy van 1, 2, 3, 284, 285, y no se puede renumerar con compras reales. Lo que
+    -- importa: ids unicos y que la lista no los ensene como numero. El avance de uno en uno lo mide P2.
+    select count(*), count(distinct id_proveedor) into v_cnt, v_max from proveedores;
+    if v_cnt <> v_max then
+        falla('P1', 'hay ids de proveedor repetidos');
+    end if;
+    select count(*) into v_cnt from apex_260100.apex_application_page_ir_col
+     where application_id = 100 and page_id = 22 and column_alias = 'ID_PROVEEDOR'
+       and report_label not in ('Editar', 'Ver');
+    if v_cnt > 0 then
+        falla('P1', 'la lista de Proveedores muestra el id interno como numero');
     end if;
 
     -- P2: la identidad de PROVEEDORES avanza de uno en uno y no reutiliza un id que

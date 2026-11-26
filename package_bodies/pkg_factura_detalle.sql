@@ -238,27 +238,41 @@ create or replace PACKAGE BODY pkg_factura_detalle IS
             monto_total_linea, tasa_cambio_aplicada, subtotal_bs, total_bs,
             creado_por
         )
+        -- 2026-11-26: el precio convertido se guarda con 2 decimales y de el salen bruto, descuento,
+        -- subtotal e impuesto. Antes se guardaba precio_unitario * factor sin redondear (40,046) y el
+        -- subtotal salia de ese precio: el impreso (40,05 x 40 = 1.602,00) no cuadraba con la linea
+        -- (1.601,84). Lo detecto la verificacion R4 de 20261119_redondeo_retencion_verificacion.sql.
         SELECT
             p_id_factura,
-            ROW_NUMBER() OVER (ORDER BY pd.id_detalle) AS num_linea,
-            pd.id_producto_servicio,
+            ROW_NUMBER() OVER (ORDER BY y.id_detalle) AS num_linea,
+            y.id_producto_servicio,
             NULL AS codigo_producto,
-            pd.descripcion,
-            pd.cantidad,
-            pd.precio_unitario * v_factor,
-            NVL(pd.porcentaje_descuento, 0),
-            NVL(pd.monto_descuento, 0) * v_factor,
-            pd.id_impuesto,
-            NVL(pd.porcentaje_impuesto, 16),
-            NVL(pd.monto_impuesto, 0) * v_factor,
-            NVL(pd.subtotal_linea, pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) * v_factor,
-            NVL(pd.monto_total_linea, (pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) + NVL(pd.monto_impuesto, 0)) * v_factor,
+            y.descripcion,
+            y.cantidad,
+            y.precio,
+            y.pct_desc,
+            y.descuento,
+            y.id_impuesto,
+            y.pct_imp,
+            round((y.bruto - y.descuento) * y.pct_imp / 100, 2),
+            y.bruto - y.descuento,
+            (y.bruto - y.descuento) + round((y.bruto - y.descuento) * y.pct_imp / 100, 2),
             v_tasa,
-            (NVL(pd.subtotal_linea, pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) * v_factor) * v_tasa,
-            (NVL(pd.monto_total_linea, (pd.cantidad * pd.precio_unitario - NVL(pd.monto_descuento, 0)) + NVL(pd.monto_impuesto, 0)) * v_factor) * v_tasa,
+            round((y.bruto - y.descuento) * v_tasa, 2),
+            round(((y.bruto - y.descuento) + round((y.bruto - y.descuento) * y.pct_imp / 100, 2)) * v_tasa, 2),
             p_usuario
-          FROM presupuestos_det pd
-         WHERE pd.id_presupuesto = p_id_presupuesto;
+          FROM (SELECT x.*,
+                       CASE WHEN x.pct_desc > 0 THEN round(x.bruto * x.pct_desc / 100, 2)
+                            ELSE round(x.desc_orig * v_factor, 2) END AS descuento
+                  FROM (SELECT pd.id_detalle, pd.id_producto_servicio, pd.descripcion, pd.cantidad,
+                               round(pd.precio_unitario * v_factor, 2) AS precio,
+                               round(pd.cantidad * round(pd.precio_unitario * v_factor, 2), 2) AS bruto,
+                               NVL(pd.porcentaje_descuento, 0) AS pct_desc,
+                               NVL(pd.monto_descuento, 0) AS desc_orig,
+                               pd.id_impuesto,
+                               NVL(pd.porcentaje_impuesto, 16) AS pct_imp
+                          FROM presupuestos_det pd
+                         WHERE pd.id_presupuesto = p_id_presupuesto) x) y;
     END reemplazar_desde_presupuesto;
 
     -- ---------------------------------------------------------------------

@@ -60,7 +60,7 @@ create or replace package body pkg_contabilidad as
         end if;
 
         -- los padres primero (por nivel), para enlazar id_padre
-        for r in (select p.codigo, p.nombre, p.origen, p.naturaleza,
+        for r in (select p.codigo, p.nombre, p.origen, p.naturaleza, p.codigo_agrupador_sat,
                          regexp_count(rtrim(p.codigo, '.'), '\.') + 1 nivel
                     from ctb_plantilla_cuentas p
                    where p.cod_pais = v_pais
@@ -79,14 +79,14 @@ create or replace package body pkg_contabilidad as
                 end;
             end if;
             insert into ctb_cuentas (id_empresa, codigo, nombre, nivel, id_padre, tipo, naturaleza,
-                                     acepta_movimiento, origen, creado_por)
+                                     acepta_movimiento, origen, creado_por, codigo_agrupador_sat)
             values (p_id_empresa, r.codigo, r.nombre, r.nivel, v_padre,
                     case substr(r.codigo, 1, 1)
                         when '1' then 'ACTIVO' when '2' then 'PASIVO' when '3' then 'PATRIMONIO'
                         when '4' then 'INGRESO' when '5' then 'COSTO' else 'GASTO' end,
                     nvl(r.naturaleza, case when substr(r.codigo, 1, 1) in ('1', '5', '6') then 'D' else 'H' end),
                     case when r.codigo like '%.' then 'N' else 'S' end,
-                    r.origen, p_usuario);
+                    r.origen, p_usuario, r.codigo_agrupador_sat);
             v_n := v_n + 1;
         end loop;
 
@@ -145,11 +145,13 @@ create or replace package body pkg_contabilidad as
           from ctb_cuentas
          where id_padre = g.id_cuenta_ctb
            and regexp_like(substr(codigo, length(g.codigo) + 1), '^[0-9]+$');
+        -- la subcuenta hereda el codigo agrupador del SAT de su grupo (Mexico: 101.01 / 102.01)
         insert into ctb_cuentas (id_empresa, codigo, nombre, nivel, id_padre, tipo, naturaleza,
-                                 acepta_movimiento, origen, creado_por)
+                                 acepta_movimiento, origen, creado_por, codigo_agrupador_sat)
         values (f.id_empresa, g.codigo || lpad(v_suf, 3, '0'),
                 substr(upper(f.nombre) || ' (' || f.cod_moneda || ')', 1, 150),
-                g.nivel + 1, g.id_cuenta_ctb, g.tipo, g.naturaleza, 'S', 'EMPRESA', p_usuario)
+                g.nivel + 1, g.id_cuenta_ctb, g.tipo, g.naturaleza, 'S', 'EMPRESA', p_usuario,
+                g.codigo_agrupador_sat)
         returning id_cuenta_ctb into v_id;
         update cuentas_fondos set id_cuenta_ctb = v_id where id_cuenta = p_id_cuenta;
         return v_id;
@@ -838,7 +840,7 @@ create or replace package body pkg_contabilidad as
                     join ctb_asientos a on a.id_asiento = d.id_asiento
                     join ctb_cuentas cu on cu.id_cuenta_ctb = d.id_cuenta_ctb
                    where a.id_empresa = p_id_empresa and a.estado in ('CONFIRMADO', 'REVERSADO')
-                     and a.fecha between v_ini and v_fin and substr(cu.codigo, 1, 1) in ('4', '5', '6')
+                     and a.fecha between v_ini and v_fin and substr(cu.codigo, 1, 1) in ('4', '5', '6', '7')
                    group by d.id_cuenta_ctb
                   having sum(d.debe - d.haber) <> 0) loop
             l_add(c.id_cuenta_ctb, c.s, 'H', 'Cierre del ejercicio ' || p_anio);

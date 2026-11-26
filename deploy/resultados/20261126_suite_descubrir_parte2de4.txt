@@ -1,0 +1,26 @@
+Suite de verificaciones 20261126: 24 de 24 en verde, 79 s
+
+sql       OK                1s  20261107_folio_atomico_verificacion.sql
+fixture   OK               19s  20261104_auth_propia_verificacion.sql
+fixture   OK                1s  20261105_paginas_7_9_verificacion.sql
+fixture   OK                1s  20261106_mensajes_verificacion.sql
+fixture   OK                1s  20261116_compra_detalle_verificacion.sql
+fixture   OK                1s  20261116_impreso_retencion_verificacion.sql
+fixture   OK                1s  20261116_retencion_numeracion_verificacion.sql
+fixture   OK                4s  20261117_cobros_modelo_verificacion.sql
+fixture   OK                2s  20261117_empresa_activa_filtros_verificacion.sql
+fixture   OK                1s  20261118_compra_lineas_verificacion.sql
+fixture   OK                1s  20261118_gasto_real_moneda_verificacion.sql
+fixture   OK                1s  20261118_pagina9_guardar_verificacion.sql
+fixture   OK                4s  20261119_compra_igtf_libro_verificacion.sql
+fixture   OK                1s  20261119_imprimir_retencion_verificacion.sql
+fixture   OK               11s  20261119_retenciones_verificacion.sql
+fixture   OK                1s  20261121_pagos_historico_verificacion.sql
+fixture   OK                1s  20261122_cobros_ficha_cliente_verificacion.sql
+fixture   OK                1s  20261122_imprimir_pago_verificacion.sql
+fixture   OK                1s  20261122_saldo_lista_verificacion.sql
+fixture   OK                2s  20261123_pagos_kpi_chips_verificacion.sql
+fixture   OK                1s  20261124_inventario_consistencia_verificacion.sql
+fixture   OK               11s  20261124_inventario_modelo_verificacion.sql
+fixture   OK                1s  20261124_tres_arreglos2_verificacion.sql
+fixture   OK                5s  20261125_contabilidad_verificacion.sql
