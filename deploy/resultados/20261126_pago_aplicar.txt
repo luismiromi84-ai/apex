@@ -1,0 +1,1 @@
+2026-11-26 Pago 37 (996.27 leido como 99.627): pkg_pagos compilado (0 invalidos); f100 122 sentencias OK; procesos/rejilla/portada FALLAS=0; 20261126_pago_aplicar_navegador.py A1-A5 FALLAS=0; regresion 20261121_pagos_paginas, 20261125_pago_tasa_navegador, 20261123_pagos_kpi_navegador, 20261121_pagos_registrar_verificacion FALLAS=0
