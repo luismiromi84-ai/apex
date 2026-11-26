@@ -124,8 +124,10 @@ begin
     for r in (select page_id, redirect_url, button_css_classes
                 from apex_260100.apex_application_page_buttons
                where application_id = 100 and page_id in (11, 12) and button_name = 'BTN_VOLVER') loop
-        if instr(nvl(r.redirect_url, 'x'), ':1:') = 0 then
-            falla('B1', 'la pagina ' || r.page_id || ' vuelve a ' || r.redirect_url || ' (no a la 1)');
+        -- 2026-11-25 (commit 85f2660, pedido del dueno): el impreso vuelve a SU lista, la factura a
+        -- Facturacion (8) y el presupuesto a Presupuestos (5); antes volvian al inicio (1).
+        if instr(nvl(r.redirect_url, 'x'), case r.page_id when 11 then ':8:' else ':5:' end) = 0 then
+            falla('B1', 'la pagina ' || r.page_id || ' vuelve a ' || r.redirect_url || ' (no a su lista)');
         end if;
         if instr(nvl(r.button_css_classes, 'x'), 'u-no-print') = 0 then
             falla('B1', 'el boton de la ' || r.page_id || ' se imprimiria (le falta u-no-print)');

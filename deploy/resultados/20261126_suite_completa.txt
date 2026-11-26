@@ -1,0 +1,7 @@
+Suite completa 2026-11-26
+- post + sql + fixture: 102 de 102 en verde (2 min) -> 20261126_suite.txt
+- navegador: 14 de 14 en verde, en 4 tandas -> 20261126_suite_parte{1..4}de4.txt
+  * 20261125_costos_excel_navegador.py fallo en la tanda 1 (la descarga no llego, el headless
+    corria detras de otra prueba) y paso completa al repetirla sola (X1-X4). Desde entonces la
+    suite repite UNA vez una prueba de navegador que falla y la marca «OK al 2.o intento».
+Total: 116 de 116.

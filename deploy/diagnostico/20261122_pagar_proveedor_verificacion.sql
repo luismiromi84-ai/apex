@@ -128,9 +128,10 @@ begin
         select javascript_code into v_txt
           from apex_application_pages
          where application_id = 100 and page_id = 37;
-        -- El parser nuevo mira la ultima coma y el ultimo punto; el viejo solo
-        -- cambiaba la primera coma por un punto ("1.420,00" -> 1,42).
-        if instr(v_txt, 'lastIndexOf') = 0 then
+        -- 2026-11-26: desde el 2026-11-25 spxNum lee con el separador de la sesion
+        -- (apex.locale.getDecimalSeparator) y toma un separador unico seguido de 1 o 2 digitos como
+        -- decimal; el comportamiento lo prueba 20261126_pago_aplicar_navegador.py (A1).
+        if instr(v_txt, 'getDecimalSeparator') = 0 or instr(v_txt, 'pz[1].length !== 3') = 0 then
             falla('P6', 'spxNum de la 37 no distingue miles de decimales');
         end if;
     exception

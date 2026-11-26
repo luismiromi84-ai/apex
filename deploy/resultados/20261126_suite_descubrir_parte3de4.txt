@@ -1,0 +1,26 @@
+Suite de verificaciones 20261126: 20 de 24 en verde, 75 s
+
+sql       OK               21s  20261110_multiempresa_verificacion.sql
+fixture   OK                4s  20261105_cambio_clave_verificacion.sql
+fixture   OK                1s  20261105_propiedad_documentos_verificacion.sql
+fixture   OK                1s  20261106_monitoreo_errores_verificacion.sql
+fixture   OK                1s  20261116_compra_totales_verificacion.sql
+fixture   OK                5s  20261116_libro_compras_ventas_verificacion.sql
+fixture   OK                1s  20261116_retencion_ventas_verificacion.sql
+fixture   OK                2s  20261117_cobros_registrar_verificacion.sql
+fixture   OK                1s  20261117_empresa_activa_verificacion.sql
+fixture   OK                2s  20261118_compra_tasa_retencion_verificacion.sql
+fixture   OK                2s  20261118_libro_notas_verificacion.sql
+fixture   OK                1s  20261119_anular_con_nc_verificacion.sql
+fixture   OK                1s  20261119_compra_igtf_verificacion.sql
+fixture   FALLA             1s  20261119_impuesto_porcentaje_verificacion.sql  -> FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | V3: la accion de la 10 no devuelve P10_PORCENTAJE_IMPUESTO | procedure falla(p_caso varchar2, p_detalle varchar2) is
+fixture   OK                2s  20261121_compras_kpi_chips_verificacion.sql
+fixture   FALLA             9s  20261121_pagos_modelo_verificacion.sql  -> FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | M8: 1 compras sin fecha de vencimiento
+fixture   OK                2s  20261122_estado_pendiente_verificacion.sql
+fixture   FALLA             1s  20261122_pagar_proveedor_verificacion.sql  -> FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | P6: spxNum de la 37 no distingue miles de decimales | procedure falla(p_caso varchar2, p_detalle varchar2) is
+fixture   OK                2s  20261123_articulos_verificacion.sql
+fixture   OK                1s  20261123_secuencias_verificacion.sql
+fixture   OK                1s  20261124_inventario_costos_verificacion.sql
+fixture   OK                1s  20261124_inventario_paginas_verificacion.sql
+fixture   FALLA             3s  20261124_tres_arreglos_verificacion.sql  -> FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=2 | B1: la pagina 11 vuelve a f?p=&APP_ID.:8:&APP_SESSION.::&DEBUG.:8:: (no a la 1) | B1: la pagina 12 vuelve a f?p=&APP_ID.:5:&APP_SESSION.::&DEBUG.:5:: (no a la 1)
+fixture   OK                3s  20261125_contabilizar_verificacion.sql

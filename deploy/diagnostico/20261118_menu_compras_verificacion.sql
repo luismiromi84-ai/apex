@@ -110,8 +110,11 @@ begin
       from apex_260100.apex_application_list_entries
      where application_id = 100 and list_name = 'Navigation Menu'
        and list_entry_parent_id is not null;
-    if v_n <> 13 then
-        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 13)');
+    -- 2026-11-26: veinte = las trece de arriba + Cajas y bancos y Conciliacion bancaria
+    -- (Administracion), Toma fisica (Inventario) y las cuatro de Contabilidad (Plan de cuentas,
+    -- Asientos, Cierre mensual, Libros contables).
+    if v_n <> 20 then
+        falla('V6', 'hay ' || v_n || ' entradas con padre (se esperaban 20)');
     end if;
 
     -- V7: el padre usa «Ver Compras» y de él cuelga «Proveedores» con «Ver Proveedores».

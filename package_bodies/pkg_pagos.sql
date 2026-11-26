@@ -276,7 +276,12 @@ create or replace package body pkg_pagos as
             if sqlcode between -20999 and -20000 then
                 raise;
             end if;
-            prc_log_error('PKG_PAGOS', 'prc_registrar_pago', sqlerrm, dbms_utility.format_error_backtrace);
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(sqlcode)), 5, '0'),
+                p_mensaje   => 'No se pudo registrar el pago (pkg_pagos.prc_registrar_pago)',
+                p_detalle   => sqlerrm,
+                p_sentencia => dbms_utility.format_error_backtrace);
             raise_application_error(-20120, 'No se pudo registrar el pago. Avisa al administrador.');
     end prc_registrar_pago;
 
@@ -325,7 +330,12 @@ create or replace package body pkg_pagos as
             if sqlcode between -20999 and -20000 then
                 raise;
             end if;
-            prc_log_error('PKG_PAGOS', 'prc_anular_pago', sqlerrm, dbms_utility.format_error_backtrace);
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(sqlcode)), 5, '0'),
+                p_mensaje   => 'No se pudo anular el pago (pkg_pagos.prc_anular_pago)',
+                p_detalle   => sqlerrm,
+                p_sentencia => dbms_utility.format_error_backtrace);
             raise_application_error(-20120, 'No se pudo anular el pago. Avisa al administrador.');
     end prc_anular_pago;
 
@@ -420,7 +430,12 @@ create or replace package body pkg_pagos as
             if sqlcode between -20999 and -20000 then
                 raise;
             end if;
-            prc_log_error('PKG_PAGOS', 'prc_aplicar_saldo', sqlerrm, dbms_utility.format_error_backtrace);
+            prc_log_error(
+                p_usuario   => nvl(v('APP_USER'), 'SISTEMA'),
+                p_codigo    => 'ORA-' || lpad(to_char(abs(sqlcode)), 5, '0'),
+                p_mensaje   => 'No se pudo aplicar el saldo (pkg_pagos.prc_aplicar_saldo)',
+                p_detalle   => sqlerrm,
+                p_sentencia => dbms_utility.format_error_backtrace);
             raise_application_error(-20120, 'No se pudo aplicar el saldo. Avisa al administrador.');
     end prc_aplicar_saldo;
 

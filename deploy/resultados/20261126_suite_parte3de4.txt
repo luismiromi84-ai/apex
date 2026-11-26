@@ -1,0 +1,5 @@
+Suite de verificaciones 20261126: 3 de 3 en verde, 297 s
+
+navegador OK              147s  20261119_compras_navegador.py
+navegador OK               32s  20261125_pago_tasa_navegador.py
+navegador OK              118s  20261125_contabilidad_navegador.py

@@ -170,8 +170,15 @@ begin
         v_ts := seccion('4.', 'INGRESOS', -1, v_desde, v_hasta, true);
         v_td := seccion('5.', 'COSTOS', 1, v_desde, v_hasta, true);
         v_th := seccion('6.', 'GASTOS', 1, v_desde, v_hasta, true);
-        w('<tr class="spx-tot"><td colspan="2"><b>' || case when v_ts - v_td - v_th >= 0 then 'UTILIDAD' else 'P&Eacute;RDIDA' end
-          || ' DEL PER&Iacute;ODO</b> (ingresos - costos - gastos)</td>' || n(v_ts - v_td - v_th, true) || '</tr>');
+        -- clase 7 del codigo agrupador del SAT (Mexico): resultado integral de financiamiento
+        v_cxx := 0;
+        select count(*) into v_saldo from ctb_cuentas where id_empresa = p_empresa and codigo = '7.';
+        if v_saldo > 0 then
+            v_cxx := seccion('7.', 'RESULTADO INTEGRAL DE FINANCIAMIENTO', 1, v_desde, v_hasta, true);
+        end if;
+        w('<tr class="spx-tot"><td colspan="2"><b>' || case when v_ts - v_td - v_th - v_cxx >= 0 then 'UTILIDAD' else 'P&Eacute;RDIDA' end
+          || ' DEL PER&Iacute;ODO</b> (ingresos - costos - gastos' || case when v_saldo > 0 then ' - financiamiento' end
+          || ')</td>' || n(v_ts - v_td - v_th - v_cxx, true) || '</tr>');
 
     elsif v_lib = 'SITUACION' then
         w('<tr class="spx-th"><th>C&oacute;digo</th><th>Cuenta</th><th class="num">Saldo</th></tr>');
@@ -183,7 +190,7 @@ begin
           from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
           join ctb_cuentas c on c.id_cuenta_ctb = d.id_cuenta_ctb
          where a.id_empresa = p_empresa and a.estado in ('CONFIRMADO', 'REVERSADO') and a.fecha <= v_hasta
-           and substr(c.codigo, 1, 1) in ('4', '5', '6');
+           and substr(c.codigo, 1, 1) in ('4', '5', '6', '7');
         w('<tr><td></td><td>Resultado del ejercicio a&uacute;n no cerrado</td>' || n(v_saldo, true) || '</tr>');
         w('<tr class="spx-tot"><td colspan="2"><b>Total pasivo + patrimonio + resultado</b></td>'
           || n(v_td + v_th + v_saldo, true) || '</tr>');
@@ -329,7 +336,7 @@ begin
           from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
           join ctb_cuentas c on c.id_cuenta_ctb = d.id_cuenta_ctb
          where a.id_empresa = p_empresa and a.estado in ('CONFIRMADO', 'REVERSADO') and a.fecha <= v_hasta
-           and substr(c.codigo, 1, 1) in ('4', '5', '6');
+           and substr(c.codigo, 1, 1) in ('4', '5', '6', '7');
         w('<tr><td></td>' || '<td>Resultado del ejercicio a&uacute;n no cerrado</td>' || n(v_saldo) || n(greatest(v_cxx, 0)) || n(greatest(-v_cxx, 0))
           || n(v_saldo + v_cxx) || '</tr>');
         w('<tr class="spx-tot"><td colspan="2"><b>Total patrimonio</b></td>' || n(v_ts + v_saldo, true)

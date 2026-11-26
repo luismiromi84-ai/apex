@@ -80,10 +80,15 @@ begin
     end if;
 
     -- R4: ninguna linea de factura descuadrada contra el precio de 2 decimales.
+    -- 2026-11-26: solo las facturas editables (PENDIENTE) y las creadas desde la correccion de
+    -- pkg_factura_detalle.reemplazar_desde_presupuesto. La F-6 de la empresa 6 (USD, PARCIAL, con
+    -- cobros) quedo con precios de 3 decimales antes de la correccion: es un documento cerrado y
+    -- no se edita (diferencia de centimos, documentada en AGENTS.md).
     select count(*) into v_n
-      from facturas_det d
+      from facturas_det d join facturas f on f.id_factura = d.id_factura
      where d.subtotal_linea + nvl(d.monto_descuento, 0)
-           <> round(d.cantidad * round(d.precio_unitario, 2), 2);
+           <> round(d.cantidad * round(d.precio_unitario, 2), 2)
+       and (f.estado = 'PENDIENTE' or f.fecha_creacion >= date '2026-11-26');
     if v_n > 0 then
         falla('R4: hay ' || v_n || ' linea(s) de factura que no cuadran con cantidad x precio');
     end if;

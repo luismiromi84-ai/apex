@@ -24,6 +24,11 @@
 #   python deploy/publicar_github.py                    # empuja 'entrega' y abre/actualiza el PR
 #   python deploy/publicar_github.py --rama entrega2 --sin-pr
 #   python deploy/publicar_github.py --mensaje "Mi cambio"
+#   python deploy/publicar_github.py --mensaje "Pago: ..." --detalle "linea 1" --detalle "linea 2"
+#   python deploy/publicar_github.py --solo-titulo     # solo corrige titulo/cuerpo del PR abierto
+#
+# El TITULO del PR es lo que se hizo: por defecto el --mensaje (2026-11-26, pedido del dueno: antes
+# todos los PR se llamaban igual). Si el PR ya esta abierto, se le actualizan titulo y cuerpo.
 #
 # Requiere: git con credencial guardada para github.com (Git Credential
 # Manager) y la libreria estandar. No imprime el token.
@@ -141,16 +146,67 @@ def pr_abierto(rama, token):
         return None
 
 
+def cuerpo_pr(args):
+    """Cuerpo del PR: que se hizo (titulo + detalles) y la nota de lo que viaja."""
+    if args.cuerpo and os.path.exists(args.cuerpo):
+        with open(args.cuerpo, encoding="utf-8") as f:
+            return f.read()
+    lineas = ["## Que se hizo", "", "- " + args.mensaje]
+    lineas += ["- " + d for d in args.detalle]
+    lineas += ["", "## Que viaja", "",
+               "Codigo, las reglas de negocio y el manual de usuario. El resto de la documentacion se queda "
+               "en el equipo. Las claves de prueba y los correos personales de los `.md`/`.txt` van tapados.",
+               "", "\U0001f916 Generated with [Claude Code](https://claude.com/claude-code)"]
+    return "\n".join(lineas)
+
+
+def pone_titulo(args, token, sumar=False):
+    """Pone titulo y cuerpo al PR abierto de la rama. Devuelve su URL o None.
+
+    sumar=True (al publicar sobre un PR ya abierto): el cambio nuevo se SUMA al titulo y a la lista
+    «Que se hizo» en vez de reemplazarlos (2026-11-26: reemplazar borraba lo publicado antes en el
+    mismo PR). Con --solo-titulo se reemplaza: es la forma de corregirlo a mano.
+    """
+    existente = pr_abierto(args.rama, token)
+    if not existente:
+        return None
+    titulo, cuerpo = args.titulo, cuerpo_pr(args)
+    viejo_t, viejo_c = existente.get("title") or "", existente.get("body") or ""
+    if sumar and viejo_t and args.mensaje not in viejo_t and viejo_t != TITULO_POR_DEFECTO:
+        junto = viejo_t + "; " + args.mensaje
+        titulo = junto if len(junto) <= 250 else viejo_t
+        nuevas = "\n".join(["- " + args.mensaje] + ["- " + d for d in args.detalle])
+        if "## Que viaja" in viejo_c and "## Que se hizo" in viejo_c:
+            i = viejo_c.index("## Que viaja")
+            cuerpo = viejo_c[:i].rstrip() + "\n" + nuevas + "\n\n" + viejo_c[i:]
+    api("PATCH", existente["url"], {"title": titulo, "body": cuerpo}, token)
+    return existente["html_url"]
+
+
 def main():
     ap = argparse.ArgumentParser(description="Publica el codigo, las reglas de negocio y el manual.")
     ap.add_argument("--rama", default="entrega", help="rama remota a la que empujar (por defecto entrega)")
     ap.add_argument("--base", default="main", help="rama base del PR (por defecto main)")
     ap.add_argument("--mensaje", default="Publicar codigo, reglas de negocio y manual desde el equipo local")
-    ap.add_argument("--titulo", default=TITULO_POR_DEFECTO)
+    ap.add_argument("--titulo", default=None, help="titulo del PR (por defecto, el --mensaje)")
+    ap.add_argument("--detalle", action="append", default=[],
+                    help="linea de 'que se hizo' para el cuerpo del PR (se puede repetir)")
     ap.add_argument("--cuerpo", default=None, help="archivo con el cuerpo del PR (opcional)")
+    ap.add_argument("--solo-titulo", action="store_true",
+                    help="no empuja nada: solo pone titulo y cuerpo al PR abierto de la rama")
     ap.add_argument("--sin-pr", action="store_true", help="empujar la rama y no abrir PR")
     ap.add_argument("--dry-run", action="store_true", help="solo informar, no empujar")
     args = ap.parse_args()
+    if not args.titulo:
+        args.titulo = args.mensaje if args.mensaje else TITULO_POR_DEFECTO
+    if args.solo_titulo:
+        token = token_github()
+        if not token:
+            print("no encontre credencial para la API de GitHub.")
+            return 1
+        url = pone_titulo(args, token)
+        print(("PR actualizado: %s -> %s" % (url, args.titulo)) if url else "no hay PR abierto en la rama %s." % args.rama)
+        return 0 if url else 1
 
     if git("status", "--porcelain").stdout.strip():
         print("[aviso] hay cambios sin commitear: se publica el HEAD (lo commiteado), no el arbol sucio.")
@@ -225,16 +281,15 @@ def main():
         print("https://github.com/%s/compare/%s...%s?expand=1" % (REPO_API, args.base, args.rama))
         return 1
 
-    cuerpo = ("Publicacion del equipo local: codigo, las reglas de negocio y el manual de usuario. "
-              "El resto de la documentacion se queda en el equipo. "
-              "Las claves de prueba y los correos personales de los `.md`/`.txt` van tapados.")
-    if args.cuerpo and os.path.exists(args.cuerpo):
-        with open(args.cuerpo, encoding="utf-8") as f:
-            cuerpo = f.read()
+    cuerpo = cuerpo_pr(args)
 
     existente = pr_abierto(args.rama, token)
     if existente:
-        print("PR ya abierto (actualizado):", existente["html_url"])
+        try:
+            pone_titulo(args, token, sumar=True)
+            print("PR ya abierto (actualizado, titulo: %s):" % args.titulo, existente["html_url"])
+        except urllib.error.HTTPError as ex:
+            print("PR ya abierto:", existente["html_url"], "(no se pudo cambiar el titulo: %s)" % ex.code)
         return 0
 
     try:

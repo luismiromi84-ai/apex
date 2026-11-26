@@ -20,6 +20,7 @@ create table ctb_plantilla_cuentas (
     nombre      varchar2(150) not null,
     naturaleza  varchar2(1),
     origen      varchar2(10)  default 'CONTADOR' not null,
+    codigo_agrupador_sat varchar2(20),
     constraint pk_ctb_plantilla_cuentas primary key (cod_pais, codigo),
     constraint chk_ctbpl_naturaleza check (naturaleza is null or naturaleza in ('D', 'H')),
     constraint chk_ctbpl_origen check (origen in ('CONTADOR', 'SYNPEX'))

@@ -6,7 +6,7 @@
 -- nueva: dos series mas en la tabla que ya existe.
 --
 --   F1  el CHECK de FOLIO_CONTADOR admite FAC_PROV y CONTROL_PROV
---   F2  cada empresa tiene su fila para las dos series
+--   F2  cada empresa obtiene sus dos series (la fila se crea en el primer uso)
 --   F3  los formatos son '45' y '00-000001'
 --   F4  al dar de alta una compra con la propuesta, la serie AVANZA y se guarda
 --   F5  si el usuario teclea otro numero, se respeta y la serie NO se mueve
@@ -56,15 +56,15 @@ begin
         falla('F1', 'el CHECK de FOLIO_CONTADOR no admite las dos series nuevas');
     end if;
 
-    -- F2
+    -- F2 (revisada el 2026-11-26): toda empresa obtiene sus dos series de proveedor. No se exige la
+    -- fila sembrada: fn_asignar_folio la crea en el primer uso, y una empresa nueva (la 7, «las
+    -- minas») no la tiene hasta entonces; exigirla hacia fallar la prueba sin que hubiera error.
     select count(*) into v_n
       from empresas e
-     where not exists (select 1 from folio_contador f
-                        where f.id_empresa = e.id_empresa and f.tipo = 'FAC_PROV')
-        or not exists (select 1 from folio_contador f
-                        where f.id_empresa = e.id_empresa and f.tipo = 'CONTROL_PROV');
+     where fn_siguiente_folio(e.id_empresa, 'FAC_PROV') is null
+        or fn_siguiente_folio(e.id_empresa, 'CONTROL_PROV') is null;
     if v_n > 0 then
-        falla('F2', v_n || ' empresa(s) sin fila de FAC_PROV o CONTROL_PROV');
+        falla('F2', v_n || ' empresa(s) sin folio de FAC_PROV o CONTROL_PROV');
     end if;
 
     -- F3

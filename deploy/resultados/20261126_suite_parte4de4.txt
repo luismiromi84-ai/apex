@@ -1,0 +1,5 @@
+Suite de verificaciones 20261126: 3 de 3 en verde, 144 s
+
+navegador OK               60s  20261119_compras_estetica.py
+navegador OK               41s  20261125_cajas_bancos_navegador.py
+navegador OK               42s  20261125_revision_pantallas_navegador.py

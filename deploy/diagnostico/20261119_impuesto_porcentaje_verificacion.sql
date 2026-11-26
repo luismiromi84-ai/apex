@@ -59,10 +59,13 @@ begin
         falla('V3', 'la 10 tiene ' || v_n || ' acciones sobre P10_ID_IMPUESTO (se esperaba 1)');
     end if;
 
+    -- 2026-11-26: la accion del impuesto es la que debe devolver el %. Desde el 2026-11-23 tambien lo
+    -- devuelve la que carga el producto escaneado (CARGAR_DATOS_PRODUCTO), y eso es correcto.
     select count(*) into v_n
-      from apex_260100.apex_application_page_da_acts
-     where application_id = 100 and page_id = 10
-       and instr(json_value(attributes, '$.items_to_return'), 'P10_PORCENTAJE_IMPUESTO') > 0;
+      from apex_260100.apex_application_page_da_acts a
+      join apex_260100.apex_application_page_da d on d.dynamic_action_id = a.dynamic_action_id
+     where a.application_id = 100 and a.page_id = 10 and d.when_element = 'P10_ID_IMPUESTO'
+       and instr(json_value(a.attributes, '$.items_to_return'), 'P10_PORCENTAJE_IMPUESTO') > 0;
     if v_n <> 1 then
         falla('V3', 'la accion de la 10 no devuelve P10_PORCENTAJE_IMPUESTO');
     end if;

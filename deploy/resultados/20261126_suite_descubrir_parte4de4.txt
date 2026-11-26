@@ -1,0 +1,26 @@
+Suite de verificaciones 20261126: 22 de 24 en verde, 51 s
+
+sql       OK                2s  20261118_folio_proveedor_verificacion.sql
+fixture   OK                1s  20261105_documentos_cerrados_verificacion.sql
+fixture   OK                2s  20261105_purgar_logs_verificacion.sql
+fixture   OK                1s  20261106_tasa_obligatoria_verificacion.sql
+fixture   OK                1s  20261116_compras_pkg_verificacion.sql
+fixture   OK               15s  20261116_modelo_compras_verificacion.sql
+fixture   OK                1s  20261117_cobros_anular_verificacion.sql
+fixture   OK                1s  20261117_cobros_saldo_verificacion.sql
+fixture   OK                1s  20261117_retencion_iva_verificacion.sql
+fixture   FALLA             2s  20261118_correlativos_verificacion.sql  -> FALLO en la sentencia 3 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | P1: los proveedores van hasta 285 y hay 5 (hay huecos)
+fixture   OK                1s  20261118_libro_periodo_verificacion.sql
+fixture   OK                1s  20261119_cobro_tasa_fecha_verificacion.sql
+fixture   OK                1s  20261119_compra_nota_afectada_verificacion.sql
+fixture   OK                3s  20261119_proveedores_verificacion.sql
+fixture   FALLA             2s  20261121_impresos_logo_verificacion.sql  -> FALLO en la sentencia 2 (codigo 20100): ORA-20100: RESULTADO: FALLAS=1 | L9: la app tiene 56 paginas, se esperaban 37
+fixture   OK                2s  20261121_pagos_registrar_verificacion.sql
+fixture   OK                1s  20261122_favor_pantalla_verificacion.sql
+fixture   OK                3s  20261122_pantallas_ajustes_verificacion.sql
+fixture   OK                1s  20261123_catalogo_verificacion.sql
+fixture   OK                1s  20261124_inventario_ajuste_verificacion.sql
+fixture   OK                1s  20261124_inventario_cpp_verificacion.sql
+fixture   OK                1s  20261124_inventario_reversa_verificacion.sql
+fixture   OK                1s  20261125_borrador_cliente_inactivo_verificacion.sql
+fixture   OK                1s  20261125_estados_volver_cobrar_verificacion.sql

@@ -316,26 +316,26 @@ select substrb('R14: falta el CSS de las insignias Venta/Compra', 1, 300)
                       and instr(inline_css, '.status-Compra') > 0);
 /
 
--- R15: los enlaces: «Ver» de la venta a la 9 (modo consulta), «Ver compra» a la
--- 28 e «Imprimir» a la 11.
+-- R15: los enlaces. Desde el 2026-11-25 hay UNA sola columna «Ver» (VER_VENTA) cuyo destino sale
+-- de la fila (#VER_PAG#, #VER_ITEMS#, #VER_VALS#): la venta abre la 9 en modo consulta y la compra
+-- la 28. Se comprueba el enlace sustituido y que la consulta arme esos destinos.
 insert into tmp_rep_fallas
-select substrb('R15: el «Ver» de la venta no abre la 9 en modo consulta', 1, 300)
+select substrb('R15: la columna Ver no toma la pagina de la fila (#VER_PAG#)', 1, 300)
   from dual
  where not exists (select 1 from apex_application_page_ir_col
                     where application_id = 100 and page_id = 17
                       and column_alias = 'VER_VENTA'
-                      and instr(column_link, ':9:') > 0
-                      and instr(column_link, 'P9_MODO_VER') > 0);
+                      and instr(column_link, '#VER_PAG#') > 0
+                      and instr(column_link, '#VER_ITEMS#') > 0);
 /
 
 insert into tmp_rep_fallas
-select substrb('R15: el «Ver compra» no abre la 28', 1, 300)
+select substrb('R15: la consulta no lleva la venta a la 9 en modo consulta y la compra a la 28', 1, 300)
   from dual
- where not exists (select 1 from apex_application_page_ir_col
+ where not exists (select 1 from apex_application_page_regions
                     where application_id = 100 and page_id = 17
-                      and column_alias = 'VER_COMPRA'
-                      and instr(column_link, ':28:') > 0
-                      and instr(column_link, 'P28_ID_COMPRA') > 0);
+                      and instr(region_source, 'P9_ID_FACTURA,P9_MODO_VER') > 0
+                      and instr(region_source, 'P28_ID_COMPRA') > 0);
 /
 
 insert into tmp_rep_fallas
