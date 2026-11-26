@@ -94,6 +94,7 @@ create or replace package body pkg_pagos as
         v_tc     number;
         v_mon    varchar2(3);
         v_saldo  number;
+        v_folio  varchar2(60);
     begin
         if p_monto is null or p_monto <= 0 then
             raise_application_error(-20110, 'Cada aplicacion debe tener un monto mayor que cero.');
@@ -101,8 +102,8 @@ create or replace package body pkg_pagos as
 
         begin
             select c.id_proveedor, c.id_empresa, nvl(nullif(c.tipo_cambio, 0), 1),
-                   nvl(c.cod_moneda, 'VES')
-              into v_prov, v_emp, v_tc, v_mon
+                   nvl(c.cod_moneda, 'VES'), nvl(c.folio_factura, to_char(c.id_compra))
+              into v_prov, v_emp, v_tc, v_mon, v_folio
               from compras c
              where c.id_compra = p_id_compra;
         exception
@@ -123,9 +124,11 @@ create or replace package body pkg_pagos as
 
         v_saldo := fn_saldo_compra(p_id_compra);
         if p_monto > v_saldo + 0.01 then
+            -- 2026-11-26: con el numero de la compra y su moneda (antes salia el id interno)
             raise_application_error(-20111,
-                'Lo aplicado a la compra ' || p_id_compra || ' supera su saldo de '
-                || to_char(v_saldo, 'FM999G999G999G990D00') || '.');
+                'Lo aplicado a la compra N. ' || v_folio || ' (' || to_char(p_monto, 'FM999G999G999G990D00')
+                || ' ' || v_mon || ') supera su saldo de ' || to_char(v_saldo, 'FM999G999G999G990D00') || ' ' || v_mon
+                || '. El importe de cada factura va en la moneda de la factura.');
         end if;
 
         -- Misma moneda = mismas unidades (2026-11-22). Sin esto, un pago de 500 USD

@@ -42238,6 +42238,7 @@ wwv_flow_imp_page.create_page(
 '    if (!t) { return 0; }',
 '    var d = (apex.locale && apex.locale.getDecimalSeparator) ? apex.locale.getDecimalSeparator() : ".";',
 '    var g = (d === ",") ? "." : ",";',
+'    if (t.indexOf(d) < 0) { var pz = t.split(g); if (pz.length === 2 && pz[1].length > 0 && pz[1].length !== 3) { t = pz[0] + d + pz[1]; } }',
 '    var v = parseFloat(t.split(g).join("").replace(d, "."));',
 '    return isNaN(v) ? 0 : v;',
 '}',
@@ -42300,6 +42301,24 @@ wwv_flow_imp_page.create_page(
 '            if (v > 0) { arr.push({ id_compra: parseInt(filas[i].getAttribute(''data-compra''), 10), monto: v }); }',
 '        }',
 '    }',
+'    var apl = 0, monto = spxNum(apex.item(''P37_MONTO'').getValue());',
+'    var pagMon = (apex.item(''P37_COD_MONEDA'').getValue() || ''VES'').toUpperCase(), otra = false;',
+'    for (var j = 0; j < filas.length; j++) {',
+'        var c2 = filas[j].querySelector(''.spx-sel''), i2 = filas[j].querySelector(''.spx-monto'');',
+'        if (c2 && c2.checked && i2) {',
+'            var tc2 = spxDato(filas[j].getAttribute(''data-tc'')) || 1;',
+'            var ta2 = spxNum(apex.item(''P37_TIPO_CAMBIO'').getValue()) || 1;',
+'            var mo2 = (filas[j].getAttribute(''data-mon'') || ''VES'').toUpperCase();',
+'            if (mo2 !== pagMon) { otra = true; }',
+'            apl = apl + (mo2 === pagMon ? spxNum(i2.value) : spxNum(i2.value) * tc2 / ta2);',
+'        }',
+'    }',
+'    if (arr.length && apl > monto + 0.01) {',
+'        apex.message.alert(''Lo aplicado a las facturas equivale a '' + spxFmt(apl) + '' '' + pagMon',
+'            + '' y el pago es de '' + spxFmt(monto) + '' '' + pagMon + ''. Baja lo aplicado o sube el monto.''',
+'            + (otra ? '' La factura est\u00E1 en otra moneda: el importe de \u00ABAplicar\u00BB va en la moneda de la factura y la tasa es Bs por unidad (usa \u00ABAplicar todo\u00BB para convertirlo).'' : ''''));',
+'        return;',
+'    }',
 '    apex.item(''P37_APLICACIONES'').setValue(JSON.stringify(arr));',
 '    apex.submit({ request: ''GUARDAR'' });',
 '}',
@@ -42311,7 +42330,9 @@ wwv_flow_imp_page.create_page(
 '    return false;',
 '}',
 'window.spxResumen = spxResumen; window.spxAplicarTodo = spxAplicarTodo; window.spxGuardar = spxGuardar;',
-'window.spxUsarFavor = spxUsarFavor;'))
+'window.spxUsarFavor = spxUsarFavor;',
+'apex.jQuery(function () { ["P37_MONTO", "P37_TIPO_CAMBIO", "P37_COD_MONEDA"].forEach(function (n) {',
+'    apex.jQuery(document.getElementById(n)).on("change input", function () { if (window.spxResumen) { spxResumen(); } }); }); });'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* Cabecera compacta e igual en toda la app: banda de 44 px. */',
 '.t-Region-header, .t-DialogRegion-header { padding: 0 14px !important; --ut-region-header-padding-y: 0.625rem !important; }',
@@ -42440,8 +42461,10 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000001590)
 ,p_prompt=>'Tasa (Bs por unidad)'
-,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>16
+,p_cMaxlength=>30
+,p_tag_attributes=>'inputmode="decimal" style="text-align:right"'
 ,p_colspan=>4
 ,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
@@ -42454,8 +42477,10 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000001590)
 ,p_prompt=>'Monto del pago'
-,p_display_as=>'NATIVE_NUMBER_FIELD'
+,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>16
+,p_cMaxlength=>30
+,p_tag_attributes=>'inputmode="decimal" style="text-align:right"'
 ,p_colspan=>4
 ,p_begin_on_new_line=>'N'
 ,p_field_template=>1610598304472262251
@@ -46502,6 +46527,7 @@ wwv_flow_imp_page.create_page(
 '    if (s === '''') { return null; }',
 '    var d = (apex.locale && apex.locale.getDecimalSeparator) ? apex.locale.getDecimalSeparator() : ''.'';',
 '    var g = (d === '','') ? ''.'' : '','';',
+'    if (s.indexOf(d) < 0) { var pz = s.split(g); if (pz.length === 2 && pz[1].length > 0 && pz[1].length !== 3) { s = pz[0] + d + pz[1]; } }',
 '    var v = parseFloat(s.split(g).join('''').replace(d, ''.''));',
 '    return isNaN(v) ? null : v;',
 '}',
@@ -46888,6 +46914,7 @@ wwv_flow_imp_page.create_page(
 '    if (s === '''') { return null; }',
 '    var d = (apex.locale && apex.locale.getDecimalSeparator) ? apex.locale.getDecimalSeparator() : ''.'';',
 '    var g = (d === '','') ? ''.'' : '','';',
+'    if (s.indexOf(d) < 0) { var pz = s.split(g); if (pz.length === 2 && pz[1].length > 0 && pz[1].length !== 3) { s = pz[0] + d + pz[1]; } }',
 '    var v = parseFloat(s.split(g).join('''').replace(d, ''.''));',
 '    return isNaN(v) ? null : v;',
 '}',
@@ -47853,6 +47880,7 @@ wwv_flow_imp_page.create_page(
 '    if (s === '''') { return null; }',
 '    var d = (apex.locale && apex.locale.getDecimalSeparator) ? apex.locale.getDecimalSeparator() : ''.'';',
 '    var g = (d === '','') ? ''.'' : '','';',
+'    if (s.indexOf(d) < 0) { var pz = s.split(g); if (pz.length === 2 && pz[1].length > 0 && pz[1].length !== 3) { s = pz[0] + d + pz[1]; } }',
 '    var v = parseFloat(s.split(g).join('''').replace(d, ''.''));',
 '    return isNaN(v) ? null : v;',
 '}',
