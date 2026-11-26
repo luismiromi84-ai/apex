@@ -14,6 +14,11 @@
 --                        asiento de cierre anual, para que el ejercicio cerrado se siga viendo)
 --   p_libro = 'SITUACION'   balance general al corte (p_hasta): activo = pasivo + patrimonio +
 --                        resultado del ejercicio aun no cerrado
+--   p_libro = 'IMPUESTOS'   resumen de impuestos del periodo, desde los documentos (IVA, retenciones, IGTF)
+--   p_libro = 'RETENCIONES' retenciones de IVA recibidas y practicadas (IVA e ISLR) con su comprobante
+--   p_libro = 'FLUJO'       flujo de efectivo, metodo directo (cuentas 1.1.1. por origen del asiento)
+--   p_libro = 'PATRIMONIO'  cambios en el patrimonio (cuentas 3.) mas el resultado aun no cerrado
+--   p_libro = 'INVENTARIOS' libro de inventarios: existencias y valor por articulo, contra la contabilidad
 --
 -- Saldos = debe - haber (los de naturaleza acreedora salen negativos, como en el balance del
 -- contador). Cuentan los asientos CONFIRMADO y REVERSADO (el reversado sigue asentado; su
@@ -29,7 +34,7 @@ create or replace function fn_ctb_libro (
     p_formato   in varchar2 default 'HTML'
 ) return clob is
     v_xls   boolean := upper(p_formato) = 'XLS';
-    v_lib   varchar2(10) := upper(nvl(p_libro, 'BALANCE'));
+    v_lib   varchar2(20) := upper(nvl(p_libro, 'BALANCE'));
     v_desde date := trunc(nvl(p_desde, trunc(sysdate, 'YYYY')));
     v_hasta date := trunc(nvl(p_hasta, sysdate));
     v_html  clob;
@@ -40,6 +45,7 @@ create or replace function fn_ctb_libro (
     v_th    number := 0;
     v_ts    number := 0;
     v_saldo number;
+    v_cxx   number;
     v_hay   boolean := false;
 
     procedure w(s varchar2) is
@@ -113,6 +119,11 @@ begin
                         when 'MAYOR' then 'Mayor anal&iacute;tico'
                         when 'RESULTADOS' then 'Estado de resultados'
                         when 'SITUACION' then 'Balance general (estado de situaci&oacute;n financiera)'
+                        when 'IMPUESTOS' then 'Resumen de impuestos del per&iacute;odo'
+                        when 'RETENCIONES' then 'Retenciones de IVA e ISLR'
+                        when 'FLUJO' then 'Estado de flujo de efectivo (m&eacute;todo directo)'
+                        when 'PATRIMONIO' then 'Estado de cambios en el patrimonio'
+                        when 'INVENTARIOS' then 'Libro de inventarios'
                         else 'Balance de comprobaci&oacute;n' end;
 
     if v_xls then
@@ -178,6 +189,189 @@ begin
           || n(v_td + v_th + v_saldo, true) || '</tr>');
         w('<tr><td colspan="3">' || case when abs(v_ts - (v_td + v_th + v_saldo)) < 0.005 then 'Cuadra: activo = pasivo + patrimonio + resultado'
           else 'NO CUADRA: diferencia ' || to_char(v_ts - (v_td + v_th + v_saldo), 'FM999G999G999G990D00') end || '</td></tr>');
+
+    elsif v_lib = 'IMPUESTOS' then
+        -- desde los documentos del periodo (no hace falta haber contabilizado)
+        declare
+            v_bv number; v_iv number; v_bc number; v_ic number; v_rr number; v_ri number; v_rs number;
+            v_gc number; v_gp number; v_nr number;
+        begin
+            select nvl(sum(case when f.tipo_documento = 'NC' then -1 else 1 end * round(abs(f.subtotal) * nvl(nullif(f.tipo_cambio, 0), 1), 2)), 0),
+                   nvl(sum(case when f.tipo_documento = 'NC' then -1 else 1 end * round(abs(f.monto_impuesto) * nvl(nullif(f.tipo_cambio, 0), 1), 2)), 0)
+              into v_bv, v_iv
+              from facturas f
+             where f.id_empresa = p_empresa and f.tipo_documento in ('FAC', 'ND', 'NC')
+               and f.estado <> 'PENDIENTE' and not (f.estado = 'ANULADA' and f.nro_control is null)
+               and trunc(f.fecha_emision) between v_desde and v_hasta;
+            select nvl(sum(case when c.tipo_documento = 'NC' then -1 else 1 end * round(abs(c.subtotal) * nvl(nullif(c.tipo_cambio, 0), 1), 2)), 0),
+                   nvl(sum(case when c.tipo_documento = 'NC' then -1 else 1 end * round(abs(c.monto_impuesto) * nvl(nullif(c.tipo_cambio, 0), 1), 2)), 0)
+              into v_bc, v_ic
+              from compras c
+             where c.id_empresa = p_empresa and c.estado not in ('BORRADOR', 'ANULADA')
+               and trunc(c.fecha_emision) between v_desde and v_hasta;
+            select nvl(sum(r.retencion_iva_bs), 0), nvl(sum(r.igtf_bs), 0), count(case when r.retencion_iva_bs > 0 then 1 end)
+              into v_rr, v_gc, v_nr
+              from recibos r
+             where r.id_empresa = p_empresa and r.estado = 'ACTIVO' and trunc(r.fecha_cobro) between v_desde and v_hasta;
+            select nvl(sum(case when x.tipo = 'IVA' then x.retenido_bs end), 0), nvl(sum(case when x.tipo = 'ISLR' then x.retenido_bs end), 0)
+              into v_ri, v_rs
+              from retenciones x
+             where x.id_empresa = p_empresa and x.estado not in ('ANULADO', 'ANULADA')
+               and trunc(x.fecha_emision) between v_desde and v_hasta;
+            select nvl(sum(p.igtf_bs), 0) into v_gp
+              from pagos p
+             where p.id_empresa = p_empresa and p.estado = 'ACTIVO' and trunc(p.fecha_pago) between v_desde and v_hasta;
+            w('<tr class="spx-th"><th>Concepto</th><th class="num">Base (Bs)</th><th class="num">Impuesto (Bs)</th></tr>');
+            w('<tr class="spx-grp"><td colspan="3"><b>IVA</b></td></tr>');
+            w('<tr>' || '<td>Ventas (d&eacute;bito fiscal), notas de cr&eacute;dito restadas</td>' || n(v_bv) || n(v_iv) || '</tr>');
+            w('<tr>' || '<td>Compras (cr&eacute;dito fiscal), notas de cr&eacute;dito restadas</td>' || n(v_bc) || n(v_ic) || '</tr>');
+            w('<tr class="spx-tot"><td colspan="2"><b>Cuota del per&iacute;odo (d&eacute;bito - cr&eacute;dito)</b></td>' || n(v_iv - v_ic, true) || '</tr>');
+            w('<tr>' || '<td>Retenciones de IVA que te hicieron los clientes (' || to_char(v_nr) || ' comprobantes)</td>' || '<td></td>' || n(v_rr) || '</tr>');
+            w('<tr class="spx-tot"><td colspan="2"><b>'
+              || case when v_iv - v_ic - v_rr >= 0 then 'IVA a pagar estimado' else 'Excedente de cr&eacute;dito estimado' end
+              || '</b> (sin excedentes de meses anteriores)</td>' || n(abs(v_iv - v_ic - v_rr), true) || '</tr>');
+            w('<tr class="spx-grp"><td colspan="3"><b>RETENCIONES QUE SE ENTERAN AL SENIAT</b></td></tr>');
+            w('<tr>' || '<td>Retenciones de IVA practicadas a proveedores</td>' || '<td></td>' || n(v_ri) || '</tr>');
+            w('<tr>' || '<td>Retenciones de ISLR practicadas a proveedores</td>' || '<td></td>' || n(v_rs) || '</tr>');
+            w('<tr class="spx-grp"><td colspan="3"><b>IGTF</b></td></tr>');
+            w('<tr>' || '<td>IGTF percibido en cobros en divisa</td>' || '<td></td>' || n(v_gc) || '</tr>');
+            w('<tr>' || '<td>IGTF pagado en pagos a proveedores (gasto)</td>' || '<td></td>' || n(v_gp) || '</tr>');
+        end;
+
+    elsif v_lib = 'RETENCIONES' then
+        w('<tr class="spx-grp"><td colspan="6"><b>RETENCIONES DE IVA RECIBIDAS (las que te hicieron los clientes)</b></td></tr>');
+        w('<tr class="spx-th"><th>Fecha</th><th>Comprobante</th><th>RIF</th><th>Cliente</th><th>Factura</th><th class="num">Retenido (Bs)</th></tr>');
+        for r in (select r.fecha_cobro, r.nro_comprobante_retencion, c.rif, c.razon_social, f.folio_factura, r.retencion_iva_bs
+                    from recibos r join facturas f on f.id_factura = r.id_factura
+                    left join clientes c on c.id_cliente = f.id_cliente
+                   where r.id_empresa = p_empresa and r.estado = 'ACTIVO' and nvl(r.retencion_iva_bs, 0) > 0
+                     and trunc(r.fecha_cobro) between v_desde and v_hasta
+                   order by r.fecha_cobro, r.id_recibo) loop
+            v_hay := true;
+            v_td := v_td + r.retencion_iva_bs;
+            w('<tr>' || t(to_char(r.fecha_cobro, 'DD/MM/YYYY')) || t(r.nro_comprobante_retencion) || t(r.rif)
+              || t(r.razon_social) || t(r.folio_factura) || n(r.retencion_iva_bs) || '</tr>');
+        end loop;
+        w('<tr class="spx-tot"><td colspan="5"><b>Total recibidas</b></td>' || n(v_td, true) || '</tr>');
+        w('<tr class="spx-grp"><td colspan="6"><b>RETENCIONES PRACTICADAS A PROVEEDORES (se enteran al SENIAT)</b></td></tr>');
+        w('<tr class="spx-th"><th>Fecha</th><th>Tipo / comprobante</th><th>RIF</th><th>Proveedor</th><th class="num">Base (Bs)</th><th class="num">Retenido (Bs)</th></tr>');
+        for x in (select x.fecha_emision, x.tipo, x.numero_comprobante, p.rif, p.razon_social, x.base_imponible_bs, x.retenido_bs
+                    from retenciones x left join proveedores p on p.id_proveedor = x.id_proveedor
+                   where x.id_empresa = p_empresa and x.estado not in ('ANULADO', 'ANULADA')
+                     and trunc(x.fecha_emision) between v_desde and v_hasta
+                   order by x.tipo, x.fecha_emision, x.numero_comprobante) loop
+            v_hay := true;
+            if x.tipo = 'IVA' then v_th := v_th + x.retenido_bs; else v_ts := v_ts + x.retenido_bs; end if;
+            w('<tr>' || t(to_char(x.fecha_emision, 'DD/MM/YYYY')) || t(x.tipo || ' ' || x.numero_comprobante) || t(x.rif)
+              || t(x.razon_social) || n(x.base_imponible_bs) || n(x.retenido_bs) || '</tr>');
+        end loop;
+        w('<tr class="spx-tot"><td colspan="5"><b>Total practicadas de IVA</b></td>' || n(v_th, true) || '</tr>');
+        w('<tr class="spx-tot"><td colspan="5"><b>Total practicadas de ISLR</b></td>' || n(v_ts, true) || '</tr>');
+
+    elsif v_lib = 'FLUJO' then
+        -- metodo directo: los movimientos de las cuentas de caja y bancos (1.1.1.) por su origen
+        select nvl(sum(d.debe - d.haber), 0) into v_saldo
+          from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
+          join ctb_cuentas c on c.id_cuenta_ctb = d.id_cuenta_ctb
+         where a.id_empresa = p_empresa and a.estado in ('CONFIRMADO', 'REVERSADO') and a.fecha < v_desde
+           and c.codigo like '1.1.1.%';
+        w('<tr class="spx-th"><th>Concepto</th><th class="num">Entradas</th><th class="num">Salidas</th><th class="num">Neto</th></tr>');
+        w('<tr class="spx-grp"><td><b>Efectivo al inicio (caja y bancos)</b></td><td></td><td></td>' || n(v_saldo, true) || '</tr>');
+        for f in (select case a.doc_tipo when 'RECIBO' then '1 Cobros a clientes'
+                                        when 'PAGO' then '2 Pagos a proveedores'
+                                        when 'SENIAT' then '3 Pagos de impuestos (SENIAT)'
+                                        else '4 Otros movimientos (asientos manuales y traspasos)' end grupo,
+                         sum(d.debe) entra, sum(d.haber) sale
+                    from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
+                    join ctb_cuentas c on c.id_cuenta_ctb = d.id_cuenta_ctb
+                   where a.id_empresa = p_empresa and a.estado in ('CONFIRMADO', 'REVERSADO')
+                     and a.fecha between v_desde and v_hasta and c.codigo like '1.1.1.%'
+                   group by case a.doc_tipo when 'RECIBO' then '1 Cobros a clientes'
+                                           when 'PAGO' then '2 Pagos a proveedores'
+                                           when 'SENIAT' then '3 Pagos de impuestos (SENIAT)'
+                                           else '4 Otros movimientos (asientos manuales y traspasos)' end
+                   order by 1) loop
+            v_hay := true;
+            v_td := v_td + f.entra;
+            v_th := v_th + f.sale;
+            w('<tr>' || t(substr(f.grupo, 3)) || n(f.entra) || n(f.sale) || n(f.entra - f.sale) || '</tr>');
+        end loop;
+        if not v_hay then
+            w('<tr><td colspan="4">No hubo movimientos de caja ni de bancos en el per&iacute;odo.</td></tr>');
+        end if;
+        w('<tr class="spx-tot"><td><b>Variaci&oacute;n del per&iacute;odo</b></td>' || n(v_td, true) || n(v_th, true) || n(v_td - v_th, true) || '</tr>');
+        w('<tr class="spx-tot"><td><b>Efectivo al final</b></td><td></td><td></td>' || n(v_saldo + v_td - v_th, true) || '</tr>');
+
+    elsif v_lib = 'PATRIMONIO' then
+        w('<tr class="spx-th"><th>C&oacute;digo</th><th>Cuenta</th><th class="num">Saldo inicial</th><th class="num">Aumentos</th>'
+          || '<th class="num">Disminuciones</th><th class="num">Saldo final</th></tr>');
+        for c in (select c.codigo, c.nombre,
+                         nvl(sum(case when a.fecha < v_desde then d.haber - d.debe end), 0) ini,
+                         nvl(sum(case when a.fecha >= v_desde then d.haber end), 0) aum,
+                         nvl(sum(case when a.fecha >= v_desde then d.debe end), 0) dis
+                    from ctb_cuentas c
+                    join ctb_asiento_det d on d.id_cuenta_ctb = c.id_cuenta_ctb
+                    join ctb_asientos a on a.id_asiento = d.id_asiento
+                   where c.id_empresa = p_empresa and c.codigo like '3.%'
+                     and a.estado in ('CONFIRMADO', 'REVERSADO') and a.fecha <= v_hasta
+                   group by c.codigo, c.nombre
+                   order by c.codigo) loop
+            v_hay := true;
+            v_ts := v_ts + c.ini;
+            v_td := v_td + c.aum;
+            v_th := v_th + c.dis;
+            w('<tr>' || t(c.codigo) || t(c.nombre) || n(c.ini) || n(c.aum) || n(c.dis) || n(c.ini + c.aum - c.dis) || '</tr>');
+        end loop;
+        -- resultado aun no llevado al patrimonio (antes y durante el periodo)
+        select nvl(sum(case when a.fecha < v_desde then d.haber - d.debe end), 0),
+               nvl(sum(case when a.fecha >= v_desde then d.haber - d.debe end), 0)
+          into v_saldo, v_cxx
+          from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
+          join ctb_cuentas c on c.id_cuenta_ctb = d.id_cuenta_ctb
+         where a.id_empresa = p_empresa and a.estado in ('CONFIRMADO', 'REVERSADO') and a.fecha <= v_hasta
+           and substr(c.codigo, 1, 1) in ('4', '5', '6');
+        w('<tr><td></td>' || '<td>Resultado del ejercicio a&uacute;n no cerrado</td>' || n(v_saldo) || n(greatest(v_cxx, 0)) || n(greatest(-v_cxx, 0))
+          || n(v_saldo + v_cxx) || '</tr>');
+        w('<tr class="spx-tot"><td colspan="2"><b>Total patrimonio</b></td>' || n(v_ts + v_saldo, true)
+          || n(v_td + greatest(v_cxx, 0), true) || n(v_th + greatest(-v_cxx, 0), true)
+          || n(v_ts + v_td - v_th + v_saldo + v_cxx, true) || '</tr>');
+
+    elsif v_lib = 'INVENTARIOS' then
+        w('<tr class="spx-th"><th>C&oacute;digo</th><th>Art&iacute;culo</th><th class="num">Exist. inicial</th><th class="num">Entradas</th>'
+          || '<th class="num">Salidas</th><th class="num">Exist. final</th><th class="num">Valor inicial (Bs)</th>'
+          || '<th class="num">Valor final (Bs)</th></tr>');
+        for k in (select p.codigo, p.nombre,
+                         nvl(sum(case when m.fecha_movimiento < v_desde then pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad end), 0) qi,
+                         nvl(sum(case when m.fecha_movimiento >= v_desde and pkg_inventario.fn_signo(m.tipo_movimiento) > 0 then m.cantidad end), 0) qe,
+                         nvl(sum(case when m.fecha_movimiento >= v_desde and pkg_inventario.fn_signo(m.tipo_movimiento) < 0 then m.cantidad end), 0) qs,
+                         nvl(sum(case when m.fecha_movimiento < v_desde then pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs end), 0) vi,
+                         nvl(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs), 0) vf
+                    from kardex_mov m join producto_servicio p on p.id_producto_servicio = m.id_producto_servicio
+                   where m.id_empresa = p_empresa and m.fecha_movimiento < v_hasta + 1
+                   group by p.codigo, p.nombre
+                   order by p.nombre) loop
+            v_hay := true;
+            v_ts := v_ts + k.vi;
+            v_td := v_td + k.vf;
+            w('<tr>' || t(k.codigo) || t(k.nombre) || n(k.qi) || n(k.qe) || n(k.qs) || n(k.qi + k.qe - k.qs)
+              || n(k.vi) || n(k.vf) || '</tr>');
+        end loop;
+        if not v_hay then
+            w('<tr><td colspan="8">No hay movimientos de inventario hasta la fecha de corte.</td></tr>');
+        end if;
+        w('<tr class="spx-tot"><td colspan="6"><b>Total del inventario</b></td>' || n(v_ts, true) || n(v_td, true) || '</tr>');
+        begin
+            select nvl(sum(d.debe - d.haber), 0) into v_saldo
+              from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
+             where a.id_empresa = p_empresa and a.estado in ('CONFIRMADO', 'REVERSADO') and a.fecha <= v_hasta
+               and d.id_cuenta_ctb = pkg_contabilidad.fn_cuenta(p_empresa, 'INVENTARIO');
+            w('<tr><td colspan="7">Inventario seg&uacute;n la contabilidad (cuenta de inventario)'
+              || case when abs(v_saldo - v_td) < 0.05 then ': coincide con el kardex'
+                      else ': difiere del kardex (contabiliza los meses pendientes)' end || '</td>' || n(v_saldo, true) || '</tr>');
+        exception
+            when others then
+                null;   -- sin plan de cuentas: solo el kardex
+        end;
 
     elsif v_lib = 'MAYOR' then
         w('<tr class="spx-th"><th>Fecha</th><th>Asiento</th><th>Concepto</th><th>Descripci&oacute;n</th>'
