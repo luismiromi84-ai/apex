@@ -14,6 +14,9 @@
   C9 estado de resultados y balance general en pantalla, con la descarga a Excel
   C10 el pago al SENIAT no deja pagar mas de lo pendiente
   C11 «Cierre anual» crea el asiento de cierre del ano
+  C12 flujo de efectivo, cambios en el patrimonio, resumen de impuestos, retenciones e inventarios
+  C13 «Liquidar IVA» deja el debito del mes en IVA por pagar
+  C14 el pago al SENIAT del IVA por pagar deja el saldo en 0
 
 Empresa temporal 900281 con su caja y dos usuarios temporales; se purga al final.
 
@@ -284,6 +287,56 @@ try:
     nav.esperar('document.readyState === "complete" && /Ejercicio cerrado/.test(document.body.innerText)', 40)
     n_ci = uno("select count(*) from ctb_asientos where id_empresa = :e and origen = 'CIERRE' and estado = 'CONFIRMADO'", e=E)
     ok("C11 el cierre anual crea su asiento", n_ci == 1, n_ci)
+
+    # C12 los cinco libros nuevos se pintan (y el de inventarios se descarga)
+    vistos = []
+    for lib, marca in [("FLUJO", "Efectivo al final"), ("PATRIMONIO", "Total patrimonio"),
+                       ("IMPUESTOS", "Cuota del per"), ("RETENCIONES", "Total recibidas"),
+                       ("INVENTARIOS", "inventario")]:
+        abre(53, '!!document.getElementById("P53_LIBRO")')
+        nav.js('apex.item("P53_LIBRO").setValue("%s");apex.item("P53_DESDE").setValue("01/01/%d");'
+               'apex.item("P53_HASTA").setValue("31/12/%d");' % (lib, HOY.year, HOY.year))
+        nav.js('document.getElementById("B43000000000002376").click()')
+        nav.esperar('document.readyState === "complete" && /%s/.test(document.body.innerText)' % marca, 40)
+        time.sleep(1.5)
+        if marca in texto():
+            vistos.append(lib)
+        if lib == "FLUJO":
+            foto("contabilidad_flujo")
+    nav.js('document.getElementById("B43000000000002377").click()')
+    arch = None
+    fin = time.time() + 40
+    while time.time() < fin and not arch:
+        for f in os.listdir(DESC):
+            if f.startswith("libro-inventarios-") and f.endswith(".xls"):
+                time.sleep(1)
+                arch = f
+        time.sleep(0.5)
+    ok("C12 flujo, patrimonio, impuestos, retenciones e inventarios (con Excel)", len(vistos) == 5 and arch, (vistos, arch))
+
+    # C13 liquidar el IVA del mes: el asiento de C3 deja 16 de debito -> 16 por pagar
+    abre(52, '!!document.getElementById("P52_ANIO")')
+    nav.js('spxPeriodo("LIQUIDAR_IVA", %d, true)' % HOY.month)
+    acepta_dialogo()
+    nav.esperar('document.readyState === "complete" && /IVA liquidado/.test(document.body.innerText)', 40)
+    time.sleep(1.5)
+    por_pagar = uno("""select nvl(sum(d.haber - d.debe), 0) from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
+                        where a.id_empresa = :e and a.estado = 'CONFIRMADO'
+                          and d.id_cuenta_ctb = (select id_cuenta_ctb from ctb_mapeo where id_empresa = :e and concepto = 'IVA_POR_PAGAR')""", e=E)
+    foto("contabilidad_liquidacion")
+    ok("C13 Liquidar IVA deja 16 en IVA por pagar", float(por_pagar) == 16, por_pagar)
+
+    # C14 pagar ese IVA al SENIAT (fecha: fin de mes, la de la liquidacion)
+    fin_mes = (HOY.replace(day=28) + __import__("datetime").timedelta(days=4)).replace(day=1) - __import__("datetime").timedelta(days=1)
+    nav.js('apex.item("P52_SEN_CONCEPTO").setValue("IVA_POR_PAGAR");apex.item("P52_SEN_FECHA").setValue("%s");'
+           'apex.item("P52_SEN_MONTO").setValue("16");apex.item("P52_SEN_REF").setValue("PLANILLA");' % fin_mes.strftime("%d/%m/%Y"))
+    nav.js('document.getElementById("B43000000000002408").click()')
+    acepta_dialogo()
+    nav.esperar('document.readyState === "complete" && /Pago al SENIAT registrado/.test(document.body.innerText)', 40)
+    queda = uno("""select nvl(sum(d.haber - d.debe), 0) from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
+                    where a.id_empresa = :e and a.estado = 'CONFIRMADO'
+                      and d.id_cuenta_ctb = (select id_cuenta_ctb from ctb_mapeo where id_empresa = :e and concepto = 'IVA_POR_PAGAR')""", e=E)
+    ok("C14 el pago al SENIAT del IVA deja el saldo en 0", float(queda) == 0, (queda, texto()[:160]))
     nav.cerrar()
 
     # C7

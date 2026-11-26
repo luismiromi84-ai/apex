@@ -48533,6 +48533,8 @@ wwv_flow_imp_page.create_page(
 '    apex.item(''P52_MES'').setValue(String(mes));',
 '    var m = (req === ''CERRAR'')',
 '        ? ((conc ? '''' : ''Hay cuentas bancarias sin conciliar en este mes. '') + ''Primero se contabilizan los documentos del mes y luego se cierra: ya no se podr\u00E1n registrar asientos con esa fecha; lo que llegue tarde ir\u00E1 al mes siguiente. \u00BFCerrar?'')',
+'        : (req === ''LIQUIDAR_IVA'')',
+'        ? ''Se liquida el IVA al fin del mes: d\u00E9bito menos cr\u00E9dito, menos el excedente anterior y las retenciones de los clientes. El resultado queda en IVA por pagar (o en excedente). \u00BFLiquidar?''',
 '        : (req === ''CONTABILIZAR'')',
 '        ? ''Se generan los asientos de las facturas, notas, cobros, compras, retenciones, pagos e inventario del mes que a\u00FAn no los tengan. \u00BFContabilizar?''',
 '        : ''Se reabre el mes para registrar o corregir asientos. \u00BFReabrir?'';',
@@ -48694,6 +48696,8 @@ wwv_flow_imp_page.create_page_plug(
 '                || ''</td><td>''',
 '                || case when v_est = ''ABIERTO'' and v_ci then ''<button type="button" class="spx-btn" onclick="spxPeriodo(''''CONTABILIZAR'''',''',
 '                        || to_char(m.mes) || '',true)"><span class="fa fa-cogs"></span> Contabilizar</button> '' end',
+'                || case when v_est = ''ABIERTO'' and v_ci then ''<button type="button" class="spx-btn" onclick="spxPeriodo(''''LIQUIDAR_IVA'''',''',
+'                        || to_char(m.mes) || '',true)"><span class="fa fa-percent"></span> Liquidar IVA</button> '' end',
 '                || case when v_est = ''ABIERTO'' and v_ci then ''<button type="button" class="spx-btn" onclick="spxPeriodo(''''CERRAR'''',''',
 '                        || to_char(m.mes) || '','' || case when v_conc >= v_bancos then ''true'' else ''false'' end || '')"><span class="fa fa-lock"></span> Cerrar</button>''',
 '                        when v_est = ''CERRADO'' and v_re then ''<button type="button" class="spx-btn" onclick="spxPeriodo(''''REABRIR'''',''',
@@ -48845,7 +48849,8 @@ wwv_flow_imp_page.create_page_plug(
 '    if v_n = 0 then return ''<p>Instala primero el plan de cuentas.</p>''; end if;',
 '    return ''<p class="spx-ayuda">Lo pendiente por enterar segun la contabilidad (contabiliza el mes antes de pagar). ''',
 '        || ''Al registrar el pago se debita la cuenta del impuesto y se acredita el banco.</p>''',
-'        || ''<div class="spx-res"><div><small>Retenciones de IVA</small><b>'' || s(''RET_IVA_PROVEEDORES'') || ''</b></div>''',
+'        || ''<div class="spx-res"><div><small>IVA por pagar</small><b>'' || s(''IVA_POR_PAGAR'') || ''</b></div>''',
+'        || ''<div><small>Retenciones de IVA</small><b>'' || s(''RET_IVA_PROVEEDORES'') || ''</b></div>''',
 '        || ''<div><small>Retenciones de ISLR</small><b>'' || s(''RET_ISLR_PROVEEDORES'') || ''</b></div>''',
 '        || ''<div><small>IGTF por enterar</small><b>'' || s(''IGTF_POR_ENTERAR'') || ''</b></div></div>'';',
 'end;'))
@@ -48860,7 +48865,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000002402)
 ,p_prompt=>unistr('Qu\00E9 se entera')
 ,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC2:Retenciones de IVA;RET_IVA_PROVEEDORES,Retenciones de ISLR;RET_ISLR_PROVEEDORES,IGTF por enterar;IGTF_POR_ENTERAR'
+,p_lov=>'STATIC2:IVA por pagar;IVA_POR_PAGAR,Retenciones de IVA;RET_IVA_PROVEEDORES,Retenciones de ISLR;RET_ISLR_PROVEEDORES,IGTF por enterar;IGTF_POR_ENTERAR'
 ,p_item_default=>'RET_IVA_PROVEEDORES'
 ,p_lov_display_null=>'NO'
 ,p_cHeight=>1
@@ -48986,6 +48991,30 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when_button_id=>wwv_flow_imp.id(43000000000002408)
 );
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(43000000000002410)
+,p_process_sequence=>6
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Liquidar IVA'
+,p_static_id=>'liquidar-iva'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'declare',
+'    v_emp number := fn_clean_num(:F_EMPRESA_ACTIVA);',
+'    v_id number;',
+'begin',
+'    if not fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,PRUEBA'') then',
+'        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
+'    end if;',
+'    pkg_contabilidad.prc_liquidar_iva(v_emp, nvl(fn_clean_num(:P52_ANIO), extract(year from sysdate)),',
+'        fn_clean_num(:P52_MES), :APP_USER, v_id);',
+'    apex_application.g_print_success_message := ''IVA liquidado: revisa el saldo de IVA por pagar abajo.'';',
+'end;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when=>':REQUEST = ''LIQUIDAR_IVA'''
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
+);
 end;
 /
 prompt --application/pages/page_00053
@@ -49059,7 +49088,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(43000000000002371)
 ,p_prompt=>'Libro'
 ,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC2:Balance de comprobaci'||unistr('\00F3')||'n;BALANCE,Libro diario;DIARIO,Mayor anal'||unistr('\00ED')||'tico;MAYOR,Estado de resultados;RESULTADOS,Balance general;SITUACION'
+,p_lov=>'STATIC2:Balance de comprobaci'||unistr('\00F3')||'n;BALANCE,Libro diario;DIARIO,Mayor anal'||unistr('\00ED')||'tico;MAYOR,Estado de resultados;RESULTADOS,Balance general;SITUACION,Flujo de efectivo;FLUJO,Cambios en el patrimonio;PATRIMONIO,Resumen de impuestos;IMPUESTOS,Retenciones de IVA e ISLR;RETENCIONES,Libro de inventarios;INVENTARIOS'
 ,p_item_default=>'BALANCE'
 ,p_lov_display_null=>'NO'
 ,p_cHeight=>1
@@ -49244,7 +49273,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_static_id=>'sirve-excel-libro'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
-'    v_lib   varchar2(10) := upper(nvl(v(''P53_LIBRO''), ''BALANCE''));',
+'    v_lib   varchar2(20) := upper(nvl(v(''P53_LIBRO''), ''BALANCE''));',
 '    v_desde date := to_date(v(''P53_DESDE''), ''DD/MM/YYYY'');',
 '    v_hasta date := nvl(to_date(v(''P53_HASTA''), ''DD/MM/YYYY''), trunc(sysdate));',
 '    v_cta   number := nullif(fn_clean_num(v(''P53_ID_CUENTA'')), 0);',
@@ -49253,7 +49282,8 @@ wwv_flow_imp_page.create_page_process(
 '    v_nom   varchar2(120);',
 '    v_pos   number := 1;',
 'begin',
-'    if v_lib not in (''BALANCE'', ''DIARIO'', ''MAYOR'', ''RESULTADOS'', ''SITUACION'') then',
+'    if v_lib not in (''BALANCE'', ''DIARIO'', ''MAYOR'', ''RESULTADOS'', ''SITUACION'', ''FLUJO'', ''PATRIMONIO'',',
+'                     ''IMPUESTOS'', ''RETENCIONES'', ''INVENTARIOS'') then',
 '        v_lib := ''BALANCE'';',
 '    end if;',
 '    if v_emp is null then',
@@ -49265,6 +49295,9 @@ wwv_flow_imp_page.create_page_process(
 '    v_html := fn_ctb_libro(v_lib, v_desde, v_hasta, v_cta, v_emp, ''XLS'');',
 '    v_nom  := case v_lib when ''DIARIO'' then ''libro-diario-'' when ''MAYOR'' then ''mayor-analitico-''',
 '              when ''RESULTADOS'' then ''estado-resultados-'' when ''SITUACION'' then ''balance-general-''',
+'              when ''FLUJO'' then ''flujo-efectivo-'' when ''PATRIMONIO'' then ''cambios-patrimonio-''',
+'              when ''IMPUESTOS'' then ''resumen-impuestos-'' when ''RETENCIONES'' then ''retenciones-''',
+'              when ''INVENTARIOS'' then ''libro-inventarios-''',
 '              else ''balance-comprobacion-'' end || to_char(v_hasta, ''YYYY-MM-DD'') || ''.xls'';',
 '    owa_util.mime_header(''application/vnd.ms-excel'', false);',
 '    htp.p(''Content-Disposition: attachment; filename="'' || v_nom || ''"'');',

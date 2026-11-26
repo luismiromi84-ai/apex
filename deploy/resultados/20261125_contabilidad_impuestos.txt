@@ -1,0 +1,1 @@
+2026-11-25 Impuestos, flujo, patrimonio, inventarios y liquidacion del IVA: migracion 20261125_contabilidad_impuestos.sql FALLAS=0; SQL K1-K21 FALLAS=0; lote L1-L7 FALLAS=0 (datos reales); libros nuevos sobre empresas 1 y 6 sin errores; f100 122 sentencias OK; procesos/rejilla/portada FALLAS=0; install limpio FALLAS=0; navegador C1-C14 FALLAS=0

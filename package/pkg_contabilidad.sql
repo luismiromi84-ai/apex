@@ -82,10 +82,16 @@ create or replace package pkg_contabilidad as
     procedure prc_cierre_anual(p_id_empresa in number, p_anio in number, p_usuario in varchar2,
                                p_id_asiento out number);
 
-    -- Pago al SENIAT de lo retenido o percibido: debita RET_IVA_PROVEEDORES, RET_ISLR_PROVEEDORES o
+    -- Pago al SENIAT de lo retenido o percibido: debita IVA_POR_PAGAR, RET_IVA_PROVEEDORES, RET_ISLR_PROVEEDORES o
     -- IGTF_POR_ENTERAR y acredita el banco. No paga mas de lo pendiente a la fecha (-20193).
     procedure prc_pagar_seniat(p_id_empresa in number, p_concepto in varchar2, p_fecha in date,
                                p_id_cuenta in number, p_monto in number, p_referencia in varchar2,
+                               p_usuario in varchar2, p_id_asiento out number);
+
+    -- Liquidacion mensual del IVA: salda debito y credito fiscal al fin del mes, descuenta el
+    -- excedente de meses anteriores y las retenciones que nos hicieron los clientes, y deja el
+    -- resultado en IVA_POR_PAGAR (o en IVA_EXCEDENTE si el credito es mayor). Una por mes (-20194).
+    procedure prc_liquidar_iva(p_id_empresa in number, p_anio in number, p_mes in number,
                                p_usuario in varchar2, p_id_asiento out number);
 
     -- Solo pruebas: borra toda la contabilidad de una empresa del rango de fixtures

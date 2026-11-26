@@ -15,6 +15,11 @@
 --   K8 el reverso de un asiento de un mes cerrado cae en el mes siguiente
 --   K9 no se reabre un mes si hay uno posterior cerrado (-20189); en orden, si
 --   K10 un usuario sin acceso a la empresa no instala ni asienta (-20190)
+--   K11-K14 libros (balance, mayor, diario) y mantenimiento de cuentas y conceptos
+--   K15-K18 estado de resultados, balance general, cierre anual y pago al SENIAT
+--   K19 liquidacion del IVA (por pagar, excedente, retenciones de clientes); una por mes (-20194)
+--   K20 pago al SENIAT del IVA por pagar
+--   K21 flujo de efectivo exacto, resumen de impuestos, retenciones, patrimonio e inventarios
 --
 -- Empresa temporal 900280 (enero-marzo 2026) y usuario temporal; se purga al final.
 --   python deploy/conexion/importar_export.py deploy/diagnostico/20261125_contabilidad_verificacion.sql
@@ -132,7 +137,7 @@ begin
     select count(*) into v_n2 from cuentas_fondos f join ctb_cuentas c on c.id_cuenta_ctb = f.id_cuenta_ctb
      where f.id_empresa = E and ((f.tipo = 'CAJA' and c.codigo = '1.1.1.10.010')
                               or (f.tipo = 'BANCO' and c.codigo = '1.1.1.30.010'));
-    if v_a <> 218 or v_b <> 28 or v_n2 <> 2 or v_n <> 218 then
+    if v_a <> 218 or v_b <> 29 or v_n2 <> 2 or v_n <> 218 then
         falla('K1 instalar plan: cuentas=' || v_a || ' conceptos=' || v_b || ' fondos=' || v_n2 || ' devuelto=' || v_n);
     end if;
     if pkg_contabilidad.fn_instalar_plan(E, U) <> 0 then
@@ -330,6 +335,69 @@ begin
         end if;
         espera('K18 enterar mas de lo pendiente', 'declare v number; begin pkg_contabilidad.prc_pagar_seniat(900280, '
                || '''RET_IVA_PROVEEDORES'', date ''2026-03-21'', ' || v_cajf || ', 15, ''X'', ''diag.ctb'', v); end;', -20193);
+
+        -- K19 liquidacion del IVA en tres meses
+        --   marzo: debito 16 -> 16 por pagar
+        pkg_contabilidad.prc_liquidar_iva(E, 2026, 3, U, v_id);
+        commit;
+        if pkg_contabilidad.fn_saldo_concepto(E, 'IVA_POR_PAGAR') <> 16 or pkg_contabilidad.fn_saldo_concepto(E, 'IVA_DEBITO', date '2026-03-31') <> 0 then
+            falla('K19 marzo: por pagar=' || pkg_contabilidad.fn_saldo_concepto(E, 'IVA_POR_PAGAR'));
+        end if;
+        espera('K19 liquidar marzo dos veces', 'declare v number; begin pkg_contabilidad.prc_liquidar_iva(900280, 2026, 3, ''diag.ctb'', v); end;', -20194);
+        --   abril: solo credito 40 -> 40 de excedente
+        v_id := null;
+        pkg_contabilidad.prc_guardar_asiento(v_id, E, date '2026-04-10', 'Compra de abril',
+            '[{"id":' || pkg_contabilidad.fn_cuenta(E, 'IVA_CREDITO') || ',"debe":40,"haber":0},{"id":'
+            || pkg_contabilidad.fn_cuenta(E, 'CXP') || ',"debe":0,"haber":40}]', U);
+        pkg_contabilidad.prc_confirmar(v_id, U);
+        pkg_contabilidad.prc_liquidar_iva(E, 2026, 4, U, v_id);
+        commit;
+        if pkg_contabilidad.fn_saldo_concepto(E, 'IVA_EXCEDENTE') <> -40 or pkg_contabilidad.fn_saldo_concepto(E, 'IVA_POR_PAGAR') <> 16 then
+            falla('K19 abril: excedente=' || -pkg_contabilidad.fn_saldo_concepto(E, 'IVA_EXCEDENTE'));
+        end if;
+        --   mayo: debito 50 - excedente 40 = 10; la retencion del cliente (5) lo deja en 5 por pagar
+        v_id := null;
+        pkg_contabilidad.prc_guardar_asiento(v_id, E, date '2026-05-10', 'Venta de mayo',
+            '[{"id":' || v_cxc || ',"debe":50,"haber":0},{"id":' || v_iva || ',"debe":0,"haber":50}]', U);
+        pkg_contabilidad.prc_confirmar(v_id, U);
+        v_id := null;
+        pkg_contabilidad.prc_guardar_asiento(v_id, E, date '2026-05-12', 'Retencion del cliente',
+            '[{"id":' || pkg_contabilidad.fn_cuenta(E, 'RET_IVA_CLIENTES') || ',"debe":5,"haber":0},{"id":' || v_cxc || ',"debe":0,"haber":5}]', U);
+        pkg_contabilidad.prc_confirmar(v_id, U);
+        pkg_contabilidad.prc_liquidar_iva(E, 2026, 5, U, v_id);
+        commit;
+        if pkg_contabilidad.fn_saldo_concepto(E, 'IVA_POR_PAGAR') <> 21 or pkg_contabilidad.fn_saldo_concepto(E, 'IVA_EXCEDENTE') <> 0
+           or pkg_contabilidad.fn_saldo_concepto(E, 'RET_IVA_CLIENTES') <> 0 then
+            falla('K19 mayo: por pagar=' || pkg_contabilidad.fn_saldo_concepto(E, 'IVA_POR_PAGAR')
+                  || ' excedente=' || pkg_contabilidad.fn_saldo_concepto(E, 'IVA_EXCEDENTE'));
+        end if;
+        -- K20 pago al SENIAT del IVA por pagar
+        pkg_contabilidad.prc_pagar_seniat(E, 'IVA_POR_PAGAR', date '2026-06-05', v_cajf, 21, 'PLANILLA-5', U, v_id);
+        commit;
+        if pkg_contabilidad.fn_saldo_concepto(E, 'IVA_POR_PAGAR') <> 0 then
+            falla('K20 tras pagar el IVA queda ' || pkg_contabilidad.fn_saldo_concepto(E, 'IVA_POR_PAGAR'));
+        end if;
+        -- K21 libros nuevos (la empresa no tiene documentos: se mira la estructura y el flujo exacto)
+        v_x := fn_ctb_libro('FLUJO', date '2026-01-01', date '2026-12-31', null, E, 'XLS');
+        if instr(v_x, 'Pagos de impuestos (SENIAT)') = 0 or instr(v_x, F || '-91</td></tr>') = 0 then
+            falla('K21 flujo de efectivo: se esperaba efectivo final -91 (gasto 50 + SENIAT 20 + 21)');
+        end if;
+        v_x := fn_ctb_libro('IMPUESTOS', date '2026-01-01', date '2026-12-31', null, E, 'XLS');
+        if instr(v_x, 'Cuota del per') = 0 or instr(v_x, 'IGTF percibido') = 0 then
+            falla('K21 el resumen de impuestos no trae sus secciones');
+        end if;
+        v_x := fn_ctb_libro('RETENCIONES', date '2026-01-01', date '2026-12-31', null, E, 'XLS');
+        if instr(v_x, 'Total recibidas') = 0 or instr(v_x, 'Total practicadas de ISLR') = 0 then
+            falla('K21 el libro de retenciones no trae sus totales');
+        end if;
+        v_x := fn_ctb_libro('PATRIMONIO', date '2026-01-01', date '2026-12-31', null, E, 'XLS');
+        if instr(v_x, 'Total patrimonio') = 0 or instr(v_x, '3.2.1.10.020') = 0 then
+            falla('K21 cambios en el patrimonio: falta el resultado del ejercicio cerrado');
+        end if;
+        v_x := fn_ctb_libro('INVENTARIOS', date '2026-01-01', date '2026-12-31', null, E, 'HTML');
+        if instr(v_x, 'No hay movimientos de inventario') = 0 then
+            falla('K21 libro de inventarios sin kardex deberia decirlo');
+        end if;
     end;
 exception
     when others then

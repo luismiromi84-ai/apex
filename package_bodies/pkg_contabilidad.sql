@@ -860,8 +860,8 @@ create or replace package body pkg_contabilidad as
         v_pend  number;
     begin
         valida_empresa(p_usuario, p_id_empresa);
-        if v_con is null or v_con not in ('RET_IVA_PROVEEDORES', 'RET_ISLR_PROVEEDORES', 'IGTF_POR_ENTERAR') then
-            raise_application_error(-20191, 'Elige que se entera: retenciones de IVA, retenciones de ISLR o IGTF.');
+        if v_con is null or v_con not in ('RET_IVA_PROVEEDORES', 'RET_ISLR_PROVEEDORES', 'IGTF_POR_ENTERAR', 'IVA_POR_PAGAR') then
+            raise_application_error(-20191, 'Elige que se paga: IVA por pagar, retenciones de IVA, retenciones de ISLR o IGTF.');
         end if;
         if p_fecha is null or p_id_cuenta is null or v_monto <= 0 then
             raise_application_error(-20191, 'Indica la fecha, el banco y un monto mayor que cero.');
@@ -876,10 +876,62 @@ create or replace package body pkg_contabilidad as
         l_add(fn_cuenta_fondo(p_id_cuenta, p_usuario), v_monto, 'H', 'Entero al SENIAT ' || p_referencia);
         p_id_asiento := asentar(p_id_empresa, p_fecha,
                                 'Pago al SENIAT: ' || case v_con when 'RET_IVA_PROVEEDORES' then 'retenciones de IVA'
-                                    when 'RET_ISLR_PROVEEDORES' then 'retenciones de ISLR' else 'IGTF' end
+                                    when 'RET_ISLR_PROVEEDORES' then 'retenciones de ISLR'
+                                    when 'IVA_POR_PAGAR' then 'IVA del periodo' else 'IGTF' end
                                 || case when trim(p_referencia) is not null then ' (ref. ' || trim(p_referencia) || ')' end,
                                 'SENIAT', null, v_con, p_usuario, 'MANUAL');
     end prc_pagar_seniat;
+
+    procedure prc_liquidar_iva(p_id_empresa in number, p_anio in number, p_mes in number,
+                               p_usuario in varchar2, p_id_asiento out number) is
+        v_fin   date := last_day(to_date(p_anio || lpad(p_mes, 2, '0') || '01', 'YYYYMMDD'));
+        v_n     number;
+        v_deb   number;
+        v_cre   number;
+        v_exc   number;
+        v_ret   number;
+        v_cuota number;
+        v_retu  number;
+
+        function saldo(p_concepto varchar2) return number is
+            v number;
+        begin
+            select nvl(sum(d.debe - d.haber), 0) into v
+              from ctb_asiento_det d join ctb_asientos a on a.id_asiento = d.id_asiento
+             where a.id_empresa = p_id_empresa and a.estado in ('CONFIRMADO', 'REVERSADO') and a.fecha <= v_fin
+               and d.id_cuenta_ctb = fn_cuenta(p_id_empresa, p_concepto);
+            return v;
+        end saldo;
+    begin
+        valida_empresa(p_usuario, p_id_empresa);
+        if fn_periodo_abierto(p_id_empresa, v_fin) = 'N' then
+            raise_application_error(-20184, 'El periodo ' || lpad(p_mes, 2, '0') || '/' || p_anio || ' esta cerrado.');
+        end if;
+        select count(*) into v_n from ctb_asientos
+         where id_empresa = p_id_empresa and doc_tipo = 'LIQ_IVA' and id_doc = p_anio * 100 + p_mes and estado = 'CONFIRMADO';
+        if v_n > 0 then
+            raise_application_error(-20194, 'El IVA de ' || lpad(p_mes, 2, '0') || '/' || p_anio
+                || ' ya esta liquidado. Para rehacerlo, reversa ese asiento.');
+        end if;
+        v_deb := -saldo('IVA_DEBITO');            -- acreedor
+        v_cre := saldo('IVA_CREDITO');            -- deudor
+        v_exc := saldo('IVA_EXCEDENTE');          -- deudor (excedente de meses anteriores)
+        v_ret := saldo('RET_IVA_CLIENTES');       -- deudor (retenciones que nos hicieron)
+        if v_deb = 0 and v_cre = 0 then
+            raise_application_error(-20194, 'No hay IVA que liquidar hasta ' || to_char(v_fin, 'DD/MM/YYYY')
+                || ': contabiliza el mes primero.');
+        end if;
+        v_cuota := v_deb - v_cre - v_exc;
+        v_retu := least(v_ret, greatest(v_cuota, 0));
+        g_l.delete;
+        l_add(fn_cuenta(p_id_empresa, 'IVA_DEBITO'), v_deb, 'D', 'Debito fiscal del periodo');
+        l_add(fn_cuenta(p_id_empresa, 'IVA_CREDITO'), v_cre, 'H', 'Credito fiscal del periodo');
+        l_add(fn_cuenta(p_id_empresa, 'IVA_EXCEDENTE'), greatest(-v_cuota, 0) - v_exc, 'D', 'Excedente de credito fiscal');
+        l_add(fn_cuenta(p_id_empresa, 'RET_IVA_CLIENTES'), v_retu, 'H', 'Retenciones de clientes descontadas');
+        l_add(fn_cuenta(p_id_empresa, 'IVA_POR_PAGAR'), greatest(v_cuota, 0) - v_retu, 'H', 'IVA a pagar al SENIAT');
+        p_id_asiento := asentar(p_id_empresa, v_fin, 'Liquidacion del IVA ' || lpad(p_mes, 2, '0') || '/' || p_anio,
+                                'LIQ_IVA', p_anio * 100 + p_mes, 'LIQUIDACION', p_usuario, 'MANUAL');
+    end prc_liquidar_iva;
 
     function fn_purgando return boolean is
     begin

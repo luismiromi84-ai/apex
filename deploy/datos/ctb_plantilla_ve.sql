@@ -253,6 +253,7 @@ begin
     m('IVA_DEBITO', '2.1.6.10.010', 'IVA de las ventas');
     m('IVA_CREDITO', '1.1.6.10.010', 'IVA de las compras');
     m('IVA_POR_PAGAR', '2.1.6.10.020', 'Liquidacion mensual del IVA');
+    m('IVA_EXCEDENTE', '1.1.6.10.020', 'Excedente de credito fiscal (liquidacion del IVA)');
     m('RET_IVA_CLIENTES', '1.1.6.10.030', 'Retencion de IVA que entrega el cliente');
     m('RET_ISLR_CLIENTES', '1.1.6.20.020', 'ISLR que retiene el cliente');
     m('ANTICIPO_CLIENTES', '2.1.9.90.010', 'Anticipos recibidos de clientes');
