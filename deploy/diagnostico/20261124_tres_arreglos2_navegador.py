@@ -184,7 +184,7 @@ try:
 
     # ------------------------------------------------------------------ N2
     js('(function(){var b=[...document.querySelectorAll("button,a")].find(function(x){'
-       'return /Nueva Facturas/i.test(x.innerText||"");}); if(b){b.click();}})()')
+       'return /Nueva factura/i.test(x.innerText||"");}); if(b){b.click();}})()')
     if not esperar('(function(){var f=document.querySelector("iframe");'
                    'return !!(f && f.contentDocument && f.contentDocument.getElementById("P9_ESTADO"));})()', 60):
         raise SystemExit("no abrio la factura nueva")

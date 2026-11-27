@@ -167,7 +167,7 @@ begin
         end;
 
         -- propia -> exactamente los documentos de esa empresa que la lista muestra
-        -- (la lista de Presupuestos excluye los CANCELADO y cruza con clientes)
+        -- (la lista de Presupuestos excluye los CANCELADO y, desde el 2026-11-26, los FACTURADO y cruza con clientes)
         select min(id_empresa) into v_emp
           from v_empresas_usuario where username = v_usuario;
         begin
@@ -177,7 +177,7 @@ begin
             select count(*) into v_n
               from presupuestos p
              where p.id_empresa = v_emp
-               and p.estado <> 'CANCELADO'
+               and p.estado not in ('CANCELADO', 'FACTURADO')
                and exists (select 1 from clientes c
                             where c.id_cliente = p.id_cliente
                               and c.id_empresa = p.id_empresa);

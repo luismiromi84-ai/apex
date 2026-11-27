@@ -122,3 +122,5 @@ navegador 20261125_contabilidad_navegador.py
 navegador 20261125_revision_pantallas_navegador.py
 navegador 20261126_pago_aplicar_navegador.py
 navegador 20261126_linea_compra_descuento_navegador.py
+navegador 20261126_home_navegador.py
+navegador 20261126_presupuesto_facturado_volver_navegador.py

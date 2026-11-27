@@ -2,6 +2,10 @@
 # =============================================================================
 # 20261121_home_panel_capturas.py
 #
+# SUPERADA el 2026-11-26 para la Home: las dos tarjetas grandes (synpex-welcome-card) se quitaron
+# en la pantalla principal nueva; la prueba vigente es 20261126_home_navegador.py. Lo del Panel
+# General (13) sigue valiendo.
+#
 # Acabado de Home (1) y Panel General (13): capturas y comprobaciones.
 #   deploy/resultados/20261121_home_{1440,500}.png
 #   deploy/resultados/20261121_panel_{1440,500}.png

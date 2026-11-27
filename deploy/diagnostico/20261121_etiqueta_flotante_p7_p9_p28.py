@@ -273,8 +273,8 @@ try:
     nav.js('window.location.href="%s/f?p=100:8:%s"' % (BASE, ses))
     nav.esperar('!!document.getElementById("P8_ID_FACTURAS")', 60)
     time.sleep(4)
-    comprobar("D1 el boton «Nueva Facturas» abre el dialogo de la 9",
-              boton(nav, "Nueva Facturas") and hay_dialogo(nav, "P9_TIPO_DOCUMENTO"))
+    comprobar("D1 el boton «Nueva factura» abre el dialogo de la 9",
+              boton(nav, "Nueva factura") and hay_dialogo(nav, "P9_TIPO_DOCUMENTO"))
     time.sleep(4)
     v0, lbl0, hay0 = estado(nav, "P9_TIPO_CAMBIO", True)
     print("    antes: P9_TIPO_CAMBIO=%r etiqueta=%s" % (v0, "CON" if lbl0 else "SIN"))
