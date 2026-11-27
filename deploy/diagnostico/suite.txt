@@ -125,3 +125,4 @@ navegador 20261126_linea_compra_descuento_navegador.py
 navegador 20261126_home_navegador.py
 navegador 20261126_presupuesto_facturado_volver_navegador.py
 navegador 20261126_kardex_orden_navegador.py
+navegador 20261126_saldo_inicial_cuenta_navegador.py

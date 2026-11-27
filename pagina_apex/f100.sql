@@ -35260,7 +35260,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Forma de pago'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select f.descripcion || case when nvl(f.genera_igtf, ''N'') = ''S'' then '' (IGTF)'' else '''' end',
+'select f.descripcion || case when nvl(f.genera_igtf, ''N'') = ''S'' then '' (genera IGTF)'' else '''' end',
 '       as display_value, f.id_forma_pago as return_value',
 '  from forma_pago f',
 ' where f.activo = ''Y'' and nvl(f.visible_compras, ''S'') = ''S''',
@@ -42709,7 +42709,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Forma de pago'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select f.descripcion || case when nvl(f.genera_igtf, ''N'') = ''S'' then '' (IGTF)'' else '''' end',
+'select f.descripcion || case when nvl(f.genera_igtf, ''N'') = ''S'' then '' (genera IGTF)'' else '''' end',
 '       as display_value, f.id_forma_pago as return_value',
 '  from forma_pago f',
 ' where f.activo = ''Y'' and nvl(f.visible_compras, ''S'') = ''S''',
@@ -46416,6 +46416,7 @@ wwv_flow_imp_page.create_page_plug(
 '    v_html clob;',
 '    v_ent  number := 0;',
 '    v_sal  number := 0;',
+'    v_ini  number := 0;',
 '    function n(x number) return varchar2 is',
 '    begin',
 '        return to_char(nvl(x, 0), ''FM999G999G999G990D00'');',
@@ -46425,11 +46426,14 @@ wwv_flow_imp_page.create_page_plug(
 '        return ''<p>Elige la empresa en la barra de arriba.</p>'';',
 '    end if;',
 '    v_html := ''<table class="spx-cta"><thead><tr><th>Caja o cuenta</th><th>Tipo</th>''',
-'        || ''<th>Moneda</th><th class="num">Cobros</th><th class="num">Entradas (Bs)</th>''',
+'        || ''<th>Moneda</th><th class="num">Saldo inicial (Bs)</th><th class="num">Cobros</th><th class="num">Entradas (Bs)</th>''',
 '        || ''<th class="num">Pagos</th><th class="num">Salidas (Bs)</th>''',
 '        || ''<th class="num">Saldo (Bs)</th><th></th></tr></thead><tbody>'';',
 '    for r in (select c.id_cuenta, c.nombre, c.tipo, c.banco, c.numero_cuenta, c.cod_moneda,',
 '                     c.es_principal, c.estado,',
+'                     -- 2026-11-26: saldo inicial de la cuenta, en Bs (a la tasa de su fecha si es en divisas).',
+'                     round(nvl(c.saldo_inicial, 0) * case when c.cod_moneda in (''VES'', ''BS'') then 1',
+'                           else nvl(fn_tasa_ves(nvl(c.fecha_saldo_inicial, trunc(c.fecha_creacion)), c.cod_moneda), 0) end, 2) ini,',
 '                     (select count(*) from recibos x where x.id_cuenta = c.id_cuenta and x.estado = ''ACTIVO'') n_cob,',
 '                     (select sum(round(x.monto_neto * nvl(x.tipo_cambio, 1), 2)) from recibos x',
 '                       where x.id_cuenta = c.id_cuenta and x.estado = ''ACTIVO'') ent,',
@@ -46439,6 +46443,7 @@ wwv_flow_imp_page.create_page_plug(
 '                from cuentas_fondos c',
 '               where c.id_empresa = v_emp',
 '               order by case c.es_principal when ''S'' then 0 else 1 end, c.nombre) loop',
+'        v_ini := v_ini + nvl(r.ini, 0);',
 '        v_ent := v_ent + nvl(r.ent, 0);',
 '        v_sal := v_sal + nvl(r.sal, 0);',
 '        v_html := v_html || ''<tr><td><b>'' || sys.htf.escape_sc(r.nombre) || ''</b>''',
@@ -46448,20 +46453,23 @@ wwv_flow_imp_page.create_page_plug(
 '                    ''<br><small>'' || sys.htf.escape_sc(trim(r.banco || '' '' || r.numero_cuenta)) || ''</small>'' end',
 '            || ''</td><td>'' || case r.tipo when ''BANCO'' then ''Banco'' else ''Caja'' end',
 '            || ''</td><td>'' || r.cod_moneda',
+'            || ''</td><td class="num">'' || n(r.ini)',
 '            || ''</td><td class="num">'' || r.n_cob',
 '            || ''</td><td class="num">'' || n(r.ent)',
 '            || ''</td><td class="num">'' || r.n_pag',
 '            || ''</td><td class="num">'' || n(r.sal)',
-'            || ''</td><td class="num"><b>'' || n(nvl(r.ent, 0) - nvl(r.sal, 0)) || ''</b>''',
+'            || ''</td><td class="num"><b>'' || n(nvl(r.ini, 0) + nvl(r.ent, 0) - nvl(r.sal, 0)) || ''</b>''',
 '            || ''</td><td><a href="'' || apex_page.get_url(p_page => 46, p_request => ''EDITAR'',',
 '                   p_items => ''P46_ID_CUENTA'', p_values => to_char(r.id_cuenta))',
 '            || ''"><span class="fa fa-pencil"></span> Editar</a></td></tr>'';',
 '    end loop;',
-'    v_html := v_html || ''<tr class="tot"><td colspan="4">Total</td><td class="num">'' || n(v_ent)',
-'        || ''</td><td></td><td class="num">'' || n(v_sal) || ''</td><td class="num">'' || n(v_ent - v_sal)',
+'    v_html := v_html || ''<tr class="tot"><td colspan="3">Total</td><td class="num">'' || n(v_ini)',
+'        || ''</td><td></td><td class="num">'' || n(v_ent)',
+'        || ''</td><td></td><td class="num">'' || n(v_sal) || ''</td><td class="num">'' || n(v_ini + v_ent - v_sal)',
 '        || ''</td><td></td></tr></tbody></table>''',
-'        || ''<p><small>Entradas: neto de los cobros (lo que entra a la caja). Salidas: pagos a proveedores ''',
-'        || ''con su IGTF. Todo en bolivares a la tasa de cada movimiento.</small></p>'';',
+'        || ''<p><small>Saldo = saldo inicial + entradas - salidas. Saldo inicial: lo que ten&iacute;a la cuenta ''',
+'        || ''antes de usar Synpex (se carga con Editar). Entradas: neto de los cobros (lo que entra a la caja). ''',
+'        || ''Salidas: pagos a proveedores con su IGTF. Todo en bol&iacute;vares a la tasa de cada movimiento.</small></p>'';',
 '    return v_html;',
 'end;'))
 ,p_lazy_loading=>false
@@ -46594,6 +46602,35 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1610598304472262251
 ,p_item_template_options=>'#DEFAULT#'
 );
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000002414)
+,p_name=>'P46_SALDO_INICIAL'
+,p_item_sequence=>80
+,p_item_plug_id=>wwv_flow_imp.id(43000000000002211)
+,p_prompt=>'Saldo inicial (en la moneda de la cuenta)'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>20
+,p_cMaxlength=>30
+,p_colspan=>6
+,p_begin_on_new_line=>'Y'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>unistr('Lo que ten\00EDa la cuenta antes del primer cobro o pago registrado en Synpex (por ejemplo, el saldo del extracto). La primera conciliaci\00F3n arranca con este saldo. Solo se puede cambiar mientras la cuenta no tenga conciliaciones cerradas.')
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000002415)
+,p_name=>'P46_FECHA_SALDO_INICIAL'
+,p_item_sequence=>90
+,p_item_plug_id=>wwv_flow_imp.id(43000000000002211)
+,p_prompt=>'Fecha del saldo inicial'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>20
+,p_colspan=>6
+,p_begin_on_new_line=>'N'
+,p_field_template=>1610598304472262251
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'La fecha del saldo (la del extracto). En una cuenta en divisas, sirve para pasarlo a bolivares en el resumen.'
+);
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(43000000000002220)
 ,p_button_sequence=>200
@@ -46676,6 +46713,8 @@ wwv_flow_imp_page.create_page_process(
 '        apex_util.set_session_state(''P46_NUMERO_CUENTA'', r.numero_cuenta);',
 '        apex_util.set_session_state(''P46_ES_PRINCIPAL'', r.es_principal);',
 '        apex_util.set_session_state(''P46_ESTADO'', r.estado);',
+'        apex_util.set_session_state(''P46_SALDO_INICIAL'', to_char(nvl(r.saldo_inicial, 0), ''FM999G999G999G990D00''));',
+'        apex_util.set_session_state(''P46_FECHA_SALDO_INICIAL'', to_char(r.fecha_saldo_inicial, ''DD/MM/YYYY''));',
 '    end loop;',
 'end;'))
 ,p_process_clob_language=>'PLSQL'
@@ -46695,6 +46734,9 @@ wwv_flow_imp_page.create_page_process(
 '    v_prin   varchar2(1) := nvl(:P46_ES_PRINCIPAL, ''N'');',
 '    v_estado varchar2(10) := nvl(:P46_ESTADO, ''ACTIVO'');',
 '    v_n      number;',
+'    v_ini    number := round(fn_clean_num(:P46_SALDO_INICIAL), 2);',
+'    v_fini   date := to_date(:P46_FECHA_SALDO_INICIAL, ''DD/MM/YYYY'');',
+'    v_ini_ant number;',
 'begin',
 '    if not fn_tiene_rol(''ADMIN,GERENCIA,PRUEBA'') then',
 '        raise_application_error(-20003, ''No tiene permisos para esta accion.'');',
@@ -46729,17 +46771,34 @@ wwv_flow_imp_page.create_page_process(
 '                ''La empresa necesita una caja principal: marca otra como principal antes de quitarle la marca a esta.'');',
 '        end if;',
 '    end if;',
+'    -- 2026-11-26: el saldo inicial solo cambia mientras no haya conciliaciones cerradas',
+'    -- (despues, el saldo de partida es el del ultimo cierre).',
+'    if v_id is not null then',
+'        select nvl(saldo_inicial, 0) into v_ini_ant from cuentas_fondos where id_cuenta = v_id and id_empresa = v_emp;',
+'        if v_ini <> v_ini_ant then',
+'            select count(*) into v_n from conciliaciones where id_cuenta = v_id and estado = ''CERRADA'';',
+'            if v_n > 0 then',
+'                raise_application_error(-20126, ''Esta cuenta ya tiene conciliaciones cerradas: el saldo inicial no se puede cambiar. ''',
+'                    || ''Si hay una diferencia, registrala con un movimiento.'');',
+'            end if;',
+'        end if;',
+'    end if;',
 '    if v_id is null then',
 '        insert into cuentas_fondos (id_empresa, nombre, tipo, banco, numero_cuenta, cod_moneda,',
-'                                    es_principal, estado, creado_por)',
+'                                    es_principal, estado, creado_por, saldo_inicial, fecha_saldo_inicial)',
 '        values (v_emp, v_nombre, nvl(:P46_TIPO, ''CAJA''), trim(:P46_BANCO), trim(:P46_NUMERO_CUENTA),',
-'                nvl(:P46_COD_MONEDA, ''VES''), v_prin, v_estado, :APP_USER)',
+'                nvl(:P46_COD_MONEDA, ''VES''), v_prin, v_estado, :APP_USER, v_ini, nvl(v_fini, trunc(sysdate)))',
 '        returning id_cuenta into v_id;',
 '    else',
 '        update cuentas_fondos set nombre = v_nombre, tipo = nvl(:P46_TIPO, ''CAJA''),',
 '               banco = trim(:P46_BANCO), numero_cuenta = trim(:P46_NUMERO_CUENTA),',
-'               cod_moneda = nvl(:P46_COD_MONEDA, ''VES''), es_principal = v_prin, estado = v_estado',
+'               cod_moneda = nvl(:P46_COD_MONEDA, ''VES''), es_principal = v_prin, estado = v_estado,',
+'               saldo_inicial = v_ini, fecha_saldo_inicial = nvl(v_fini, nvl(fecha_saldo_inicial, trunc(sysdate)))',
 '         where id_cuenta = v_id and id_empresa = v_emp;',
+'        -- la conciliacion abierta (la primera) toma el saldo inicial nuevo',
+'        update conciliaciones set saldo_inicial = v_ini',
+'         where id_cuenta = v_id and estado = ''ABIERTA''',
+'           and not exists (select 1 from conciliaciones c2 where c2.id_cuenta = v_id and c2.estado = ''CERRADA'');',
 '    end if;',
 '    apex_util.set_session_state(''P46_ID_CUENTA'', null);',
 '    apex_application.g_print_success_message := ''Caja o cuenta guardada: '' || v_nombre || ''.'';',
