@@ -48,6 +48,10 @@ for l in open(os.path.join(REPO, ".env"), encoding="utf-8"):
 fallas = []
 
 
+# 2026-11-26: titular nuevo de la portada (seis modulos)
+TITULAR = "Ventas, compras, inventario y contabilidad"
+
+
 def comprobar(nombre, condicion, detalle=""):
     print(f"  [{'OK   ' if condicion else 'FALLA'}] {nombre} {detalle}".rstrip())
     if not condicion:
@@ -59,7 +63,7 @@ try:
     with urllib.request.urlopen(BASE, timeout=40) as r:
         raiz = r.read().decode("utf-8", errors="replace")
         comprobar("la raiz de la app sirve la portada",
-                  "Presupuestos, facturación y clientes" in raiz, f"(HTTP {r.status})")
+                  TITULAR in raiz, f"(HTTP {r.status})")
 except urllib.error.HTTPError as e:
     comprobar("la raiz de la app sirve la portada", False, f"(HTTP {e.code})")
     raiz = ""
@@ -75,7 +79,7 @@ except urllib.error.HTTPError as e:
 
 for marca in ("spx-portada", "spx-hero", "spx-servicios", "spx-servicio",
               "spx-indicadores", "spx-pie", "wa.me/528111198920",
-              "Presupuestos, facturación y clientes"):
+              TITULAR):
     comprobar(f"la portada trae {marca}", marca in portada)
 
 # Desde el 2026-11-06 la portada es una pagina comercial con cuatro secciones
