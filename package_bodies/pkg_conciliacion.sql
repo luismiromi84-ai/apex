@@ -75,6 +75,11 @@ create or replace package body pkg_conciliacion as
           into v_saldo
           from conciliaciones
          where id_cuenta = p_id_cuenta and estado = 'CERRADA';
+        -- 2026-11-26: la primera conciliacion arranca con el saldo inicial de la cuenta
+        -- (el que tenia antes de usar Synpex), no en cero.
+        if v_saldo is null then
+            select nvl(saldo_inicial, 0) into v_saldo from cuentas_fondos where id_cuenta = p_id_cuenta;
+        end if;
 
         insert into conciliaciones (id_empresa, id_cuenta, desde, hasta, saldo_inicial, estado, creado_por)
         values (v_emp, p_id_cuenta, trunc(p_desde), trunc(p_hasta), nvl(v_saldo, 0), 'ABIERTA', p_usuario)
