@@ -14,7 +14,7 @@ proposito: depende de la condicion de pago y la pagina 7 tampoco la rellena al
 crear (su regla solo corre al cambiar la fecha).
 
 Comprobaciones:
-  F1  el boton «Nueva Facturas» de la lista (8) abre la 9 en alta
+  F1  el boton «Nueva factura» de la lista (8) abre la 9 en alta
   F2  en un alta la fecha de emision viene con la de hoy
   F3  al editar, la 9 muestra la fecha propia del documento (no la de hoy)
   F4  al editar, la fecha de vencimiento sigue siendo la del documento
@@ -205,7 +205,7 @@ try:
                           'return !!(f&&f.contentDocument&&'
                           'f.contentDocument.getElementById("P9_FECHA_EMISION"));})()', 40)
     texto = nav.js(TEXTO) or ""
-    comprobar("F1 el boton «Nueva Facturas» abre la 9 en alta",
+    comprobar("F1 el boton «Nueva factura» abre la 9 en alta",
               abierto and "grid settings" not in texto.lower(),
               "" if abierto else texto.strip().replace("\n", " ")[:100])
     if abierto:

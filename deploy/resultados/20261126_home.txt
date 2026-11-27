@@ -1,0 +1,1 @@
+2026-11-26 Pantalla principal nueva: f100 122 sentencias OK; procesos/rejilla/portada FALLAS=0; 20261126_home_navegador.py H1-H6 FALLAS=0; captura a 1440 y 500 px revisadas

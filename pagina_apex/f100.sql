@@ -15835,8 +15835,38 @@ wwv_flow_imp_page.create_page(
 '    .synpex-welcome-title { font-size: 1.05rem; }',
 '    .spx-card-list { padding: 10px 12px; }',
 '  }',
+'  /* --- 2026-11-26: Para hoy, acciones rapidas y modulos por area --- */',
+'  .spx-sec { margin: 18px 16px 0; }',
+'  .spx-sec-tit { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #64748b; margin: 0 0 10px; display: flex; align-items: center; gap: 7px; }',
+'  .spx-hoy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }',
+'  .spx-hoy { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; background: #ffffff; border: 1px solid #e5e7eb; border-left: 4px solid #16a34a; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-decoration: none; color: #17364a; transition: box-shadow .2s, transform .2s; }',
+'  .spx-hoy:hover { box-shadow: 0 4px 12px rgba(2,132,199,.18); transform: translateY(-1px); text-decoration: none; color: #0b4f7a; }',
+'  .spx-hoy-warn { border-left-color: #f59e0b; } .spx-hoy-alert { border-left-color: #dc2626; }',
+'  .spx-hoy-ico { width: 36px; height: 36px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; background: #dcfce7; color: #15803d; }',
+'  .spx-hoy-warn .spx-hoy-ico { background: #fef3c7; color: #b45309; } .spx-hoy-alert .spx-hoy-ico { background: #fee2e2; color: #b91c1c; }',
+'  .spx-hoy-txt { display: flex; flex-direction: column; min-width: 0; }',
+'  .spx-hoy-txt small { font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #64748b; }',
+'  .spx-hoy-txt b { font-size: 1.1rem; font-weight: 700; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; }',
+'  .spx-hoy-txt span { font-size: .78rem; color: #6b7280; }',
+'  .spx-accs { display: flex; flex-wrap: wrap; gap: 10px; }',
+'  .spx-acc { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 8px; background: linear-gradient(135deg, #0076ce, #005291); color: #ffffff !important; font-weight: 600; font-size: .85rem; text-decoration: none !important; box-shadow: 0 1px 3px rgba(0,82,145,.25); transition: box-shadow .2s, transform .2s; }',
+'  .spx-acc:hover { box-shadow: 0 4px 12px rgba(0,82,145,.30); transform: translateY(-1px); }',
+'  .spx-area { margin-bottom: 14px; }',
+'  .spx-area-tit { font-size: .9rem; font-weight: 700; color: #17364a; margin: 0 0 8px; display: flex; align-items: center; gap: 7px; }',
+'  .spx-area-tit .fa { color: #0ea5e9; }',
+'  .spx-mods { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; }',
+'  .spx-mod { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-decoration: none; color: #17364a; transition: box-shadow .2s, transform .2s; }',
+'  .spx-mod:hover { box-shadow: 0 4px 12px rgba(2,132,199,.20); transform: translateY(-1px); color: #0b4f7a; text-decoration: none; }',
+'  .spx-mod-ico { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; background: #eef6ff; color: #0076ce; flex: 0 0 auto; }',
+'  .spx-mod-txt { display: flex; flex-direction: column; min-width: 0; }',
+'  .spx-mod-txt b { font-size: .9rem; font-weight: 700; line-height: 1.2; }',
+'  .spx-mod-txt small { color: #6b7280; font-size: .75rem; }',
+'  @media (max-width: 640px) { .spx-sec { margin: 14px 8px 0; } }',
 '</style>'
 ))
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'/* al cerrar un dialogo abierto desde las acciones rapidas, se recarga para ver las cifras al dia */',
+'apex.jQuery(document.body).on("apexafterclosedialog", function () { window.location.reload(); });'))
 ,p_step_template=>4073832297226169690
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -15859,6 +15889,7 @@ wwv_flow_imp_page.create_page_plug(
 '    v_nombre varchar2(200);',
 '    v_pais   varchar2(10);',
 '    v_html   clob;',
+'    v_tasa   number;',
 'begin',
 '    -- La empresa activa de la barra. Si el usuario tiene varias y no ha elegido,',
 '    -- se le dice en vez de inventarse una.',
@@ -15892,6 +15923,18 @@ wwv_flow_imp_page.create_page_plug(
 '            || ''Elige la empresa en la barra de arriba</span>'';',
 '    end if;',
 '',
+'    -- 2026-11-26: la tasa BCV del dia a la vista (empresas de Venezuela)',
+'    if v_pais = ''VE'' then',
+'        begin',
+'            v_tasa := nullif(fn_tasa_ves(trunc(sysdate), ''USD''), 0);',
+'        exception when others then v_tasa := null;',
+'        end;',
+'        if v_tasa is not null then',
+'            v_html := v_html || ''<span><span class="fa fa-line-chart" aria-hidden="true"></span>Tasa BCV: <b>''',
+'                || to_char(v_tasa, ''FM999G990D0000'') || '' Bs/USD</b></span>'';',
+'        end if;',
+'    end if;',
+'',
 '    v_html := v_html',
 '        || ''<span><span class="fa fa-calendar-o" aria-hidden="true"></span>''',
 '        || to_char(sysdate, ''DD/MM/YYYY'') || ''</span>''',
@@ -15904,123 +15947,219 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(43000000000002120)
-,p_plug_name=>'Accesos directos'
-,p_static_id=>'home-accesos'
+ p_id=>wwv_flow_imp.id(43000000000002411)
+,p_plug_name=>'Para hoy'
+,p_static_id=>'home-para-hoy'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4502917002193490937
-,p_plug_display_sequence=>7
+,p_plug_display_sequence=>6
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'declare',
+'    v_emp  number := nullif(fn_clean_num(v(''F_EMPRESA_ACTIVA'')), 0);',
+'    v_pais varchar2(5);',
+'    v_loc  varchar2(5);',
 '    v_html clob;',
-'',
-'    -- Una tarjeta por modulo, solo si el rol del usuario puede abrirlo. Las',
-'    -- listas de roles son las mismas de la guarda de cada pagina.',
-'    procedure tarjeta(p_nombre varchar2, p_icono varchar2, p_descr varchar2,',
-'                      p_pagina number, p_roles varchar2) is',
+'    v_n    number;',
+'    v_m    number;',
+'    v_v    number;',
+'    v_x    number;',
+'    v_desde date;',
+'    function m(x number) return varchar2 is',
+'    begin',
+'        return to_char(nvl(x, 0), ''FM999G999G999G990D00'');',
+'    end;',
+'    -- tarjeta con su enlace, solo si el rol puede abrir esa pagina (los de su guarda)',
+'    procedure tarjeta(p_ico varchar2, p_titulo varchar2, p_valor varchar2, p_sub varchar2,',
+'                      p_estado varchar2, p_pagina number, p_roles varchar2) is',
 '    begin',
 '        if fn_tiene_rol(p_roles) then',
-'            v_html := v_html || ''<a class="spx-mod" href="''',
-'                || apex_page.get_url(p_page => p_pagina)',
-'                || ''"><span class="spx-mod-ico fa '' || p_icono || ''"></span>''',
-'                || ''<span class="spx-mod-txt"><b>'' || p_nombre || ''</b><small>''',
-'                || p_descr || ''</small></span></a>'';',
+'            v_html := v_html || ''<a class="spx-hoy spx-hoy-'' || p_estado || ''" href="''',
+'                || apex_page.get_url(p_page => p_pagina) || ''"><span class="spx-hoy-ico fa '' || p_ico',
+'                || ''" aria-hidden="true"></span><span class="spx-hoy-txt"><small>'' || p_titulo || ''</small><b>''',
+'                || p_valor || ''</b><span>'' || p_sub || ''</span></span></a>'';',
 '        end if;',
 '    end;',
 'begin',
-'    v_html := ''<style>''',
-'        || ''.spx-mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));''',
-'        || ''gap:12px;margin:0 16px 6px;}''',
-'        || ''.spx-mod{display:flex;align-items:center;gap:12px;padding:13px 15px;background:#fff;''',
-'        || ''border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);''',
-'        || ''text-decoration:none;color:#17364a;transition:box-shadow .2s,transform .2s;}''',
-'        || ''.spx-mod:hover{box-shadow:0 4px 12px rgba(2,132,199,.20);transform:translateY(-1px);''',
-'        || ''color:#0b4f7a;text-decoration:none;}''',
-'        || ''.spx-mod-ico{width:38px;height:38px;display:inline-flex;align-items:center;''',
-'        || ''justify-content:center;border-radius:10px;background:#eef6ff;color:#0076ce;''',
-'        || ''font-size:1rem;flex:0 0 auto;}''',
-'        || ''.spx-mod-txt{display:flex;flex-direction:column;min-width:0;}''',
-'        || ''.spx-mod-txt b{font-size:.92rem;font-weight:700;line-height:1.2;}''',
-'        || ''.spx-mod-txt small{color:#6b7280;font-size:.76rem;}''',
-'        || ''</style><div class="spx-mods">'';',
+'    if v_emp is null then',
+'        return null;',
+'    end if;',
+'    select cod_pais into v_pais from empresas where id_empresa = v_emp;',
+'    v_loc := case v_pais when ''MX'' then ''MXN'' else ''Bs'' end;',
+'    v_html := ''<div class="spx-sec"><h2 class="spx-sec-tit"><span class="fa fa-bell-o" aria-hidden="true"></span>''',
+'        || '' Para hoy</h2><div class="spx-hoy-grid">'';',
 '',
-'    tarjeta(''Presupuestos'',        ''fa-file-text-o'',  ''Cotiza y procesa'',        5,  ''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'');',
-'    tarjeta(unistr(''Facturaci\00F3n''),  ''fa-file-invoice'', ''Facturas y notas'',        8,  ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
-'    tarjeta(''Recibos'',             ''fa-money'',        ''Cobros y recibos'',        24, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
-'    tarjeta(''Reportes'',            ''fa-file-text'',    ''Documentos del periodo'',  17, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
-'    tarjeta(''Libro de ventas'',     ''fa-book'',         ''Compras y ventas'',        18, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
-'    tarjeta(''Compras'',             ''fa-shopping-cart'', ''Facturas de compra'',     27, ''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'');',
-'    tarjeta(''Proveedores'',         ''fa-truck'',        ''Catalogo de proveedores'', 22, ''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'');',
-'    tarjeta(''Pagos'',               ''fa-money'',        ''Pagos a proveedores'',     36, ''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'');',
-'    tarjeta(''Inventario'',          ''fa-cubes'',        ''Existencias y kardex'',    42, ''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'');',
-'    tarjeta(unistr(''Art\00EDculos y servicios''), ''fa-tags'',       ''Catalogo y etiquetas'',    40, ''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'');',
-'    tarjeta(''Clientes'',            ''fa-users'',        ''Catalogo de clientes'',    20, ''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'');',
-'    tarjeta(unistr(''Administraci\00F3n''),      ''fa-cog'',          ''Empresa, fiscal y logo'',  19, ''ADMIN,GERENCIA,PRUEBA'');',
-'    tarjeta(''Usuarios'',            ''fa-table'',        ''Altas, roles y bloqueos'', 3,  ''ADMIN,GERENCIA,PRUEBA'');',
+'    -- 1. facturas en borrador',
+'    select count(*) into v_n from facturas',
+'     where id_empresa = v_emp and tipo_documento = ''FAC'' and estado = ''PENDIENTE'';',
+'    tarjeta(''fa-pencil-square-o'', ''Facturas sin procesar'', to_char(v_n),',
+'            case when v_n = 0 then ''Todo procesado'' else ''Rev&iacute;salas y proc&eacute;salas'' end,',
+'            case when v_n = 0 then ''ok'' else ''warn'' end, 8, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
 '',
-'    v_html := v_html || ''</div>'';',
-'    return v_html;',
+'    -- 2. por cobrar (el mismo criterio de Facturacion: saldo de las emitidas y parciales)',
+'    select count(*),',
+'           nvl(sum(fn_saldo_factura(id_factura) * case when v_pais = ''VE'' then nvl(nullif(tipo_cambio, 0), 1) else 1 end), 0),',
+'           count(case when fecha_vencimiento < trunc(sysdate) then 1 end)',
+'      into v_n, v_m, v_v',
+'      from facturas',
+'     where id_empresa = v_emp and tipo_documento = ''FAC'' and estado in (''TIMBRADA'', ''PARCIAL'')',
+'       and fn_saldo_factura(id_factura) > 0.01;',
+'    tarjeta(''fa-money'', ''Por cobrar'', v_loc || '' '' || m(v_m),',
+'            to_char(v_n) || '' factura(s)'' || case when v_v > 0 then '' &middot; '' || to_char(v_v) || '' vencida(s)'' end,',
+'            case when v_v > 0 then ''alert'' when v_n > 0 then ''warn'' else ''ok'' end, 8, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
+'',
+'    -- 3. por pagar a proveedores',
+'    select count(*),',
+'           nvl(sum(fn_saldo_compra(id_compra) * case when v_pais = ''VE'' then nvl(nullif(tipo_cambio, 0), 1) else 1 end), 0),',
+'           count(case when fecha_vencimiento < trunc(sysdate) then 1 end)',
+'      into v_n, v_m, v_v',
+'      from compras',
+'     where id_empresa = v_emp and fn_compra_pagable(id_compra) = ''S'';',
+'    tarjeta(''fa-truck'', ''Por pagar'', v_loc || '' '' || m(v_m),',
+'            to_char(v_n) || '' compra(s)'' || case when v_v > 0 then '' &middot; '' || to_char(v_v) || '' vencida(s)'' end,',
+'            case when v_v > 0 then ''alert'' when v_n > 0 then ''warn'' else ''ok'' end, 36, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'',
+'    -- 4 y 5. contabilidad (si la empresa ya tiene plan de cuentas)',
+'    select count(*) into v_x from ctb_mapeo where id_empresa = v_emp;',
+'    if v_x > 0 then',
+'        if v_pais = ''VE'' then',
+'            v_m := 0;',
+'            for c in (select concepto from ctb_mapeo where id_empresa = v_emp',
+'                         and concepto in (''IVA_POR_PAGAR'', ''RET_IVA_PROVEEDORES'', ''RET_ISLR_PROVEEDORES'', ''IGTF_POR_ENTERAR'')) loop',
+'                v_m := v_m + greatest(pkg_contabilidad.fn_saldo_concepto(v_emp, c.concepto), 0);',
+'            end loop;',
+'            tarjeta(''fa-university'', ''Por enterar al SENIAT'', ''Bs '' || m(v_m), ''IVA, retenciones e IGTF'',',
+'                    case when v_m > 0.01 then ''warn'' else ''ok'' end, 52, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'        end if;',
+'        -- meses anteriores al actual, desde que se instalo el plan, que siguen abiertos',
+'        select trunc(min(fecha_creacion), ''MM'') into v_desde from ctb_cuentas where id_empresa = v_emp;',
+'        select count(*) into v_n',
+'          from (select add_months(v_desde, level - 1) mes from dual',
+'                connect by add_months(v_desde, level - 1) < trunc(sysdate, ''MM'')) x',
+'         where x.mes < trunc(sysdate, ''MM'')   -- connect by devuelve siempre la primera fila',
+'           and not exists (select 1 from ctb_periodos p where p.id_empresa = v_emp and p.estado = ''CERRADO''',
+'                              and p.anio = extract(year from x.mes) and p.mes = extract(month from x.mes));',
+'        tarjeta(''fa-calendar-check-o'', ''Cierre contable'',',
+'                case when v_n = 0 then ''Al d&iacute;a'' else to_char(v_n) || '' mes(es) sin cerrar'' end,',
+'                case when v_n = 0 then ''Meses anteriores cerrados'' else ''Contabiliza y cierra en Cierre mensual'' end,',
+'                case when v_n = 0 then ''ok'' else ''warn'' end, 52, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'    else',
+'        tarjeta(''fa-book'', ''Contabilidad'', ''Sin instalar'', ''Instala el plan de cuentas'', ''warn'', 50, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'    end if;',
+'',
+'    -- 6. articulos bajo el minimo',
+'    select count(*) into v_n',
+'      from producto_servicio p',
+'      left join kardex_saldo k on k.id_empresa = p.id_empresa and k.id_producto_servicio = p.id_producto_servicio',
+'     where p.id_empresa = v_emp and p.estado = ''ACTIVO'' and nvl(p.stock_minimo, 0) > 0',
+'       and nvl(k.cantidad, 0) < p.stock_minimo;',
+'    tarjeta(''fa-cubes'', ''Bajo el m&iacute;nimo'', to_char(v_n) || '' art&iacute;culo(s)'',',
+'            case when v_n = 0 then ''Existencias en orden'' else ''Rep&oacute;n el inventario'' end,',
+'            case when v_n = 0 then ''ok'' else ''warn'' end, 42, ''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'');',
+'',
+'    return v_html || ''</div></div>'';',
 'end;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(9157689704584633)
-,p_plug_name=>'  Synpex'
-,p_static_id=>'sypex'
-,p_title=>' '
-,p_region_template_options=>'#DEFAULT#:t-HeroRegion--hideIcon'
-,p_plug_template=>2675494171183407654
-,p_plug_display_sequence=>10
-,p_plug_display_point=>'REGION_POSITION_01'
+ p_id=>wwv_flow_imp.id(43000000000002120)
+,p_plug_name=>'Accesos'
+,p_static_id=>'home-accesos'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4502917002193490937
+,p_plug_display_sequence=>8
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
+,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div class="synpex-welcome-grid">',
-'  <!-- Tarjeta 1: presupuestos -->',
-'  <div class="synpex-welcome-card">',
-'    <div class="synpex-welcome-content">',
-'      <span class="synpex-badge">M&oacute;dulo</span>',
-'      <h2 class="synpex-welcome-title">Presupuestos</h2>',
-'      <p class="synpex-welcome-desc">Crea, edita y administra las cotizaciones y presupuestos de tus clientes de forma centralizada y eficiente.</p>',
-'      <a href="f?p=&APP_ID.:5:&APP_SESSION." class="t-Button synpex-btn-custom">',
-'        <span class="t-Icon fa fa-file-text-o" aria-hidden="true"></span>',
-'        <span class="t-Button-label">Gesti&oacute;n de Presupuestos</span>',
-'      </a>',
-'    </div>',
-'    <ul class="spx-card-list">',
-'      <li><span class="fa fa-check" aria-hidden="true"></span>Alta, edici&oacute;n y estados del presupuesto</li>',
-'      <li><span class="fa fa-check" aria-hidden="true"></span>L&iacute;neas con producto, impuesto y descuento</li>',
-'      <li><span class="fa fa-check" aria-hidden="true"></span>Impresi&oacute;n y gasto real del presupuesto</li>',
-'    </ul>',
-'  </div>',
+'declare',
+'    v_html  clob;',
+'    v_grupo clob;',
+'    v_acc   clob;',
+'    -- un formulario que se abre como dialogo necesita la URL preparada para el dialogo',
+'    function dlg(p_url varchar2) return varchar2 is',
+'    begin',
+'        return apex_util.prepare_url(p_url, p_triggering_element => ''apex.jQuery(''''body'''')'');',
+'    end;',
+'    procedure accion(p_txt varchar2, p_ico varchar2, p_url varchar2, p_roles varchar2) is',
+'    begin',
+'        if fn_tiene_rol(p_roles) then',
+'            v_acc := v_acc || ''<a class="spx-acc" href="'' || p_url || ''"><span class="fa '' || p_ico',
+'                || ''" aria-hidden="true"></span>'' || p_txt || ''</a>'';',
+'        end if;',
+'    end;',
+'    -- un acceso, solo si el rol puede abrir la pagina (los roles de su guarda)',
+'    procedure t(p_nombre varchar2, p_ico varchar2, p_descr varchar2, p_pagina number, p_roles varchar2) is',
+'    begin',
+'        if fn_tiene_rol(p_roles) then',
+'            v_grupo := v_grupo || ''<a class="spx-mod" href="'' || apex_page.get_url(p_page => p_pagina)',
+'                || ''"><span class="spx-mod-ico fa '' || p_ico || ''" aria-hidden="true"></span>''',
+'                || ''<span class="spx-mod-txt"><b>'' || p_nombre || ''</b><small>'' || p_descr || ''</small></span></a>'';',
+'        end if;',
+'    end;',
+'    procedure grupo(p_titulo varchar2, p_ico varchar2) is',
+'    begin',
+'        if v_grupo is not null then',
+'            v_html := v_html || ''<div class="spx-area"><h3 class="spx-area-tit"><span class="fa '' || p_ico',
+'                || ''" aria-hidden="true"></span> '' || p_titulo || ''</h3><div class="spx-mods">'' || v_grupo || ''</div></div>'';',
+'        end if;',
+'        v_grupo := null;',
+'    end;',
+'begin',
+'    accion(''Nueva factura'', ''fa-file-text'', dlg(''f?p='' || v(''APP_ID'') || '':9:'' || v(''APP_SESSION'') || ''::NO:9::''),',
+'           ''ADMIN,GERENCIA,FACTURACION,PRUEBA'');',
+'    accion(''Nuevo presupuesto'', ''fa-file-text-o'',',
+'           dlg(''f?p='' || v(''APP_ID'') || '':7:'' || v(''APP_SESSION'') || ''::NO:7:P7_ID_PRESUPUESTO:''), ''ADMIN,GERENCIA,VENTAS,PRUEBA'');',
+'    accion(''Registrar cobro'', ''fa-money'', dlg(''f?p='' || v(''APP_ID'') || '':25:'' || v(''APP_SESSION'') || ''::NO:25::''),',
+'           ''ADMIN,GERENCIA,FACTURACION,PRUEBA'');',
+'    accion(''Registrar compra'', ''fa-shopping-cart'', apex_page.get_url(p_page => 28, p_clear_cache => ''28''),',
+'           ''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,PRUEBA'');',
+'    accion(''Registrar pago'', ''fa-credit-card'', apex_page.get_url(p_page => 37, p_clear_cache => ''37''),',
+'           ''ADMIN,GERENCIA,CONTABILIDAD,PRUEBA'');',
+'    accion(''Asiento contable'', ''fa-pencil-square-o'', apex_page.get_url(p_page => 51), ''ADMIN,CONTABILIDAD,PRUEBA'');',
+'    if v_acc is not null then',
+'        v_html := ''<div class="spx-sec"><h2 class="spx-sec-tit"><span class="fa fa-bolt" aria-hidden="true"></span>''',
+'            || '' Acciones r&aacute;pidas</h2><div class="spx-accs">'' || v_acc || ''</div></div>'';',
+'    end if;',
+'    v_html := v_html || ''<div class="spx-sec"><h2 class="spx-sec-tit"><span class="fa fa-th-large" aria-hidden="true"></span>''',
+'        || '' M&oacute;dulos</h2>'';',
 '',
-'  <!-- Tarjeta 2: facturacion -->',
-'  <div class="synpex-welcome-card">',
-'    <div class="synpex-welcome-content">',
-'      <span class="synpex-badge synpex-badge-emerald">M&oacute;dulo</span>',
-'      <h2 class="synpex-welcome-title">Facturaci&oacute;n</h2>',
-'      <p class="synpex-welcome-desc">Genera, consulta y gestiona las facturas electr&oacute;nicas y sus impuestos de forma r&aacute;pida y confiable.</p>',
-'      <a href="f?p=&APP_ID.:8:&APP_SESSION." class="t-Button synpex-btn-custom synpex-btn-emerald">',
-'        <span class="t-Icon fa fa-file-code-o" aria-hidden="true"></span>',
-'        <span class="t-Button-label">Gesti&oacute;n de Facturaci&oacute;n</span>',
-'      </a>',
-'    </div>',
-'    <ul class="spx-card-list">',
-'      <li><span class="fa fa-check" aria-hidden="true"></span>Facturas, notas de cr&eacute;dito y d&eacute;bito</li>',
-'      <li><span class="fa fa-check" aria-hidden="true"></span>Cobros, saldo y comprobantes de retenci&oacute;n</li>',
-'      <li><span class="fa fa-check" aria-hidden="true"></span>Libro de ventas y reportes del per&iacute;odo</li>',
-'    </ul>',
-'  </div>',
-'</div>'
-))
-,p_plug_query_num_rows=>15
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
+'    t(''Presupuestos'', ''fa-file-text-o'', ''Cotiza y convi&eacute;rtelo en factura'', 5, ''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'');',
+'    t(''Facturaci&oacute;n'', ''fa-file-text'', ''Facturas y notas de cr&eacute;dito y d&eacute;bito'', 8, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
+'    t(''Recibos'', ''fa-money'', ''Cobros, retenciones e IGTF'', 24, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
+'    t(''Clientes'', ''fa-users'', ''Cat&aacute;logo de clientes'', 20, ''ADMIN,GERENCIA,VENTAS,CONSULTA,PRUEBA'');',
+'    grupo(''Ventas'', ''fa-line-chart'');',
+'    t(''Compras'', ''fa-shopping-cart'', ''Facturas de compra y retenciones'', 27, ''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'');',
+'    t(''Proveedores'', ''fa-truck'', ''Cat&aacute;logo de proveedores'', 22, ''ADMIN,GERENCIA,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'');',
+'    t(''Pagos'', ''fa-credit-card'', ''Pagos a proveedores'', 36, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'    grupo(''Compras'', ''fa-shopping-cart'');',
+'    t(''Inventario'', ''fa-cubes'', ''Existencias y kardex'', 42, ''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'');',
+'    t(''Art&iacute;culos y servicios'', ''fa-tags'', ''Cat&aacute;logo y etiquetas'', 40, ''ADMIN,GERENCIA,VENTAS,CONSULTA,ALMACEN,PRUEBA'');',
+'    t(''Toma f&iacute;sica'', ''fa-check-square-o'', ''Conteo del inventario'', 47, ''ADMIN,GERENCIA,ALMACEN,PRUEBA'');',
+'    t(''Costos'', ''fa-calculator'', ''Costo de ventas e inventario valorado'', 45, ''ADMIN,GERENCIA,VENTAS,CONTABILIDAD,CONSULTA,ALMACEN,PRUEBA'');',
+'    grupo(''Inventario'', ''fa-cubes'');',
+'    t(''Cajas y bancos'', ''fa-university'', ''Saldos por cuenta'', 46, ''ADMIN,GERENCIA,CONTABILIDAD,FACTURACION,PRUEBA'');',
+'    t(''Conciliaci&oacute;n bancaria'', ''fa-balance-scale'', ''Cuadre con el banco'', 48, ''ADMIN,GERENCIA,CONTABILIDAD,PRUEBA'');',
+'    t(''Asientos'', ''fa-pencil-square-o'', ''Asientos contables'', 51, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'    t(''Cierre mensual'', ''fa-calendar-check-o'', ''Contabilizar, IVA, SENIAT y cierre'', 52, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'    t(''Libros contables'', ''fa-book'', ''Balance, estados y libros'', 53, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'    t(''Plan de cuentas'', ''fa-sitemap'', ''Cuentas y conceptos'', 50, ''ADMIN,GERENCIA,CONTABILIDAD,CONSULTA,PRUEBA'');',
+'    grupo(''Finanzas y contabilidad'', ''fa-university'');',
+'    t(''Reportes'', ''fa-file-text'', ''Documentos del per&iacute;odo'', 17, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
+'    t(''Libro de compras y ventas'', ''fa-book'', ''Libro fiscal del mes'', 18, ''ADMIN,GERENCIA,FACTURACION,CONSULTA,PRUEBA'');',
+'    t(''Panel general'', ''fa-bar-chart'', ''Indicadores y gr&aacute;ficos'', 13, ''ADMIN,GERENCIA,VENTAS,FACTURACION,CONTABILIDAD,ALMACEN,CONSULTA,PRUEBA'');',
+'    grupo(''Reportes'', ''fa-bar-chart'');',
+'    t(''Administraci&oacute;n'', ''fa-cog'', ''Empresa, datos fiscales y logo'', 19, ''ADMIN,GERENCIA,PRUEBA'');',
+'    t(''Usuarios'', ''fa-user'', ''Altas, roles y bloqueos'', 3, ''ADMIN,GERENCIA,PRUEBA'');',
+'    t(''Conceptos de ISLR'', ''fa-list'', ''Cat&aacute;logo del SENIAT'', 34, ''ADMIN,GERENCIA,CONTABILIDAD'');',
+'    grupo(''Administraci&oacute;n'', ''fa-cog'');',
+'    return v_html || ''</div>'';',
+'end;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 end;
 /
@@ -17945,7 +18084,7 @@ wwv_flow_imp_page.create_page_plug(
 '  JOIN clientes c',
 '    ON c.id_cliente = p.id_cliente',
 '   AND c.id_empresa = p.id_empresa',
-' WHERE p.estado NOT IN (''CANCELADO'')',
+' WHERE p.estado NOT IN (''CANCELADO'', ''FACTURADO'')',
 '   AND p.id_empresa in (select fn_clean_num(:F_EMPRESA_ACTIVA) from dual)',
 ' ORDER BY p.id_presupuesto DESC'))
 ,p_plug_source_type=>'NATIVE_IR'
@@ -19677,7 +19816,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--danger:t-Button--iconLeft'
 ,p_button_template_id=>2084305881903810008
 ,p_button_image_alt=>'Eliminar'
-,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P7_ID_PRESUPUESTO is not null'
+,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,VENTAS,PRUEBA'') and :P7_ID_PRESUPUESTO is not null and fn_presupuesto_editable(:P7_ID_PRESUPUESTO)'
 ,p_button_condition2=>'PLSQL'
 ,p_button_condition_type=>'EXPRESSION'
 ,p_icon_css_classes=>'fa-trash-o'
@@ -21504,7 +21643,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Nueva Facturas'
+,p_button_image_alt=>'Nueva factura'
 ,p_button_redirect_url=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:9::'
 ,p_warn_on_unsaved_changes=>null
 ,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,FACTURACION,PRUEBA'')'
@@ -28428,8 +28567,8 @@ wwv_flow_imp_page.create_page_plug(
 '       co.id_compra as ver_compra,',
 '       to_number(null) as ver_presupuesto,',
 '       ''28'' as ver_pag,',
-'       ''P28_ID_COMPRA'' as ver_items,',
-'       to_char(co.id_compra) as ver_vals,',
+'       ''P28_ID_COMPRA,P28_VOLVER'' as ver_items,',
+'       co.id_compra || '',17'' as ver_vals,',
 '       co.folio_factura as folio,',
 '       co.nro_control as nro_control,',
 '       case co.tipo_documento',
@@ -29177,7 +29316,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'Z'
 ,p_column_label=>'Ver compra'
 ,p_column_type=>'NUMBER'
-,p_column_link=>'f?p=&APP_ID.:28:&SESSION.::&DEBUG.:28:P28_ID_COMPRA:#VER_COMPRA#'
+,p_column_link=>'f?p=&APP_ID.:28:&SESSION.::&DEBUG.:28:P28_ID_COMPRA,P28_VOLVER:#VER_COMPRA#,18'
 ,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Ver'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -29610,7 +29749,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_identifier=>'U'
 ,p_column_label=>'Ver compra'
 ,p_column_type=>'NUMBER'
-,p_column_link=>'f?p=&APP_ID.:28:&SESSION.::&DEBUG.:28:P28_ID_COMPRA:#VER_COMPRA#'
+,p_column_link=>'f?p=&APP_ID.:28:&SESSION.::&DEBUG.:28:P28_ID_COMPRA,P28_VOLVER:#VER_COMPRA#,18'
 ,p_column_linktext=>'<span aria-hidden="true" class="fa fa-pencil"></span> Ver'
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
@@ -34329,7 +34468,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_is_primary_key=>'Y'
 ,p_column_identifier=>'A'
 ,p_column_label=>'Editar'
-,p_column_link=>'f?p=&APP_ID.:28:&APP_SESSION.::&DEBUG.::P28_ID_COMPRA:#ID_COMPRA#'
+,p_column_link=>'f?p=&APP_ID.:28:&APP_SESSION.::&DEBUG.::P28_ID_COMPRA,P28_VOLVER:#ID_COMPRA#,27'
 ,p_column_linktext=>'<span class="fa fa-pencil" aria-hidden="true"></span> Editar'
 ,p_column_type=>'NUMBER'
 ,p_use_as_row_header=>'N'
@@ -34880,6 +35019,16 @@ wwv_flow_imp_page.create_page_item(
   'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(43000000000002412)
+,p_name=>'P28_VOLVER'
+,p_item_sequence=>12
+,p_item_plug_id=>wwv_flow_imp.id(43000000000001020)
+,p_item_default=>'27'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(43000000000001203)
 ,p_name=>'P28_URL_RETENCION'
 ,p_item_sequence=>16
@@ -35340,7 +35489,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2084305881903810008
 ,p_button_image_alt=>'Volver'
-,p_button_redirect_url=>'f?p=&APP_ID.:27:&APP_SESSION.::&DEBUG.:27::'
+,p_button_redirect_url=>'f?p=&APP_ID.:&P28_VOLVER.:&APP_SESSION.::&DEBUG.:::'
 ,p_button_css_classes=>'u-pullRight'
 ,p_icon_css_classes=>'fa-arrow-left'
 ,p_grid_new_row=>'N'
@@ -35797,7 +35946,7 @@ wwv_flow_imp_page.create_page_process(
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(43000000000001043)
 ,p_branch_name=>'Vuelve a la lista al registrar'
-,p_branch_action=>'f?p=&APP_ID.:27:&APP_SESSION.::&DEBUG.:27::'
+,p_branch_action=>'f?p=&APP_ID.:&P28_VOLVER.:&APP_SESSION.::&DEBUG.:::'
 ,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_when_button_id=>wwv_flow_imp.id(43000000000001035)
@@ -35806,7 +35955,7 @@ wwv_flow_imp_page.create_page_branch(
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(43000000000001085)
 ,p_branch_name=>'Vuelve a la lista al anular'
-,p_branch_action=>'f?p=&APP_ID.:27:&APP_SESSION.::&DEBUG.:27::'
+,p_branch_action=>'f?p=&APP_ID.:&P28_VOLVER.:&APP_SESSION.::&DEBUG.:::'
 ,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_when_button_id=>wwv_flow_imp.id(43000000000001036)
@@ -40176,7 +40325,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_is_primary_key=>'Y'
 ,p_column_identifier=>'A'
 ,p_column_label=>'Ver'
-,p_column_link=>'f?p=&APP_ID.:28:&APP_SESSION.::&DEBUG.::P28_ID_COMPRA:#VER_COMPRA#'
+,p_column_link=>'f?p=&APP_ID.:28:&APP_SESSION.::&DEBUG.::P28_ID_COMPRA,P28_VOLVER:#VER_COMPRA#,33'
 ,p_column_linktext=>'<span aria-hidden="true" class="fa fa-folder-open-o"></span> Ver compra'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
@@ -47155,7 +47304,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Abrir conciliacion'
+,p_button_image_alt=>unistr('Abrir conciliaci\00F3n')
 ,p_icon_css_classes=>'fa-folder-open-o'
 ,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,PRUEBA'')'
 ,p_button_condition2=>'PLSQL'
@@ -47299,7 +47448,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2084305881903810008
 ,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Cerrar conciliacion'
+,p_button_image_alt=>unistr('Cerrar conciliaci\00F3n')
 ,p_icon_css_classes=>'fa-lock'
 ,p_button_redirect_url=>'javascript:spxEnviaConc(''CERRAR'');'
 ,p_button_condition=>'fn_tiene_rol(''ADMIN,GERENCIA,CONTABILIDAD,PRUEBA'') and :P48_ESTADO = ''ABIERTA'''
