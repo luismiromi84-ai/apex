@@ -44939,7 +44939,10 @@ wwv_flow_imp_page.create_page_plug(
 '       s.costo_promedio_bs,',
 '       s.valor_bs,',
 '       round(s.valor_bs / nullif(fn_tasa_ves(trunc(sysdate), ''USD''), 0), 2) as valor_usd,',
-'       s.valor_ref,',
+'       -- 2026-11-26: costo historico en USD; kardex_saldo.valor_ref mezcla monedas.',
+'       (select round(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs / nullif(fn_tasa_ves(trunc(m.fecha_movimiento), ''USD''), 0)), 2)',
+'          from kardex_mov m where m.id_empresa = s.id_empresa',
+'           and m.id_producto_servicio = s.id_producto_servicio) as valor_ref,',
 '       a.stock_minimo,',
 '       case when s.cantidad < 0 then ''NEGATIVO''',
 '            when nvl(a.stock_minimo, 0) > 0 and s.cantidad < a.stock_minimo then ''BAJO''',
@@ -45045,7 +45048,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_db_column_name=>'VALOR_USD'
 ,p_display_order=>65
 ,p_column_identifier=>'L'
-,p_column_label=>'Valor (USD)'
+,p_column_label=>'Valor USD (tasa de hoy)'
 ,p_format_mask=>'999G999G999G999G990D00'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'RIGHT'
@@ -45056,7 +45059,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_db_column_name=>'VALOR_REF'
 ,p_display_order=>70
 ,p_column_identifier=>'H'
-,p_column_label=>'Valor (moneda doc.)'
+,p_column_label=>unistr('Costo USD (hist\00F3rico)')
 ,p_format_mask=>'999G999G999G999G990D00'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'RIGHT'
@@ -46133,7 +46136,9 @@ wwv_flow_imp_page.create_page_plug(
 '       a.nombre,',
 '       sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad) as unidades,',
 '       sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs) as costo_bs,',
-'       sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_ref) as costo_ref',
+'       -- 2026-11-26: USD a la tasa BCV del dia de cada movimiento (antes sumaba cada uno en la',
+'       -- moneda de su documento: Bs y USD mezclados).',
+'       round(sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs / nullif(fn_tasa_ves(trunc(m.fecha_movimiento), ''USD''), 0)), 2) as costo_ref',
 '  from kardex_mov m',
 '  join producto_servicio a on a.id_producto_servicio = m.id_producto_servicio',
 ' where m.id_empresa = fn_clean_num(:F_EMPRESA_ACTIVA)',
@@ -46210,7 +46215,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_db_column_name=>'COSTO_REF'
 ,p_display_order=>50
 ,p_column_identifier=>'E'
-,p_column_label=>'Costo (moneda doc.)'
+,p_column_label=>'Costo (USD)'
 ,p_format_mask=>'999G999G999G999G990D00'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'RIGHT'
@@ -46232,7 +46237,8 @@ wwv_flow_imp_page.create_page_plug(
 '       sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs) as valor_bs,',
 '       round(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs)',
 '             / nullif(fn_tasa_ves(nvl(to_date(:P45_HASTA, ''DD/MM/YYYY''), trunc(sysdate)), ''USD''), 0), 2) as valor_usd,',
-'       sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_ref) as valor_ref,',
+'       -- 2026-11-26: costo historico en USD (tasa BCV del dia de cada movimiento), no mezcla de monedas.',
+'       round(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs / nullif(fn_tasa_ves(trunc(m.fecha_movimiento), ''USD''), 0)), 2) as valor_ref,',
 '       case when abs(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad)) > 0.00005',
 '            then round(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs)',
 '                       / sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad), 6)',
@@ -46322,7 +46328,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_db_column_name=>'VALOR_USD'
 ,p_display_order=>55
 ,p_column_identifier=>'F'
-,p_column_label=>'Valor (USD)'
+,p_column_label=>'Valor USD (tasa del corte)'
 ,p_format_mask=>'999G999G999G999G990D00'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'RIGHT'
@@ -46333,7 +46339,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_db_column_name=>'VALOR_REF'
 ,p_display_order=>60
 ,p_column_identifier=>'G'
-,p_column_label=>'Valor (moneda doc.)'
+,p_column_label=>unistr('Costo USD (hist\00F3rico)')
 ,p_format_mask=>'999G999G999G999G990D00'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'RIGHT'
