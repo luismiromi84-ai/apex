@@ -65,11 +65,11 @@ begin
     if upper(p_informe) = 'VALORADO' then
         v_html := v_html || '<tr style="font-weight:bold;background:#dbeafe"><td>C&oacute;digo</td>'
             || '<td>Art&iacute;culo</td><td>Existencia</td><td>Costo promedio (Bs)</td><td>Valor (Bs)</td>'
-            || '<td>Valor (USD)</td><td>Valor (moneda doc.)</td></tr>';
+            || '<td>Valor USD (tasa del corte)</td><td>Costo USD (hist&oacute;rico)</td></tr>';
         for r in (select a.codigo, a.nombre,
                          sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad) cantidad,
                          sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs) valor_bs,
-                         sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_ref) valor_ref
+                         round(sum(pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs / nullif(fn_tasa_ves(trunc(m.fecha_movimiento), 'USD'), 0)), 2) valor_ref
                     from kardex_mov m
                     join producto_servicio a on a.id_producto_servicio = m.id_producto_servicio
                    where m.id_empresa = p_empresa
@@ -90,11 +90,11 @@ begin
     else
         v_html := v_html || '<tr style="font-weight:bold;background:#dbeafe"><td>C&oacute;digo</td>'
             || '<td>Art&iacute;culo</td><td>Unidades</td><td>Costo (Bs)</td><td>Costo (USD)</td>'
-            || '<td>Costo (moneda doc.)</td><td></td></tr>';
+            || '<td></td><td></td></tr>';
         for r in (select a.codigo, a.nombre,
                          sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.cantidad) unidades,
                          sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs) costo_bs,
-                         sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_ref) costo_ref
+                         round(sum(-pkg_inventario.fn_signo(m.tipo_movimiento) * m.costo_total_bs / nullif(fn_tasa_ves(trunc(m.fecha_movimiento), 'USD'), 0)), 2) costo_ref
                     from kardex_mov m
                     join producto_servicio a on a.id_producto_servicio = m.id_producto_servicio
                    where m.id_empresa = p_empresa
@@ -105,18 +105,17 @@ begin
                    group by a.codigo, a.nombre
                    order by a.nombre) loop
             v_html := v_html || '<tr>' || txt(r.codigo) || txt(r.nombre) || num(r.unidades)
-                || num(r.costo_bs) || num(round(r.costo_bs / v_tasa, 2)) || num(r.costo_ref) || '<td></td></tr>';
+                || num(r.costo_bs) || num(r.costo_ref) || '<td></td><td></td></tr>';
             v_t1 := v_t1 + nvl(r.unidades, 0);
             v_t2 := v_t2 + nvl(r.costo_bs, 0);
-            v_t3 := v_t3 + nvl(round(r.costo_bs / v_tasa, 2), 0);
-            v_t4 := v_t4 + nvl(r.costo_ref, 0);
+            v_t3 := v_t3 + nvl(r.costo_ref, 0);
         end loop;
         v_html := v_html || '<tr style="font-weight:bold"><td>TOTALES</td><td></td>' || num(v_t1)
-            || num(v_t2) || num(v_t3) || num(v_t4) || '<td></td></tr>';
+            || num(v_t2) || num(v_t3) || '<td></td><td></td></tr>';
     end if;
 
     return v_html || '</table><p>Valor (USD) a la tasa BCV del ' || to_char(v_hasta, 'DD/MM/YYYY')
-        || '. Valor (moneda doc.): a la tasa de cada movimiento.</p></body></html>';
+        || '. Costo USD (hist&oacute;rico) y Costo (USD) de ventas: a la tasa BCV del d&iacute;a de cada movimiento.</p></body></html>';
 exception
     when no_data_found then
         return null;
